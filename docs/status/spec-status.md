@@ -190,7 +190,7 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 | Item | Status | Done | Left | Dependency |
 |---|---|---|---|---|
 | §31 Environments | 🟡 | Local (IN+US + launcher), startup guard, config rules; environment branches `develop`/`qa`/`staging`/`main` created (ADR-017) | Hosted Dev/QA/Staging/Prod on Render + Vercel | 🔒 PO (Render/Vercel accounts) |
-| §32 GitHub workflow | 🟡 | Git, branches develop→qa→staging→main, templates, CODEOWNERS template | Push to remote, branch protection, Projects | 🔒 GH (PO creates repo) |
+| §32 GitHub workflow | 🟡 | Repo `vijayant-pandey/HIMS_Advanced` with branches develop→qa→staging→main, ruleset `environment-branches` (PR required, no force push/deletion), templates, CODEOWNERS template | Required status checks once CI has run, GitHub Projects board | — |
 | §33 CI/CD | 🟡 | PR CI runs on PRs into all four environment branches | Run on GitHub; Render/Vercel auto-deploy per branch | 🔒 GH, PO |
 | §34 Cost strategy | 🟡 | Stage A (local, no spend) | Stages B–D | 🔒 AWS |
 | §35 Definition of Done | 🟡 | Tests, migrations, contracts, no secrets | Environment/QA evidence | 🔒 AWS |
@@ -205,3 +205,4 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 | 2026-10-25 | Phase 1 foundation, admin console, IN+US local deployments, launcher | 4.1–4.4, 4.25, 6–10, 13–16, 19, 21, 28–33 |
 | 2026-10-26 | UI theme selector (HIMS-UI-001) across launcher, apps and admin | 15.2 |
 | 2026-10-26 | Environment branches qa/staging, CI on all four, ADR-017 (Render + Vercel interim hosting) | 31, 32, 33 |
+| 2026-10-26 | Code pushed to GitHub, branch ruleset, manual CI trigger (HIMS-OPS-002) | 32, 33 |
