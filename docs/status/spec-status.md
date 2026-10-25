@@ -189,9 +189,9 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 
 | Item | Status | Done | Left | Dependency |
 |---|---|---|---|---|
-| §31 Environments | 🟡 | Local (IN+US + launcher), startup guard, config rules | Dev/QA/Staging/Prod | 🔒 AWS |
-| §32 GitHub workflow | 🟡 | Git, main/develop, templates, CODEOWNERS template | Remote, rulesets, Projects | 🔒 GH (PO) |
-| §33 CI/CD | 🟡 | PR CI workflow written | Run on GitHub; promotion workflows | 🔒 GH, AWS |
+| §31 Environments | 🟡 | Local (IN+US + launcher), startup guard, config rules; environment branches `develop`/`qa`/`staging`/`main` created (ADR-017) | Hosted Dev/QA/Staging/Prod on Render + Vercel | 🔒 PO (Render/Vercel accounts) |
+| §32 GitHub workflow | 🟡 | Git, branches develop→qa→staging→main, templates, CODEOWNERS template | Push to remote, branch protection, Projects | 🔒 GH (PO creates repo) |
+| §33 CI/CD | 🟡 | PR CI runs on PRs into all four environment branches | Run on GitHub; Render/Vercel auto-deploy per branch | 🔒 GH, PO |
 | §34 Cost strategy | 🟡 | Stage A (local, no spend) | Stages B–D | 🔒 AWS |
 | §35 Definition of Done | 🟡 | Tests, migrations, contracts, no secrets | Environment/QA evidence | 🔒 AWS |
 | §36 Open decisions (19) | ⬜ 0/19 | ADRs propose answers | Decisions | 🔒 PO, LEGAL, CLIN, Finance |
@@ -204,3 +204,4 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 |---|---|---|
 | 2026-10-25 | Phase 1 foundation, admin console, IN+US local deployments, launcher | 4.1–4.4, 4.25, 6–10, 13–16, 19, 21, 28–33 |
 | 2026-10-26 | UI theme selector (HIMS-UI-001) across launcher, apps and admin | 15.2 |
+| 2026-10-26 | Environment branches qa/staging, CI on all four, ADR-017 (Render + Vercel interim hosting) | 31, 32, 33 |

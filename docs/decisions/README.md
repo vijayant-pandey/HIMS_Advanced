@@ -22,3 +22,4 @@ default, awaiting the named approver), **Superseded**.
 | [014](ADR-014-runtime-versions.md) | Runtime and toolchain versions | Proposed |
 | [015](ADR-015-scoped-rbac.md) | Scoped, time-bounded RBAC with default deny | Proposed |
 | [016](ADR-016-admin-operations-console.md) | Django admin as an RBAC-gated, audited operations console | Proposed |
+| [017](ADR-017-hosting-and-branch-promotion.md) | Interim hosting on Render + Vercel; branch-per-environment promotion | Proposed |
