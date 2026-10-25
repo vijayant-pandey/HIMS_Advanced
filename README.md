@@ -89,5 +89,15 @@ cd frontend && npm run api:types
 
 ## Branching and release
 
-`feature/HIMS-123-…` → PR to `develop` → auto-deploy Development → release candidate → QA →
-Staging → Production. The **same image digest** is promoted through every stage (spec 31–33).
+Environment branches (ADR-017): `development` → `qa` → `staging` → `production`.
+
+1. On `development`: `git pull origin development`, then code
+2. `git switch -c feature/HIMS-123-short-description` (uncommitted changes move with you)
+3. `git add -A`, `git commit -m "..."`, `git push -u origin feature/...`
+4. On GitHub: open a PR into `development`, wait for the 4 checks, then **Squash and merge**
+5. Back on `development`: `git pull origin development`
+6. Promote with PRs `development`→`qa`→`staging`→`production` using **Create a merge commit**
+   (never squash a promotion PR)
+
+Never commit directly on `development`, `qa`, `staging` or `production`. Fixes found in QA or
+Staging go through a new feature branch from `development`.

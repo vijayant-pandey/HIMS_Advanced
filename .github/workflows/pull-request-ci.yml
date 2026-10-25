@@ -1,13 +1,13 @@
 # Pull-request quality gates (spec 33.1). Runs on every PR into an environment branch and on
-# pushes to them. Promotion path (ADR-017): develop -> qa -> staging -> main (production).
+# pushes to them. Promotion path (ADR-017): development -> qa -> staging -> production.
 # TODO(HIMS-PLAT-013): pin every third-party action to a reviewed commit SHA (spec 33.6).
 name: pull-request-ci
 
 on:
   pull_request:
-    branches: [develop, qa, staging, main, "hotfix/**"]
+    branches: [development, qa, staging, production, "hotfix/**"]
   push:
-    branches: [develop, qa, staging, main]
+    branches: [development, qa, staging, production]
   workflow_dispatch: # "Run workflow" button in the Actions tab
 
 permissions:
