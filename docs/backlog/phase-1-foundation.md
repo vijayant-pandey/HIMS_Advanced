@@ -92,7 +92,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | ID | Ticket | Status |
 |---|---|---|
 | HIMS-OPS-001 | PR CI: lint, types, migrations, tests on PostgreSQL, contract drift, audits, image build, secret scan | Done (workflow written; runs once the repo is on GitHub) |
-| HIMS-OPS-002 | GitHub Organization, branch rulesets (`main`, `develop`), CODEOWNERS teams | To do (needs org owner) |
+| HIMS-OPS-002 | GitHub repo, environment branches `development`/`qa`/`staging`/`production`, ruleset with required checks, first CI run | Done (CODEOWNERS teams need a GitHub Organization) |
 | HIMS-OPS-003 | Terraform modules (network, ecs-service, rds, redis, s3, kms, secrets, monitoring) — Stage B | To do |
 | HIMS-OPS-004 | Alarms + runbooks: API errors/latency, DB, queue age, outbox dead/lag | To do |
 | HIMS-OPS-005 | Deploy-to-Development workflow with OIDC; build-once promote-many to QA/Staging/Prod | To do |

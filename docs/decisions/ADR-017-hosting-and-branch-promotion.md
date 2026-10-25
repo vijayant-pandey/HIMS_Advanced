@@ -16,15 +16,20 @@ branches.
 
   | Branch | Environment | Backend | Frontend |
   |---|---|---|---|
-  | `develop` | Development | Render service + own database | Vercel (branch domain) |
+  | `development` | Development | Render service + own database | Vercel (branch domain) |
   | `qa` | QA | Render service + own database | Vercel (branch domain) |
   | `staging` | Staging | Render service + own database | Vercel (branch domain) |
-  | `main` | Production | Render service + own database | Vercel production |
+  | `production` | Production | Render service + own database | Vercel production |
 
-- Work flows `feature/HIMS-xxx-…` → PR into `develop` → PR `develop`→`qa` → PR `qa`→`staging`
-  → PR `staging`→`main`. Every PR runs the full CI suite. Promotion PRs must contain only already
-  reviewed commits; fixes always enter through `develop` (or `hotfix/*` from `main`, merged back
-  down to `staging`, `qa` and `develop`).
+  The names `development`/`production` replace the spec's `develop`/`main` (spec 32.4) at the
+  product owner's request.
+
+- Work flows `feature/HIMS-xxx-…` → PR into `development` → PR `development`→`qa` → PR
+  `qa`→`staging` → PR `staging`→`production`. Every PR runs the full CI suite. Promotion PRs
+  must contain only already reviewed commits; fixes always enter through `development` (or
+  `hotfix/*` from `production`, merged back down to `staging`, `qa` and `development`).
+- Feature PRs into `development` are squash-merged; promotion PRs use merge commits so the
+  environment branches share history and do not drift.
 - Each environment has its **own database, secrets and `HIMS_ENVIRONMENT`**. The startup guard
   (`HIMS_DATABASE_ENVIRONMENT` must match) still prevents cross-environment database use.
 - Each hospital organization still gets its own backend service and database per environment
