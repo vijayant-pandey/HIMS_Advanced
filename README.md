@@ -32,30 +32,45 @@ ADMIN_PW='choose-a-long-local-password' python manage.py provision_organization 
   --legal-name="Synthetic Health Pvt Ltd" --display-name="Synthetic Health" \
   --country=IN --timezone=Asia/Kolkata --currency=INR \
   --admin-email=admin@synthetic.test --admin-name="Synthetic Admin" --admin-password-env=ADMIN_PW
-python manage.py runserver                      # API on :8000, docs at /api/docs/
-celery -A config worker -l info                 # needs Redis
+celery -A config worker -l info                 # needs Redis (not required yet)
 celery -A config beat -l info
 
 # Frontend
 cd frontend
 npm ci
-npm run dev                                     # http://localhost:5173 (proxies /api to :8000)
 ```
 
-## Running a second hospital locally (e.g. the US deployment)
-
-Each hospital organization has its own deployment and database (ADR-003). To run another one
-on the same machine, create `backend/.env.us` (a copy of `.env` with its own
-`HIMS_DEPLOYMENT_ID`, database and cookie names) and then:
+## Everyday use: one command
 
 ```cmd
-:: backend (CMD)
-set HIMS_ENV_FILE=.env.us
-python manage.py migrate
-python manage.py runserver 8001
+cd frontend
+npm run dev
+```
 
-:: frontend
-npm run dev:us        &:: http://localhost:5174 -> API on :8001
+This opens the **launcher** at http://localhost:5173. Pick a hospital deployment and the
+launcher starts its Django backend and React app in the background, then redirects you.
+Ctrl+C in that terminal stops everything it started.
+
+| Deployment | App | API / admin | Backend env file | Database |
+|---|---|---|---|---|
+| India | http://localhost:5175 | http://localhost:8000/admin/ | `backend/.env` | `HIMS` |
+| US | http://localhost:5174 | http://localhost:8001/admin/ | `backend/.env.us` | `HIMS_US` |
+| Europe | planned | — | — | — |
+
+Each hospital organization has its own deployment and database (ADR-003). To add another
+local deployment, create `backend/.env.<x>` (own `HIMS_DEPLOYMENT_ID`, database and cookie
+names), run `migrate` and `provision_organization` with `HIMS_ENV_FILE=.env.<x>`, add a
+`frontend/.env.<x>` Vite mode file, and register it in `frontend/scripts/dev-launcher.mjs`.
+
+Manual equivalent of the launcher (CMD, one terminal per process):
+
+```cmd
+:: India                                         :: US
+cd backend                                       cd backend
+.venv\Scripts\activate.bat                       .venv\Scripts\activate.bat
+python manage.py runserver                       set HIMS_ENV_FILE=.env.us
+                                                 python manage.py runserver 8001
+cd frontend && npm run dev:in                    cd frontend && npm run dev:us
 ```
 
 ## Quality gates (run before every PR)
