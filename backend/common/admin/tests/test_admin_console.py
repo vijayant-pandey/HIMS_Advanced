@@ -231,3 +231,15 @@ def test_terminating_staff_in_console_disables_login(admin_user, organization):
     user.refresh_from_db()
     assert not user.is_active
     assert OutboxEvent.objects.filter(event_type="staff.member.employment_status_changed").exists()
+
+
+@pytest.mark.django_db
+def test_console_follows_shared_theme_cookie(admin_user):
+    client = console(admin_user)
+    client.cookies["hims_theme"] = "red"
+    assert b"--primary: #c62828" in client.get("/admin/").content
+
+    client.cookies["hims_theme"] = "</style><script>alert(1)</script>"
+    page = client.get("/admin/").content
+    assert b"--primary: #1565c0" in page  # unknown values fall back to blue
+    assert b"<script>alert(1)" not in page

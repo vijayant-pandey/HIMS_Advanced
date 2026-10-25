@@ -1,6 +1,7 @@
 import { AppBar, Box, Button, Container, Stack, Toolbar, Typography } from "@mui/material";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
+import { ThemePicker } from "../components/ThemePicker";
 import { useCurrentUser, useLogout } from "../features/auth/api";
 import { hasPermission } from "../features/auth/grants";
 
@@ -28,6 +29,7 @@ export function AppShell() {
               </Button>
             ))}
           </Stack>
+          <ThemePicker color="inherit" />
           <Typography variant="body2">{user?.display_name}</Typography>
           <Button
             color="inherit"

@@ -33,7 +33,7 @@ const ALLOWED_HOSTS = new Set([`localhost:${LAUNCHER_PORT}`, `127.0.0.1:${LAUNCH
 
 const DEPLOYMENTS = {
   in: {
-    name: "Indian Hospitals",
+    name: "IN Hospitals",
     flag: "🇮🇳",
     detail: "India deployment · INR · Asia/Kolkata",
     envFile: ".env",
@@ -280,12 +280,17 @@ const PAGE = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HIMS Launcher</title>
 <style>
-  :root { --bg:#f6f7f9; --card:#fff; --text:#1b1f24; --muted:#5b6470; --border:#dde1e6;
-          --accent:#1565c0; --ok:#2e7d32; --warn:#b26a00; color-scheme: light dark; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#111418; --card:#1a1f25; --text:#e8eaed; --muted:#9aa4b1; --border:#2c333b;
-            --accent:#64b5f6; --ok:#81c784; --warn:#ffb74d; }
-  }
+  :root { --bg:#f8f9fb; --card:#fff; --text:#1b1f24; --muted:#5b6470; --border:#dde1e6;
+          --accent:#1565c0; --accent-dark:#0d47a1; --tint:#e3f2fd; --ok:#2e7d32; --warn:#b26a00;
+          color-scheme: light; }
+  header.bar { background:var(--accent-dark); color:#fff; }
+  header.bar .inner { max-width:960px; margin:0 auto; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  header.bar strong { font-size:18px; letter-spacing:.3px; }
+  .themes { display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:13px; }
+  .themes button { padding:6px 10px; border-color:rgba(255,255,255,.5); color:#fff; display:inline-flex; align-items:center; gap:6px; font-size:13px; }
+  .themes button[aria-pressed="true"] { background:#fff; color:var(--accent-dark); border-color:#fff; font-weight:600; }
+  .dot { width:12px; height:12px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.25); display:inline-block; }
+  .card { border-top:4px solid var(--accent); }
   * { box-sizing: border-box; }
   body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); }
   main { max-width: 960px; margin: 0 auto; padding: 48px 16px; }
@@ -309,6 +314,10 @@ const PAGE = `<!doctype html>
 </style>
 </head>
 <body>
+<header class="bar"><div class="inner">
+  <strong>HIMS</strong>
+  <div class="themes" role="group" aria-label="Theme"><span>Theme:</span></div>
+</div></header>
 <main>
   <h1>HIMS — choose a hospital deployment</h1>
   <p class="lead">Each region runs as its own deployment with its own database. Local development only.</p>
@@ -323,6 +332,41 @@ const META = ${JSON.stringify(
 )};
 const grid = document.getElementById("grid");
 const busy = new Set();
+
+// Theme: shared with both hospital apps and the Django admin via the hims_theme cookie
+// (keep in sync with src/app/themes.ts and backend/common/theming.py).
+const THEMES = {
+  blue: { label: "White & Blue", primary: "#1565c0", dark: "#0d47a1", tint: "#e3f2fd" },
+  red: { label: "White & Red", primary: "#c62828", dark: "#8e0000", tint: "#ffebee" },
+  green: { label: "White & Green", primary: "#2e7d32", dark: "#1b5e20", tint: "#e8f5e9" },
+  mono: { label: "Minimal Black & White", primary: "#111111", dark: "#000000", tint: "#f2f2f2" },
+};
+const themeBar = document.querySelector(".themes");
+function currentTheme() {
+  const m = document.cookie.match(/(?:^|;\\s*)hims_theme=([^;]+)/);
+  return m && THEMES[m[1]] ? m[1] : "blue";
+}
+function applyTheme(id) {
+  const t = THEMES[id];
+  const root = document.documentElement.style;
+  root.setProperty("--accent", t.primary);
+  root.setProperty("--accent-dark", t.dark);
+  root.setProperty("--tint", t.tint);
+  themeBar.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.theme === id)));
+}
+for (const [id, t] of Object.entries(THEMES)) {
+  const b = document.createElement("button");
+  b.dataset.theme = id;
+  b.innerHTML = '<span class="dot"></span>';
+  b.querySelector(".dot").style.background = t.primary;
+  b.append(t.label);
+  b.addEventListener("click", () => {
+    document.cookie = "hims_theme=" + id + "; path=/; max-age=31536000; SameSite=Lax";
+    applyTheme(id);
+  });
+  themeBar.appendChild(b);
+}
+applyTheme(currentTheme());
 
 function card(key, m) {
   const el = document.createElement("section");

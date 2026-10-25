@@ -1,0 +1,45 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+{# HIMS console look: white background + the theme colour chosen in the launcher/app (hims_theme cookie). #}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{# Always light ("white and <colour>"), so Django's dark-mode stylesheet and toggle are removed. #}
+{% block dark-mode-vars %}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<style>
+  :root {
+    --primary: {{ hims_theme.primary }};
+    --secondary: {{ hims_theme.dark }};
+    --accent: #ffffff;
+    --primary-fg: #ffffff;
+    --header-color: #ffffff;
+    --header-branding-color: #ffffff;
+    --header-bg: {{ hims_theme.dark }};
+    --header-link-color: #ffffff;
+    --breadcrumbs-bg: {{ hims_theme.primary }};
+    --breadcrumbs-fg: #ffffff;
+    --breadcrumbs-link-fg: #ffffff;
+    --link-fg: {{ hims_theme.primary }};
+    --link-hover-color: {{ hims_theme.dark }};
+    --link-selected-fg: {{ hims_theme.dark }};
+    --button-bg: {{ hims_theme.primary }};
+    --button-hover-bg: {{ hims_theme.dark }};
+    --default-button-bg: {{ hims_theme.dark }};
+    --default-button-hover-bg: {{ hims_theme.primary }};
+    --selected-row: {{ hims_theme.tint }};
+    --darkened-bg: #fafafa;
+    --body-bg: #ffffff;
+  }
+  .theme-toggle { display: none; }
+  #header { border-bottom: 3px solid {{ hims_theme.primary }}; }
+  .module h2, .module caption, .inline-group h2 { background: {{ hims_theme.primary }}; }
+</style>
+{% endblock %}
+
+{% block branding %}
+<div id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

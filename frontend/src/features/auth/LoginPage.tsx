@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
+import { ThemePicker } from "../../components/ThemePicker";
 import { useCurrentUser, useLogin } from "./api";
 
 const schema = z.object({
@@ -33,6 +34,9 @@ export function LoginPage() {
 
   return (
     <Box sx={{ display: "grid", placeItems: "center", minHeight: "100vh", px: 2 }}>
+      <Box sx={{ position: "fixed", top: 16, right: 16 }}>
+        <ThemePicker />
+      </Box>
       <Paper component="form" onSubmit={onSubmit} noValidate sx={{ p: 4, width: "100%", maxWidth: 400 }}>
         <Stack spacing={2}>
           <Typography variant="h5" component="h1">
