@@ -4,6 +4,7 @@ All configuration comes from the environment (spec 31.4). Environment-specific m
 (local, test, production) only adjust behaviour; they never hard-code credentials.
 """
 
+import os
 from pathlib import Path
 
 import environ
@@ -11,8 +12,11 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env()
-if (BASE_DIR / ".env").exists():
-    environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
+# HIMS_ENV_FILE selects which local deployment to run (e.g. ".env.us" for a second hospital on
+# the same machine). Real environment variables always win over the file.
+_env_file = BASE_DIR / os.environ.get("HIMS_ENV_FILE", ".env")
+if _env_file.exists():
+    environ.Env.read_env(_env_file, overwrite=False)
 
 # --- Deployment identity -----------------------------------------------------------------
 # One deployment serves exactly one hospital organization (ADR-003, ADR-009).
@@ -134,12 +138,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Database-backed sessions so that revocation (logout, suspension, termination) is immediate.
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_COOKIE_NAME = "hims_session"
+# Configurable so several deployments on one host (local dev ports) do not share cookies.
+SESSION_COOKIE_NAME = env.str("HIMS_SESSION_COOKIE_NAME", default="hims_session")
 SESSION_COOKIE_AGE = env.int("HIMS_SESSION_IDLE_SECONDS", default=30 * 60)
 SESSION_SAVE_EVERY_REQUEST = True  # sliding idle timeout
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_NAME = "hims_csrftoken"
+CSRF_COOKIE_NAME = env.str("HIMS_CSRF_COOKIE_NAME", default="hims_csrftoken")
 CSRF_COOKIE_HTTPONLY = False  # the SPA must read it to send X-CSRFToken
 CSRF_COOKIE_SAMESITE = "Lax"
 

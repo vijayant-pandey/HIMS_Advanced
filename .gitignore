@@ -12,6 +12,8 @@ htmlcov/
 .env
 .env.*
 !.env.example
+# Vite mode files hold only public settings (ports, proxy target), never secrets.
+!frontend/.env.*
 *.pem
 *.key
 

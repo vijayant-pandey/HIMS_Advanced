@@ -8,7 +8,8 @@
  */
 
 export const API_BASE = "/api/v1";
-const CSRF_COOKIE = "hims_csrftoken";
+// Must match the backend's HIMS_CSRF_COOKIE_NAME (differs per local deployment, e.g. US).
+const CSRF_COOKIE: string = import.meta.env.VITE_CSRF_COOKIE ?? "hims_csrftoken";
 
 export interface ProblemFieldError {
   field: string | null;

@@ -42,6 +42,22 @@ npm ci
 npm run dev                                     # http://localhost:5173 (proxies /api to :8000)
 ```
 
+## Running a second hospital locally (e.g. the US deployment)
+
+Each hospital organization has its own deployment and database (ADR-003). To run another one
+on the same machine, create `backend/.env.us` (a copy of `.env` with its own
+`HIMS_DEPLOYMENT_ID`, database and cookie names) and then:
+
+```cmd
+:: backend (CMD)
+set HIMS_ENV_FILE=.env.us
+python manage.py migrate
+python manage.py runserver 8001
+
+:: frontend
+npm run dev:us        &:: http://localhost:5174 -> API on :8001
+```
+
 ## Quality gates (run before every PR)
 
 ```bash
