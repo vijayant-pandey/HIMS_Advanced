@@ -1,0 +1,13 @@
+# Required reviewers for high-risk areas (spec 32.5).
+# Replace the placeholder team names with real GitHub Organization teams before enabling
+# "Require review from Code Owners" in the branch ruleset.
+#
+# *                                   @ORG/hims-engineering
+# /infrastructure/                    @ORG/platform-team
+# /.github/                           @ORG/platform-team
+# /backend/apps/access_control/       @ORG/security-reviewers
+# /backend/apps/identity/             @ORG/security-reviewers
+# /backend/apps/audit/                @ORG/security-reviewers
+# /backend/common/                    @ORG/platform-team
+# /backend/**/migrations/             @ORG/data-architecture
+# /docs/decisions/                    @ORG/architecture

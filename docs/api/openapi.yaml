@@ -1,0 +1,2243 @@
+openapi: 3.0.3
+info:
+  title: HIMS API
+  version: 1.0.0
+  description: Hospital Information Management System REST API (v1).
+paths:
+  /api/v1/audit-events/:
+    get:
+      operationId: audit_events_list
+      description: Audit search for auditors. Searching the audit log is itself audited.
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - in: query
+        name: actor_id
+        schema:
+          type: string
+      - in: query
+        name: facility_id
+        schema:
+          type: string
+      - in: query
+        name: occurred_after
+        schema:
+          type: string
+      - in: query
+        name: occurred_before
+        schema:
+          type: string
+      - in: query
+        name: outcome
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: resource_id
+        schema:
+          type: string
+      - in: query
+        name: resource_type
+        schema:
+          type: string
+      tags:
+      - audit-events
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditEventList'
+          description: ''
+  /api/v1/auth/csrf/:
+    get:
+      operationId: auth_csrf_retrieve
+      description: Sets the CSRF cookie the SPA must echo in X-CSRFToken on unsafe
+        requests.
+      tags:
+      - auth
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/login/:
+    post:
+      operationId: auth_login_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+          description: ''
+  /api/v1/departments/:
+    get:
+      operationId: departments_list
+      parameters:
+      - in: query
+        name: facility
+        schema:
+          type: string
+        description: Filter by facility ID
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - departments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDepartmentList'
+          description: ''
+    post:
+      operationId: departments_create
+      tags:
+      - departments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+          description: ''
+  /api/v1/departments/{id}/:
+    get:
+      operationId: departments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this department.
+        required: true
+      tags:
+      - departments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+          description: ''
+    patch:
+      operationId: departments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this department.
+        required: true
+      tags:
+      - departments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDepartmentUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+          description: ''
+  /api/v1/facilities/:
+    get:
+      operationId: facilities_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - facilities
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFacilityList'
+          description: ''
+    post:
+      operationId: facilities_create
+      tags:
+      - facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+          description: ''
+  /api/v1/facilities/{id}/:
+    get:
+      operationId: facilities_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this facility.
+        required: true
+      tags:
+      - facilities
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+          description: ''
+    patch:
+      operationId: facilities_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this facility.
+        required: true
+      tags:
+      - facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFacilityUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Facility'
+          description: ''
+  /api/v1/organization/:
+    get:
+      operationId: organization_retrieve
+      description: |-
+        The deployment's single organization. Creation happens through provisioning
+        (``manage.py provision_organization``), not this API (ADR-009).
+      tags:
+      - organization
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          description: ''
+    patch:
+      operationId: organization_partial_update
+      description: |-
+        The deployment's single organization. Creation happens through provisioning
+        (``manage.py provision_organization``), not this API (ADR-009).
+      tags:
+      - organization
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrganizationUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          description: ''
+  /api/v1/permissions/:
+    get:
+      operationId: permissions_list
+      tags:
+      - permissions
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Permission'
+          description: ''
+  /api/v1/qualification-types/:
+    get:
+      operationId: qualification_types_list
+      tags:
+      - qualification-types
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QualificationType'
+          description: ''
+  /api/v1/role-assignments/:
+    get:
+      operationId: role_assignments_list
+      description: |-
+        Role grants. Granting is checked against the actor's own permissions at the target
+        scope, so administrators cannot escalate privileges (services._require_grantable).
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - role-assignments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoleAssignmentList'
+          description: ''
+    post:
+      operationId: role_assignments_create
+      description: |-
+        Role grants. Granting is checked against the actor's own permissions at the target
+        scope, so administrators cannot escalate privileges (services._require_grantable).
+      tags:
+      - role-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleAssignmentCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignment'
+          description: ''
+  /api/v1/role-assignments/{id}/:
+    get:
+      operationId: role_assignments_retrieve
+      description: |-
+        Role grants. Granting is checked against the actor's own permissions at the target
+        scope, so administrators cannot escalate privileges (services._require_grantable).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this role assignment.
+        required: true
+      tags:
+      - role-assignments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignment'
+          description: ''
+  /api/v1/role-assignments/{id}/revoke/:
+    post:
+      operationId: role_assignments_revoke_create
+      description: |-
+        Role grants. Granting is checked against the actor's own permissions at the target
+        scope, so administrators cannot escalate privileges (services._require_grantable).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this role assignment.
+        required: true
+      tags:
+      - role-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignment'
+          description: ''
+  /api/v1/roles/:
+    get:
+      operationId: roles_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - roles
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoleList'
+          description: ''
+    post:
+      operationId: roles_create
+      tags:
+      - roles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+  /api/v1/roles/{id}/:
+    get:
+      operationId: roles_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this role.
+        required: true
+      tags:
+      - roles
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+  /api/v1/specialties/:
+    get:
+      operationId: specialties_list
+      tags:
+      - specialties
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Specialty'
+          description: ''
+  /api/v1/staff/:
+    get:
+      operationId: staff_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Name contains, or exact employee number
+      - in: query
+        name: staff_type
+        schema:
+          type: string
+      tags:
+      - staff
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStaffMemberList'
+          description: ''
+    post:
+      operationId: staff_create
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffMemberCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffMember'
+          description: ''
+  /api/v1/staff-credentials/{id}/:
+    get:
+      operationId: staff_credentials_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff credential.
+        required: true
+      tags:
+      - staff-credentials
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffCredential'
+          description: ''
+  /api/v1/staff-credentials/{id}/verify/:
+    post:
+      operationId: staff_credentials_verify_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff credential.
+        required: true
+      tags:
+      - staff-credentials
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialVerificationRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffCredential'
+          description: ''
+  /api/v1/staff/{id}/:
+    get:
+      operationId: staff_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff member.
+        required: true
+      tags:
+      - staff
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffMemberDetail'
+          description: ''
+    patch:
+      operationId: staff_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff member.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffMemberUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffMember'
+          description: ''
+  /api/v1/staff/{id}/credentials/:
+    post:
+      operationId: staff_credentials_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff member.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffCredentialRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffCredential'
+          description: ''
+  /api/v1/staff/{id}/department-assignments/:
+    post:
+      operationId: staff_department_assignments_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff member.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffDepartmentAssignmentRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffDepartmentAssignment'
+          description: ''
+  /api/v1/staff/{id}/qualifications/:
+    post:
+      operationId: staff_qualifications_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff member.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffQualificationRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffQualification'
+          description: ''
+components:
+  schemas:
+    ActiveStatusEnum:
+      enum:
+      - active
+      - inactive
+      type: string
+      description: |-
+        * `active` - Active
+        * `inactive` - Inactive
+    ActorTypeEnum:
+      enum:
+      - user
+      - system
+      - anonymous
+      type: string
+      description: |-
+        * `user` - User
+        * `system` - System
+        * `anonymous` - Anonymous
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+        facility_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        actor_type:
+          allOf:
+          - $ref: '#/components/schemas/ActorTypeEnum'
+          readOnly: true
+        actor_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        action:
+          type: string
+          readOnly: true
+        resource_type:
+          type: string
+          readOnly: true
+        resource_id:
+          type: string
+          readOnly: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/OutcomeEnum'
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        request_id:
+          type: string
+          readOnly: true
+        ip_address:
+          type: string
+          readOnly: true
+          nullable: true
+        changes:
+          readOnly: true
+        metadata:
+          readOnly: true
+      required:
+      - action
+      - actor_id
+      - actor_type
+      - changes
+      - facility_id
+      - id
+      - ip_address
+      - metadata
+      - occurred_at
+      - outcome
+      - reason
+      - request_id
+      - resource_id
+      - resource_type
+    CategoryEnum:
+      enum:
+      - degree
+      - diploma
+      - fellowship
+      - certification
+      type: string
+      description: |-
+        * `degree` - Degree
+        * `diploma` - Diploma
+        * `fellowship` - Fellowship
+        * `certification` - Certification
+    CountryEnum:
+      enum:
+      - US
+      - IN
+      type: string
+      description: |-
+        * `US` - United States
+        * `IN` - India
+    CredentialTypeEnum:
+      enum:
+      - medical_registration
+      - nursing_registration
+      - pharmacy_registration
+      - state_license
+      - npi
+      - dea_registration
+      - other
+      type: string
+      description: |-
+        * `medical_registration` - Medical council registration
+        * `nursing_registration` - Nursing council registration
+        * `pharmacy_registration` - Pharmacy council registration
+        * `state_license` - State licence (US)
+        * `npi` - National Provider Identifier (US)
+        * `dea_registration` - DEA registration (US)
+        * `other` - Other
+    CredentialVerificationRequest:
+      type: object
+      properties:
+        verified:
+          type: boolean
+        reason:
+          type: string
+          default: ''
+          maxLength: 2000
+      required:
+      - verified
+    CurrentUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        staff_member_id:
+          type: string
+          format: uuid
+          nullable: true
+        grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Grant'
+          description: For navigation only; the API enforces access.
+      required:
+      - display_name
+      - email
+      - grants
+      - id
+      - staff_member_id
+    DefaultCurrencyEnum:
+      enum:
+      - USD
+      - INR
+      type: string
+      description: |-
+        * `USD` - US Dollar
+        * `INR` - Indian Rupee
+    Department:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        department_type:
+          allOf:
+          - $ref: '#/components/schemas/DepartmentTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ActiveStatusEnum'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - department_type
+      - facility
+      - id
+      - name
+      - status
+      - updated_at
+      - version
+    DepartmentCreateRequest:
+      type: object
+      properties:
+        facility:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        department_type:
+          $ref: '#/components/schemas/DepartmentTypeEnum'
+      required:
+      - code
+      - department_type
+      - facility
+      - name
+    DepartmentTypeEnum:
+      enum:
+      - clinical
+      - diagnostic
+      - pharmacy
+      - support
+      - administrative
+      type: string
+      description: |-
+        * `clinical` - Clinical
+        * `diagnostic` - Diagnostic
+        * `pharmacy` - Pharmacy
+        * `support` - Support
+        * `administrative` - Administrative
+    EmploymentStatusEnum:
+      enum:
+      - active
+      - on_leave
+      - suspended
+      - terminated
+      type: string
+      description: |-
+        * `active` - Active
+        * `on_leave` - On leave
+        * `suspended` - Suspended
+        * `terminated` - Terminated
+    Facility:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        facility_type:
+          allOf:
+          - $ref: '#/components/schemas/FacilityTypeEnum'
+          readOnly: true
+        country:
+          allOf:
+          - $ref: '#/components/schemas/CountryEnum'
+          readOnly: true
+        state_region:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        address_line1:
+          type: string
+          readOnly: true
+        address_line2:
+          type: string
+          readOnly: true
+        postal_code:
+          type: string
+          readOnly: true
+        timezone:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ActiveStatusEnum'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address_line1
+      - address_line2
+      - city
+      - code
+      - country
+      - created_at
+      - facility_type
+      - id
+      - name
+      - phone
+      - postal_code
+      - state_region
+      - status
+      - timezone
+      - updated_at
+      - version
+    FacilityCreateRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        facility_type:
+          $ref: '#/components/schemas/FacilityTypeEnum'
+        country:
+          $ref: '#/components/schemas/CountryEnum'
+        state_region:
+          type: string
+          minLength: 1
+          maxLength: 100
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address_line1:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address_line2:
+          type: string
+          maxLength: 255
+        postal_code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        phone:
+          type: string
+          maxLength: 32
+      required:
+      - address_line1
+      - city
+      - code
+      - country
+      - facility_type
+      - name
+      - postal_code
+      - state_region
+      - timezone
+    FacilityTypeEnum:
+      enum:
+      - hospital
+      - clinic
+      - diagnostic_center
+      - day_care
+      type: string
+      description: |-
+        * `hospital` - Hospital
+        * `clinic` - Clinic
+        * `diagnostic_center` - Diagnostic center
+        * `day_care` - Day-care center
+    Grant:
+      type: object
+      properties:
+        permission:
+          type: string
+        facility_id:
+          type: string
+          format: uuid
+          nullable: true
+        department_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - department_id
+      - facility_id
+      - permission
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 512
+      required:
+      - email
+      - password
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        legal_name:
+          type: string
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        country:
+          allOf:
+          - $ref: '#/components/schemas/CountryEnum'
+          readOnly: true
+        default_timezone:
+          type: string
+          readOnly: true
+        default_currency:
+          allOf:
+          - $ref: '#/components/schemas/DefaultCurrencyEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrganizationStatusEnum'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - country
+      - created_at
+      - default_currency
+      - default_timezone
+      - display_name
+      - id
+      - legal_name
+      - status
+      - updated_at
+      - version
+    OrganizationStatusEnum:
+      enum:
+      - active
+      - suspended
+      type: string
+      description: |-
+        * `active` - Active
+        * `suspended` - Suspended
+    OutcomeEnum:
+      enum:
+      - success
+      - denied
+      - failure
+      type: string
+      description: |-
+        * `success` - Success
+        * `denied` - Denied
+        * `failure` - Failure
+    PaginatedAuditEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+    PaginatedDepartmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Department'
+    PaginatedFacilityList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Facility'
+    PaginatedRoleAssignmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignment'
+    PaginatedRoleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    PaginatedStaffMemberList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffMember'
+    PatchedDepartmentUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        department_type:
+          $ref: '#/components/schemas/DepartmentTypeEnum'
+        status:
+          $ref: '#/components/schemas/ActiveStatusEnum'
+    PatchedFacilityUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        facility_type:
+          $ref: '#/components/schemas/FacilityTypeEnum'
+        state_region:
+          type: string
+          minLength: 1
+          maxLength: 100
+        city:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address_line1:
+          type: string
+          minLength: 1
+          maxLength: 255
+        address_line2:
+          type: string
+          maxLength: 255
+        postal_code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+        phone:
+          type: string
+          maxLength: 32
+        status:
+          $ref: '#/components/schemas/ActiveStatusEnum'
+    PatchedOrganizationUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        legal_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        default_timezone:
+          type: string
+          minLength: 1
+          maxLength: 64
+    PatchedStaffMemberUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        given_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        family_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        staff_type:
+          $ref: '#/components/schemas/StaffTypeEnum'
+        employment_status:
+          $ref: '#/components/schemas/EmploymentStatusEnum'
+        left_on:
+          type: string
+          format: date
+          nullable: true
+    Permission:
+      type: object
+      properties:
+        codename:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+      required:
+      - codename
+      - description
+    PermissionsEnum:
+      enum:
+      - access.assignments.manage
+      - access.roles.manage
+      - access.roles.view
+      - audit.view
+      - departments.manage
+      - departments.view
+      - facilities.manage
+      - facilities.view
+      - organization.manage
+      - organization.view
+      - platform.admin_console
+      - staff.credentials.verify
+      - staff.manage
+      - staff.view
+      type: string
+      description: |-
+        * `access.assignments.manage` - access.assignments.manage
+        * `access.roles.manage` - access.roles.manage
+        * `access.roles.view` - access.roles.view
+        * `audit.view` - audit.view
+        * `departments.manage` - departments.manage
+        * `departments.view` - departments.view
+        * `facilities.manage` - facilities.manage
+        * `facilities.view` - facilities.view
+        * `organization.manage` - organization.manage
+        * `organization.view` - organization.view
+        * `platform.admin_console` - platform.admin_console
+        * `staff.credentials.verify` - staff.credentials.verify
+        * `staff.manage` - staff.manage
+        * `staff.view` - staff.view
+    QualificationType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+          description: Blank when not country-bound
+      required:
+      - category
+      - code
+      - country
+      - id
+      - name
+    RevokeRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - reason
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        is_system:
+          type: boolean
+          readOnly: true
+        permissions:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - description
+      - id
+      - is_system
+      - name
+      - permissions
+    RoleAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        role:
+          type: string
+          format: uuid
+          readOnly: true
+        role_code:
+          type: string
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        department:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        valid_from:
+          type: string
+          format: date-time
+          readOnly: true
+        valid_until:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reason:
+          type: string
+          readOnly: true
+        granted_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        revoked_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        revocation_reason:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - department
+      - facility
+      - granted_by
+      - id
+      - reason
+      - revocation_reason
+      - revoked_at
+      - revoked_by
+      - role
+      - role_code
+      - user
+      - valid_from
+      - valid_until
+    RoleAssignmentCreateRequest:
+      type: object
+      properties:
+        user:
+          type: string
+          format: uuid
+        role:
+          type: string
+          format: uuid
+        facility:
+          type: string
+          format: uuid
+          nullable: true
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - reason
+      - role
+      - user
+    RoleCreateRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type: string
+          default: ''
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionsEnum'
+      required:
+      - code
+      - name
+      - permissions
+    Specialty:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - id
+      - name
+    StaffCredential:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        credential_type:
+          $ref: '#/components/schemas/CredentialTypeEnum'
+        registration_number:
+          type: string
+          maxLength: 64
+        issuing_authority:
+          type: string
+          maxLength: 255
+        jurisdiction:
+          type: string
+          description: ISO 3166-2, e.g. IN-KA or US-CA
+          maxLength: 16
+        valid_from:
+          type: string
+          format: date
+          nullable: true
+        expires_at:
+          type: string
+          format: date
+          nullable: true
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        verified_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - credential_type
+      - id
+      - issuing_authority
+      - jurisdiction
+      - registration_number
+      - verification_status
+      - verified_at
+      - verified_by
+    StaffCredentialRequest:
+      type: object
+      properties:
+        credential_type:
+          $ref: '#/components/schemas/CredentialTypeEnum'
+        registration_number:
+          type: string
+          minLength: 1
+          maxLength: 64
+        issuing_authority:
+          type: string
+          minLength: 1
+          maxLength: 255
+        jurisdiction:
+          type: string
+          minLength: 1
+          description: ISO 3166-2, e.g. IN-KA or US-CA
+          maxLength: 16
+        valid_from:
+          type: string
+          format: date
+          nullable: true
+        expires_at:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - credential_type
+      - issuing_authority
+      - jurisdiction
+      - registration_number
+    StaffDepartmentAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        department:
+          type: string
+          format: uuid
+        designation:
+          type: string
+          description: e.g. Consultant, Senior Resident
+          maxLength: 128
+        specialty:
+          type: string
+          format: uuid
+          nullable: true
+        is_primary:
+          type: boolean
+        valid_from:
+          type: string
+          format: date
+        valid_until:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - department
+      - designation
+      - id
+      - valid_from
+    StaffDepartmentAssignmentRequest:
+      type: object
+      properties:
+        department:
+          type: string
+          format: uuid
+        designation:
+          type: string
+          minLength: 1
+          description: e.g. Consultant, Senior Resident
+          maxLength: 128
+        specialty:
+          type: string
+          format: uuid
+          nullable: true
+        is_primary:
+          type: boolean
+        valid_from:
+          type: string
+          format: date
+        valid_until:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - department
+      - designation
+      - valid_from
+    StaffMember:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        employee_number:
+          type: string
+          readOnly: true
+        given_name:
+          type: string
+          readOnly: true
+        family_name:
+          type: string
+          readOnly: true
+        staff_type:
+          allOf:
+          - $ref: '#/components/schemas/StaffTypeEnum'
+          readOnly: true
+        employment_status:
+          allOf:
+          - $ref: '#/components/schemas/EmploymentStatusEnum'
+          readOnly: true
+        joined_on:
+          type: string
+          format: date
+          readOnly: true
+        left_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - employee_number
+      - employment_status
+      - family_name
+      - given_name
+      - id
+      - joined_on
+      - left_on
+      - staff_type
+      - updated_at
+      - user
+      - version
+    StaffMemberCreateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: true
+          minLength: 1
+          description: Creates a login identity (invitation pending).
+        employee_number:
+          type: string
+          minLength: 1
+          maxLength: 64
+        given_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        family_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        staff_type:
+          $ref: '#/components/schemas/StaffTypeEnum'
+        joined_on:
+          type: string
+          format: date
+      required:
+      - employee_number
+      - family_name
+      - given_name
+      - joined_on
+      - staff_type
+    StaffMemberDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        employee_number:
+          type: string
+          readOnly: true
+        given_name:
+          type: string
+          readOnly: true
+        family_name:
+          type: string
+          readOnly: true
+        staff_type:
+          allOf:
+          - $ref: '#/components/schemas/StaffTypeEnum'
+          readOnly: true
+        employment_status:
+          allOf:
+          - $ref: '#/components/schemas/EmploymentStatusEnum'
+          readOnly: true
+        joined_on:
+          type: string
+          format: date
+          readOnly: true
+        left_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        department_assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffDepartmentAssignment'
+          readOnly: true
+        qualifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffQualification'
+          readOnly: true
+        credentials:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffCredential'
+          readOnly: true
+      required:
+      - created_at
+      - credentials
+      - department_assignments
+      - email
+      - employee_number
+      - employment_status
+      - family_name
+      - given_name
+      - id
+      - joined_on
+      - left_on
+      - qualifications
+      - staff_type
+      - updated_at
+      - user
+      - version
+    StaffQualification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        qualification_type:
+          type: string
+          format: uuid
+        specialty:
+          type: string
+          format: uuid
+          nullable: true
+        institution:
+          type: string
+          maxLength: 255
+        year_awarded:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        verified_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - id
+      - institution
+      - qualification_type
+      - verification_status
+      - verified_at
+      - verified_by
+      - year_awarded
+    StaffQualificationRequest:
+      type: object
+      properties:
+        qualification_type:
+          type: string
+          format: uuid
+        specialty:
+          type: string
+          format: uuid
+          nullable: true
+        institution:
+          type: string
+          minLength: 1
+          maxLength: 255
+        year_awarded:
+          type: integer
+          maximum: 32767
+          minimum: 0
+      required:
+      - institution
+      - qualification_type
+      - year_awarded
+    StaffTypeEnum:
+      enum:
+      - doctor
+      - nurse
+      - pharmacist
+      - lab_technician
+      - radiologist
+      - dietitian
+      - administrator
+      - support
+      type: string
+      description: |-
+        * `doctor` - Doctor
+        * `nurse` - Nurse
+        * `pharmacist` - Pharmacist
+        * `lab_technician` - Laboratory technician
+        * `radiologist` - Radiologist
+        * `dietitian` - Dietitian
+        * `administrator` - Administrator
+        * `support` - Support staff
+    VerificationStatusEnum:
+      enum:
+      - unverified
+      - verified
+      - rejected
+      type: string
+      description: |-
+        * `unverified` - Unverified
+        * `verified` - Verified
+        * `rejected` - Rejected
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: hims_session

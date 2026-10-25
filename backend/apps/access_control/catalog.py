@@ -1,0 +1,57 @@
+"""Versioned permission catalog (spec 26.4).
+
+This is the single source of permission codenames; the database ``permissions`` table is
+synchronised from it after every migration. Add permissions here as domains are built, with
+separate permissions for viewing, editing, signing, approving and exporting (spec 13.2).
+"""
+
+
+class P:
+    ORGANIZATION_VIEW = "organization.view"
+    ORGANIZATION_MANAGE = "organization.manage"
+    FACILITIES_VIEW = "facilities.view"
+    FACILITIES_MANAGE = "facilities.manage"
+    DEPARTMENTS_VIEW = "departments.view"
+    DEPARTMENTS_MANAGE = "departments.manage"
+    STAFF_VIEW = "staff.view"
+    STAFF_MANAGE = "staff.manage"
+    STAFF_CREDENTIALS_VERIFY = "staff.credentials.verify"
+    ROLES_VIEW = "access.roles.view"
+    ROLES_MANAGE = "access.roles.manage"
+    ROLE_ASSIGNMENTS_MANAGE = "access.assignments.manage"
+    AUDIT_VIEW = "audit.view"
+    ADMIN_CONSOLE = "platform.admin_console"
+
+
+PERMISSIONS: dict[str, str] = {
+    P.ADMIN_CONSOLE: "Use the Django admin operations console (all changes are audited)",
+    P.ORGANIZATION_VIEW: "View organization configuration",
+    P.ORGANIZATION_MANAGE: "Change organization configuration",
+    P.FACILITIES_VIEW: "View facilities",
+    P.FACILITIES_MANAGE: "Create facilities (organization-wide) and change them",
+    P.DEPARTMENTS_VIEW: "View departments",
+    P.DEPARTMENTS_MANAGE: "Create and change departments",
+    P.STAFF_VIEW: "View the staff directory, qualifications and credentials",
+    P.STAFF_MANAGE: "Onboard staff and maintain their qualifications and credentials",
+    P.STAFF_CREDENTIALS_VERIFY: "Verify staff qualifications and professional credentials",
+    P.ROLES_VIEW: "View roles and role assignments",
+    P.ROLES_MANAGE: "Create roles and change role permissions",
+    P.ROLE_ASSIGNMENTS_MANAGE: "Grant and revoke role assignments",
+    P.AUDIT_VIEW: "Search the audit log",
+}
+
+# Roles created for every new organization at provisioning. Clinical roles (doctor, nurse,
+# pharmacist...) are added with their domains, after clinical governance approves the
+# permission matrix (spec 26.4).
+SYSTEM_ROLES: dict[str, dict] = {
+    "organization-administrator": {
+        "name": "Organization administrator",
+        "description": "Full administrative access to organization configuration.",
+        "permissions": [code for code in PERMISSIONS if code != P.AUDIT_VIEW],
+    },
+    "auditor": {
+        "name": "Auditor / compliance officer",
+        "description": "Read access to the audit log.",
+        "permissions": [P.AUDIT_VIEW],
+    },
+}
