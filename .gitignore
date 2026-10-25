@@ -41,3 +41,6 @@ backend/media/
 
 # Personal local notes with dev passwords (see login.md)
 login.md
+
+# TypeScript incremental build cache
+*.tsbuildinfo
