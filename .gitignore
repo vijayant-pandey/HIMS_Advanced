@@ -38,3 +38,6 @@ Thumbs.db
 # Generated
 backend/staticfiles/
 backend/media/
+
+# Personal local notes with dev passwords (see login.md)
+login.md
