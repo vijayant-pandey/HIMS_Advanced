@@ -8,6 +8,7 @@ on:
     branches: [develop, qa, staging, main, "hotfix/**"]
   push:
     branches: [develop, qa, staging, main]
+  workflow_dispatch: # "Run workflow" button in the Actions tab
 
 permissions:
   contents: read
