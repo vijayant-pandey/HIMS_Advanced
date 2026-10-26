@@ -1,0 +1,12 @@
+{
+  "blue": { "label": "White & Blue", "primary": "#1565c0", "dark": "#0d47a1", "tint": "#e3f2fd" },
+  "red": { "label": "White & Red", "primary": "#c62828", "dark": "#8e0000", "tint": "#ffebee" },
+  "green": { "label": "White & Green", "primary": "#2e7d32", "dark": "#1b5e20", "tint": "#e8f5e9" },
+  "mono": { "label": "Minimal Black & White", "primary": "#111111", "dark": "#000000", "tint": "#f2f2f2" },
+  "purple": { "label": "White & Purple", "primary": "#7e22ce", "dark": "#6b21a8", "tint": "#faf5ff" },
+  "teal": { "label": "White & Teal", "primary": "#0f766e", "dark": "#115e59", "tint": "#f0fdfa" },
+  "orange": { "label": "White & Orange", "primary": "#c2410c", "dark": "#9a3412", "tint": "#fff7ed" },
+  "indigo": { "label": "White & Indigo", "primary": "#4338ca", "dark": "#3730a3", "tint": "#eef2ff" },
+  "rose": { "label": "White & Rose", "primary": "#be123c", "dark": "#9f1239", "tint": "#fff1f2" },
+  "slate": { "label": "White & Slate", "primary": "#334155", "dark": "#1e293b", "tint": "#f1f5f9" }
+}

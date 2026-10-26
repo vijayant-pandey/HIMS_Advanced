@@ -60,7 +60,7 @@ export function LoginPage() {
             helperText={errors.password?.message}
             {...register("password")}
           />
-          <Button type="submit" variant="contained" size="large" disabled={login.isPending}>
+          <Button type="submit" variant="contained" disabled={login.isPending}>
             Sign in
           </Button>
           <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ alignSelf: "center" }}>

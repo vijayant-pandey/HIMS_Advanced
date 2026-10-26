@@ -41,7 +41,7 @@ export function ForgotPasswordPage() {
               helperText={errors.email?.message}
               {...register("email")}
             />
-            <Button type="submit" variant="contained" size="large" disabled={request.isPending}>
+            <Button type="submit" variant="contained" disabled={request.isPending}>
               Send reset link
             </Button>
           </Stack>

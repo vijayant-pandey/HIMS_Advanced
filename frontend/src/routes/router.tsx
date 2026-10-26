@@ -1,5 +1,6 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
+import { HomePage } from "../features/access/HomePage";
 import { ActivatePage } from "../features/auth/ActivatePage";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
 import { LoginPage } from "../features/auth/LoginPage";
@@ -20,7 +21,7 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { index: true, element: <Navigate to="/facilities" replace /> },
+          { index: true, element: <HomePage /> },
           { path: "facilities", element: <FacilitiesPage /> },
           { path: "staff", element: <StaffPage /> },
         ],

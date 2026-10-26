@@ -9,6 +9,7 @@ import type {
   PasswordResetDetails,
   PasswordResetRequested,
   LoginRequest,
+  NoAccessReference,
 } from "../../api/types";
 
 export const currentUserKey = ["auth", "me"] as const;
@@ -113,5 +114,12 @@ export function useConfirmPasswordReset() {
       queryClient.clear();
       queryClient.setQueryData(currentUserKey, null);
     },
+  });
+}
+
+/** Records an "access.none_assigned" audit event and returns its reference number (HIMS-UI-002). */
+export function useReportNoAccess() {
+  return useMutation<NoAccessReference, ApiError, { page: string }>({
+    mutationFn: (body) => api.post<NoAccessReference>("/auth/no-access-report/", body),
   });
 }

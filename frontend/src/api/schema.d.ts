@@ -126,6 +126,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/no-access-report/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Called by the app when a signed-in user has no role yet (HIMS-UI-002).
+         *
+         *     Records an ``access.none_assigned`` audit event and returns its reference number (the
+         *     request ID), which the "no access yet" page shows so an administrator can find the event.
+         */
+        post: operations["auth_no_access_report_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/password-reset/confirm/": {
         parameters: {
             query?: never;
@@ -766,6 +788,14 @@ export interface components {
             email: string;
             password: string;
         };
+        NoAccessReference: {
+            /** @description Quote this to an administrator or support. */
+            reference: string;
+        };
+        NoAccessReportRequest: {
+            /** @default  */
+            page: string;
+        };
         Organization: {
             /** Format: uuid */
             readonly id: string;
@@ -1365,6 +1395,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CurrentUser"];
+                };
+            };
+        };
+    };
+    auth_no_access_report_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["NoAccessReportRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoAccessReference"];
                 };
             };
         };

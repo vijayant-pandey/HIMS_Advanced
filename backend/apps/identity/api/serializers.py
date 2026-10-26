@@ -54,3 +54,11 @@ class CurrentUserSerializer(serializers.Serializer):
     display_name = serializers.CharField()
     staff_member_id = serializers.UUIDField(allow_null=True)
     grants = GrantSerializer(many=True, help_text="For navigation only; the API enforces access.")
+
+
+class NoAccessReportSerializer(serializers.Serializer):
+    page = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+
+
+class NoAccessReferenceSerializer(serializers.Serializer):
+    reference = serializers.CharField(help_text="Quote this to an administrator or support.")

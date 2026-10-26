@@ -17,3 +17,4 @@ export type InvitationAcceptRequest = Schemas["InvitationAcceptRequest"];
 export type PasswordResetDetails = Schemas["PasswordResetDetails"];
 export type PasswordResetConfirmRequest = Schemas["PasswordResetConfirmRequest"];
 export type PasswordResetRequested = Schemas["PasswordResetRequested"];
+export type NoAccessReference = Schemas["NoAccessReference"];

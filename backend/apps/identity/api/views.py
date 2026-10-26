@@ -22,6 +22,8 @@ from .serializers import (
     InvitationDetailsSerializer,
     InvitationTokenSerializer,
     LoginSerializer,
+    NoAccessReferenceSerializer,
+    NoAccessReportSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetDetailsSerializer,
     PasswordResetRequestedSerializer,
@@ -220,3 +222,30 @@ class CurrentUserView(APIView):
     @extend_schema(responses={200: CurrentUserSerializer})
     def get(self, request):
         return Response(CurrentUserSerializer(_current_user_payload(request.user)).data)
+
+
+class NoAccessReportView(APIView):
+    """Called by the app when a signed-in user has no role yet (HIMS-UI-002).
+
+    Records an ``access.none_assigned`` audit event and returns its reference number (the
+    request ID), which the "no access yet" page shows so an administrator can find the event.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=NoAccessReportSerializer, responses={201: NoAccessReferenceSerializer})
+    def post(self, request):
+        serializer = NoAccessReportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        event = record_audit_event(
+            action=AuditAction.ACCESS_NONE_ASSIGNED,
+            resource_type="user",
+            resource_id=request.user.pk,
+            request=request,
+            outcome=AuditEvent.Outcome.DENIED,
+            metadata={
+                "page": serializer.validated_data["page"],
+                "grant_count": len(list_grants(request.user)),
+            },
+        )
+        return Response({"reference": event.request_id}, status=status.HTTP_201_CREATED)
