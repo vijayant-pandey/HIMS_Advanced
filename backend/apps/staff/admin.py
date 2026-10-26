@@ -1,5 +1,6 @@
 from django.contrib import admin, messages
 
+from apps.identity.admin import send_invitations
 from common.admin.options import HimsInline, HimsModelAdmin
 from common.exceptions import DomainError
 
@@ -75,6 +76,17 @@ class StaffMemberAdmin(HimsModelAdmin):
         "updated_at",
     )
     inlines = [StaffDepartmentAssignmentInline, StaffQualificationInline, StaffCredentialInline]
+    actions = ["send_invitation"]
+
+    @admin.action(description="Send invitation email to selected staff")
+    def send_invitation(self, request, queryset):
+        without_login = queryset.filter(user__isnull=True).count()
+        if without_login:
+            self.message_user(
+                request, f"{without_login} selected staff have no login account.", messages.WARNING
+            )
+        users = [staff.user for staff in queryset.select_related("user") if staff.user_id]
+        send_invitations(self, request, users)
 
     def save_model(self, request, obj, form, change):
         status_changed = change and "employment_status" in form.changed_data

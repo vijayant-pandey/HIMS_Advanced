@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.forms import AdminUserCreationForm
 from django.contrib.auth.forms import UserChangeForm as DjangoUserChangeForm
@@ -7,9 +7,38 @@ from django.core.exceptions import ValidationError
 
 from apps.access_control.models import RoleAssignment
 from apps.audit.services import record_audit_event
-from common.admin.options import HimsInline, HimsModelAdmin
+from common.admin.options import HimsInline, HimsModelAdmin, ReadOnlyModelAdmin
+from common.exceptions import DomainError
 
-from .models import User
+from .invitations import issue_invitation
+from .models import Invitation, User
+
+
+def send_invitations(model_admin, request, users) -> None:
+    """Shared admin action body: (re)send activation emails, reporting per-user problems."""
+    sent = 0
+    for user in users:
+        try:
+            issue_invitation(user=user, actor=request.user, request=request)
+            sent += 1
+        except DomainError as exc:
+            model_admin.message_user(request, f"{user.email}: {exc.detail}", messages.WARNING)
+    if sent:
+        model_admin.message_user(request, f"Sent {sent} invitation email(s).")
+
+
+@admin.register(Invitation)
+class InvitationAdmin(ReadOnlyModelAdmin):
+    """Status only. Links cannot be recovered here: tokens are never stored."""
+
+    list_display = ("user", "status", "created_at", "expires_at", "accepted_at", "created_by")
+    list_filter = (
+        ("accepted_at", admin.EmptyFieldListFilter),
+        ("revoked_at", admin.EmptyFieldListFilter),
+    )
+    search_fields = ("user__email", "user__display_name")
+    readonly_fields = ("status",)
+
 
 # HIMS authorization lives in apps.access_control (roles + scoped assignments); Django's
 # groups/permissions tables are unused, so their admin page would only mislead.
@@ -77,6 +106,11 @@ class UserAdmin(HimsModelAdmin, DjangoUserAdmin):
         ),
     )
     inlines = [RoleAssignmentInline]
+    actions = ["send_invitation"]
+
+    @admin.action(description="Send invitation email (activate account)")
+    def send_invitation(self, request, queryset):
+        send_invitations(self, request, queryset)
 
     def user_change_password(self, request, id, form_url=""):
         response = super().user_change_password(request, id, form_url)

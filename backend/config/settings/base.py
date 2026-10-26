@@ -175,6 +175,7 @@ REST_FRAMEWORK = {
         "anon": env.str("HIMS_THROTTLE_ANON", default="60/min"),
         "user": env.str("HIMS_THROTTLE_USER", default="1200/min"),
         "login": env.str("HIMS_THROTTLE_LOGIN", default="10/min"),
+        "invitation": env.str("HIMS_THROTTLE_INVITATION", default="20/min"),
     },
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
 }
@@ -206,6 +207,19 @@ HIMS_CELERY_QUEUE_PREFIX = HIMS_DEPLOYMENT_ID
 # --- Platform services -------------------------------------------------------------------
 HIMS_OUTBOX_BATCH_SIZE = env.int("HIMS_OUTBOX_BATCH_SIZE", default=100)
 HIMS_OUTBOX_MAX_ATTEMPTS = env.int("HIMS_OUTBOX_MAX_ATTEMPTS", default=12)
+# Without a broker (local development) events are processed in-process after commit.
+HIMS_OUTBOX_DISPATCH_INLINE = env.bool("HIMS_OUTBOX_DISPATCH_INLINE", default=not REDIS_URL)
+
+# --- Invitations and email (HIMS-IAM-003) ------------------------------------------------
+# Public URL of this deployment's React app; activation links point here.
+HIMS_APP_BASE_URL = env.str("HIMS_APP_BASE_URL", default="http://localhost:5175")
+HIMS_INVITATION_TTL_HOURS = env.int("HIMS_INVITATION_TTL_HOURS", default=72)
+# Console backend prints emails to the backend output. A real provider (e.g. Amazon SES)
+# is configured per environment before go-live (HIMS-OPS-011).
+EMAIL_BACKEND = env.str(
+    "DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = env.str("DJANGO_DEFAULT_FROM_EMAIL", default="HIMS <no-reply@hims.invalid>")
 HIMS_IDEMPOTENCY_RETENTION_HOURS = env.int("HIMS_IDEMPOTENCY_RETENTION_HOURS", default=48)
 
 # --- Logging: structured, PHI-minimised (spec 13.4, 27.2) --------------------------------

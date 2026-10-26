@@ -29,8 +29,18 @@ CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"
 
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,
-    "DEFAULT_THROTTLE_RATES": {"anon": "10000/min", "user": "10000/min", "login": "5/min"},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10000/min",
+        "user": "10000/min",
+        "login": "5/min",
+        "invitation": "10000/min",
+    },
 }
+
+# Tests drive outbox processing explicitly (or opt in to inline mode per test).
+HIMS_OUTBOX_DISPATCH_INLINE = False
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+HIMS_APP_BASE_URL = "http://app.test"
 
 LOGGING = {"version": 1, "disable_existing_loggers": False}
 

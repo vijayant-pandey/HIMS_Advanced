@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api, isUnauthenticated } from "../../api/client";
-import type { CurrentUser, LoginRequest } from "../../api/types";
+import type {
+  CurrentUser,
+  InvitationAcceptRequest,
+  InvitationDetails,
+  LoginRequest,
+} from "../../api/types";
 
 export const currentUserKey = ["auth", "me"] as const;
 
@@ -43,6 +48,32 @@ export function useLogout() {
       // Drop every cached clinical/administrative response with the session.
       queryClient.clear();
       queryClient.setQueryData(currentUserKey, null);
+    },
+  });
+}
+
+/** Checks an activation link so the page can greet the person. Changes nothing. */
+export function useInvitationDetails(token: string | null) {
+  return useQuery<InvitationDetails, ApiError>({
+    queryKey: ["auth", "invitation", token],
+    queryFn: async () => {
+      await api.get("/auth/csrf/");
+      return api.post<InvitationDetails>("/auth/invitations/inspect/", { token });
+    },
+    enabled: !!token,
+    retry: false,
+    staleTime: Infinity,
+  });
+}
+
+/** Sets the password, activates the account and signs the person in. */
+export function useAcceptInvitation() {
+  const queryClient = useQueryClient();
+  return useMutation<CurrentUser, ApiError, InvitationAcceptRequest>({
+    mutationFn: (body) => api.post<CurrentUser>("/auth/invitations/accept/", body),
+    onSuccess: (user) => {
+      queryClient.clear();
+      queryClient.setQueryData(currentUserKey, user);
     },
   });
 }

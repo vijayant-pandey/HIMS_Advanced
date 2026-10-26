@@ -74,6 +74,23 @@ def dispatch_pending(
     return len(events)
 
 
+def dispatch_inline(event_id) -> None:
+    """Process an event in-process right after its transaction commits.
+
+    Used only when no broker is configured (local development: HIMS_OUTBOX_DISPATCH_INLINE).
+    If a handler fails, the event stays pending so a dispatcher can retry it later; handler
+    deduplication makes a later re-run safe.
+    """
+    try:
+        process_event(event_id)
+    except Exception:
+        logger.exception("Inline outbox processing failed", extra={"event_id": str(event_id)})
+        return
+    OutboxEvent.objects.filter(pk=event_id, status=OutboxEvent.Status.PENDING).update(
+        status=OutboxEvent.Status.PUBLISHED, published_at=timezone.now()
+    )
+
+
 def process_event(event_id) -> None:
     """Run every registered handler for an event, each at most once. Raises on failure so the
     Celery task retries; already-completed handlers are skipped on retry."""

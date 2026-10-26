@@ -12,9 +12,17 @@ from rest_framework.views import APIView
 from apps.access_control.selectors import list_grants
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction, record_audit_event
+from apps.organizations.models import Organization
 from common.exceptions import DomainError
 
-from .serializers import CurrentUserSerializer, LoginSerializer
+from .. import invitations
+from .serializers import (
+    CurrentUserSerializer,
+    InvitationAcceptSerializer,
+    InvitationDetailsSerializer,
+    InvitationTokenSerializer,
+    LoginSerializer,
+)
 
 
 class InvalidCredentials(DomainError):
@@ -73,6 +81,59 @@ class LoginView(APIView):
         login(request._request, user)  # rotates the session key (prevents fixation)
         record_audit_event(
             action=AuditAction.AUTH_LOGIN, resource_type="session", actor=user, request=request
+        )
+        return Response(CurrentUserSerializer(_current_user_payload(user)).data)
+
+
+class _PublicInvitationView(APIView):
+    """Invitation endpoints are used before the person has a password, so they are public,
+    CSRF-protected and rate limited. The token comes in the body, never in the URL."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "invitation"
+
+
+class InvitationInspectView(_PublicInvitationView):
+    @extend_schema(request=InvitationTokenSerializer, responses={200: InvitationDetailsSerializer})
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = InvitationTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        invitation = invitations.inspect_invitation(serializer.validated_data["token"])
+        organization = Organization.objects.only("display_name").first()
+        return Response(
+            InvitationDetailsSerializer(
+                {
+                    "email": invitation.user.email,
+                    "display_name": invitation.user.display_name,
+                    "organization_name": organization.display_name if organization else "HIMS",
+                    "expires_at": invitation.expires_at,
+                }
+            ).data
+        )
+
+
+class InvitationAcceptView(_PublicInvitationView):
+    @extend_schema(request=InvitationAcceptSerializer, responses={200: CurrentUserSerializer})
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = InvitationAcceptSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = invitations.accept_invitation(
+            token=serializer.validated_data["token"],
+            password=serializer.validated_data["password"],
+            request=request,
+        )
+        # Activation signs the person in, like a normal login (session key rotated).
+        login(request._request, user, backend="django.contrib.auth.backends.ModelBackend")
+        record_audit_event(
+            action=AuditAction.AUTH_LOGIN,
+            resource_type="session",
+            actor=user,
+            request=request,
+            metadata={"via": "invitation"},
         )
         return Response(CurrentUserSerializer(_current_user_payload(user)).data)
 

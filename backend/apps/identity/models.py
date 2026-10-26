@@ -53,3 +53,45 @@ class User(UUIDPrimaryKeyModel, AbstractBaseUser):
 
     def __str__(self) -> str:
         return self.display_name
+
+
+class Invitation(UUIDPrimaryKeyModel):
+    """An invitation for a user to activate their account by choosing a password (spec 4.4).
+
+    The emailed link carries a signed reference to this row (see invitations.make_token); the
+    secret itself is never stored. Single use, time-limited, and revoked when a newer
+    invitation is issued for the same user.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="invitations")
+    created_by = models.ForeignKey(
+        User, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "user_invitations"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=models.Q(accepted_at__isnull=True, revoked_at__isnull=True),
+                name="user_invitation_one_open",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Invitation for {self.user_id} ({self.status})"
+
+    @property
+    def status(self) -> str:
+        if self.accepted_at:
+            return "accepted"
+        if self.revoked_at:
+            return "revoked"
+        if self.expires_at <= timezone.now():
+            return "expired"
+        return "open"

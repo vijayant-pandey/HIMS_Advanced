@@ -30,6 +30,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-PLAT-017 | Django admin operations console: RBAC-gated, audited, no deletion (ADR-016) | Done |
 | HIMS-SEC-015 | Console network restriction (IP allow-list/VPN) before enabling outside local | To do |
 | HIMS-OPS-010 | Static files for admin/API docs in managed environments (WhiteNoise or S3/CloudFront) | To do |
+| HIMS-OPS-011 | Real email provider per hosted environment (e.g. Amazon SES / Render-compatible SMTP); console email locally | To do |
 
 ## EPIC HIMS-ORG — Organization and facilities
 
@@ -50,7 +51,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 |---|---|---|
 | HIMS-IAM-001 | Custom user (UUID, case-insensitive email), Argon2, password policy | Done |
 | HIMS-IAM-002 | Session login/logout/me, CSRF, rate limiting, non-enumerating errors, audit | Done |
-| HIMS-IAM-003 | Invitation and account activation (consumes `staff.member.created`) | To do |
+| HIMS-IAM-003 | Invitation and account activation (consumes `staff.member.created`) | Done |
 | HIMS-IAM-004 | Password reset (non-enumerating, time-limited single-use tokens) | To do |
 | HIMS-IAM-005 | MFA (TOTP/WebAuthn) mandatory for privileged roles | To do |
 | HIMS-IAM-006 | Invalidate all sessions on suspension/termination/password change | To do |

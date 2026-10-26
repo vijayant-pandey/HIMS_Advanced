@@ -1,5 +1,6 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
+import { ActivatePage } from "../features/auth/ActivatePage";
 import { LoginPage } from "../features/auth/LoginPage";
 import { RequireAuth } from "../features/auth/RequireAuth";
 import { FacilitiesPage } from "../features/facilities/FacilitiesPage";
@@ -8,6 +9,7 @@ import { AppShell } from "../layouts/AppShell";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  { path: "/activate", element: <ActivatePage /> },
   {
     element: <RequireAuth />,
     children: [

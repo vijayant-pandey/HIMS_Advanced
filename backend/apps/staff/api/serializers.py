@@ -158,3 +158,8 @@ class StaffMemberUpdateSerializer(serializers.Serializer):
 class CredentialVerificationSerializer(serializers.Serializer):
     verified = serializers.BooleanField()
     reason = serializers.CharField(max_length=2000, required=False, allow_blank=True, default="")
+
+
+class InvitationSentSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    expires_at = serializers.DateTimeField()
