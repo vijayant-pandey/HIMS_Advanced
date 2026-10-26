@@ -213,3 +213,4 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 | 2026-10-26 | Password reset (HIMS-IAM-004); hospital roles catalog + RBAC document (HIMS-STAFF-009); HIMS-UI-002 tracked | 3, 4.2, 4.3, 4.4, 13.1, 26.4 |
 | 2026-10-26 | HIMS-UI-002: no-access welcome page (audited reference), friendlier 403, 10 themes, compact modern design | 13.4, 15.2 |
 | 2026-10-26 | HIMS-IAM-006: end all sessions on suspension/termination/deactivation, password change and admin sign-out; session register; nightly expired-session cleanup | 4.4, 13.2, 13.5, 14 |
+| 2026-10-26 | Runbook: updating every hospital database after a merge (docs/workflows/database-migrations.md) | 26.9, 28.7, 31 |
