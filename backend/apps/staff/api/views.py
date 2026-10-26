@@ -5,12 +5,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.access_control.catalog import P
+from apps.identity.invitations import issue_invitation
+from common.exceptions import ConflictError
 from common.idempotency.decorators import idempotent
 
 from .. import services
 from ..models import QualificationType, Specialty, StaffCredential, StaffMember
 from .serializers import (
     CredentialVerificationSerializer,
+    InvitationSentSerializer,
     QualificationTypeSerializer,
     SpecialtySerializer,
     StaffCredentialSerializer,
@@ -46,6 +49,7 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         "add_department_assignment": P.STAFF_MANAGE,
         "add_qualification": P.STAFF_MANAGE,
         "add_credential": P.STAFF_MANAGE,
+        "send_invitation": P.STAFF_MANAGE,
     }
     http_method_names = ["get", "post", "patch", "head"]
 
@@ -151,6 +155,23 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
             actor=request.user, staff=staff, request=request, **serializer.validated_data
         )
         return Response(StaffCredentialSerializer(credential).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses={202: InvitationSentSerializer})
+    @action(detail=True, methods=["post"], url_path="invitation")
+    def send_invitation(self, request, pk=None):
+        """(Re)send the account activation email. Any earlier open invitation stops working."""
+        staff = self.get_object()
+        if staff.user_id is None:
+            raise ConflictError(
+                "This staff member has no login account. Add an email first.", code="NO_LOGIN"
+            )
+        invitation = issue_invitation(user=staff.user, actor=request.user, request=request)
+        return Response(
+            InvitationSentSerializer(
+                {"email": staff.user.email, "expires_at": invitation.expires_at}
+            ).data,
+            status=status.HTTP_202_ACCEPTED,
+        )
 
 
 class StaffCredentialViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):

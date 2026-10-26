@@ -28,7 +28,7 @@ def publish_event(
     """
     if not transaction.get_connection().in_atomic_block:
         raise OutboxUsageError("publish_event must run inside the aggregate's transaction.")
-    return OutboxEvent.objects.create(
+    event = OutboxEvent.objects.create(
         event_type=event_type,
         event_version=event_version,
         customer_id=settings.HIMS_DEPLOYMENT_ID,
@@ -39,3 +39,8 @@ def publish_event(
         causation_id=causation_id,
         payload=payload,
     )
+    if settings.HIMS_OUTBOX_DISPATCH_INLINE:
+        from .dispatcher import dispatch_inline
+
+        transaction.on_commit(lambda: dispatch_inline(event.pk))
+    return event

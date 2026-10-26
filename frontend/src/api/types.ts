@@ -12,3 +12,5 @@ export type PaginatedFacilityList = Schemas["PaginatedFacilityList"];
 export type StaffMember = Schemas["StaffMember"];
 export type PaginatedStaffMemberList = Schemas["PaginatedStaffMemberList"];
 export type LoginRequest = Schemas["LoginRequest"];
+export type InvitationDetails = Schemas["InvitationDetails"];
+export type InvitationAcceptRequest = Schemas["InvitationAcceptRequest"];

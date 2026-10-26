@@ -20,6 +20,12 @@
   workflow needs per-aggregate ordering, add sequence numbers to that aggregate's events rather
   than relying on the queue.
 
+- **Inline mode (local development only).** When no broker is configured
+  (`HIMS_OUTBOX_DISPATCH_INLINE`, default on when `REDIS_URL` is empty), each event is processed
+  in-process right after its transaction commits. A failure leaves the event `pending` for a later
+  dispatcher run. Handler deduplication is unchanged, so this never causes double processing.
+  Managed environments run with a broker and the normal dispatcher.
+
 ## Follow-ups
 Alarms on oldest pending age, dead count and dispatch lag (HIMS-OPS-004); retention and archival
 of published rows (HIMS-PLAT-014).

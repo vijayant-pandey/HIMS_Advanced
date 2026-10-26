@@ -76,6 +76,52 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/auth/invitations/accept/:
+    post:
+      operationId: auth_invitations_accept_create
+      description: |-
+        Invitation endpoints are used before the person has a password, so they are public,
+        CSRF-protected and rate limited. The token comes in the body, never in the URL.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationAcceptRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+          description: ''
+  /api/v1/auth/invitations/inspect/:
+    post:
+      operationId: auth_invitations_inspect_create
+      description: |-
+        Invitation endpoints are used before the person has a password, so they are public,
+        CSRF-protected and rate limited. The token comes in the body, never in the URL.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationTokenRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationDetails'
+          description: ''
   /api/v1/auth/login/:
     post:
       operationId: auth_login_create
@@ -784,6 +830,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/StaffDepartmentAssignment'
           description: ''
+  /api/v1/staff/{id}/invitation/:
+    post:
+      operationId: staff_invitation_create
+      description: (Re)send the account activation email. Any earlier open invitation
+        stops working.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff member.
+        required: true
+      tags:
+      - staff
+      security:
+      - sessionAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationSent'
+          description: ''
   /api/v1/staff/{id}/qualifications/:
     post:
       operationId: staff_qualifications_create
@@ -1233,6 +1303,60 @@ components:
       - department_id
       - facility_id
       - permission
+    InvitationAcceptRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 512
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 512
+      required:
+      - password
+      - token
+    InvitationDetails:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        organization_name:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - display_name
+      - email
+      - expires_at
+      - organization_name
+    InvitationSent:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - email
+      - expires_at
+    InvitationTokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 512
+      required:
+      - token
     LoginRequest:
       type: object
       properties:

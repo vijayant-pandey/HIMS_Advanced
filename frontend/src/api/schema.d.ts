@@ -38,6 +38,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/invitations/accept/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Invitation endpoints are used before the person has a password, so they are public,
+         *     CSRF-protected and rate limited. The token comes in the body, never in the URL.
+         */
+        post: operations["auth_invitations_accept_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/invitations/inspect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Invitation endpoints are used before the person has a password, so they are public,
+         *     CSRF-protected and rate limited. The token comes in the body, never in the URL.
+         */
+        post: operations["auth_invitations_inspect_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login/": {
         parameters: {
             query?: never;
@@ -414,6 +454,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/staff/{id}/invitation/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description (Re)send the account activation email. Any earlier open invitation stops working. */
+        post: operations["staff_invitation_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff/{id}/qualifications/": {
         parameters: {
             query?: never;
@@ -601,6 +658,27 @@ export interface components {
             facility_id: string | null;
             /** Format: uuid */
             department_id: string | null;
+        };
+        InvitationAcceptRequest: {
+            token: string;
+            password: string;
+        };
+        InvitationDetails: {
+            /** Format: email */
+            email: string;
+            display_name: string;
+            organization_name: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        InvitationSent: {
+            /** Format: email */
+            email: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        InvitationTokenRequest: {
+            token: string;
         };
         LoginRequest: {
             /** Format: email */
@@ -1072,6 +1150,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    auth_invitations_accept_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationAcceptRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentUser"];
+                };
+            };
+        };
+    };
+    auth_invitations_inspect_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationTokenRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationDetails"];
+                };
             };
         };
     };
@@ -1784,6 +1908,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffDepartmentAssignment"];
+                };
+            };
+        };
+    };
+    staff_invitation_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this staff member. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationSent"];
                 };
             };
         };

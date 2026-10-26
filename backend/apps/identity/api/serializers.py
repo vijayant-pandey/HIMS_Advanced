@@ -6,6 +6,21 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=512, trim_whitespace=False, write_only=True)
 
 
+class InvitationTokenSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=512, trim_whitespace=True)
+
+
+class InvitationAcceptSerializer(InvitationTokenSerializer):
+    password = serializers.CharField(max_length=512, trim_whitespace=False, write_only=True)
+
+
+class InvitationDetailsSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    display_name = serializers.CharField()
+    organization_name = serializers.CharField()
+    expires_at = serializers.DateTimeField()
+
+
 class GrantSerializer(serializers.Serializer):
     permission = serializers.CharField()
     facility_id = serializers.UUIDField(allow_null=True)
