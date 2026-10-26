@@ -59,8 +59,14 @@ def create_role(*, actor, organization, code, name, description="", permissions=
 
 @transaction.atomic
 def create_system_roles(organization) -> dict[str, Role]:
+    """Create any missing system roles (idempotent). A role code an organization already uses
+    for its own custom role is left untouched."""
     roles = {}
     for code, definition in SYSTEM_ROLES.items():
+        existing = Role.objects.filter(organization=organization, code=code).first()
+        if existing is not None:
+            roles[code] = existing
+            continue
         role = create_role(
             actor=None,
             organization=organization,
@@ -106,6 +112,10 @@ def validate_role_assignment(
 def sync_system_roles() -> None:
     """Keep system roles' permissions in line with ``SYSTEM_ROLES`` as the catalog grows
     (e.g. a new permission added to the administrator role after provisioning)."""
+    from apps.organizations.models import Organization
+
+    for organization in Organization.objects.all():
+        create_system_roles(organization)  # roles added to the catalog after provisioning
     for code, definition in SYSTEM_ROLES.items():
         wanted = Permission.objects.filter(codename__in=definition["permissions"])
         for role in Role.objects.filter(code=code, is_system=True):

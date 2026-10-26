@@ -61,6 +61,45 @@ class QualificationType(UUIDPrimaryKeyModel, TimeStampedModel):
         return self.name
 
 
+class Designation(UUIDPrimaryKeyModel, TimeStampedModel):
+    """Controlled designation catalog: job titles on a junior-to-senior ladder (HIMS-STAFF-009).
+
+    A designation is a job title, not a permission: what someone may do comes from role
+    assignments (docs/status/Hospital_Departments_and_Doctors_RBAC.MD). ``seniority`` runs from
+    1 (entry level) to 10 (organization leadership) and is comparable within a category.
+    """
+
+    class Category(models.TextChoices):
+        MEDICAL = "medical", "Medical (doctors)"
+        NURSING = "nursing", "Nursing"
+        PHARMACY = "pharmacy", "Pharmacy"
+        ALLIED_HEALTH = "allied_health", "Allied health & technicians"
+        ADMINISTRATION = "administration", "Administration & management"
+        SUPPORT = "support", "Support services"
+        OTHER = "other", "Other"
+
+    code = models.SlugField(max_length=64, unique=True)
+    name = models.CharField(max_length=255)
+    category = models.CharField(max_length=32, choices=Category.choices)
+    country = models.CharField(max_length=2, blank=True, help_text="Blank when used in both")
+    seniority = models.PositiveSmallIntegerField(help_text="1 = entry level ... 10 = leadership")
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "designations"
+        ordering = ["category", "seniority", "name"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(seniority__gte=1) & Q(seniority__lte=10),
+                name="designation_seniority_range",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.country})" if self.country else self.name
+
+
 class StaffMember(OrganizationOwnedModel, VersionedModel):
     class StaffType(models.TextChoices):
         DOCTOR = "doctor", "Doctor"
@@ -119,7 +158,7 @@ class StaffDepartmentAssignment(OrganizationOwnedModel):
     department = models.ForeignKey(
         "facilities.Department", on_delete=models.PROTECT, related_name="staff_assignments"
     )
-    designation = models.CharField(max_length=128, help_text="e.g. Consultant, Senior Resident")
+    designation = models.ForeignKey(Designation, on_delete=models.PROTECT, related_name="+")
     specialty = models.ForeignKey(
         Specialty, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )

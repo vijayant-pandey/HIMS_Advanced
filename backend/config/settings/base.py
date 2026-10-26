@@ -176,6 +176,7 @@ REST_FRAMEWORK = {
         "user": env.str("HIMS_THROTTLE_USER", default="1200/min"),
         "login": env.str("HIMS_THROTTLE_LOGIN", default="10/min"),
         "invitation": env.str("HIMS_THROTTLE_INVITATION", default="20/min"),
+        "password_reset": env.str("HIMS_THROTTLE_PASSWORD_RESET", default="5/min"),
     },
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
 }
@@ -214,6 +215,8 @@ HIMS_OUTBOX_DISPATCH_INLINE = env.bool("HIMS_OUTBOX_DISPATCH_INLINE", default=no
 # Public URL of this deployment's React app; activation links point here.
 HIMS_APP_BASE_URL = env.str("HIMS_APP_BASE_URL", default="http://localhost:5175")
 HIMS_INVITATION_TTL_HOURS = env.int("HIMS_INVITATION_TTL_HOURS", default=72)
+HIMS_PASSWORD_RESET_TTL_MINUTES = env.int("HIMS_PASSWORD_RESET_TTL_MINUTES", default=60)
+HIMS_PASSWORD_RESET_MAX_PER_HOUR = env.int("HIMS_PASSWORD_RESET_MAX_PER_HOUR", default=3)
 # Console backend prints emails to the backend output. A real provider (e.g. Amazon SES)
 # is configured per environment before go-live (HIMS-OPS-011).
 EMAIL_BACKEND = env.str(

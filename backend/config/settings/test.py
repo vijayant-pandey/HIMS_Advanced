@@ -34,6 +34,7 @@ REST_FRAMEWORK = {
         "user": "10000/min",
         "login": "5/min",
         "invitation": "10000/min",
+        "password_reset": "10000/min",
     },
 }
 

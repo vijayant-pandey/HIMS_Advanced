@@ -21,6 +21,27 @@ class InvitationDetailsSerializer(serializers.Serializer):
     expires_at = serializers.DateTimeField()
 
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+
+
+class PasswordResetTokenSerializer(InvitationTokenSerializer):
+    pass
+
+
+class PasswordResetConfirmSerializer(InvitationAcceptSerializer):
+    pass
+
+
+class PasswordResetRequestedSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class PasswordResetDetailsSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    expires_at = serializers.DateTimeField()
+
+
 class GrantSerializer(serializers.Serializer):
     permission = serializers.CharField()
     facility_id = serializers.UUIDField(allow_null=True)

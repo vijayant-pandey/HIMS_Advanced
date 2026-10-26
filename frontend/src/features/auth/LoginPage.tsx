@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Link, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useForm } from "react-hook-form";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
@@ -63,6 +63,9 @@ export function LoginPage() {
           <Button type="submit" variant="contained" size="large" disabled={login.isPending}>
             Sign in
           </Button>
+          <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ alignSelf: "center" }}>
+            Forgot password?
+          </Link>
         </Stack>
       </Paper>
     </Box>

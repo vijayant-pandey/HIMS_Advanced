@@ -6,7 +6,13 @@ import pytest
 from apps.access_control.catalog import P
 from apps.access_control.services import create_role
 from apps.identity.models import User
-from apps.staff.models import QualificationType, Specialty, StaffCredential, StaffMember
+from apps.staff.models import (
+    Designation,
+    QualificationType,
+    Specialty,
+    StaffCredential,
+    StaffMember,
+)
 from common.outbox.models import OutboxEvent
 
 DOCTOR = {
@@ -69,7 +75,7 @@ def test_onboard_doctor_end_to_end(client_for, admin_user, doctor, department_a,
         f"{base}/department-assignments/",
         {
             "department": str(department_a.pk),
-            "designation": "Consultant",
+            "designation": str(Designation.objects.get(code="in-consultant").pk),
             "specialty": str(cardiology.pk),
             "is_primary": True,
             "valid_from": "2026-01-05",
@@ -81,7 +87,7 @@ def test_onboard_doctor_end_to_end(client_for, admin_user, doctor, department_a,
     detail = client.get(f"{base}/").json()
     assert len(detail["qualifications"]) == 1
     assert len(detail["credentials"]) == 1
-    assert detail["department_assignments"][0]["designation"] == "Consultant"
+    assert detail["department_assignments"][0]["designation_name"] == "Consultant"
 
     # Step 4: access limited to the authorized hospital department.
     role = create_role(

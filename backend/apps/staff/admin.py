@@ -5,6 +5,7 @@ from common.admin.options import HimsInline, HimsModelAdmin
 from common.exceptions import DomainError
 
 from .models import (
+    Designation,
     QualificationType,
     Specialty,
     StaffCredential,
@@ -20,6 +21,7 @@ VERIFICATION_FIELDS = ("verification_status", "verified_by", "verified_at")
 class StaffDepartmentAssignmentInline(HimsInline):
     model = StaffDepartmentAssignment
     fields = ("department", "designation", "specialty", "is_primary", "valid_from", "valid_until")
+    autocomplete_fields = ("designation",)
 
 
 class StaffQualificationInline(HimsInline):
@@ -138,6 +140,14 @@ class StaffCredentialAdmin(HimsModelAdmin):
     @admin.action(description="Mark selected credentials as rejected")
     def mark_rejected(self, request, queryset):
         self._verify(request, queryset, verified=False)
+
+
+@admin.register(Designation)
+class DesignationAdmin(HimsModelAdmin):
+    list_display = ("name", "category", "country", "seniority", "is_active")
+    list_filter = ("category", "country", "is_active")
+    search_fields = ("code", "name")
+    ordering = ("category", "seniority", "name")
 
 
 @admin.register(Specialty)

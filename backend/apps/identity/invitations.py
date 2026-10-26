@@ -17,7 +17,6 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
-from django.core import signing
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import transaction
@@ -29,6 +28,7 @@ from common.exceptions import ConflictError, DomainError
 from common.outbox.services import publish_event
 
 from .models import Invitation, User
+from .tokens import app_link, make_link_token, read_link_token
 
 TOKEN_SALT = "hims.identity.invitation"  # noqa: S105 - namespace for signing, not a secret
 INVITATION_ISSUED_EVENT = "identity.invitation.issued"
@@ -45,18 +45,17 @@ class InvitationInvalid(DomainError):
 
 
 def make_token(invitation: Invitation) -> str:
-    return signing.dumps(str(invitation.pk), salt=TOKEN_SALT)
+    return make_link_token(invitation.pk, salt=TOKEN_SALT)
 
 
 def activation_link(invitation: Invitation) -> str:
-    return f"{settings.HIMS_APP_BASE_URL.rstrip('/')}/activate#token={make_token(invitation)}"
+    return app_link("activate", make_token(invitation))
 
 
 def _invitation_for_token(token: str, *, lock: bool = False) -> Invitation:
-    try:
-        invitation_id = signing.loads(token, salt=TOKEN_SALT)
-    except (signing.BadSignature, TypeError, ValueError):
-        raise InvitationInvalid(INVALID_LINK_MESSAGE) from None
+    invitation_id = read_link_token(token, salt=TOKEN_SALT)
+    if invitation_id is None:
+        raise InvitationInvalid(INVALID_LINK_MESSAGE)
     queryset = Invitation.objects.select_related("user")
     if lock:
         queryset = queryset.select_for_update()

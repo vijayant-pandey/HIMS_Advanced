@@ -11,7 +11,7 @@ from common.admin.options import HimsInline, HimsModelAdmin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
 from .invitations import issue_invitation
-from .models import Invitation, User
+from .models import Invitation, PasswordReset, User
 
 
 def send_invitations(model_admin, request, users) -> None:
@@ -25,6 +25,15 @@ def send_invitations(model_admin, request, users) -> None:
             model_admin.message_user(request, f"{user.email}: {exc.detail}", messages.WARNING)
     if sent:
         model_admin.message_user(request, f"Sent {sent} invitation email(s).")
+
+
+@admin.register(PasswordReset)
+class PasswordResetAdmin(ReadOnlyModelAdmin):
+    """Status only. Links cannot be recovered here: tokens are never stored."""
+
+    list_display = ("user", "status", "created_at", "expires_at", "used_at")
+    search_fields = ("user__email",)
+    readonly_fields = ("status",)
 
 
 @admin.register(Invitation)

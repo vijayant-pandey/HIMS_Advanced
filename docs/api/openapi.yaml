@@ -166,6 +166,66 @@ paths:
               schema:
                 $ref: '#/components/schemas/CurrentUser'
           description: ''
+  /api/v1/auth/password-reset/confirm/:
+    post:
+      operationId: auth_password_reset_confirm_create
+      description: Sets the new password. The person then signs in again; all old
+        sessions have ended.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/password-reset/inspect/:
+    post:
+      operationId: auth_password_reset_inspect_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetTokenRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetDetails'
+          description: ''
+  /api/v1/auth/password-reset/request/:
+    post:
+      operationId: auth_password_reset_request_create
+      description: Always answers 202 with the same message, whether or not the account
+        exists.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetRequested'
+          description: ''
   /api/v1/departments/:
     get:
       operationId: departments_list
@@ -264,6 +324,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Department'
+          description: ''
+  /api/v1/designations/:
+    get:
+      operationId: designations_list
+      description: Job-title catalog (junior to senior). Filter with ?country=IN|US
+        and ?category=.
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - in: query
+        name: country
+        schema:
+          type: string
+        description: IN or US (shared titles included)
+      tags:
+      - designations
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Designation'
           description: ''
   /api/v1/facilities/:
     get:
@@ -969,18 +1057,6 @@ components:
       - request_id
       - resource_id
       - resource_type
-    CategoryEnum:
-      enum:
-      - degree
-      - diploma
-      - fellowship
-      - certification
-      type: string
-      description: |-
-        * `degree` - Degree
-        * `diploma` - Diploma
-        * `fellowship` - Fellowship
-        * `certification` - Certification
     CountryEnum:
       enum:
       - US
@@ -1135,6 +1211,57 @@ components:
         * `pharmacy` - Pharmacy
         * `support` - Support
         * `administrative` - Administrative
+    Designation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/DesignationCategoryEnum'
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+          description: Blank when used in both
+        seniority:
+          type: integer
+          readOnly: true
+          description: 1 = entry level ... 10 = leadership
+      required:
+      - category
+      - code
+      - country
+      - id
+      - name
+      - seniority
+    DesignationCategoryEnum:
+      enum:
+      - medical
+      - nursing
+      - pharmacy
+      - allied_health
+      - administration
+      - support
+      - other
+      type: string
+      description: |-
+        * `medical` - Medical (doctors)
+        * `nursing` - Nursing
+        * `pharmacy` - Pharmacy
+        * `allied_health` - Allied health & technicians
+        * `administration` - Administration & management
+        * `support` - Support services
+        * `other` - Other
     EmploymentStatusEnum:
       enum:
       - active
@@ -1579,6 +1706,59 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StaffMember'
+    PasswordResetConfirmRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 512
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 512
+      required:
+      - password
+      - token
+    PasswordResetDetails:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - email
+      - expires_at
+    PasswordResetRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+      required:
+      - email
+    PasswordResetRequested:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    PasswordResetTokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 512
+      required:
+      - token
     PatchedDepartmentUpdateRequest:
       type: object
       properties:
@@ -1733,7 +1913,7 @@ components:
           readOnly: true
         category:
           allOf:
-          - $ref: '#/components/schemas/CategoryEnum'
+          - $ref: '#/components/schemas/QualificationTypeCategoryEnum'
           readOnly: true
         country:
           type: string
@@ -1745,6 +1925,18 @@ components:
       - country
       - id
       - name
+    QualificationTypeCategoryEnum:
+      enum:
+      - degree
+      - diploma
+      - fellowship
+      - certification
+      type: string
+      description: |-
+        * `degree` - Degree
+        * `diploma` - Diploma
+        * `fellowship` - Fellowship
+        * `certification` - Certification
     RevokeRequest:
       type: object
       properties:
@@ -2031,8 +2223,10 @@ components:
           format: uuid
         designation:
           type: string
-          description: e.g. Consultant, Senior Resident
-          maxLength: 128
+          format: uuid
+        designation_name:
+          type: string
+          readOnly: true
         specialty:
           type: string
           format: uuid
@@ -2049,6 +2243,7 @@ components:
       required:
       - department
       - designation
+      - designation_name
       - id
       - valid_from
     StaffDepartmentAssignmentRequest:
@@ -2059,9 +2254,7 @@ components:
           format: uuid
         designation:
           type: string
-          minLength: 1
-          description: e.g. Consultant, Senior Resident
-          maxLength: 128
+          format: uuid
         specialty:
           type: string
           format: uuid

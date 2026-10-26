@@ -5,6 +5,9 @@ import type {
   CurrentUser,
   InvitationAcceptRequest,
   InvitationDetails,
+  PasswordResetConfirmRequest,
+  PasswordResetDetails,
+  PasswordResetRequested,
   LoginRequest,
 } from "../../api/types";
 
@@ -74,6 +77,41 @@ export function useAcceptInvitation() {
     onSuccess: (user) => {
       queryClient.clear();
       queryClient.setQueryData(currentUserKey, user);
+    },
+  });
+}
+
+/** "Forgot password": always answers the same way, whether or not the account exists. */
+export function useRequestPasswordReset() {
+  return useMutation<PasswordResetRequested, ApiError, { email: string }>({
+    mutationFn: async (body) => {
+      await api.get("/auth/csrf/");
+      return api.post<PasswordResetRequested>("/auth/password-reset/request/", body);
+    },
+  });
+}
+
+export function usePasswordResetDetails(token: string | null) {
+  return useQuery<PasswordResetDetails, ApiError>({
+    queryKey: ["auth", "password-reset", token],
+    queryFn: async () => {
+      await api.get("/auth/csrf/");
+      return api.post<PasswordResetDetails>("/auth/password-reset/inspect/", { token });
+    },
+    enabled: !!token,
+    retry: false,
+    staleTime: Infinity,
+  });
+}
+
+/** Sets the new password. Every existing session ends, so the person signs in again. */
+export function useConfirmPasswordReset() {
+  const queryClient = useQueryClient();
+  return useMutation<void, ApiError, PasswordResetConfirmRequest>({
+    mutationFn: (body) => api.post<void>("/auth/password-reset/confirm/", body),
+    onSuccess: () => {
+      queryClient.clear();
+      queryClient.setQueryData(currentUserKey, null);
     },
   });
 }

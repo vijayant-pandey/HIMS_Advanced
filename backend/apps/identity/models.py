@@ -95,3 +95,42 @@ class Invitation(UUIDPrimaryKeyModel):
         if self.expires_at <= timezone.now():
             return "expired"
         return "open"
+
+
+class PasswordReset(UUIDPrimaryKeyModel):
+    """A "forgot password" request (spec 13.1: secure account recovery).
+
+    Like invitations, the emailed link carries a signed reference to this row; the secret is
+    never stored. Short-lived, single use, and superseded by any newer request for the user.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="password_resets")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "user_password_resets"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user"],
+                condition=models.Q(used_at__isnull=True, revoked_at__isnull=True),
+                name="user_password_reset_one_open",
+            )
+        ]
+        indexes = [models.Index(fields=["user", "created_at"], name="password_reset_user_idx")]
+
+    def __str__(self) -> str:
+        return f"Password reset for {self.user_id} ({self.status})"
+
+    @property
+    def status(self) -> str:
+        if self.used_at:
+            return "used"
+        if self.revoked_at:
+            return "revoked"
+        if self.expires_at <= timezone.now():
+            return "expired"
+        return "open"
