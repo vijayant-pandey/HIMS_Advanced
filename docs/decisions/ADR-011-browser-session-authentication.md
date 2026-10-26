@@ -25,3 +25,12 @@ open. **Owner:** Security + Architecture.
 ## Follow-ups
 MFA for privileged users (HIMS-IAM-005); terminating all sessions on suspension or termination
 (HIMS-IAM-006); a reauthentication step-up for sensitive actions (HIMS-IAM-007).
+
+## Update (HIMS-IAM-006, 2026-10-26)
+Session termination is implemented. A `user_sessions` register maps each sign-in to its user, so
+all of a person's sessions are deleted (through the configured session engine) when the account
+is deactivated (suspension/termination, admin console, any code path), when the password changes
+or is reset, and on the admin "Sign out of all devices" action. Each case is audited as
+`auth.sessions.ended` with the reason and number of sessions. Expired sessions are cleaned nightly
+(`platform.clear_expired_sessions`). MFA (HIMS-IAM-005) and step-up re-authentication
+(HIMS-IAM-007) remain open.

@@ -11,7 +11,8 @@ from common.admin.options import HimsInline, HimsModelAdmin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
 from .invitations import issue_invitation
-from .models import Invitation, PasswordReset, User
+from .models import Invitation, PasswordReset, User, UserSession
+from .sessions import end_user_sessions, track_session
 
 
 def send_invitations(model_admin, request, users) -> None:
@@ -34,6 +35,16 @@ class PasswordResetAdmin(ReadOnlyModelAdmin):
     list_display = ("user", "status", "created_at", "expires_at", "used_at")
     search_fields = ("user__email",)
     readonly_fields = ("status",)
+
+
+@admin.register(UserSession)
+class UserSessionAdmin(ReadOnlyModelAdmin):
+    """Who is signed in where. The session key is a secret and is never displayed."""
+
+    list_display = ("user", "created_at", "ip_address", "ended_at", "end_reason")
+    list_filter = (("ended_at", admin.EmptyFieldListFilter), "end_reason")
+    search_fields = ("user__email", "user__display_name", "ip_address")
+    exclude = ("session_key",)
 
 
 @admin.register(Invitation)
@@ -115,11 +126,25 @@ class UserAdmin(HimsModelAdmin, DjangoUserAdmin):
         ),
     )
     inlines = [RoleAssignmentInline]
-    actions = ["send_invitation"]
+    actions = ["send_invitation", "sign_out_everywhere"]
 
     @admin.action(description="Send invitation email (activate account)")
     def send_invitation(self, request, queryset):
         send_invitations(self, request, queryset)
+
+    @admin.action(description="Sign out of all devices")
+    def sign_out_everywhere(self, request, queryset):
+        total = 0
+        for user in queryset:
+            total += end_user_sessions(
+                user,
+                reason=UserSession.EndReason.SIGNED_OUT_BY_ADMIN,
+                actor=request.user,
+                request=request,
+                # Never sign the administrator out of the console they are using.
+                keep_session_key=request.session.session_key,
+            )
+        self.message_user(request, f"Signed out {total} session(s).")
 
     def user_change_password(self, request, id, form_url=""):
         response = super().user_change_password(request, id, form_url)
@@ -131,4 +156,17 @@ class UserAdmin(HimsModelAdmin, DjangoUserAdmin):
                 request=request,
                 metadata={"via": "admin-console"},
             )
+            user = User.objects.get(pk=id)
+            changing_own = user.pk == request.user.pk
+            # A new password signs the person out everywhere (except this console tab when an
+            # administrator changes their own password; Django already rotated its key).
+            end_user_sessions(
+                user,
+                reason=UserSession.EndReason.PASSWORD_CHANGED,
+                actor=request.user,
+                request=request,
+                keep_session_key=request.session.session_key if changing_own else None,
+            )
+            if changing_own:
+                track_session(request, user)
         return response

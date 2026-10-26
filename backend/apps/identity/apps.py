@@ -5,3 +5,8 @@ class IdentityConfig(AppConfig):
     name = "apps.identity"
     label = "identity"
     default_auto_field = "django.db.models.BigAutoField"
+
+    def ready(self):
+        from .sessions import connect_signals
+
+        connect_signals()

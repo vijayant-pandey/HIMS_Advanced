@@ -30,7 +30,8 @@ from apps.audit.services import AuditAction, record_audit_event
 from common.exceptions import DomainError
 from common.outbox.services import publish_event
 
-from .models import PasswordReset, User
+from .models import PasswordReset, User, UserSession
+from .sessions import end_user_sessions
 from .tokens import app_link, make_link_token, read_link_token
 
 TOKEN_SALT = "hims.identity.password-reset"  # noqa: S105 - namespace for signing, not a secret
@@ -155,6 +156,10 @@ def _complete(*, token: str, password: str, request=None) -> User:
     user.save(update_fields=["password", "password_changed_at"])
     reset.used_at = now
     reset.save(update_fields=["used_at"])
+    # The new session auth hash already stops old sessions; also delete them and record it.
+    end_user_sessions(
+        user, reason=UserSession.EndReason.PASSWORD_CHANGED, actor=user, request=request
+    )
     record_audit_event(
         action=AuditAction.PASSWORD_RESET_COMPLETED,
         resource_type="user",
