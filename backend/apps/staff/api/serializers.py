@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.facilities.models import Department
 
 from ..models import (
+    Designation,
     QualificationType,
     Specialty,
     StaffCredential,
@@ -26,6 +27,13 @@ class QualificationTypeSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class DesignationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Designation
+        fields = ["id", "code", "name", "category", "country", "seniority"]
+        read_only_fields = fields
+
+
 class StaffDepartmentAssignmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = StaffDepartmentAssignment
@@ -33,6 +41,7 @@ class StaffDepartmentAssignmentSerializer(serializers.ModelSerializer):
             "id",
             "department",
             "designation",
+            "designation_name",
             "specialty",
             "is_primary",
             "valid_from",
@@ -41,6 +50,10 @@ class StaffDepartmentAssignmentSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
     department = serializers.PrimaryKeyRelatedField(queryset=Department.objects.all())
+    designation = serializers.PrimaryKeyRelatedField(
+        queryset=Designation.objects.filter(is_active=True)
+    )
+    designation_name = serializers.CharField(source="designation.name", read_only=True)
     specialty = serializers.PrimaryKeyRelatedField(
         queryset=Specialty.objects.filter(is_active=True), required=False, allow_null=True
     )

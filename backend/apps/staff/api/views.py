@@ -10,9 +10,10 @@ from common.exceptions import ConflictError
 from common.idempotency.decorators import idempotent
 
 from .. import services
-from ..models import QualificationType, Specialty, StaffCredential, StaffMember
+from ..models import Designation, QualificationType, Specialty, StaffCredential, StaffMember
 from .serializers import (
     CredentialVerificationSerializer,
+    DesignationSerializer,
     InvitationSentSerializer,
     QualificationTypeSerializer,
     SpecialtySerializer,
@@ -24,6 +25,33 @@ from .serializers import (
     StaffMemberUpdateSerializer,
     StaffQualificationSerializer,
 )
+
+
+class DesignationViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Job-title catalog (junior to senior). Filter with ?country=IN|US and ?category=."""
+
+    serializer_class = DesignationSerializer
+    pagination_class = None
+    required_permissions = {"list": P.STAFF_VIEW}
+
+    def get_queryset(self):
+        queryset = Designation.objects.filter(is_active=True)
+        country = self.request.query_params.get("country")
+        if country:
+            queryset = queryset.filter(country__in=[country, ""])
+        category = self.request.query_params.get("category")
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("country", str, description="IN or US (shared titles included)"),
+            OpenApiParameter("category", str),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 class SpecialtyViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -60,7 +88,7 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         queryset = StaffMember.objects.select_related("user")
         if self.action == "retrieve":
             queryset = queryset.prefetch_related(
-                "department_assignments", "qualifications", "credentials"
+                "department_assignments__designation", "qualifications", "credentials"
             )
         search = self.request.query_params.get("search", "").strip()
         if search:

@@ -15,13 +15,18 @@ from apps.audit.services import AuditAction, record_audit_event
 from apps.organizations.models import Organization
 from common.exceptions import DomainError
 
-from .. import invitations
+from .. import invitations, password_reset
 from .serializers import (
     CurrentUserSerializer,
     InvitationAcceptSerializer,
     InvitationDetailsSerializer,
     InvitationTokenSerializer,
     LoginSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetDetailsSerializer,
+    PasswordResetRequestedSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetTokenSerializer,
 )
 
 
@@ -136,6 +141,67 @@ class InvitationAcceptView(_PublicInvitationView):
             metadata={"via": "invitation"},
         )
         return Response(CurrentUserSerializer(_current_user_payload(user)).data)
+
+
+class _PublicPasswordResetView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset"
+
+
+RESET_REQUESTED_MESSAGE = (
+    "If an active account uses this email, we have sent a link to reset the password. "
+    "Check your inbox."
+)
+
+
+class PasswordResetRequestView(_PublicPasswordResetView):
+    """Always answers 202 with the same message, whether or not the account exists."""
+
+    @extend_schema(
+        request=PasswordResetRequestSerializer, responses={202: PasswordResetRequestedSerializer}
+    )
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        password_reset.request_password_reset(
+            email=serializer.validated_data["email"], request=request
+        )
+        return Response({"detail": RESET_REQUESTED_MESSAGE}, status=status.HTTP_202_ACCEPTED)
+
+
+class PasswordResetInspectView(_PublicPasswordResetView):
+    @extend_schema(
+        request=PasswordResetTokenSerializer, responses={200: PasswordResetDetailsSerializer}
+    )
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = PasswordResetTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reset = password_reset.inspect_reset(serializer.validated_data["token"])
+        return Response(
+            PasswordResetDetailsSerializer(
+                {"email": reset.user.email, "expires_at": reset.expires_at}
+            ).data
+        )
+
+
+class PasswordResetConfirmView(_PublicPasswordResetView):
+    """Sets the new password. The person then signs in again; all old sessions have ended."""
+
+    @extend_schema(request=PasswordResetConfirmSerializer, responses={204: None})
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        password_reset.complete_password_reset(
+            token=serializer.validated_data["token"],
+            password=serializer.validated_data["password"],
+            request=request,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LogoutView(APIView):

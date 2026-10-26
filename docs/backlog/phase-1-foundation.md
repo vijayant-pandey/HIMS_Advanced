@@ -26,6 +26,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-PLAT-013 | Pin GitHub Actions to commit SHAs; least-privilege tokens per job | To do |
 | HIMS-PLAT-014 | Outbox and idempotency retention/archival jobs and runbook | Partial (idempotency purge done) |
 | HIMS-PLAT-015 | Route-level code splitting in the SPA (current bundle > 500 kB) | To do |
+| HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event) | To do (scheduled by product owner) |
 | HIMS-PLAT-016 | OpenTelemetry tracing for API, Celery and outbound HTTP | To do |
 | HIMS-PLAT-017 | Django admin operations console: RBAC-gated, audited, no deletion (ADR-016) | Done |
 | HIMS-SEC-015 | Console network restriction (IP allow-list/VPN) before enabling outside local | To do |
@@ -52,9 +53,9 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-001 | Custom user (UUID, case-insensitive email), Argon2, password policy | Done |
 | HIMS-IAM-002 | Session login/logout/me, CSRF, rate limiting, non-enumerating errors, audit | Done |
 | HIMS-IAM-003 | Invitation and account activation (consumes `staff.member.created`) | Done |
-| HIMS-IAM-004 | Password reset (non-enumerating, time-limited single-use tokens) | To do |
+| HIMS-IAM-004 | Password reset (non-enumerating, time-limited single-use tokens) | Done |
 | HIMS-IAM-005 | MFA (TOTP/WebAuthn) mandatory for privileged roles | To do |
-| HIMS-IAM-006 | Invalidate all sessions on suspension/termination/password change | To do |
+| HIMS-IAM-006 | Invalidate all sessions on suspension/termination (password change: done via Django session hash) | To do |
 | HIMS-IAM-007 | Step-up reauthentication for sensitive actions | To do |
 | HIMS-IAM-008 | Enterprise SSO (OIDC/SAML) — decision in spec 36 | To do |
 | HIMS-IAM-009 | Scoped RBAC: catalog, roles, facility/department assignments, default deny, escalation guard (ADR-015) | Done |
@@ -75,6 +76,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-006 | Credential expiry alerts (scheduled job + notifications) | To do |
 | HIMS-STAFF-007 | Staff detail/onboarding UI | Partial (list + search done) |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility | To do |
+| HIMS-STAFF-009 | Designation catalog (IN/US, junior→senior), extended specialty/qualification catalogs, administrative system roles, RBAC document | Done |
 
 ## EPIC HIMS-SEC / HIMS-AUD — Security and audit
 

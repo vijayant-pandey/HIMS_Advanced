@@ -126,6 +126,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password-reset/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sets the new password. The person then signs in again; all old sessions have ended. */
+        post: operations["auth_password_reset_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/inspect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_password_reset_inspect_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password-reset/request/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Always answers 202 with the same message, whether or not the account exists. */
+        post: operations["auth_password_reset_request_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/departments/": {
         parameters: {
             query?: never;
@@ -156,6 +206,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["departments_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/designations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Job-title catalog (junior to senior). Filter with ?country=IN|US and ?category=. */
+        get: operations["designations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/facilities/": {
@@ -525,14 +592,6 @@ export interface components {
             readonly metadata: unknown;
         };
         /**
-         * @description * `degree` - Degree
-         *     * `diploma` - Diploma
-         *     * `fellowship` - Fellowship
-         *     * `certification` - Certification
-         * @enum {string}
-         */
-        CategoryEnum: "degree" | "diploma" | "fellowship" | "certification";
-        /**
          * @description * `US` - United States
          *     * `IN` - India
          * @enum {string}
@@ -602,6 +661,28 @@ export interface components {
          * @enum {string}
          */
         DepartmentTypeEnum: "clinical" | "diagnostic" | "pharmacy" | "support" | "administrative";
+        Designation: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly name: string;
+            readonly category: components["schemas"]["DesignationCategoryEnum"];
+            /** @description Blank when used in both */
+            readonly country: string;
+            /** @description 1 = entry level ... 10 = leadership */
+            readonly seniority: number;
+        };
+        /**
+         * @description * `medical` - Medical (doctors)
+         *     * `nursing` - Nursing
+         *     * `pharmacy` - Pharmacy
+         *     * `allied_health` - Allied health & technicians
+         *     * `administration` - Administration & management
+         *     * `support` - Support services
+         *     * `other` - Other
+         * @enum {string}
+         */
+        DesignationCategoryEnum: "medical" | "nursing" | "pharmacy" | "allied_health" | "administration" | "support" | "other";
         /**
          * @description * `active` - Active
          *     * `on_leave` - On leave
@@ -803,6 +884,26 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["StaffMember"][];
         };
+        PasswordResetConfirmRequest: {
+            token: string;
+            password: string;
+        };
+        PasswordResetDetails: {
+            /** Format: email */
+            email: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        PasswordResetRequestRequest: {
+            /** Format: email */
+            email: string;
+        };
+        PasswordResetRequested: {
+            detail: string;
+        };
+        PasswordResetTokenRequest: {
+            token: string;
+        };
         PatchedDepartmentUpdateRequest: {
             version?: number;
             name?: string;
@@ -864,10 +965,18 @@ export interface components {
             readonly id: string;
             readonly code: string;
             readonly name: string;
-            readonly category: components["schemas"]["CategoryEnum"];
+            readonly category: components["schemas"]["QualificationTypeCategoryEnum"];
             /** @description Blank when not country-bound */
             readonly country: string;
         };
+        /**
+         * @description * `degree` - Degree
+         *     * `diploma` - Diploma
+         *     * `fellowship` - Fellowship
+         *     * `certification` - Certification
+         * @enum {string}
+         */
+        QualificationTypeCategoryEnum: "degree" | "diploma" | "fellowship" | "certification";
         RevokeRequest: {
             reason: string;
         };
@@ -969,8 +1078,9 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             department: string;
-            /** @description e.g. Consultant, Senior Resident */
+            /** Format: uuid */
             designation: string;
+            readonly designation_name: string;
             /** Format: uuid */
             specialty?: string | null;
             is_primary?: boolean;
@@ -982,7 +1092,7 @@ export interface components {
         StaffDepartmentAssignmentRequest: {
             /** Format: uuid */
             department: string;
-            /** @description e.g. Consultant, Senior Resident */
+            /** Format: uuid */
             designation: string;
             /** Format: uuid */
             specialty?: string | null;
@@ -1259,6 +1369,74 @@ export interface operations {
             };
         };
     };
+    auth_password_reset_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_password_reset_inspect_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetTokenRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetDetails"];
+                };
+            };
+        };
+    };
+    auth_password_reset_request_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequestRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetRequested"];
+                };
+            };
+        };
+    };
     departments_list: {
         parameters: {
             query?: {
@@ -1352,6 +1530,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Department"];
+                };
+            };
+        };
+    };
+    designations_list: {
+        parameters: {
+            query?: {
+                category?: string;
+                /** @description IN or US (shared titles included) */
+                country?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Designation"][];
                 };
             };
         };

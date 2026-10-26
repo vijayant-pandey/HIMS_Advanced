@@ -54,4 +54,37 @@ SYSTEM_ROLES: dict[str, dict] = {
         "description": "Read access to the audit log.",
         "permissions": [P.AUDIT_VIEW],
     },
+    # Administrative roles usable today (see docs/status/Hospital_Departments_and_Doctors_RBAC.MD).
+    "facility-administrator": {
+        "name": "Facility (branch) administrator",
+        "description": "Runs one branch: its details and departments. Assign at facility scope.",
+        "permissions": [
+            P.FACILITIES_VIEW,
+            P.FACILITIES_MANAGE,
+            P.DEPARTMENTS_VIEW,
+            P.DEPARTMENTS_MANAGE,
+        ],
+    },
+    "hr-credentialing-officer": {
+        "name": "HR / credentialing officer",
+        "description": "Onboards staff and verifies qualifications and licences.",
+        "permissions": [
+            P.STAFF_VIEW,
+            P.STAFF_MANAGE,
+            P.STAFF_CREDENTIALS_VERIFY,
+            P.FACILITIES_VIEW,
+            P.DEPARTMENTS_VIEW,
+        ],
+    },
+    "department-head": {
+        "name": "Head of department (HOD)",
+        "description": "Sees their department. Clinical approvals are added with clinical "
+        "domains. Assign at department scope.",
+        "permissions": [P.FACILITIES_VIEW, P.DEPARTMENTS_VIEW],
+    },
+    "basic-staff": {
+        "name": "Basic staff access",
+        "description": "Minimum access for any employee: see their hospital and departments.",
+        "permissions": [P.FACILITIES_VIEW, P.DEPARTMENTS_VIEW],
+    },
 }

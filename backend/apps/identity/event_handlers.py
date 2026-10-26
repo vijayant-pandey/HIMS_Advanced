@@ -3,7 +3,13 @@
 from common.outbox.registry import event_handler
 
 from .invitations import INVITATION_ISSUED_EVENT, issue_invitation, send_invitation_email
-from .models import Invitation, User
+from .models import Invitation, PasswordReset, User
+from .password_reset import (
+    PASSWORD_CHANGED_EVENT,
+    RESET_REQUESTED_EVENT,
+    send_password_changed_notice,
+    send_reset_email,
+)
 
 
 @event_handler("staff.member.created")
@@ -29,3 +35,23 @@ def email_invitation(event) -> None:
     if invitation is None or invitation.status != "open":
         return
     send_invitation_email(invitation)
+
+
+@event_handler(RESET_REQUESTED_EVENT)
+def email_password_reset(event) -> None:
+    reset = (
+        PasswordReset.objects.select_related("user")
+        .filter(pk=event.payload.get("reset_id"))
+        .first()
+    )
+    # A newer request may have replaced this one before the email went out.
+    if reset is None or reset.status != "open":
+        return
+    send_reset_email(reset)
+
+
+@event_handler(PASSWORD_CHANGED_EVENT)
+def email_password_changed_notice(event) -> None:
+    user = User.objects.filter(pk=event.payload.get("user_id")).first()
+    if user is not None:
+        send_password_changed_notice(user)

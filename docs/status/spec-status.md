@@ -4,7 +4,7 @@ Tracks delivery against [HIMS_Architecture_Specification_v2.MD](../../HIMS_Archi
 The specification is the source of truth and is **not** edited by this tracker.
 Updated after every completed work item.
 
-**Last updated:** 2026-10-26 · **Overall:** ~14% of the full specification · **Phase 1:** ~61%
+**Last updated:** 2026-10-26 · **Overall:** ~15% of the full specification · **Phase 1:** ~66%
 
 **Legend**
 - ✅ Done: implemented and covered by automated tests
@@ -33,8 +33,10 @@ Updated after every completed work item.
 |---|---|---|---|---|
 | 0 | UI theme selector (white & blue/red/green, minimal black & white) across launcher, apps and admin | 15.2 | HIMS-UI-001 | ✅ |
 | 1 | Staff invitation and account activation (email to console locally) | 4.4 | HIMS-IAM-003 | ✅ |
-| 2 | Password reset (non-enumerating, single-use tokens) | 4.4, 13.1 | HIMS-IAM-004 | 🔓 next |
-| 3 | End all sessions on suspension/termination/password change | 13.5 | HIMS-IAM-006 | 🔓 |
+| 2 | Password reset (non-enumerating, single-use tokens) | 4.4, 13.1 | HIMS-IAM-004 | ✅ |
+| 2b | Hospital roles catalog: designations junior→senior (IN/US), departments/specialties, qualifications, administrative system roles, RBAC document | 3, 4.2, 4.3, 26.4 | HIMS-STAFF-009 | ✅ |
+| 2c | Friendly "no access yet" page instead of "Permission denied" for new users (reference number is already recorded in the audit log as `access.denied` → request_id) | 15, 13.4 | HIMS-UI-002 | 🔓 tracked — product owner will schedule |
+| 3 | End all sessions on suspension/termination (password change already ends them) | 13.5 | HIMS-IAM-006 | 🔓 next |
 | 4 | MFA (TOTP) for privileged users and the admin console | 4.4, 13.1 | HIMS-IAM-005 | 🔓 |
 | 5 | Location hierarchy: building → floor → ward → room → bed (configuration) | 4.1, 4.10 | HIMS-FAC-004 | 🔓 |
 | 6 | Hospital numbering schemes (MRN, encounter, invoice, claim) | 4.1 | HIMS-ORG-003 | 🔓 |
@@ -61,16 +63,16 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 | §1 Confirmed direction (stack, monolith, dedicated deployment, IN+US) | ✅ | Followed in code; IN and US deployments run locally | — | — |
 | §2.2 Principles 1, 4, 5, 6, 8, 9, 11 | ✅ | State guards, transactions, audit, isolation, modular monolith, PostgreSQL authority, end-to-end security | — | — |
 | §2.2 Principles 2, 3, 7, 10, 12 | ⬜ | — | Apply with patient, orders, country adapters, integrations | 🔒 CLIN for 12 |
-| §3 Personas (16 roles) | 🟡 2/16 | Organization administrator, auditor | 14 roles | 🔒 CLIN (permission matrix) |
+| §3 Personas (16 roles) | 🟡 6 system roles | Organization admin, auditor, facility admin, HR/credentialing officer, HOD, basic staff; all 16 personas documented with ladders in [RBAC doc](Hospital_Departments_and_Doctors_RBAC.MD) | Clinical roles' permissions | 🔒 CLIN (approve RBAC doc §8) |
 
 ### §4 Functional scope
 
 | § | Domain | Status | Done | Left (🔓 = can do now) | Dependency |
 |---|---|---|---|---|---|
 | 4.1 | Hospital & branches | 🟡 50% | Organization (one per deployment), facilities, country/timezone/currency, admin | 🔓 numbering schemes, 🔓 wards/rooms/beds, 🔓 feature flags, 🔓 logo/templates | Tax rules: 🔒 LEGAL |
-| 4.2 | Departments | 🟡 30% | Create/edit, facility scope | 🔓 head, services, operating hours | Pricing/slots/escalation: 🔒 CLIN |
-| 4.3 | Staff & credentials | 🟡 70% | Staff, qualifications, credentials, verification, termination | 🔓 documents, 🔓 expiry alerts, 🔓 shifts/leave/on-call | Clinical privileges: 🔒 CLIN |
-| 4.4 | Identity & access | 🟡 60% | Login, sessions, scoped RBAC, suspension, admin console, **invitation & activation** (email link, single use, 72 h, resend) | 🔓 reset, 🔓 MFA, 🔓 access reviews, 🔓 delegation | SSO: 🔒 PO; break-glass rules: 🔒 CLIN |
+| 4.2 | Departments | 🟡 40% | Create/edit, facility scope; department catalog & people per department documented; 52 specialties | 🔓 head, services, operating hours | Pricing/slots/escalation: 🔒 CLIN |
+| 4.3 | Staff & credentials | 🟡 80% | Staff, qualifications (66 IN/US types), credentials, verification, termination, **designation catalog (106 titles, seniority 1–10, IN/US)** | 🔓 documents, 🔓 expiry alerts, 🔓 shifts/leave/on-call | Clinical privileges: 🔒 CLIN |
+| 4.4 | Identity & access | 🟡 70% | Login, sessions, scoped RBAC, suspension, admin console, invitation & activation, **password reset** (no enumeration, 60 min single-use link, ends all sessions, security notice) | 🔓 MFA, 🔓 access reviews, 🔓 delegation | SSO: 🔒 PO; break-glass rules: 🔒 CLIN |
 | 4.5 | Patient registration & MPI | ⬜ | — | Demographics, MRN, duplicate detection | 🔒 PO+CLIN P0 sign-off |
 | 4.6 | Appointments & OPD | ⬜ | — | All | 🔒 P0 |
 | 4.7 | Encounters & admissions | ⬜ | — | All | 🔒 P0, CLIN |
@@ -121,7 +123,7 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 |---|---|---|---|---|
 | §11 Stedi and India adapters, eligibility, claims | ⬜ | — | All | 🔒 PAYER |
 | §12 FHIR / ABDM / HIPAA | ⬜ | — | All | 🔒 partners, LEGAL |
-| §13.1 Authentication | 🟡 | Session lifecycle, throttling, no account enumeration, admin lockout, secure activation tokens (signed, single use, never stored, kept out of URLs sent to servers) | 🔓 MFA, 🔓 reset, 🔓 reauthentication | — |
+| §13.1 Authentication | 🟡 | Session lifecycle, throttling, no account enumeration, admin lockout, secure activation/reset tokens (signed, single use, never stored, kept out of URLs sent to servers), account recovery | 🔓 MFA, 🔓 reauthentication | — |
 | §13.2 Authorization | 🟡 | RBAC + facility/department scope, default deny, separate permissions, escalation guard | 🔓 access reviews | Patient/encounter scope & break-glass: 🔒 CLIN |
 | §13.3 Data protection | 🟡 | Secrets kept out of git, PHI-minimised logs | 🔓 document access controls | TLS/KMS/backups: 🔒 AWS |
 | §13.4 Auditability | 🟡 | Append-only (database trigger), restricted access, privileged actions audited | 🔓 tamper detection | Retention: 🔒 LEGAL |
@@ -145,10 +147,10 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 |---|---|---|---|---|
 | §17 AWS deployment | ⬜ | Dockerfile ready | All | 🔒 AWS (deferred by choice) |
 | §18 Non-functional requirements | 🟡 30% | Consistency, request IDs, structured logs | 🔓 local tracing; SLO measurement | 🔒 AWS |
-| §19.1 Backend tests | 🟡 | 84 tests: constraints, permissions, isolation, concurrency, outbox, admin, migrations | 🔓 secret-leak and restore tests | Insurance contract tests: 🔒 PAYER |
-| §19.2 Frontend tests | 🟡 | Unit tests for client, themes and activation-link handling | 🔓 Playwright end-to-end, 🔓 accessibility | — |
+| §19.1 Backend tests | 🟡 | 101 tests: constraints, permissions, isolation, concurrency, outbox, admin, migrations | 🔓 secret-leak and restore tests | Insurance contract tests: 🔒 PAYER |
+| §19.2 Frontend tests | 🟡 | Unit tests for client, themes and link-token handling | 🔓 Playwright end-to-end, 🔓 accessibility | — |
 | §19.3 Clinical validation | ⬜ | — | All | 🔒 CLIN |
-| §20 Phase 1 | 🟡 61% | See tracker | Queue items 1–14 | — |
+| §20 Phase 1 | 🟡 66% | See tracker | Queue items 1–14 | — |
 | §20 Phases 2–6 | ⬜ | — | All | 🔒 P0/CLIN/PAYER/VENDOR |
 | §21 Vertical slice (14 steps) | 🟡 4/14 | Steps 1–4 (hospital, departments, doctor onboarding, scoped access) | Steps 5–14 | 🔒 domains |
 
@@ -169,7 +171,7 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 | P0-A Functional specs | 🟡 | Foundation domains | Clinical domains | 🔒 CLIN |
 | P0-B Database design | 🟡 | Built domains (constraints, migrations) | 🔓 data dictionary | — |
 | P0-C State machines | 🟡 | Employment status, credential verification | Clinical state machines | 🔒 CLIN |
-| P0-D Permission matrix | 🟡 | Administrative permissions | Clinical matrix | 🔒 CLIN |
+| P0-D Permission matrix | 🟡 | Administrative permissions + 6 system roles; full clinical matrix **drafted** in [RBAC doc §8](Hospital_Departments_and_Doctors_RBAC.MD) | Approval | 🔒 CLIN |
 | P0-E Provisioning/isolation | 🟡 | Application side, IN+US locally | Infrastructure side | 🔒 AWS |
 | P0-F Integration contracts | ⬜ | — | All | 🔒 PAYER/VENDOR |
 | P0-G Regulatory assessment | ⬜ | — | All | 🔒 LEGAL |
@@ -208,3 +210,4 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 | 2026-10-26 | Code pushed to GitHub, branch ruleset, manual CI trigger (HIMS-OPS-002) | 32, 33 |
 | 2026-10-26 | Environment branches renamed to development/production; CI, README, ADR-017 updated | 31, 32, 33 |
 | 2026-10-26 | Staff invitation & account activation (HIMS-IAM-003): email link, activation page, resend from API/admin, outbox inline mode locally | 4.4, 13.1, 14.2, 19 |
+| 2026-10-26 | Password reset (HIMS-IAM-004); hospital roles catalog + RBAC document (HIMS-STAFF-009); HIMS-UI-002 tracked | 3, 4.2, 4.3, 4.4, 13.1, 26.4 |

@@ -34,6 +34,9 @@ class AuditAction:
     USER_INVITATION_ISSUED = "user.invitation.issued"
     USER_INVITATION_ACCEPTED = "user.invitation.accepted"
     USER_INVITATION_REJECTED = "user.invitation.rejected"
+    PASSWORD_RESET_REQUESTED = "user.password_reset.requested"  # noqa: S105 - event name
+    PASSWORD_RESET_COMPLETED = "user.password_reset.completed"  # noqa: S105 - event name
+    PASSWORD_RESET_REJECTED = "user.password_reset.rejected"  # noqa: S105 - event name
     AUTH_LOGIN = "auth.login"
     AUTH_LOGIN_FAILED = "auth.login_failed"
     AUTH_LOGOUT = "auth.logout"
