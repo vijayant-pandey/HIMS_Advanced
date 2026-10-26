@@ -51,6 +51,10 @@ def _configure_queues_and_schedule(sender, **kwargs):
             "task": "platform.purge_expired_idempotency_records",
             "schedule": timedelta(hours=1),
         },
+        "expired-sessions-cleanup": {
+            "task": "platform.clear_expired_sessions",
+            "schedule": timedelta(hours=24),
+        },
     }
 
 

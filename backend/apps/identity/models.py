@@ -134,3 +134,37 @@ class PasswordReset(UUIDPrimaryKeyModel):
         if self.expires_at <= timezone.now():
             return "expired"
         return "open"
+
+
+class UserSession(UUIDPrimaryKeyModel):
+    """Register of sign-in sessions per user (HIMS-IAM-006; spec 4.4, 13.2, 13.5).
+
+    Django's session table cannot be searched by user, so this register records which session
+    belongs to whom. It lets HIMS end every session of a person at once (suspension, termination,
+    password change, "sign out of all devices") and shows administrators how many devices were
+    signed out. The session key is a bearer secret: it is never shown in the admin or the API.
+    """
+
+    class EndReason(models.TextChoices):
+        LOGOUT = "logout", "Signed out"
+        ACCOUNT_DEACTIVATED = "account_deactivated", "Account deactivated (suspended/terminated)"
+        PASSWORD_CHANGED = "password_changed", "Password changed"
+        SIGNED_OUT_BY_ADMIN = "signed_out_by_admin", "Signed out by an administrator"
+        EXPIRED = "expired", "Expired"
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="sessions")
+    session_key = models.CharField(max_length=40, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=512, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    end_reason = models.CharField(max_length=32, choices=EndReason.choices, blank=True)
+
+    class Meta:
+        db_table = "user_sessions"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "ended_at"], name="user_session_open_idx")]
+
+    def __str__(self) -> str:
+        state = self.get_end_reason_display() if self.ended_at else "active"
+        return f"Session of {self.user_id} ({state})"

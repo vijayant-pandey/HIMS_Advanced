@@ -40,6 +40,7 @@ class AuditAction:
     AUTH_LOGIN = "auth.login"
     AUTH_LOGIN_FAILED = "auth.login_failed"
     AUTH_LOGOUT = "auth.logout"
+    AUTH_SESSIONS_ENDED = "auth.sessions.ended"
     ROLE_CREATED = "access.role.created"
     ROLE_ASSIGNED = "access.role.assigned"
     ROLE_REVOKED = "access.role.revoked"

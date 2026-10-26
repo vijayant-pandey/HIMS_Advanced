@@ -69,7 +69,8 @@ def apply_employment_status_change(staff: StaffMember) -> None:
     """Side effects of an employment-status change, shared by the API and the admin console.
 
     Suspension/termination ends access immediately: inactive users fail authentication and lose
-    every grant (spec 13.2, 13.5). Sessions are invalidated by HIMS-IAM-006.
+    every grant (spec 13.2, 13.5), and deactivating the account deletes all of the person's
+    sessions on every device (apps.identity.sessions, HIMS-IAM-006).
     """
     if staff.user_id:
         user = staff.user

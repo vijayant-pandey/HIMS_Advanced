@@ -350,6 +350,7 @@ Country notes:
 | Signed notes are never overwritten; amendments keep the original | Legal record (spec 4.8) | Planned (P2) |
 | Break-glass access requires a reason and is reviewed afterwards | Emergency care vs privacy (spec 13.2) | Planned (P2) |
 | Every "Permission denied" is recorded with its reference number | Traceability (HIMS-UI-002) | ✅ today |
+| Suspending, terminating or deactivating someone signs them out of every device at once (sessions deleted, recorded as `auth.sessions.ended`) | Access ends the moment employment ends (spec 13.2, 13.5) | ✅ today (HIMS-IAM-006) |
 | A signed-in user with no role sees a welcome page; the visit is recorded as `access.none_assigned` with the reference shown on screen | Admins can see who is waiting for access (HIMS-UI-002) | ✅ today |
 
 ---
