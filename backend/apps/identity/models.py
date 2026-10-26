@@ -168,3 +168,43 @@ class UserSession(UUIDPrimaryKeyModel):
     def __str__(self) -> str:
         state = self.get_end_reason_display() if self.ended_at else "active"
         return f"Session of {self.user_id} ({state})"
+
+
+class MfaDevice(UUIDPrimaryKeyModel):
+    """A user's authenticator app for two-factor sign-in (HIMS-IAM-005; spec 4.4, 13.1).
+
+    The TOTP secret is stored encrypted (common.crypto, spec 13.3) because it must be read to
+    check codes. ``confirmed_at`` is empty while setup is in progress; only confirmed devices are
+    used at sign-in. ``last_used_step`` blocks re-use of a code that was already accepted.
+    """
+
+    user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="mfa_device")
+    secret_encrypted = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    last_used_step = models.BigIntegerField(null=True, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "user_mfa_devices"
+
+    def __str__(self) -> str:
+        return f"Authenticator for {self.user_id} ({'on' if self.confirmed_at else 'setting up'})"
+
+
+class MfaRecoveryCode(UUIDPrimaryKeyModel):
+    """One-time backup code for a lost phone. Only a SHA-256 fingerprint is stored."""
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="mfa_recovery_codes")
+    code_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "user_mfa_recovery_codes"
+        constraints = [
+            models.UniqueConstraint(fields=["user", "code_hash"], name="mfa_recovery_code_unique")
+        ]
+
+    def __str__(self) -> str:
+        return f"Recovery code for {self.user_id} ({'used' if self.used_at else 'unused'})"

@@ -18,3 +18,7 @@ export type PasswordResetDetails = Schemas["PasswordResetDetails"];
 export type PasswordResetConfirmRequest = Schemas["PasswordResetConfirmRequest"];
 export type PasswordResetRequested = Schemas["PasswordResetRequested"];
 export type NoAccessReference = Schemas["NoAccessReference"];
+export type MfaStatus = Schemas["MfaStatus"];
+export type MfaChallenge = Schemas["MfaChallenge"];
+export type MfaSetup = Schemas["MfaSetup"];
+export type MfaRecoveryCodes = Schemas["MfaRecoveryCodes"];

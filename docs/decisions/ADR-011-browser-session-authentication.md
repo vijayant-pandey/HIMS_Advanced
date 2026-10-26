@@ -34,3 +34,8 @@ or is reset, and on the admin "Sign out of all devices" action. Each case is aud
 `auth.sessions.ended` with the reason and number of sessions. Expired sessions are cleaned nightly
 (`platform.clear_expired_sessions`). MFA (HIMS-IAM-005) and step-up re-authentication
 (HIMS-IAM-007) remain open.
+
+## Update (HIMS-IAM-005, 2026-10-26)
+Two-factor sign-in is implemented (ADR-018). Sessions now carry a "two-factor verified" flag;
+privileged users need it for every API call and for the admin console. Step-up
+re-authentication for individual sensitive actions (HIMS-IAM-007) remains open.

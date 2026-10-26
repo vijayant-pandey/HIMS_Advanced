@@ -9,6 +9,9 @@ import type {
   PasswordResetDetails,
   PasswordResetRequested,
   LoginRequest,
+  MfaChallenge,
+  MfaRecoveryCodes,
+  MfaSetup,
   NoAccessReference,
 } from "../../api/types";
 
@@ -30,13 +33,31 @@ export function useCurrentUser() {
   });
 }
 
+/** True when the password was accepted but the authenticator code is still needed. */
+export function isMfaChallenge(result: CurrentUser | MfaChallenge): result is MfaChallenge {
+  return "mfa_required" in result && result.mfa_required === true;
+}
+
 export function useLogin() {
   const queryClient = useQueryClient();
-  return useMutation<CurrentUser, ApiError, LoginRequest>({
+  return useMutation<CurrentUser | MfaChallenge, ApiError, LoginRequest>({
     mutationFn: async (credentials) => {
       await api.get("/auth/csrf/"); // sets the CSRF cookie required for login
-      return api.post<CurrentUser>("/auth/login/", credentials);
+      return api.post<CurrentUser | MfaChallenge>("/auth/login/", credentials);
     },
+    onSuccess: (result) => {
+      if (isMfaChallenge(result)) return; // second step still to come
+      queryClient.clear();
+      queryClient.setQueryData(currentUserKey, result);
+    },
+  });
+}
+
+/** Second sign-in step: the 6-digit authenticator code or a backup code (HIMS-IAM-005). */
+export function useVerifyLogin() {
+  const queryClient = useQueryClient();
+  return useMutation<CurrentUser, ApiError, { code: string }>({
+    mutationFn: (body) => api.post<CurrentUser>("/auth/login/verify/", body),
     onSuccess: (user) => {
       queryClient.clear();
       queryClient.setQueryData(currentUserKey, user);
@@ -121,5 +142,43 @@ export function useConfirmPasswordReset() {
 export function useReportNoAccess() {
   return useMutation<NoAccessReference, ApiError, { page: string }>({
     mutationFn: (body) => api.post<NoAccessReference>("/auth/no-access-report/", body),
+  });
+}
+
+
+// --- Two-factor sign-in management (Security page) ------------------------------------------
+
+function useRefreshCurrentUser() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: currentUserKey });
+}
+
+export function useStartMfaSetup() {
+  return useMutation<MfaSetup, ApiError, void>({
+    mutationFn: () => api.post<MfaSetup>("/auth/mfa/setup/"),
+  });
+}
+
+export function useConfirmMfaSetup() {
+  const refresh = useRefreshCurrentUser();
+  return useMutation<MfaRecoveryCodes, ApiError, { code: string }>({
+    mutationFn: (body) => api.post<MfaRecoveryCodes>("/auth/mfa/confirm/", body),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useRegenerateRecoveryCodes() {
+  const refresh = useRefreshCurrentUser();
+  return useMutation<MfaRecoveryCodes, ApiError, { code: string }>({
+    mutationFn: (body) => api.post<MfaRecoveryCodes>("/auth/mfa/recovery-codes/", body),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useDisableMfa() {
+  const refresh = useRefreshCurrentUser();
+  return useMutation<void, ApiError, { code: string }>({
+    mutationFn: (body) => api.post<void>("/auth/mfa/disable/", body),
+    onSuccess: () => refresh(),
   });
 }

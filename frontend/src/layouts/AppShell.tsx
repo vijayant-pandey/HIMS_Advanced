@@ -36,9 +36,15 @@ export function AppShell() {
             ))}
           </Stack>
           <ThemePicker color="inherit" />
-          <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            {user?.display_name}
-          </Typography>
+          <Button
+            color="inherit"
+            component={NavLink}
+            to="/security"
+            title="Security: two-factor sign-in"
+            sx={{ opacity: 0.9, "&.active": { opacity: 1, bgcolor: "rgba(255,255,255,0.16)" } }}
+          >
+            {user?.display_name} · Security
+          </Button>
           <Button
             color="inherit"
             variant="outlined"

@@ -54,7 +54,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-002 | Session login/logout/me, CSRF, rate limiting, non-enumerating errors, audit | Done |
 | HIMS-IAM-003 | Invitation and account activation (consumes `staff.member.created`) | Done |
 | HIMS-IAM-004 | Password reset (non-enumerating, time-limited single-use tokens) | Done |
-| HIMS-IAM-005 | MFA (TOTP/WebAuthn) mandatory for privileged roles | To do |
+| HIMS-IAM-005 | MFA (TOTP/WebAuthn) mandatory for privileged roles | Done (TOTP; ADR-018). WebAuthn/passkeys split out as HIMS-IAM-014 |
 | HIMS-IAM-006 | Invalidate all sessions on suspension/termination (password change: done via Django session hash) | Done (session register `user_sessions`; sessions deleted on deactivation, password change/reset and admin "Sign out of all devices"; audited as `auth.sessions.ended`) |
 | HIMS-IAM-007 | Step-up reauthentication for sensitive actions | To do |
 | HIMS-IAM-008 | Enterprise SSO (OIDC/SAML) — decision in spec 36 | To do |
@@ -63,6 +63,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-011 | Break-glass emergency access with reason, audit and review | To do (Phase 2) |
 | HIMS-IAM-012 | Periodic access-review report | To do |
 | HIMS-IAM-013 | Role and access-management UI | To do |
+| HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | To do |
 
 ## EPIC HIMS-STAFF — Staff and credentials
 

@@ -49,6 +49,11 @@ class ScopedPermission(BasePermission):
         user = request.user
         if not (user and user.is_authenticated):
             return False
+
+        from apps.identity.mfa import ensure_satisfied
+
+        # Privileged users must have passed two-factor in this session (HIMS-IAM-005).
+        ensure_satisfied(request)
         codename = required_permission(request, view)
         if codename is None:
             return False

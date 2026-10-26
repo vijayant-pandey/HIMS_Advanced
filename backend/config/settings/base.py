@@ -223,6 +223,15 @@ EMAIL_BACKEND = env.str(
     "DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
 )
 DEFAULT_FROM_EMAIL = env.str("DJANGO_DEFAULT_FROM_EMAIL", default="HIMS <no-reply@hims.invalid>")
+
+# --- Two-factor sign-in and field encryption (HIMS-IAM-005; spec 4.4, 13.1, 13.3) -----------
+# Users holding any permission in access_control.catalog.MFA_REQUIRED_PERMISSIONS must use
+# two-factor sign-in. Can be relaxed on a developer machine; production refuses to start without it.
+HIMS_MFA_REQUIRED_FOR_PRIVILEGED = env.bool("HIMS_MFA_REQUIRED_FOR_PRIVILEGED", default=True)
+# Optionally require two-factor for every user, not only privileged ones.
+HIMS_MFA_REQUIRED_FOR_ALL = env.bool("HIMS_MFA_REQUIRED_FOR_ALL", default=False)
+# Fernet keys (newest first) encrypting authenticator secrets; see common/crypto.py.
+HIMS_FIELD_ENCRYPTION_KEYS = env.list("HIMS_FIELD_ENCRYPTION_KEYS", default=[])
 HIMS_IDEMPOTENCY_RETENTION_HOURS = env.int("HIMS_IDEMPOTENCY_RETENTION_HOURS", default=48)
 
 # --- Logging: structured, PHI-minimised (spec 13.4, 27.2) --------------------------------

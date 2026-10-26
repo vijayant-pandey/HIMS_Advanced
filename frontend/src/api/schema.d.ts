@@ -87,7 +87,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description 200 = signed in. 202 = password accepted; send the authenticator code to /auth/login/verify/ to finish signing in. */
         post: operations["auth_login_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Second sign-in step for accounts with two-factor on (HIMS-IAM-005). */
+        post: operations["auth_login_verify_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -120,6 +138,87 @@ export interface paths {
         get: operations["auth_me_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Two-factor status for the signed-in user. Always reachable, so people can set it up. */
+        get: operations["auth_mfa_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_mfa_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/disable/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_mfa_disable_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/recovery-codes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_mfa_recovery_codes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/setup/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_mfa_setup_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -645,6 +744,7 @@ export interface components {
             staff_member_id: string | null;
             /** @description For navigation only; the API enforces access. */
             grants: components["schemas"]["Grant"][];
+            mfa: components["schemas"]["MfaStatus"];
         };
         /**
          * @description * `USD` - US Dollar
@@ -787,6 +887,32 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
+        };
+        MfaChallenge: {
+            mfa_required: boolean;
+            detail: string;
+        };
+        MfaCodeRequest: {
+            /** @description 6-digit authenticator code, or a recovery code where allowed. */
+            code: string;
+        };
+        MfaRecoveryCodes: {
+            recovery_codes: string[];
+        };
+        MfaSetup: {
+            /** @description Shown once, for typing into the app by hand. */
+            secret: string;
+            /** @description Encode as a QR code for the authenticator app. */
+            otpauth_uri: string;
+        };
+        MfaStatus: {
+            /** @description Two-factor sign-in is on for this account. */
+            enabled: boolean;
+            /** @description The person's role requires two-factor. */
+            required: boolean;
+            /** @description This session passed two-factor. */
+            verified: boolean;
+            recovery_codes_remaining: number;
         };
         NoAccessReference: {
             /** @description Quote this to an administrator or support. */
@@ -1360,6 +1486,37 @@ export interface operations {
                     "application/json": components["schemas"]["CurrentUser"];
                 };
             };
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaChallenge"];
+                };
+            };
+        };
+    };
+    auth_login_verify_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaCodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentUser"];
+                };
+            };
         };
     };
     auth_logout_create: {
@@ -1395,6 +1552,112 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CurrentUser"];
+                };
+            };
+        };
+    };
+    auth_mfa_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaStatus"];
+                };
+            };
+        };
+    };
+    auth_mfa_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaCodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaRecoveryCodes"];
+                };
+            };
+        };
+    };
+    auth_mfa_disable_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_mfa_recovery_codes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaCodeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaRecoveryCodes"];
+                };
+            };
+        };
+    };
+    auth_mfa_setup_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaSetup"];
                 };
             };
         };
