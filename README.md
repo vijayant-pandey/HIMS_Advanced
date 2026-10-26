@@ -73,6 +73,12 @@ python manage.py runserver                       set HIMS_ENV_FILE=.env.us
 cd frontend && npm run dev:in                    cd frontend && npm run dev:us
 ```
 
+## Updating the databases after a merge
+
+When a change includes database migrations, **every hospital database must be updated**. Follow
+[docs/workflows/database-migrations.md](docs/workflows/database-migrations.md): it always runs
+India, then US, and clears `HIMS_ENV_FILE` so no database is skipped.
+
 ## Quality gates (run before every PR)
 
 ```bash
