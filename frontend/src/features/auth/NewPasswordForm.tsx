@@ -66,7 +66,7 @@ export function NewPasswordForm({ intro, submitLabel, pending, error, onSubmit }
           helperText={errors.confirm?.message}
           {...register("confirm")}
         />
-        <Button type="submit" variant="contained" size="large" disabled={pending}>
+        <Button type="submit" variant="contained" disabled={pending}>
           {submitLabel}
         </Button>
       </Stack>

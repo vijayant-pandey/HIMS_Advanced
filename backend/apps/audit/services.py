@@ -44,6 +44,7 @@ class AuditAction:
     ROLE_ASSIGNED = "access.role.assigned"
     ROLE_REVOKED = "access.role.revoked"
     ACCESS_DENIED = "access.denied"
+    ACCESS_NONE_ASSIGNED = "access.none_assigned"
     STAFF_CREATED = "staff.member.created"
     STAFF_UPDATED = "staff.member.updated"
     STAFF_DEPARTMENT_ASSIGNED = "staff.department.assigned"

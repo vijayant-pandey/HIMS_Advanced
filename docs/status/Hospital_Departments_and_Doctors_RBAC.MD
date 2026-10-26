@@ -287,6 +287,8 @@ exist now. Assign them in the admin console under **Role assignments**.
 | **Head of department (HOD)** | One department | facilities view, departments view | Sees their department. Clinical approvals are added with clinical features | HOD, Section Chief, Department Chair |
 | **Basic staff access** | Organization or facility | facilities view, departments view | Minimum access for any employee, so new staff don't see "Permission denied" | Everyone |
 
+**Users with no role** see a "Welcome, your account is active" page with a **reference number**. An auditor can find it in the admin console (**Audit events**, search the reference) as an `access.none_assigned` event.
+
 **To give a new doctor access today:** assign **Basic staff access** (and **Head of department** for
 HODs). Clinical access (patients, notes, orders) becomes available when those features are built
 and the matrix in section 8 is approved.
@@ -348,6 +350,7 @@ Country notes:
 | Signed notes are never overwritten; amendments keep the original | Legal record (spec 4.8) | Planned (P2) |
 | Break-glass access requires a reason and is reviewed afterwards | Emergency care vs privacy (spec 13.2) | Planned (P2) |
 | Every "Permission denied" is recorded with its reference number | Traceability (HIMS-UI-002) | ✅ today |
+| A signed-in user with no role sees a welcome page; the visit is recorded as `access.none_assigned` with the reference shown on screen | Admins can see who is waiting for access (HIMS-UI-002) | ✅ today |
 
 ---
 

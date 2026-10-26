@@ -26,7 +26,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-PLAT-013 | Pin GitHub Actions to commit SHAs; least-privilege tokens per job | To do |
 | HIMS-PLAT-014 | Outbox and idempotency retention/archival jobs and runbook | Partial (idempotency purge done) |
 | HIMS-PLAT-015 | Route-level code splitting in the SPA (current bundle > 500 kB) | To do |
-| HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event) | To do (scheduled by product owner) |
+| HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event); plus 6 more colour themes (10 total) and a compact modern design | Done (visit recorded as `access.none_assigned`; reference = audit request_id) |
 | HIMS-PLAT-016 | OpenTelemetry tracing for API, Celery and outbound HTTP | To do |
 | HIMS-PLAT-017 | Django admin operations console: RBAC-gated, audited, no deletion (ADR-016) | Done |
 | HIMS-SEC-015 | Console network restriction (IP allow-list/VPN) before enabling outside local | To do |

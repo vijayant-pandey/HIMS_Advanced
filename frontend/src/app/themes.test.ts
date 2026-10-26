@@ -1,4 +1,4 @@
-import { DEFAULT_THEME, readThemeId, saveThemeId } from "./themes";
+import { DEFAULT_THEME, THEME_IDS, THEMES, readThemeId, saveThemeId } from "./themes";
 
 describe("theme preference", () => {
   afterEach(() => {
@@ -16,7 +16,15 @@ describe("theme preference", () => {
   });
 
   it("ignores unknown cookie values", () => {
-    document.cookie = "hims_theme=purple; path=/";
+    document.cookie = "hims_theme=chartreuse; path=/";
     expect(readThemeId()).toBe(DEFAULT_THEME);
+  });
+});
+
+describe("theme catalog", () => {
+  it("offers the four original themes plus six more", () => {
+    expect(THEME_IDS).toHaveLength(10);
+    expect(THEME_IDS.slice(0, 4)).toEqual(["blue", "red", "green", "mono"]);
+    for (const id of THEME_IDS) expect(THEMES[id].primary).toMatch(/^#[0-9a-f]{6}$/);
   });
 });

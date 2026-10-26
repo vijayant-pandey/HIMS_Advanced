@@ -12,7 +12,7 @@
  * the fixed commands defined in DEPLOYMENTS below.
  */
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
@@ -29,6 +29,10 @@ const PYTHON = path.join(
   IS_WINDOWS ? "python.exe" : "python",
 );
 const VITE_BIN = path.join(FRONTEND_DIR, "node_modules", "vite", "bin", "vite.js");
+// Same palette as the apps (src/app/themes.json); the Django admin checks against it in tests.
+const THEME_PALETTE = JSON.parse(
+  readFileSync(path.join(FRONTEND_DIR, "src", "app", "themes.json"), "utf8"),
+);
 const ALLOWED_HOSTS = new Set([`localhost:${LAUNCHER_PORT}`, `127.0.0.1:${LAUNCHER_PORT}`]);
 
 const DEPLOYMENTS = {
@@ -280,43 +284,46 @@ const PAGE = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HIMS Launcher</title>
 <style>
-  :root { --bg:#f8f9fb; --card:#fff; --text:#1b1f24; --muted:#5b6470; --border:#dde1e6;
-          --accent:#1565c0; --accent-dark:#0d47a1; --tint:#e3f2fd; --ok:#2e7d32; --warn:#b26a00;
+  :root { --bg:#f7f8fa; --card:#fff; --text:#1f2937; --muted:#6b7280; --border:#e5e7eb;
+          --accent:#1565c0; --accent-dark:#0d47a1; --tint:#e3f2fd; --ok:#15803d; --warn:#b45309;
           color-scheme: light; }
-  header.bar { background:var(--accent-dark); color:#fff; }
-  header.bar .inner { max-width:960px; margin:0 auto; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  header.bar strong { font-size:18px; letter-spacing:.3px; }
-  .themes { display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:13px; }
-  .themes button { padding:6px 10px; border-color:rgba(255,255,255,.5); color:#fff; display:inline-flex; align-items:center; gap:6px; font-size:13px; }
-  .themes button[aria-pressed="true"] { background:#fff; color:var(--accent-dark); border-color:#fff; font-weight:600; }
-  .dot { width:12px; height:12px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.25); display:inline-block; }
-  .card { border-top:4px solid var(--accent); }
   * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); }
-  main { max-width: 960px; margin: 0 auto; padding: 48px 16px; }
-  h1 { margin:0 0 4px; font-size: 28px; }
-  p.lead { margin:0 0 32px; color:var(--muted); }
-  .grid { display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; display:flex; flex-direction:column; gap:12px; }
+  body { margin:0; font: 13px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background:var(--bg); color:var(--text); -webkit-font-smoothing: antialiased; }
+  header.bar { background:var(--accent-dark); color:#fff; }
+  header.bar .inner { max-width:960px; margin:0 auto; padding:8px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; min-height:48px; }
+  header.bar strong { font-size:15px; letter-spacing:.2px; }
+  .themes { display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:12px; }
+  .themes .current { opacity:.9; margin-right:4px; }
+  .swatch { width:20px; height:20px; padding:0; border-radius:50%; border:2px solid rgba(255,255,255,.6); cursor:pointer; }
+  .swatch[aria-pressed="true"] { border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.45); transform:scale(1.1); }
+  .swatch:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 16px; }
+  h1 { margin:0 0 4px; font-size: 20px; font-weight:600; letter-spacing:-.01em; }
+  p.lead { margin:0 0 24px; color:var(--muted); }
+  .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card { background:var(--card); border:1px solid var(--border); border-top:3px solid var(--accent); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:8px; }
   .card.disabled { opacity:.55; }
-  .title { display:flex; align-items:center; gap:12px; font-size:20px; font-weight:600; }
-  .flag { font-size:32px; line-height:1; }
-  .detail { color:var(--muted); font-size:14px; }
-  .status { font-size:13px; color:var(--muted); min-height: 1.4em; }
+  .title { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; }
+  .flag { font-size:22px; line-height:1; }
+  .detail { color:var(--muted); font-size:12px; }
+  .status { font-size:12px; color:var(--muted); min-height: 1.4em; }
   .status .ok { color:var(--ok); } .status .warn { color:var(--warn); }
-  .actions { display:flex; gap:8px; margin-top:auto; }
-  button { font: inherit; border-radius:8px; padding:10px 14px; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text); }
-  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; flex:1; font-weight:600; }
+  .actions { display:flex; gap:6px; margin-top:auto; padding-top:4px; }
+  button { font: inherit; border-radius:6px; padding:5px 12px; min-height:30px; cursor:pointer; border:1px solid var(--border); background:#fff; color:var(--text); }
+  button:hover:not(:disabled) { background:#f3f4f6; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; flex:1; font-weight:500; }
+  button.primary:hover:not(:disabled) { background:var(--accent-dark); }
   button:disabled { cursor:not-allowed; opacity:.6; }
-  details { font-size:12px; }
-  pre { max-height:220px; overflow:auto; background:var(--bg); padding:8px; border-radius:6px; white-space:pre-wrap; word-break:break-word; margin:8px 0 0; }
-  footer { margin-top:32px; color:var(--muted); font-size:13px; }
+  details { font-size:11px; }
+  pre { max-height:200px; overflow:auto; background:var(--bg); padding:8px; border-radius:6px; white-space:pre-wrap; word-break:break-word; margin:6px 0 0; }
+  footer { margin-top:24px; color:var(--muted); font-size:12px; }
 </style>
 </head>
 <body>
 <header class="bar"><div class="inner">
   <strong>HIMS</strong>
-  <div class="themes" role="group" aria-label="Theme"><span>Theme:</span></div>
+  <div class="themes" role="group" aria-label="Theme"><span class="current"></span></div>
 </div></header>
 <main>
   <h1>HIMS — choose a hospital deployment</h1>
@@ -333,14 +340,8 @@ const META = ${JSON.stringify(
 const grid = document.getElementById("grid");
 const busy = new Set();
 
-// Theme: shared with both hospital apps and the Django admin via the hims_theme cookie
-// (keep in sync with src/app/themes.ts and backend/common/theming.py).
-const THEMES = {
-  blue: { label: "White & Blue", primary: "#1565c0", dark: "#0d47a1", tint: "#e3f2fd" },
-  red: { label: "White & Red", primary: "#c62828", dark: "#8e0000", tint: "#ffebee" },
-  green: { label: "White & Green", primary: "#2e7d32", dark: "#1b5e20", tint: "#e8f5e9" },
-  mono: { label: "Minimal Black & White", primary: "#111111", dark: "#000000", tint: "#f2f2f2" },
-};
+// Theme: shared with both hospital apps and the Django admin via the hims_theme cookie.
+const THEMES = ${JSON.stringify(THEME_PALETTE)};
 const themeBar = document.querySelector(".themes");
 function currentTheme() {
   const m = document.cookie.match(/(?:^|;\\s*)hims_theme=([^;]+)/);
@@ -352,14 +353,16 @@ function applyTheme(id) {
   root.setProperty("--accent", t.primary);
   root.setProperty("--accent-dark", t.dark);
   root.setProperty("--tint", t.tint);
-  themeBar.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.theme === id)));
+  themeBar.querySelector(".current").textContent = "Theme: " + t.label;
+  themeBar.querySelectorAll(".swatch").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.theme === id)));
 }
 for (const [id, t] of Object.entries(THEMES)) {
   const b = document.createElement("button");
+  b.className = "swatch";
   b.dataset.theme = id;
-  b.innerHTML = '<span class="dot"></span>';
-  b.querySelector(".dot").style.background = t.primary;
-  b.append(t.label);
+  b.title = t.label;
+  b.setAttribute("aria-label", t.label);
+  b.style.background = t.primary;
   b.addEventListener("click", () => {
     document.cookie = "hims_theme=" + id + "; path=/; max-age=31536000; SameSite=Lax";
     applyTheme(id);

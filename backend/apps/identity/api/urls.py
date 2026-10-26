@@ -7,6 +7,7 @@ from .views import (
     InvitationInspectView,
     LoginView,
     LogoutView,
+    NoAccessReportView,
     PasswordResetConfirmView,
     PasswordResetInspectView,
     PasswordResetRequestView,
@@ -17,6 +18,7 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="auth-login"),
     path("logout/", LogoutView.as_view(), name="auth-logout"),
     path("me/", CurrentUserView.as_view(), name="auth-me"),
+    path("no-access-report/", NoAccessReportView.as_view(), name="auth-no-access-report"),
     path("invitations/inspect/", InvitationInspectView.as_view(), name="auth-invitation-inspect"),
     path("invitations/accept/", InvitationAcceptView.as_view(), name="auth-invitation-accept"),
     path(
