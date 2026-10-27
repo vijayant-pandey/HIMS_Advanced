@@ -86,3 +86,7 @@ class Department(OrganizationOwnedModel, VersionedModel):
             raise ValidationError(
                 {"facility": "Departments can only be added to an active facility."}
             )
+
+
+# Physical locations (building, floor, ward, room) live in their own module.
+from .location_models import Building, Floor, Room, Ward  # noqa: E402, F401

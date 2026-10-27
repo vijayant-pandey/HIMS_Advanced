@@ -297,6 +297,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/beds/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["beds_list"];
+        put?: never;
+        post: operations["beds_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/beds/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["beds_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["beds_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/beds/{id}/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["beds_status_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/beds/bulk/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["beds_bulk_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/buildings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        get: operations["buildings_list"];
+        put?: never;
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        post: operations["buildings_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/buildings/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        get: operations["buildings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        patch: operations["buildings_partial_update"];
+        trace?: never;
+    };
     "/api/v1/departments/": {
         parameters: {
             query?: never;
@@ -376,6 +500,87 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["facilities_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/facilities/{id}/locations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The whole building → floor → ward → room → bed structure of one facility.
+         *
+         *     One request with five queries, used by the Locations screen and the future bed board.
+         */
+        get: operations["facilities_locations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/floors/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        get: operations["floors_list"];
+        put?: never;
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        post: operations["floors_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/floors/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        get: operations["floors_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        patch: operations["floors_partial_update"];
         trace?: never;
     };
     "/api/v1/organization/": {
@@ -530,6 +735,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rooms/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        get: operations["rooms_list"];
+        put?: never;
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        post: operations["rooms_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rooms/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        get: operations["rooms_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        patch: operations["rooms_partial_update"];
+        trace?: never;
+    };
     "/api/v1/specialties/": {
         parameters: {
             query?: never;
@@ -675,6 +940,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wards/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        get: operations["wards_list"];
+        put?: never;
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        post: operations["wards_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wards/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        get: operations["wards_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Facility-scoped list/retrieve/create/update shared by every location level.
+         *
+         *     Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+         *     Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+         *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+         */
+        patch: operations["wards_partial_update"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -692,6 +1017,14 @@ export interface components {
          * @enum {string}
          */
         ActorTypeEnum: "user" | "system" | "anonymous";
+        /**
+         * @description * `any` - Any age
+         *     * `adult` - Adults
+         *     * `pediatric` - Children
+         *     * `neonatal` - Newborns
+         * @enum {string}
+         */
+        AgeGroupEnum: "any" | "adult" | "pediatric" | "neonatal";
         AuditEvent: {
             /** Format: uuid */
             readonly id: string;
@@ -711,6 +1044,108 @@ export interface components {
             readonly ip_address: string | null;
             readonly changes: unknown;
             readonly metadata: unknown;
+        };
+        Bed: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly facility: string;
+            /** Format: uuid */
+            readonly ward: string;
+            /** Format: uuid */
+            readonly room: string;
+            /** @description Bed label, unique within the ward */
+            readonly code: string;
+            readonly bed_type: components["schemas"]["BedTypeEnum"];
+            readonly status: components["schemas"]["BedStatusEnum"];
+            readonly status_reason: string;
+            /** Format: date-time */
+            readonly status_changed_at: string;
+            readonly is_active: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        BedCreateRequest: {
+            /** Format: uuid */
+            room: string;
+            /** @description Bed label, unique within the ward */
+            code: string;
+            bed_type: components["schemas"]["BedTypeEnum"];
+        };
+        BedStatusChangeRequest: {
+            version: number;
+            status: components["schemas"]["BedStatusChangeStatusEnum"];
+            /** @default  */
+            reason: string;
+        };
+        /**
+         * @description * `available` - Available
+         *     * `maintenance` - Maintenance
+         *     * `blocked` - Blocked
+         *     * `out_of_service` - Out of service
+         * @enum {string}
+         */
+        BedStatusChangeStatusEnum: "available" | "maintenance" | "blocked" | "out_of_service";
+        /**
+         * @description * `available` - Available
+         *     * `reserved` - Reserved
+         *     * `occupied` - Occupied
+         *     * `cleaning` - Cleaning
+         *     * `maintenance` - Maintenance
+         *     * `blocked` - Blocked
+         *     * `out_of_service` - Out of service
+         * @enum {string}
+         */
+        BedStatusEnum: "available" | "reserved" | "occupied" | "cleaning" | "maintenance" | "blocked" | "out_of_service";
+        /**
+         * @description * `general` - General
+         *     * `semi_private` - Semi-private
+         *     * `private` - Private
+         *     * `deluxe` - Deluxe / suite
+         *     * `icu` - ICU
+         *     * `hdu` - HDU
+         *     * `nicu` - NICU (cot / incubator)
+         *     * `picu` - PICU
+         *     * `isolation` - Isolation
+         *     * `day_care` - Day care
+         *     * `labour` - Labour / delivery
+         *     * `recovery` - Recovery
+         *     * `emergency_trolley` - Emergency trolley
+         * @enum {string}
+         */
+        BedTypeEnum: "general" | "semi_private" | "private" | "deluxe" | "icu" | "hdu" | "nicu" | "picu" | "isolation" | "day_care" | "labour" | "recovery" | "emergency_trolley";
+        Building: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly facility: string;
+            readonly is_active: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly code: string;
+            readonly name: string;
+        };
+        BuildingCreateRequest: {
+            /** Format: uuid */
+            facility: string;
+            code: string;
+            name: string;
+        };
+        BulkBedsRequest: {
+            /** Format: uuid */
+            room: string;
+            /** @description e.g. 'B' gives B01, B02, … */
+            prefix: string;
+            /** @default 1 */
+            start: number;
+            count: number;
+            bed_type: components["schemas"]["BedTypeEnum"];
         };
         /**
          * @description * `US` - United States
@@ -847,6 +1282,15 @@ export interface components {
             timezone: string;
             phone?: string;
         };
+        FacilityLocations: {
+            /** Format: uuid */
+            facility: string;
+            /** @description by status */
+            bed_counts: {
+                [key: string]: number;
+            };
+            buildings: components["schemas"]["TreeBuilding"][];
+        };
         /**
          * @description * `hospital` - Hospital
          *     * `clinic` - Clinic
@@ -855,6 +1299,37 @@ export interface components {
          * @enum {string}
          */
         FacilityTypeEnum: "hospital" | "clinic" | "diagnostic_center" | "day_care";
+        Floor: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly facility: string;
+            readonly is_active: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            /** Format: uuid */
+            readonly building: string;
+            /** @description -5 (basement) … 0 (ground) … 200 */
+            readonly level: number;
+            readonly name: string;
+        };
+        FloorCreateRequest: {
+            /** Format: uuid */
+            building: string;
+            /** @description -5 (basement) … 0 (ground) … 200 */
+            level: number;
+            name: string;
+        };
+        /**
+         * @description * `any` - Any
+         *     * `male` - Male only
+         *     * `female` - Female only
+         * @enum {string}
+         */
+        GenderRestrictionEnum: "any" | "male" | "female";
         Grant: {
             permission: string;
             /** Format: uuid */
@@ -965,6 +1440,36 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["AuditEvent"][];
         };
+        PaginatedBedList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Bed"][];
+        };
+        PaginatedBuildingList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Building"][];
+        };
         PaginatedDepartmentList: {
             /** @example 123 */
             count: number;
@@ -994,6 +1499,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Facility"][];
+        };
+        PaginatedFloorList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Floor"][];
         };
         PaginatedRoleAssignmentList: {
             /** @example 123 */
@@ -1025,6 +1545,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Role"][];
         };
+        PaginatedRoomList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Room"][];
+        };
         PaginatedStaffMemberList: {
             /** @example 123 */
             count: number;
@@ -1039,6 +1574,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["StaffMember"][];
+        };
+        PaginatedWardList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Ward"][];
         };
         PasswordResetConfirmRequest: {
             token: string;
@@ -1060,6 +1610,16 @@ export interface components {
         PasswordResetTokenRequest: {
             token: string;
         };
+        PatchedBedUpdateRequest: {
+            version?: number;
+            bed_type?: components["schemas"]["BedTypeEnum"];
+            is_active?: boolean;
+        };
+        PatchedBuildingUpdateRequest: {
+            version?: number;
+            name?: string;
+            is_active?: boolean;
+        };
         PatchedDepartmentUpdateRequest: {
             version?: number;
             name?: string;
@@ -1079,11 +1639,24 @@ export interface components {
             phone?: string;
             status?: components["schemas"]["ActiveStatusEnum"];
         };
+        PatchedFloorUpdateRequest: {
+            version?: number;
+            name?: string;
+            level?: number;
+            is_active?: boolean;
+        };
         PatchedOrganizationUpdateRequest: {
             version?: number;
             legal_name?: string;
             display_name?: string;
             default_timezone?: string;
+        };
+        PatchedRoomUpdateRequest: {
+            version?: number;
+            name?: string;
+            room_type?: components["schemas"]["RoomTypeEnum"];
+            is_isolation_capable?: boolean;
+            is_active?: boolean;
         };
         PatchedStaffMemberUpdateRequest: {
             version?: number;
@@ -1094,6 +1667,16 @@ export interface components {
             /** Format: date */
             left_on?: string | null;
         };
+        PatchedWardUpdateRequest: {
+            version?: number;
+            name?: string;
+            ward_type?: components["schemas"]["WardTypeEnum"];
+            /** Format: uuid */
+            department?: string | null;
+            gender_restriction?: components["schemas"]["GenderRestrictionEnum"];
+            age_group?: components["schemas"]["AgeGroupEnum"];
+            is_active?: boolean;
+        };
         Permission: {
             readonly codename: string;
             readonly description: string;
@@ -1103,10 +1686,13 @@ export interface components {
          *     * `access.roles.manage` - access.roles.manage
          *     * `access.roles.view` - access.roles.view
          *     * `audit.view` - audit.view
+         *     * `beds.status.manage` - beds.status.manage
          *     * `departments.manage` - departments.manage
          *     * `departments.view` - departments.view
          *     * `facilities.manage` - facilities.manage
          *     * `facilities.view` - facilities.view
+         *     * `locations.manage` - locations.manage
+         *     * `locations.view` - locations.view
          *     * `organization.manage` - organization.manage
          *     * `organization.view` - organization.view
          *     * `platform.admin_console` - platform.admin_console
@@ -1115,7 +1701,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "audit.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "audit.view" | "beds.status.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "locations.manage" | "locations.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
         QualificationType: {
             /** Format: uuid */
             readonly id: string;
@@ -1194,6 +1780,47 @@ export interface components {
             description: string;
             permissions: components["schemas"]["PermissionsEnum"][];
         };
+        Room: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly facility: string;
+            readonly is_active: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            /** Format: uuid */
+            readonly ward: string;
+            readonly code: string;
+            readonly name: string;
+            readonly room_type: components["schemas"]["RoomTypeEnum"];
+            /** @description e.g. negative-pressure room for infection control */
+            readonly is_isolation_capable: boolean;
+        };
+        RoomCreateRequest: {
+            /** Format: uuid */
+            ward: string;
+            code: string;
+            name: string;
+            room_type: components["schemas"]["RoomTypeEnum"];
+            /** @description e.g. negative-pressure room for infection control */
+            is_isolation_capable?: boolean;
+        };
+        /**
+         * @description * `general` - General room
+         *     * `private` - Private room
+         *     * `semi_private` - Semi-private room
+         *     * `icu_bay` - ICU bay
+         *     * `isolation` - Isolation room
+         *     * `operating_room` - Operating room
+         *     * `procedure` - Procedure room
+         *     * `recovery` - Recovery bay
+         *     * `consultation` - Consultation room
+         * @enum {string}
+         */
+        RoomTypeEnum: "general" | "private" | "semi_private" | "icu_bay" | "isolation" | "operating_room" | "procedure" | "recovery" | "consultation";
         Specialty: {
             /** Format: uuid */
             readonly id: string;
@@ -1353,6 +1980,59 @@ export interface components {
          * @enum {string}
          */
         StaffTypeEnum: "doctor" | "nurse" | "pharmacist" | "lab_technician" | "radiologist" | "dietitian" | "administrator" | "support";
+        TreeBed: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            bed_type: string;
+            status: string;
+            status_reason: string;
+            is_active: boolean;
+            version: number;
+        };
+        TreeBuilding: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            is_active: boolean;
+            floors: components["schemas"]["TreeFloor"][];
+        };
+        TreeFloor: {
+            /** Format: uuid */
+            id: string;
+            level: number;
+            name: string;
+            is_active: boolean;
+            wards: components["schemas"]["TreeWard"][];
+        };
+        TreeRoom: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            room_type: string;
+            is_isolation_capable: boolean;
+            is_active: boolean;
+            beds: components["schemas"]["TreeBed"][];
+        };
+        TreeWard: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            ward_type: string;
+            /** Format: uuid */
+            department: string | null;
+            gender_restriction: string;
+            age_group: string;
+            is_active: boolean;
+            /** @description by status */
+            bed_counts: {
+                [key: string]: number;
+            };
+            rooms: components["schemas"]["TreeRoom"][];
+        };
         /**
          * @description * `unverified` - Unverified
          *     * `verified` - Verified
@@ -1360,6 +2040,54 @@ export interface components {
          * @enum {string}
          */
         VerificationStatusEnum: "unverified" | "verified" | "rejected";
+        Ward: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly facility: string;
+            readonly is_active: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            /** Format: uuid */
+            readonly floor: string;
+            /** Format: uuid */
+            readonly department: string | null;
+            readonly code: string;
+            readonly name: string;
+            readonly ward_type: components["schemas"]["WardTypeEnum"];
+            readonly gender_restriction: components["schemas"]["GenderRestrictionEnum"];
+            readonly age_group: components["schemas"]["AgeGroupEnum"];
+        };
+        WardCreateRequest: {
+            /** Format: uuid */
+            floor: string;
+            /** Format: uuid */
+            department?: string | null;
+            code: string;
+            name: string;
+            ward_type: components["schemas"]["WardTypeEnum"];
+            gender_restriction?: components["schemas"]["GenderRestrictionEnum"];
+            age_group?: components["schemas"]["AgeGroupEnum"];
+        };
+        /**
+         * @description * `general` - General ward
+         *     * `private` - Private ward
+         *     * `icu` - Intensive care unit (ICU)
+         *     * `hdu` - High dependency unit (HDU)
+         *     * `nicu` - Neonatal ICU (NICU)
+         *     * `picu` - Pediatric ICU (PICU)
+         *     * `emergency` - Emergency / casualty
+         *     * `maternity` - Maternity / labour
+         *     * `isolation` - Isolation ward
+         *     * `day_care` - Day care
+         *     * `operating_theatre` - Operating theatre complex
+         *     * `recovery` - Recovery / PACU
+         * @enum {string}
+         */
+        WardTypeEnum: "general" | "private" | "icu" | "hdu" | "nicu" | "picu" | "emergency" | "maternity" | "isolation" | "day_care" | "operating_theatre" | "recovery";
     };
     responses: never;
     parameters: never;
@@ -1753,6 +2481,260 @@ export interface operations {
             };
         };
     };
+    beds_list: {
+        parameters: {
+            query?: {
+                /** @description 'true' = active only */
+                active?: string;
+                bed_type?: string;
+                facility?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                room?: string;
+                status?: string;
+                ward?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedBedList"];
+                };
+            };
+        };
+    };
+    beds_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BedCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Bed"];
+                };
+            };
+        };
+    };
+    beds_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this bed. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Bed"];
+                };
+            };
+        };
+    };
+    beds_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this bed. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedBedUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Bed"];
+                };
+            };
+        };
+    };
+    beds_status_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this bed. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BedStatusChangeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Bed"];
+                };
+            };
+        };
+    };
+    beds_bulk_create: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkBedsRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedBedList"];
+                };
+            };
+        };
+    };
+    buildings_list: {
+        parameters: {
+            query?: {
+                /** @description 'true' = active only */
+                active?: string;
+                facility?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedBuildingList"];
+                };
+            };
+        };
+    };
+    buildings_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildingCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Building"];
+                };
+            };
+        };
+    };
+    buildings_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this building. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Building"];
+                };
+            };
+        };
+    };
+    buildings_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this building. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedBuildingUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Building"];
+                };
+            };
+        };
+    };
     departments_list: {
         parameters: {
             query?: {
@@ -1964,6 +2946,129 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Facility"];
+                };
+            };
+        };
+    };
+    facilities_locations_retrieve: {
+        parameters: {
+            query?: {
+                /** @description 'true' = active only */
+                active?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacilityLocations"];
+                };
+            };
+        };
+    };
+    floors_list: {
+        parameters: {
+            query?: {
+                /** @description 'true' = active only */
+                active?: string;
+                building?: string;
+                facility?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedFloorList"];
+                };
+            };
+        };
+    };
+    floors_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FloorCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Floor"];
+                };
+            };
+        };
+    };
+    floors_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this floor. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Floor"];
+                };
+            };
+        };
+    };
+    floors_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this floor. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedFloorUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Floor"];
                 };
             };
         };
@@ -2208,6 +3313,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Role"];
+                };
+            };
+        };
+    };
+    rooms_list: {
+        parameters: {
+            query?: {
+                /** @description 'true' = active only */
+                active?: string;
+                facility?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                room_type?: string;
+                ward?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRoomList"];
+                };
+            };
+        };
+    };
+    rooms_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Room"];
+                };
+            };
+        };
+    };
+    rooms_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this room. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Room"];
+                };
+            };
+        };
+    };
+    rooms_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this room. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRoomUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Room"];
                 };
             };
         };
@@ -2473,6 +3678,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffQualification"];
+                };
+            };
+        };
+    };
+    wards_list: {
+        parameters: {
+            query?: {
+                /** @description 'true' = active only */
+                active?: string;
+                department?: string;
+                facility?: string;
+                floor?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                ward_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedWardList"];
+                };
+            };
+        };
+    };
+    wards_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WardCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ward"];
+                };
+            };
+        };
+    };
+    wards_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ward. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ward"];
+                };
+            };
+        };
+    };
+    wards_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this ward. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedWardUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ward"];
                 };
             };
         };

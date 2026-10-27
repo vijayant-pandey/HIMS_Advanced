@@ -4,7 +4,7 @@ Tracks delivery against [HIMS_Architecture_Specification_v2.MD](../../HIMS_Archi
 The specification is the source of truth and is **not** edited by this tracker.
 Updated after every completed work item.
 
-**Last updated:** 2026-10-26 · **Overall:** ~17% of the full specification · **Phase 1:** ~76%
+**Last updated:** 2026-10-27 · **Overall:** ~18% of the full specification · **Phase 1:** ~80%
 
 **Legend**
 - ✅ Done: implemented and covered by automated tests
@@ -38,8 +38,9 @@ Updated after every completed work item.
 | 2c | Friendly "no access yet" page instead of "Permission denied" for new users (reference number is already recorded in the audit log as `access.denied` → request_id) | 15, 13.4 | HIMS-UI-002 | ✅ Done: welcome page records `access.none_assigned` with its reference; friendlier 403 with reference; 10 themes; compact modern design |
 | 3 | End all sessions on suspension/termination (password change already ends them) | 13.5 | HIMS-IAM-006 | ✅ Done: session register; all sessions deleted on deactivation, password change/reset and admin "Sign out of all devices"; audited with count and reason; nightly cleanup |
 | 4 | MFA (TOTP) for privileged users and the admin console | 4.4, 13.1 | HIMS-IAM-005 | ✅ Done: authenticator-app codes, required for privileged roles (optional for others), QR setup, 10 backup codes, two-step sign-in in app and admin console, encrypted secret, admin reset for lost phones, ADR-018 |
-| 5 | Location hierarchy: building → floor → ward → room → bed (configuration) | 4.1, 4.10 | HIMS-FAC-004 | 🔓 next |
-| 6 | Hospital numbering schemes (MRN, encounter, invoice, claim) | 4.1 | HIMS-ORG-003 | 🔓 |
+| 5 | Location hierarchy: building → floor → ward → room → bed (configuration) | 4.1, 4.10 | HIMS-FAC-004 | ✅ Done: buildings, floors, wards/units (12 types incl. ICU/NICU/OT), rooms, beds (13 types); bed status rules (available/maintenance/blocked/out of service by staff; reserved/occupied/cleaning reserved for admissions in Phase 3); bulk bed creation; whole-facility tree with bed counts; new **bed manager** role; Locations page; admin console; [design doc](../architecture/data-architecture/locations-and-beds.md) |
+| 5b | Screens to add/edit buildings, floors, wards, rooms and beds in the app (today: admin console or API) | 15.1 | HIMS-FAC-005 | 🔓 |
+| 6 | Hospital numbering schemes (MRN, encounter, invoice, claim) | 4.1 | HIMS-ORG-003 | 🔓 next |
 | 7 | Feature flags per organization/country/facility | 4.1 | HIMS-ORG-004 | 🔓 |
 | 8 | Staff UI: detail, onboarding, departments, roles and access | 15 | HIMS-STAFF-007, IAM-013 | 🔓 |
 | 9 | Credential documents (local storage adapter; S3 later) + expiry alerts | 4.3, 4.22 | HIMS-STAFF-005/006 | 🔓 |
@@ -81,6 +82,8 @@ Everything marked ✅ below was re-verified before starting item 5.
 | #6 | HIMS-IAM-006 | End all sessions on suspension/termination/password change |
 | #7 | HIMS-OPS-012 | Runbook: updating every hospital database |
 | #8 | HIMS-IAM-005 | Two-factor sign-in (MFA); secret-scan exceptions for reviewed false positives |
+| #9 | HIMS-OPS-013 | Verification checkpoint after PR #8; PR history; doc corrections |
+| #10 (this item; number assigned by GitHub) | HIMS-FAC-004 | Hospital locations: building → floor → ward → room → bed; bed status rules; bed manager role; Locations page |
 | (before PRs) | HIMS-PLAT-*, HIMS-ORG-*, HIMS-FAC-001..003, HIMS-IAM-001/002/009, HIMS-STAFF-001..004, HIMS-AUD-*, HIMS-PLAT-017, HIMS-UI-001 | Phase 1 foundation, admin console, launcher, themes (direct commits before the PR workflow existed) |
 
 ## Section-by-section
@@ -92,13 +95,13 @@ Everything marked ✅ below was re-verified before starting item 5.
 | §1 Confirmed direction (stack, monolith, dedicated deployment, IN+US) | ✅ | Followed in code; IN and US deployments run locally | — | — |
 | §2.2 Principles 1, 4, 5, 6, 8, 9, 11 | ✅ | State guards, transactions, audit, isolation, modular monolith, PostgreSQL authority, end-to-end security | — | — |
 | §2.2 Principles 2, 3, 7, 10, 12 | ⬜ | — | Apply with patient, orders, country adapters, integrations | 🔒 CLIN for 12 |
-| §3 Personas (16 roles) | 🟡 6 system roles | Organization admin, auditor, facility admin, HR/credentialing officer, HOD, basic staff; all 16 personas documented with ladders in [RBAC doc](Hospital_Departments_and_Doctors_RBAC.MD) | Clinical roles' permissions | 🔒 CLIN (approve RBAC doc §8) |
+| §3 Personas (16 roles) | 🟡 7 system roles | Organization admin, auditor, facility admin, HR/credentialing officer, HOD, basic staff, bed manager / ward clerk; all 16 personas documented with ladders in [RBAC doc](Hospital_Departments_and_Doctors_RBAC.MD) | Clinical roles' permissions | 🔒 CLIN (approve RBAC doc §8) |
 
 ### §4 Functional scope
 
 | § | Domain | Status | Done | Left (🔓 = can do now) | Dependency |
 |---|---|---|---|---|---|
-| 4.1 | Hospital & branches | 🟡 50% | Organization (one per deployment), facilities, country/timezone/currency, admin | 🔓 numbering schemes, 🔓 wards/rooms/beds, 🔓 feature flags, 🔓 logo/templates | Tax rules: 🔒 LEGAL |
+| 4.1 | Hospital & branches | 🟡 65% | Organization (one per deployment), facilities, country/timezone/currency, admin, **locations: buildings, floors, wards/units, rooms, beds** (HIMS-FAC-004) | 🔓 numbering schemes, 🔓 feature flags, 🔓 logo/templates | Tax rules: 🔒 LEGAL |
 | 4.2 | Departments | 🟡 40% | Create/edit, facility scope; department catalog & people per department documented; 52 specialties | 🔓 head, services, operating hours | Pricing/slots/escalation: 🔒 CLIN |
 | 4.3 | Staff & credentials | 🟡 80% | Staff, qualifications (57 IN/US types), credentials, verification, termination, **designation catalog (106 titles, seniority 1–10, IN/US)** | 🔓 documents, 🔓 expiry alerts, 🔓 shifts/leave/on-call | Clinical privileges: 🔒 CLIN |
 | 4.4 | Identity & access | 🟡 88% | Login, sessions, scoped RBAC, suspension, admin console, invitation & activation, password reset (no enumeration, 60 min single-use link, ends all sessions, security notice), **session management** (register of sign-ins per user, end all sessions on suspension/termination/deactivation, "sign out of all devices"), **two-factor sign-in (MFA)** for privileged roles | 🔓 MFA, 🔓 access reviews, 🔓 delegation | SSO: 🔒 PO; break-glass rules: 🔒 CLIN |
@@ -107,7 +110,7 @@ Everything marked ✅ below was re-verified before starting item 5.
 | 4.7 | Encounters & admissions | ⬜ | — | All | 🔒 P0, CLIN |
 | 4.8 | EHR/EMR | ⬜ | — | All | 🔒 CLIN |
 | 4.9 | Nursing | ⬜ | — | All | 🔒 CLIN |
-| 4.10 | Beds & wards | ⬜ | — | 🔓 bed inventory/configuration (queue #5); assignment workflow | Assignment: 🔒 P0 |
+| 4.10 | Beds & wards | 🟡 35% | Ward/room/bed inventory with types, gender/age restrictions, isolation-capable rooms; bed status (available, maintenance, blocked, out of service) with reason, audit and `bed.status.changed` event; occupancy counts per ward and facility; Locations page | 🔓 in-app setup screens (HIMS-FAC-005); bed board view; assignment, transfer, housekeeping turnaround | Assignment/transfer/discharge: 🔒 P0 ADT (Phase 3) |
 | 4.11 | Diet & kitchen | ⬜ | — | All | 🔒 CLIN |
 | 4.12 | Housekeeping/equipment/transport | ⬜ | — | 🔓 equipment register | Workflows: 🔒 PO |
 | 4.13 | Pharmacy | ⬜ | — | All | 🔒 CLIN, VENDOR (drug database) |
@@ -140,10 +143,10 @@ Everything marked ✅ below was re-verified before starting item 5.
 
 | Item | Status | Done | Left | Dependency |
 |---|---|---|---|---|
-| §9.2 Organization/Identity/Platform tables | 🟡 | organizations, facilities, departments, users, roles, permissions, role_assignments, staff_*, audit_events, outbox_events, idempotency_records | 🔓 wards/rooms/beds, 🔓 documents | consents: 🔒 LEGAL |
+| §9.2 Organization/Identity/Platform tables | 🟡 | organizations, facilities, departments, users, roles, permissions, role_assignments, staff_*, audit_events, outbox_events, idempotency_records, **buildings, floors, wards, rooms, beds** | 🔓 documents | consents: 🔒 LEGAL |
 | §9.2 Patient/Clinical/Inpatient/Medication/Lab/Diet/Insurance/Billing tables | ⬜ | — | All | 🔒 P0 per domain |
 | §9.4 Doctor & qualification model | ✅ | StaffMember, department assignment, qualification, credential | — | — |
-| §10.1 Bed allocation race | ⬜ | Pattern ready (row locks, partial unique index) | Implement with beds | 🔒 P0 ADT |
+| §10.1 Bed allocation race | 🟡 | Beds exist with row-locked, versioned status changes (stale change → 409); `occupied`/`reserved` can only be set by the future admission workflow | Allocation with partial unique index on active bed assignment | 🔒 P0 ADT |
 | §10.2 Duplicate request/claim/payment/Celery protections | 🟡 | Idempotency keys, version checks, deduplicated tasks — all tested | Domain-specific cases | 🔒 domains |
 
 ### §11 Insurance · §12 Interoperability · §13 Security
@@ -164,10 +167,10 @@ Everything marked ✅ below was re-verified before starting item 5.
 |---|---|---|---|---|
 | §14.2 Transactional outbox | ✅ | Dispatcher, retries, dead-lettering, consumer deduplication, inline mode for local development; first real consumers (invitation emails) | — | — |
 | §14.3 Reliability rules | 🟡 | Late acknowledgement, idempotent tasks, durable state | Queue monitoring | 🔒 AWS (alarms); local Redis optional |
-| §15.1 Role workspaces | 🟡 1/7 | Hospital-admin workspace (facilities, staff) | 🔓 more admin screens | Clinical workspaces: 🔒 domains |
+| §15.1 Role workspaces | 🟡 1/7 | Hospital-admin workspace (facilities, locations and beds, staff) | 🔓 more admin screens | Clinical workspaces: 🔒 domains |
 | §15.2 Frontend decisions | 🟡 | TypeScript, typed contracts, TanStack, RHF, backend authorization, **theme selector (10 white-based themes, WCAG AA contrast tested)**, compact modern design system (13px base, small sentence-case buttons, dense inputs/tables), permission-aware navigation and home page | 🔓 accessibility checks, 🔓 code splitting | — |
 | §15.3 Patient chart | ⬜ | — | All | 🔒 4.5+ |
-| §16 Endpoint table (18) | 🟡 4/18 | Hospital setup (provisioning), departments, staff, audit events | 14 domain endpoints | 🔒 domains |
+| §16 Endpoint table (18) | 🟡 4/18 | Hospital setup (provisioning), departments, staff, audit events; plus locations and beds (`/buildings`, `/floors`, `/wards`, `/rooms`, `/beds`, `/beds/{id}/status`, `/beds/bulk`, `/facilities/{id}/locations`) | 14 domain endpoints | 🔒 domains |
 | §16 Write-endpoint rules (8 items) | ✅ | Applied to all built endpoints | — | — |
 
 ### §17 AWS · §18 Non-functional · §19 Testing · §20 Roadmap · §21 Vertical slice
@@ -176,10 +179,10 @@ Everything marked ✅ below was re-verified before starting item 5.
 |---|---|---|---|---|
 | §17 AWS deployment | ⬜ | Dockerfile ready | All | 🔒 AWS (deferred by choice) |
 | §18 Non-functional requirements | 🟡 30% | Consistency, request IDs, structured logs | 🔓 local tracing; SLO measurement | 🔒 AWS |
-| §19.1 Backend tests | 🟡 | 139 tests: constraints, permissions, isolation, concurrency, outbox, admin, migrations | 🔓 secret-leak and restore tests | Insurance contract tests: 🔒 PAYER |
-| §19.2 Frontend tests | 🟡 | 14 tests: client, themes, link tokens, home/no-access page, two-factor setup/sign-in/redirect | 🔓 Playwright end-to-end, 🔓 accessibility | — |
+| §19.1 Backend tests | 🟡 | 156 tests: constraints, permissions, isolation, concurrency, outbox, admin, migrations, locations and bed status rules | 🔓 secret-leak and restore tests | Insurance contract tests: 🔒 PAYER |
+| §19.2 Frontend tests | 🟡 | 17 tests: client, themes, link tokens, home/no-access page, two-factor setup/sign-in/redirect, Locations page and bed status dialog | 🔓 Playwright end-to-end, 🔓 accessibility | — |
 | §19.3 Clinical validation | ⬜ | — | All | 🔒 CLIN |
-| §20 Phase 1 | 🟡 76% | See tracker | Queue items 1–14 | — |
+| §20 Phase 1 | 🟡 80% | See tracker | Queue items 5b–14 | — |
 | §20 Phases 2–6 | ⬜ | — | All | 🔒 P0/CLIN/PAYER/VENDOR |
 | §21 Vertical slice (14 steps) | 🟡 4/14 | Steps 1–4 (hospital, departments, doctor onboarding, scoped access) | Steps 5–14 | 🔒 domains |
 
@@ -198,9 +201,9 @@ Everything marked ✅ below was re-verified before starting item 5.
 |---|---|---|---|---|
 | §25 Requirement IDs & traceability | 🟡 | Ticket IDs in backlog and code | 🔓 formal HIMS-FR records for built features | — |
 | P0-A Functional specs | 🟡 | Foundation domains | Clinical domains | 🔒 CLIN |
-| P0-B Database design | 🟡 | Built domains (constraints, migrations) | 🔓 data dictionary | — |
-| P0-C State machines | 🟡 | Employment status, credential verification | Clinical state machines | 🔒 CLIN |
-| P0-D Permission matrix | 🟡 | Administrative permissions + 6 system roles; full clinical matrix **drafted** in [RBAC doc §8](Hospital_Departments_and_Doctors_RBAC.MD) | Approval | 🔒 CLIN |
+| P0-B Database design | 🟡 | Built domains (constraints, migrations); [locations and beds design](../architecture/data-architecture/locations-and-beds.md) | 🔓 data dictionary | — |
+| P0-C State machines | 🟡 | Employment status, credential verification, **bed status** (operational part; ADT part designed) | Clinical state machines | 🔒 CLIN |
+| P0-D Permission matrix | 🟡 | Administrative permissions (17) + 7 system roles (bed manager added); full clinical matrix **drafted** in [RBAC doc §8](Hospital_Departments_and_Doctors_RBAC.MD) | Approval | 🔒 CLIN |
 | P0-E Provisioning/isolation | 🟡 | Application side, IN+US locally | Infrastructure side | 🔒 AWS |
 | P0-F Integration contracts | ⬜ | — | All | 🔒 PAYER/VENDOR |
 | P0-G Regulatory assessment | ⬜ | — | All | 🔒 LEGAL |
@@ -212,7 +215,7 @@ Everything marked ✅ below was re-verified before starting item 5.
 
 | Item | Status | Done | Left | Dependency |
 |---|---|---|---|---|
-| §28 Artifact A — data architecture | 🟡 20% | Schemas via migrations; §28.2 standards followed | 🔓 ERD + data dictionary for built domains | — |
+| §28 Artifact A — data architecture | 🟡 25% | Schemas via migrations; §28.2 standards followed; first domain design document (locations and beds: tables, constraints, indexes, state machine) | 🔓 ERD + data dictionary for built domains | — |
 | §29 Artifact B — API contracts | 🟡 60% | Baseline, problem errors, idempotency, event envelope, OpenAPI check in CI | 🔓 per-endpoint contract docs; webhooks/adapters | 🔒 PAYER |
 | §30 Artifact C — AWS/operations | ⬜ 5% | Dockerfile, infrastructure layout | Terraform, network, KMS, backups | 🔒 AWS |
 
@@ -245,3 +248,4 @@ Everything marked ✅ below was re-verified before starting item 5.
 | 2026-10-26 | Runbook: updating every hospital database after a merge (docs/workflows/database-migrations.md) | 26.9, 28.7, 31 |
 | 2026-10-26 | HIMS-IAM-005: two-factor sign-in (MFA) for privileged roles, Security page, admin-console code step, encrypted secrets, ADR-018 | 4.4, 13.1, 13.3, 13.4 |
 | 2026-10-27 | Verification checkpoint after PR #8 (all gates + 32-step end-to-end regression); docs corrected (qualification count, backlog rows, PR history) | 25.3 |
+| 2026-10-27 | HIMS-FAC-004: locations (building → floor → ward → room → bed), bed status rules, bed manager role, Locations page, design doc; HIMS-FAC-005 (in-app setup screens) added to the queue | 3, 4.1, 4.10, 9.2, 10.1, 15.1, 16, 19, 26 (P0-B/C/D), 28 |

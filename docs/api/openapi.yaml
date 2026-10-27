@@ -365,6 +365,313 @@ paths:
               schema:
                 $ref: '#/components/schemas/PasswordResetRequested'
           description: ''
+  /api/v1/beds/:
+    get:
+      operationId: beds_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+        description: '''true'' = active only'
+      - in: query
+        name: bed_type
+        schema:
+          type: string
+      - in: query
+        name: facility
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: room
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      - in: query
+        name: ward
+        schema:
+          type: string
+      tags:
+      - beds
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBedList'
+          description: ''
+    post:
+      operationId: beds_create
+      tags:
+      - beds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BedCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bed'
+          description: ''
+  /api/v1/beds/{id}/:
+    get:
+      operationId: beds_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this bed.
+        required: true
+      tags:
+      - beds
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bed'
+          description: ''
+    patch:
+      operationId: beds_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this bed.
+        required: true
+      tags:
+      - beds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBedUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bed'
+          description: ''
+  /api/v1/beds/{id}/status/:
+    post:
+      operationId: beds_status_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this bed.
+        required: true
+      tags:
+      - beds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BedStatusChangeRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bed'
+          description: ''
+  /api/v1/beds/bulk/:
+    post:
+      operationId: beds_bulk_create
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - beds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkBedsRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBedList'
+          description: ''
+  /api/v1/buildings/:
+    get:
+      operationId: buildings_list
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+        description: '''true'' = active only'
+      - in: query
+        name: facility
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - buildings
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBuildingList'
+          description: ''
+    post:
+      operationId: buildings_create
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      tags:
+      - buildings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildingCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Building'
+          description: ''
+  /api/v1/buildings/{id}/:
+    get:
+      operationId: buildings_retrieve
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this building.
+        required: true
+      tags:
+      - buildings
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Building'
+          description: ''
+    patch:
+      operationId: buildings_partial_update
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this building.
+        required: true
+      tags:
+      - buildings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBuildingUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Building'
+          description: ''
   /api/v1/departments/:
     get:
       operationId: departments_list
@@ -585,6 +892,167 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Facility'
+          description: ''
+  /api/v1/facilities/{id}/locations/:
+    get:
+      operationId: facilities_locations_retrieve
+      description: |-
+        The whole building → floor → ward → room → bed structure of one facility.
+
+        One request with five queries, used by the Locations screen and the future bed board.
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+        description: '''true'' = active only'
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - facilities
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityLocations'
+          description: ''
+  /api/v1/floors/:
+    get:
+      operationId: floors_list
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+        description: '''true'' = active only'
+      - in: query
+        name: building
+        schema:
+          type: string
+      - in: query
+        name: facility
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - floors
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFloorList'
+          description: ''
+    post:
+      operationId: floors_create
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      tags:
+      - floors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FloorCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Floor'
+          description: ''
+  /api/v1/floors/{id}/:
+    get:
+      operationId: floors_retrieve
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this floor.
+        required: true
+      tags:
+      - floors
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Floor'
+          description: ''
+    patch:
+      operationId: floors_partial_update
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this floor.
+        required: true
+      tags:
+      - floors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFloorUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Floor'
           description: ''
   /api/v1/organization/:
     get:
@@ -831,6 +1299,141 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Role'
+          description: ''
+  /api/v1/rooms/:
+    get:
+      operationId: rooms_list
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+        description: '''true'' = active only'
+      - in: query
+        name: facility
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: room_type
+        schema:
+          type: string
+      - in: query
+        name: ward
+        schema:
+          type: string
+      tags:
+      - rooms
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoomList'
+          description: ''
+    post:
+      operationId: rooms_create
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      tags:
+      - rooms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+  /api/v1/rooms/{id}/:
+    get:
+      operationId: rooms_retrieve
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this room.
+        required: true
+      tags:
+      - rooms
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+    patch:
+      operationId: rooms_partial_update
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this room.
+        required: true
+      tags:
+      - rooms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRoomUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
           description: ''
   /api/v1/specialties/:
     get:
@@ -1109,6 +1712,145 @@ paths:
               schema:
                 $ref: '#/components/schemas/StaffQualification'
           description: ''
+  /api/v1/wards/:
+    get:
+      operationId: wards_list
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+        description: '''true'' = active only'
+      - in: query
+        name: department
+        schema:
+          type: string
+      - in: query
+        name: facility
+        schema:
+          type: string
+      - in: query
+        name: floor
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: ward_type
+        schema:
+          type: string
+      tags:
+      - wards
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWardList'
+          description: ''
+    post:
+      operationId: wards_create
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      tags:
+      - wards
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WardCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ward'
+          description: ''
+  /api/v1/wards/{id}/:
+    get:
+      operationId: wards_retrieve
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ward.
+        required: true
+      tags:
+      - wards
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ward'
+          description: ''
+    patch:
+      operationId: wards_partial_update
+      description: |-
+        Facility-scoped list/retrieve/create/update shared by every location level.
+
+        Subclasses set ``model``, the three serializers, ``parent_field`` and the query filters.
+        Creating checks ``locations.manage`` at the *parent's* facility; editing checks it at the
+        object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ward.
+        required: true
+      tags:
+      - wards
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWardUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ward'
+          description: ''
 components:
   schemas:
     ActiveStatusEnum:
@@ -1129,6 +1871,18 @@ components:
         * `user` - User
         * `system` - System
         * `anonymous` - Anonymous
+    AgeGroupEnum:
+      enum:
+      - any
+      - adult
+      - pediatric
+      - neonatal
+      type: string
+      description: |-
+        * `any` - Any age
+        * `adult` - Adults
+        * `pediatric` - Children
+        * `neonatal` - Newborns
     AuditEvent:
       type: object
       properties:
@@ -1196,6 +1950,254 @@ components:
       - request_id
       - resource_id
       - resource_type
+    Bed:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+        ward:
+          type: string
+          format: uuid
+          readOnly: true
+        room:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          description: Bed label, unique within the ward
+          pattern: ^[-a-zA-Z0-9_]+$
+        bed_type:
+          allOf:
+          - $ref: '#/components/schemas/BedTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BedStatusEnum'
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+        status_changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - bed_type
+      - code
+      - created_at
+      - facility
+      - id
+      - is_active
+      - room
+      - status
+      - status_changed_at
+      - status_reason
+      - updated_at
+      - version
+      - ward
+    BedCreateRequest:
+      type: object
+      properties:
+        room:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          description: Bed label, unique within the ward
+          maxLength: 32
+          pattern: ^[-a-zA-Z0-9_]+$
+        bed_type:
+          $ref: '#/components/schemas/BedTypeEnum'
+      required:
+      - bed_type
+      - code
+      - room
+    BedStatusChangeRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/BedStatusChangeStatusEnum'
+        reason:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - status
+      - version
+    BedStatusChangeStatusEnum:
+      enum:
+      - available
+      - maintenance
+      - blocked
+      - out_of_service
+      type: string
+      description: |-
+        * `available` - Available
+        * `maintenance` - Maintenance
+        * `blocked` - Blocked
+        * `out_of_service` - Out of service
+    BedStatusEnum:
+      enum:
+      - available
+      - reserved
+      - occupied
+      - cleaning
+      - maintenance
+      - blocked
+      - out_of_service
+      type: string
+      description: |-
+        * `available` - Available
+        * `reserved` - Reserved
+        * `occupied` - Occupied
+        * `cleaning` - Cleaning
+        * `maintenance` - Maintenance
+        * `blocked` - Blocked
+        * `out_of_service` - Out of service
+    BedTypeEnum:
+      enum:
+      - general
+      - semi_private
+      - private
+      - deluxe
+      - icu
+      - hdu
+      - nicu
+      - picu
+      - isolation
+      - day_care
+      - labour
+      - recovery
+      - emergency_trolley
+      type: string
+      description: |-
+        * `general` - General
+        * `semi_private` - Semi-private
+        * `private` - Private
+        * `deluxe` - Deluxe / suite
+        * `icu` - ICU
+        * `hdu` - HDU
+        * `nicu` - NICU (cot / incubator)
+        * `picu` - PICU
+        * `isolation` - Isolation
+        * `day_care` - Day care
+        * `labour` - Labour / delivery
+        * `recovery` - Recovery
+        * `emergency_trolley` - Emergency trolley
+    Building:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - facility
+      - id
+      - is_active
+      - name
+      - updated_at
+      - version
+    BuildingCreateRequest:
+      type: object
+      properties:
+        facility:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - code
+      - facility
+      - name
+    BulkBedsRequest:
+      type: object
+      properties:
+        room:
+          type: string
+          format: uuid
+        prefix:
+          type: string
+          minLength: 1
+          description: e.g. 'B' gives B01, B02, …
+          maxLength: 10
+          pattern: ^[-a-zA-Z0-9_]+$
+        start:
+          type: integer
+          maximum: 9999
+          minimum: 0
+          default: 1
+        count:
+          type: integer
+          maximum: 60
+          minimum: 1
+        bed_type:
+          $ref: '#/components/schemas/BedTypeEnum'
+      required:
+      - bed_type
+      - count
+      - prefix
+      - room
     CountryEnum:
       enum:
       - US
@@ -1543,6 +2545,25 @@ components:
       - postal_code
       - state_region
       - timezone
+    FacilityLocations:
+      type: object
+      properties:
+        facility:
+          type: string
+          format: uuid
+        bed_counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: by status
+        buildings:
+          type: array
+          items:
+            $ref: '#/components/schemas/TreeBuilding'
+      required:
+      - bed_counts
+      - buildings
+      - facility
     FacilityTypeEnum:
       enum:
       - hospital
@@ -1555,6 +2576,81 @@ components:
         * `clinic` - Clinic
         * `diagnostic_center` - Diagnostic center
         * `day_care` - Day-care center
+    Floor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        building:
+          type: string
+          format: uuid
+          readOnly: true
+        level:
+          type: integer
+          readOnly: true
+          description: -5 (basement) … 0 (ground) … 200
+        name:
+          type: string
+          readOnly: true
+      required:
+      - building
+      - created_at
+      - facility
+      - id
+      - is_active
+      - level
+      - name
+      - updated_at
+      - version
+    FloorCreateRequest:
+      type: object
+      properties:
+        building:
+          type: string
+          format: uuid
+        level:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: -5 (basement) … 0 (ground) … 200
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+      - building
+      - level
+      - name
+    GenderRestrictionEnum:
+      enum:
+      - any
+      - male
+      - female
+      type: string
+      description: |-
+        * `any` - Any
+        * `male` - Male only
+        * `female` - Female only
     Grant:
       type: object
       properties:
@@ -1808,6 +2904,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditEvent'
+    PaginatedBedList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bed'
+    PaginatedBuildingList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Building'
     PaginatedDepartmentList:
       type: object
       required:
@@ -1854,6 +2996,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Facility'
+    PaginatedFloorList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Floor'
     PaginatedRoleAssignmentList:
       type: object
       required:
@@ -1900,6 +3065,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Role'
+    PaginatedRoomList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
     PaginatedStaffMemberList:
       type: object
       required:
@@ -1923,6 +3111,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StaffMember'
+    PaginatedWardList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ward'
     PasswordResetConfirmRequest:
       type: object
       properties:
@@ -1976,6 +3187,28 @@ components:
           maxLength: 512
       required:
       - token
+    PatchedBedUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        bed_type:
+          $ref: '#/components/schemas/BedTypeEnum'
+        is_active:
+          type: boolean
+    PatchedBuildingUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        is_active:
+          type: boolean
     PatchedDepartmentUpdateRequest:
       type: object
       properties:
@@ -2030,6 +3263,22 @@ components:
           maxLength: 32
         status:
           $ref: '#/components/schemas/ActiveStatusEnum'
+    PatchedFloorUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        level:
+          type: integer
+          maximum: 200
+          minimum: -5
+        is_active:
+          type: boolean
     PatchedOrganizationUpdateRequest:
       type: object
       properties:
@@ -2048,6 +3297,22 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+    PatchedRoomUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        room_type:
+          $ref: '#/components/schemas/RoomTypeEnum'
+        is_isolation_capable:
+          type: boolean
+        is_active:
+          type: boolean
     PatchedStaffMemberUpdateRequest:
       type: object
       properties:
@@ -2070,6 +3335,28 @@ components:
           type: string
           format: date
           nullable: true
+    PatchedWardUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        ward_type:
+          $ref: '#/components/schemas/WardTypeEnum'
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        gender_restriction:
+          $ref: '#/components/schemas/GenderRestrictionEnum'
+        age_group:
+          $ref: '#/components/schemas/AgeGroupEnum'
+        is_active:
+          type: boolean
     Permission:
       type: object
       properties:
@@ -2088,10 +3375,13 @@ components:
       - access.roles.manage
       - access.roles.view
       - audit.view
+      - beds.status.manage
       - departments.manage
       - departments.view
       - facilities.manage
       - facilities.view
+      - locations.manage
+      - locations.view
       - organization.manage
       - organization.view
       - platform.admin_console
@@ -2104,10 +3394,13 @@ components:
         * `access.roles.manage` - access.roles.manage
         * `access.roles.view` - access.roles.view
         * `audit.view` - audit.view
+        * `beds.status.manage` - beds.status.manage
         * `departments.manage` - departments.manage
         * `departments.view` - departments.view
         * `facilities.manage` - facilities.manage
         * `facilities.view` - facilities.view
+        * `locations.manage` - locations.manage
+        * `locations.view` - locations.view
         * `organization.manage` - organization.manage
         * `organization.view` - organization.view
         * `platform.admin_console` - platform.admin_console
@@ -2329,6 +3622,109 @@ components:
       - code
       - name
       - permissions
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ward:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        room_type:
+          allOf:
+          - $ref: '#/components/schemas/RoomTypeEnum'
+          readOnly: true
+        is_isolation_capable:
+          type: boolean
+          readOnly: true
+          description: e.g. negative-pressure room for infection control
+      required:
+      - code
+      - created_at
+      - facility
+      - id
+      - is_active
+      - is_isolation_capable
+      - name
+      - room_type
+      - updated_at
+      - version
+      - ward
+    RoomCreateRequest:
+      type: object
+      properties:
+        ward:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        room_type:
+          $ref: '#/components/schemas/RoomTypeEnum'
+        is_isolation_capable:
+          type: boolean
+          description: e.g. negative-pressure room for infection control
+      required:
+      - code
+      - name
+      - room_type
+      - ward
+    RoomTypeEnum:
+      enum:
+      - general
+      - private
+      - semi_private
+      - icu_bay
+      - isolation
+      - operating_room
+      - procedure
+      - recovery
+      - consultation
+      type: string
+      description: |-
+        * `general` - General room
+        * `private` - Private room
+        * `semi_private` - Semi-private room
+        * `icu_bay` - ICU bay
+        * `isolation` - Isolation room
+        * `operating_room` - Operating room
+        * `procedure` - Procedure room
+        * `recovery` - Recovery bay
+        * `consultation` - Consultation room
     Specialty:
       type: object
       properties:
@@ -2760,6 +4156,146 @@ components:
         * `dietitian` - Dietitian
         * `administrator` - Administrator
         * `support` - Support staff
+    TreeBed:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        bed_type:
+          type: string
+        status:
+          type: string
+        status_reason:
+          type: string
+        is_active:
+          type: boolean
+        version:
+          type: integer
+      required:
+      - bed_type
+      - code
+      - id
+      - is_active
+      - status
+      - status_reason
+      - version
+    TreeBuilding:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        is_active:
+          type: boolean
+        floors:
+          type: array
+          items:
+            $ref: '#/components/schemas/TreeFloor'
+      required:
+      - code
+      - floors
+      - id
+      - is_active
+      - name
+    TreeFloor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        level:
+          type: integer
+        name:
+          type: string
+        is_active:
+          type: boolean
+        wards:
+          type: array
+          items:
+            $ref: '#/components/schemas/TreeWard'
+      required:
+      - id
+      - is_active
+      - level
+      - name
+      - wards
+    TreeRoom:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        room_type:
+          type: string
+        is_isolation_capable:
+          type: boolean
+        is_active:
+          type: boolean
+        beds:
+          type: array
+          items:
+            $ref: '#/components/schemas/TreeBed'
+      required:
+      - beds
+      - code
+      - id
+      - is_active
+      - is_isolation_capable
+      - name
+      - room_type
+    TreeWard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        ward_type:
+          type: string
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        gender_restriction:
+          type: string
+        age_group:
+          type: string
+        is_active:
+          type: boolean
+        bed_counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: by status
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/TreeRoom'
+      required:
+      - age_group
+      - bed_counts
+      - code
+      - department
+      - gender_restriction
+      - id
+      - is_active
+      - name
+      - rooms
+      - ward_type
     VerificationStatusEnum:
       enum:
       - unverified
@@ -2770,6 +4306,131 @@ components:
         * `unverified` - Unverified
         * `verified` - Verified
         * `rejected` - Rejected
+    Ward:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        floor:
+          type: string
+          format: uuid
+          readOnly: true
+        department:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        ward_type:
+          allOf:
+          - $ref: '#/components/schemas/WardTypeEnum'
+          readOnly: true
+        gender_restriction:
+          allOf:
+          - $ref: '#/components/schemas/GenderRestrictionEnum'
+          readOnly: true
+        age_group:
+          allOf:
+          - $ref: '#/components/schemas/AgeGroupEnum'
+          readOnly: true
+      required:
+      - age_group
+      - code
+      - created_at
+      - department
+      - facility
+      - floor
+      - gender_restriction
+      - id
+      - is_active
+      - name
+      - updated_at
+      - version
+      - ward_type
+    WardCreateRequest:
+      type: object
+      properties:
+        floor:
+          type: string
+          format: uuid
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        ward_type:
+          $ref: '#/components/schemas/WardTypeEnum'
+        gender_restriction:
+          $ref: '#/components/schemas/GenderRestrictionEnum'
+        age_group:
+          $ref: '#/components/schemas/AgeGroupEnum'
+      required:
+      - code
+      - floor
+      - name
+      - ward_type
+    WardTypeEnum:
+      enum:
+      - general
+      - private
+      - icu
+      - hdu
+      - nicu
+      - picu
+      - emergency
+      - maternity
+      - isolation
+      - day_care
+      - operating_theatre
+      - recovery
+      type: string
+      description: |-
+        * `general` - General ward
+        * `private` - Private ward
+        * `icu` - Intensive care unit (ICU)
+        * `hdu` - High dependency unit (HDU)
+        * `nicu` - Neonatal ICU (NICU)
+        * `picu` - Pediatric ICU (PICU)
+        * `emergency` - Emergency / casualty
+        * `maternity` - Maternity / labour
+        * `isolation` - Isolation ward
+        * `day_care` - Day care
+        * `operating_theatre` - Operating theatre complex
+        * `recovery` - Recovery / PACU
   securitySchemes:
     sessionAuth:
       type: apiKey
