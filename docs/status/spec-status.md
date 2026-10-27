@@ -54,6 +54,35 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 
 ---
 
+## Verification checkpoint: after PR #8 (2026-10-27)
+
+Everything marked ✅ below was re-verified before starting item 5.
+
+| Check | Result |
+|---|---|
+| Git: local `development` = GitHub `development`, PR #1–#8 merged, working tree clean | ✅ |
+| India (`HIMS`) and US (`HIMS_US`) databases: all migrations applied, audit append-only trigger present, 6 system roles, 14 permissions, catalogs (106 designations, 52 specialties, 57 qualification types) | ✅ both |
+| Backend: 139 tests, lint/format, Django checks, migrations committed, OpenAPI contract in sync, dependency audit, production `check --deploy` | ✅ |
+| Frontend: API types in sync, typecheck, lint, 14 tests, build, dependency audit | ✅ |
+| End-to-end regression over HTTP (fresh database, two-factor enforced): 32 checks covering health, problem errors, MFA enforcement/setup/two-step sign-in, facilities + idempotent replay + stale-edit protection, departments, catalogs, staff onboarding + designation, invitation + single-use activation, no-access reference, permission-denied reference, password reset (no enumeration) + sessions ended, role grant, termination ends sessions and blocks sign-in, admin console with code, admin cannot read audit, admin theme, auditor two-factor, auditor finds references, all feature audit events present | ✅ 32/32 |
+| Launcher: page, 10 themes, India/US/Europe cards | ✅ |
+| Docs: no broken links, 18 ADRs = 18 index rows | ✅ (qualification count corrected 66 → 57; backlog rows added for HIMS-UI-001 and HIMS-OPS-012) |
+| Not yet done (by design): `qa`/`staging`/`production` are 8 PRs behind `development` (no promotion yet); hosted environments (Render/Vercel) not created | ℹ️ |
+
+## PR history (traceability, spec 25.3)
+
+| PR | Ticket(s) | What |
+|---|---|---|
+| #1 | HIMS-OPS-002 | Manual CI runs; GitHub setup recorded |
+| #2 | HIMS-OPS-002 (titled "HIMS-OPS-003" by mistake; HIMS-OPS-003 remains *Terraform modules*) | Environment branches renamed to `development`/`production` |
+| #3 | HIMS-IAM-003 | Staff invitation and account activation |
+| #4 | HIMS-IAM-004, HIMS-STAFF-009 | Password reset; hospital roles catalog; RBAC document |
+| #5 | HIMS-UI-002 (extends HIMS-UI-001) | No-access page with audited reference; 10 themes; compact design |
+| #6 | HIMS-IAM-006 | End all sessions on suspension/termination/password change |
+| #7 | HIMS-OPS-012 | Runbook: updating every hospital database |
+| #8 | HIMS-IAM-005 | Two-factor sign-in (MFA); secret-scan exceptions for reviewed false positives |
+| (before PRs) | HIMS-PLAT-*, HIMS-ORG-*, HIMS-FAC-001..003, HIMS-IAM-001/002/009, HIMS-STAFF-001..004, HIMS-AUD-*, HIMS-PLAT-017, HIMS-UI-001 | Phase 1 foundation, admin console, launcher, themes (direct commits before the PR workflow existed) |
+
 ## Section-by-section
 
 ### §1 Executive summary · §2 Principles · §3 Personas
@@ -71,7 +100,7 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 |---|---|---|---|---|---|
 | 4.1 | Hospital & branches | 🟡 50% | Organization (one per deployment), facilities, country/timezone/currency, admin | 🔓 numbering schemes, 🔓 wards/rooms/beds, 🔓 feature flags, 🔓 logo/templates | Tax rules: 🔒 LEGAL |
 | 4.2 | Departments | 🟡 40% | Create/edit, facility scope; department catalog & people per department documented; 52 specialties | 🔓 head, services, operating hours | Pricing/slots/escalation: 🔒 CLIN |
-| 4.3 | Staff & credentials | 🟡 80% | Staff, qualifications (66 IN/US types), credentials, verification, termination, **designation catalog (106 titles, seniority 1–10, IN/US)** | 🔓 documents, 🔓 expiry alerts, 🔓 shifts/leave/on-call | Clinical privileges: 🔒 CLIN |
+| 4.3 | Staff & credentials | 🟡 80% | Staff, qualifications (57 IN/US types), credentials, verification, termination, **designation catalog (106 titles, seniority 1–10, IN/US)** | 🔓 documents, 🔓 expiry alerts, 🔓 shifts/leave/on-call | Clinical privileges: 🔒 CLIN |
 | 4.4 | Identity & access | 🟡 88% | Login, sessions, scoped RBAC, suspension, admin console, invitation & activation, password reset (no enumeration, 60 min single-use link, ends all sessions, security notice), **session management** (register of sign-ins per user, end all sessions on suspension/termination/deactivation, "sign out of all devices"), **two-factor sign-in (MFA)** for privileged roles | 🔓 MFA, 🔓 access reviews, 🔓 delegation | SSO: 🔒 PO; break-glass rules: 🔒 CLIN |
 | 4.5 | Patient registration & MPI | ⬜ | — | Demographics, MRN, duplicate detection | 🔒 PO+CLIN P0 sign-off |
 | 4.6 | Appointments & OPD | ⬜ | — | All | 🔒 P0 |
@@ -215,3 +244,4 @@ After this queue, the next big step is **Phase 2 (Patient/MPI)**. It needs a P0 
 | 2026-10-26 | HIMS-IAM-006: end all sessions on suspension/termination/deactivation, password change and admin sign-out; session register; nightly expired-session cleanup | 4.4, 13.2, 13.5, 14 |
 | 2026-10-26 | Runbook: updating every hospital database after a merge (docs/workflows/database-migrations.md) | 26.9, 28.7, 31 |
 | 2026-10-26 | HIMS-IAM-005: two-factor sign-in (MFA) for privileged roles, Security page, admin-console code step, encrypted secrets, ADR-018 | 4.4, 13.1, 13.3, 13.4 |
+| 2026-10-27 | Verification checkpoint after PR #8 (all gates + 32-step end-to-end regression); docs corrected (qualification count, backlog rows, PR history) | 25.3 |
