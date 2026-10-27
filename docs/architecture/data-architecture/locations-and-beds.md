@@ -169,3 +169,27 @@ when editing; bed status only through the "Mark available / out of service" acti
 * Admin console: each parent page lists its children (Facility → Buildings → Floors → Wards →
   Rooms → Beds) and new children can be added there. The bed page has "Change status to" and
   "Reason" fields, which use the same rules as the app.
+
+## 8. Update 2026-10-28: setting up locations in the app (HIMS-FAC-005)
+The Locations page (menu → Locations) is where non-developers set up the layout. People with
+`locations.manage` at the facility see:
+
+| Where | Buttons |
+|---|---|
+| Page header | **Add building** |
+| Building | **Edit**, **Add floor** |
+| Floor | **Edit**, **Add ward** |
+| Ward | **Edit**, **Add room** |
+| Room | **Edit**, **Add beds** (prefix, start, how many, type; shows "Creates 4 bed(s): B03 … B06" and refuses codes already used in the ward) |
+| Bed (click) | the status dialog (with `beds.status.manage`) plus **Edit bed details** (type, active) |
+
+* "Add …" is hidden under an inactive parent, because the server refuses it anyway.
+* Codes are entered once; spaces and capitals are converted as you type (`Block A` → `block-a`).
+  The edit form has no code field.
+* Edits send the item's current `version`, taken from the location tree, which now includes
+  `version` at every level and the ward's `department_name`. If someone else changed the item
+  first, the save is refused with a clear message and the page refreshes, so reopening the form
+  shows the latest copy.
+* Server messages (e.g. "This code is already used in this facility.", "Deactivate everything
+  inside it first.") appear next to the field they concern.
+* **Hide inactive** removes deactivated items from view; they are never deleted.

@@ -2256,6 +2256,7 @@ export interface components {
             code: string;
             name: string;
             is_active: boolean;
+            version: number;
             floors: components["schemas"]["TreeFloor"][];
         };
         TreeFloor: {
@@ -2264,6 +2265,7 @@ export interface components {
             level: number;
             name: string;
             is_active: boolean;
+            version: number;
             wards: components["schemas"]["TreeWard"][];
         };
         TreeRoom: {
@@ -2274,6 +2276,7 @@ export interface components {
             room_type: string;
             is_isolation_capable: boolean;
             is_active: boolean;
+            version: number;
             beds: components["schemas"]["TreeBed"][];
         };
         TreeWard: {
@@ -2284,9 +2287,11 @@ export interface components {
             ward_type: string;
             /** Format: uuid */
             department: string | null;
+            department_name: string | null;
             gender_restriction: string;
             age_group: string;
             is_active: boolean;
+            version: number;
             /** @description by status */
             bed_counts: {
                 [key: string]: number;

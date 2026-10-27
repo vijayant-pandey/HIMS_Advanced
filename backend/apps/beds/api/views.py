@@ -152,7 +152,12 @@ class FacilityLocationsView(APIView):
 
         beds = nodes(Bed).order_by("code")
         rooms = nodes(Room).order_by("code").prefetch_related(Prefetch("beds", queryset=beds))
-        wards = nodes(Ward).order_by("code").prefetch_related(Prefetch("rooms", queryset=rooms))
+        wards = (
+            nodes(Ward)
+            .select_related("department")
+            .order_by("code")
+            .prefetch_related(Prefetch("rooms", queryset=rooms))
+        )
         floors = nodes(Floor).order_by("level").prefetch_related(Prefetch("wards", queryset=wards))
         buildings = (
             nodes(Building)
@@ -192,6 +197,7 @@ class FacilityLocationsView(APIView):
                                 "room_type": room.room_type,
                                 "is_isolation_capable": room.is_isolation_capable,
                                 "is_active": room.is_active,
+                                "version": room.version,
                                 "beds": room_beds,
                             }
                         )
@@ -203,9 +209,11 @@ class FacilityLocationsView(APIView):
                             "name": ward.name,
                             "ward_type": ward.ward_type,
                             "department": ward.department_id,
+                            "department_name": ward.department.name if ward.department else None,
                             "gender_restriction": ward.gender_restriction,
                             "age_group": ward.age_group,
                             "is_active": ward.is_active,
+                            "version": ward.version,
                             "bed_counts": dict(counts),
                             "rooms": ward_rooms,
                         }
@@ -216,6 +224,7 @@ class FacilityLocationsView(APIView):
                         "level": floor.level,
                         "name": floor.name,
                         "is_active": floor.is_active,
+                        "version": floor.version,
                         "wards": floor_wards,
                     }
                 )
@@ -225,6 +234,7 @@ class FacilityLocationsView(APIView):
                     "code": building.code,
                     "name": building.name,
                     "is_active": building.is_active,
+                    "version": building.version,
                     "floors": building_floors,
                 }
             )

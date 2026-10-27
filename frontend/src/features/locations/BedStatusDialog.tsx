@@ -25,9 +25,11 @@ interface Props {
   bed: TreeBed;
   wardName: string;
   onClose: () => void;
+  /** Shown to people who may change the bed itself (type, active): opens the edit form. */
+  onEditDetails?: () => void;
 }
 
-export function BedStatusDialog({ bed, wardName, onClose }: Props) {
+export function BedStatusDialog({ bed, wardName, onClose, onEditDetails }: Props) {
   // One key per dialog session: a double-click or network retry cannot apply the change twice.
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const change = useChangeBedStatus(bed.id, idempotencyKey);
@@ -96,6 +98,11 @@ export function BedStatusDialog({ bed, wardName, onClose }: Props) {
           </Stack>
         </DialogContent>
         <DialogActions>
+          {onEditDetails && (
+            <Button onClick={onEditDetails} sx={{ mr: "auto" }}>
+              Edit bed details
+            </Button>
+          )}
           <Button onClick={onClose}>
             {managedByAdmissions ? "Close" : "Cancel"}
           </Button>
