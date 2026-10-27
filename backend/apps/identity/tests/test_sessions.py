@@ -15,7 +15,7 @@ from apps.identity.models import User, UserSession
 from apps.identity.sessions import clear_expired_sessions
 from apps.staff.models import StaffMember
 
-PASSWORD = "Synthetic-Device-Passw0rd-26"
+PASSWORD = "Synthetic-Device-Passw0rd-2026"
 
 
 @pytest.fixture(autouse=True)

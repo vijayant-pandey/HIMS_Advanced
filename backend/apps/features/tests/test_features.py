@@ -106,7 +106,7 @@ def test_every_feature_gets_a_hospital_row_once(organization):
 
 @pytest.mark.django_db
 def test_forgot_password_can_be_turned_off(rows, admin_user, make_user):
-    make_user(email="nurse@synthetic.test", password="Synthetic-Nurse-Passw0rd-21")
+    make_user(email="nurse@synthetic.test", password="Synthetic-Nurse-Passw0rd-2026")
     url = f"{API}/auth/password-reset/request/"
     assert (
         Client()
