@@ -40,6 +40,22 @@ PERMISSIONS: dict[str, str] = {
     P.AUDIT_VIEW: "Search the audit log",
 }
 
+# Holding any of these makes two-factor sign-in mandatory (spec 13.1: "MFA for privileged
+# users"; HIMS-IAM-005). Add clinical permissions here when clinical governance decides which
+# clinical actions also require it (docs/status/Hospital_Departments_and_Doctors_RBAC.MD).
+MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
+    {
+        P.ADMIN_CONSOLE,
+        P.ORGANIZATION_MANAGE,
+        P.FACILITIES_MANAGE,
+        P.STAFF_MANAGE,
+        P.STAFF_CREDENTIALS_VERIFY,
+        P.ROLES_MANAGE,
+        P.ROLE_ASSIGNMENTS_MANAGE,
+        P.AUDIT_VIEW,
+    }
+)
+
 # Roles created for every new organization at provisioning. Clinical roles (doctor, nurse,
 # pharmacist...) are added with their domains, after clinical governance approves the
 # permission matrix (spec 26.4).

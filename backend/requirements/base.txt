@@ -9,4 +9,5 @@ kombu==5.6.2
 redis==6.4.0
 django-environ==0.14.0
 argon2-cffi==25.1.0
+cryptography==50.0.2
 gunicorn==26.2.0

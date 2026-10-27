@@ -287,6 +287,8 @@ exist now. Assign them in the admin console under **Role assignments**.
 | **Head of department (HOD)** | One department | facilities view, departments view | Sees their department. Clinical approvals are added with clinical features | HOD, Section Chief, Department Chair |
 | **Basic staff access** | Organization or facility | facilities view, departments view | Minimum access for any employee, so new staff don't see "Permission denied" | Everyone |
 
+**Two-factor sign-in is required** for anyone holding Organization administrator, Auditor, Facility administrator or HR / credentialing officer (they can change settings, people, access, or read the audit log). Head of department and Basic staff access do not require it today, but anyone can turn it on under **Security**. See ADR-018.
+
 **Users with no role** see a "Welcome, your account is active" page with a **reference number**. An auditor can find it in the admin console (**Audit events**, search the reference) as an `access.none_assigned` event.
 
 **To give a new doctor access today:** assign **Basic staff access** (and **Head of department** for
@@ -350,6 +352,7 @@ Country notes:
 | Signed notes are never overwritten; amendments keep the original | Legal record (spec 4.8) | Planned (P2) |
 | Break-glass access requires a reason and is reviewed afterwards | Emergency care vs privacy (spec 13.2) | Planned (P2) |
 | Every "Permission denied" is recorded with its reference number | Traceability (HIMS-UI-002) | ✅ today |
+| Privileged roles must sign in with two-factor (authenticator code); nobody can reset their own two-factor | A stolen password alone cannot change hospital settings or access (spec 13.1) | ✅ today (HIMS-IAM-005) |
 | Suspending, terminating or deactivating someone signs them out of every device at once (sessions deleted, recorded as `auth.sessions.ended`) | Access ends the moment employment ends (spec 13.2, 13.5) | ✅ today (HIMS-IAM-006) |
 | A signed-in user with no role sees a welcome page; the visit is recorded as `access.none_assigned` with the reference shown on screen | Admins can see who is waiting for access (HIMS-UI-002) | ✅ today |
 

@@ -1,0 +1,9 @@
+# Reviewed gitleaks findings that are NOT secrets (one fingerprint per line).
+# Each entry ignores exactly one finding in one historical commit; everything else is still scanned.
+# Add entries only after a reviewer has confirmed the value is not a real secret.
+#
+# HIMS-IAM-005, commit e79ed91 (PR #8), fixed in the following commit:
+#  - line 65: public RFC 6238 test-vector seed (base32 of "12345678901234567890"), not a key
+#  - line 143: test assertion `actor_id=nurse.pk` matched next to the word AUTH, not a secret
+e79ed91997de674e50a87ecd57b6162fab67ed6a:backend/apps/identity/tests/test_mfa.py:generic-api-key:65
+e79ed91997de674e50a87ecd57b6162fab67ed6a:backend/apps/identity/tests/test_mfa.py:generic-api-key:143

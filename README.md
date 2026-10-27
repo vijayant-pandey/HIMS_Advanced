@@ -73,6 +73,14 @@ python manage.py runserver                       set HIMS_ENV_FILE=.env.us
 cd frontend && npm run dev:in                    cd frontend && npm run dev:us
 ```
 
+## Two-factor sign-in (MFA)
+
+Privileged accounts (administrators, auditors, HR/credentialing, facility administrators) must
+set up two-factor sign-in with an authenticator app at their next sign-in (ADR-018). On a
+developer machine only, it can be switched off temporarily by adding
+`HIMS_MFA_REQUIRED_FOR_PRIVILEGED=false` to `backend/.env`; production refuses to start like that.
+Managed environments must set `HIMS_FIELD_ENCRYPTION_KEYS` (see `common/crypto.py`).
+
 ## Updating the databases after a merge
 
 When a change includes database migrations, **every hospital database must be updated**. Follow

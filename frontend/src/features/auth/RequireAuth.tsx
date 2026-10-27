@@ -17,5 +17,9 @@ export function RequireAuth() {
   }
   if (error) return <ErrorAlert error={error} />;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  // Privileged roles must pass two-factor first (HIMS-IAM-005); the API enforces this too.
+  if (user.mfa.required && !user.mfa.verified && location.pathname !== "/security") {
+    return <Navigate to="/security" replace />;
+  }
   return <Outlet />;
 }

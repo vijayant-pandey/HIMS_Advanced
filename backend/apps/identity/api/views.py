@@ -15,13 +15,18 @@ from apps.audit.services import AuditAction, record_audit_event
 from apps.organizations.models import Organization
 from common.exceptions import DomainError
 
-from .. import invitations, password_reset
+from .. import invitations, mfa, password_reset
 from .serializers import (
     CurrentUserSerializer,
     InvitationAcceptSerializer,
     InvitationDetailsSerializer,
     InvitationTokenSerializer,
     LoginSerializer,
+    MfaChallengeSerializer,
+    MfaCodeSerializer,
+    MfaRecoveryCodesSerializer,
+    MfaSetupSerializer,
+    MfaStatusSerializer,
     NoAccessReferenceSerializer,
     NoAccessReportSerializer,
     PasswordResetConfirmSerializer,
@@ -38,7 +43,7 @@ class InvalidCredentials(DomainError):
     title = "Sign-in failed"
 
 
-def _current_user_payload(user) -> dict:
+def _current_user_payload(user, request=None) -> dict:
     staff_member = getattr(user, "staff_member", None)
     return {
         "id": user.pk,
@@ -46,7 +51,23 @@ def _current_user_payload(user) -> dict:
         "display_name": user.display_name,
         "staff_member_id": staff_member.pk if staff_member else None,
         "grants": list_grants(user),
+        "mfa": mfa.status(user, request),
     }
+
+
+def _complete_login(request, user, *, via: str, mfa_verified: bool) -> Response:
+    """Create the session (rotating its key against fixation), record it and answer with the
+    current-user payload."""
+    login(request._request, user, backend="django.contrib.auth.backends.ModelBackend")
+    mfa.mark_session_verified(request, mfa_verified)
+    record_audit_event(
+        action=AuditAction.AUTH_LOGIN,
+        resource_type="session",
+        actor=user,
+        request=request,
+        metadata={"via": via, "mfa": mfa_verified},
+    )
+    return Response(CurrentUserSerializer(_current_user_payload(user, request)).data)
 
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
@@ -67,7 +88,12 @@ class LoginView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "login"
 
-    @extend_schema(request=LoginSerializer, responses={200: CurrentUserSerializer})
+    @extend_schema(
+        request=LoginSerializer,
+        responses={200: CurrentUserSerializer, 202: MfaChallengeSerializer},
+        description="200 = signed in. 202 = password accepted; send the authenticator code to "
+        "/auth/login/verify/ to finish signing in.",
+    )
     def post(self, request):
         SessionAuthentication().enforce_csrf(request)  # login CSRF protection
         serializer = LoginSerializer(data=request.data)
@@ -85,11 +111,33 @@ class LoginView(APIView):
                 outcome=AuditEvent.Outcome.FAILURE,
             )
             raise InvalidCredentials("Email or password is incorrect.")
-        login(request._request, user)  # rotates the session key (prevents fixation)
-        record_audit_event(
-            action=AuditAction.AUTH_LOGIN, resource_type="session", actor=user, request=request
-        )
-        return Response(CurrentUserSerializer(_current_user_payload(user)).data)
+        if mfa.confirmed_device(user) is not None:
+            mfa.begin_challenge(request, user)
+            return Response(
+                {
+                    "mfa_required": True,
+                    "detail": "Enter the 6-digit code from your authenticator app.",
+                },
+                status=status.HTTP_202_ACCEPTED,
+            )
+        return _complete_login(request, user, via="password", mfa_verified=False)
+
+
+class LoginVerifyView(APIView):
+    """Second sign-in step for accounts with two-factor on (HIMS-IAM-005)."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
+
+    @extend_schema(request=MfaCodeSerializer, responses={200: CurrentUserSerializer})
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = MfaCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = mfa.verify_challenge(request, serializer.validated_data["code"])
+        return _complete_login(request, user, via="password+mfa", mfa_verified=True)
 
 
 class _PublicInvitationView(APIView):
@@ -134,15 +182,7 @@ class InvitationAcceptView(_PublicInvitationView):
             request=request,
         )
         # Activation signs the person in, like a normal login (session key rotated).
-        login(request._request, user, backend="django.contrib.auth.backends.ModelBackend")
-        record_audit_event(
-            action=AuditAction.AUTH_LOGIN,
-            resource_type="session",
-            actor=user,
-            request=request,
-            metadata={"via": "invitation"},
-        )
-        return Response(CurrentUserSerializer(_current_user_payload(user)).data)
+        return _complete_login(request, user, via="invitation", mfa_verified=False)
 
 
 class _PublicPasswordResetView(APIView):
@@ -221,7 +261,7 @@ class CurrentUserView(APIView):
 
     @extend_schema(responses={200: CurrentUserSerializer})
     def get(self, request):
-        return Response(CurrentUserSerializer(_current_user_payload(request.user)).data)
+        return Response(CurrentUserSerializer(_current_user_payload(request.user, request)).data)
 
 
 class NoAccessReportView(APIView):
@@ -249,3 +289,61 @@ class NoAccessReportView(APIView):
             },
         )
         return Response({"reference": event.request_id}, status=status.HTTP_201_CREATED)
+
+
+class MfaStatusView(APIView):
+    """Two-factor status for the signed-in user. Always reachable, so people can set it up."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: MfaStatusSerializer})
+    def get(self, request):
+        return Response(MfaStatusSerializer(mfa.status(request.user, request)).data)
+
+
+class MfaSetupView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={201: MfaSetupSerializer})
+    def post(self, request):
+        return Response(
+            MfaSetupSerializer(mfa.begin_setup(request.user)).data, status=status.HTTP_201_CREATED
+        )
+
+
+class MfaConfirmView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=MfaCodeSerializer, responses={200: MfaRecoveryCodesSerializer})
+    def post(self, request):
+        serializer = MfaCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        codes = mfa.confirm_setup(
+            user=request.user, code=serializer.validated_data["code"], request=request
+        )
+        return Response({"recovery_codes": codes})
+
+
+class MfaRecoveryCodesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=MfaCodeSerializer, responses={200: MfaRecoveryCodesSerializer})
+    def post(self, request):
+        serializer = MfaCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        codes = mfa.regenerate_recovery_codes(
+            user=request.user, code=serializer.validated_data["code"], request=request
+        )
+        return Response({"recovery_codes": codes})
+
+
+class MfaDisableView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=MfaCodeSerializer, responses={204: None})
+    def post(self, request):
+        serializer = MfaCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        mfa.disable(user=request.user, code=serializer.validated_data["code"], request=request)
+        mfa.mark_session_verified(request, False)
+        return Response(status=status.HTTP_204_NO_CONTENT)

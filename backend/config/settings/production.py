@@ -4,6 +4,8 @@ The same immutable image runs in all four (spec 31.5, 33.3); only environment va
 secrets differ. HIMS_ENVIRONMENT selects which managed environment this process belongs to.
 """
 
+from django.core.exceptions import ImproperlyConfigured
+
 from common.environment import validate_environment
 
 from .base import *  # noqa: F403
@@ -13,6 +15,8 @@ from .base import (
     HIMS_DATABASE_ENVIRONMENT,
     HIMS_DEPLOYMENT_ID,
     HIMS_ENVIRONMENT,
+    HIMS_FIELD_ENCRYPTION_KEYS,
+    HIMS_MFA_REQUIRED_FOR_PRIVILEGED,
     env,
 )
 
@@ -29,6 +33,13 @@ SECURE_REDIRECT_EXEMPT = [r"^health/"]  # ALB health checks arrive over HTTP
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 X_FRAME_OPTIONS = "DENY"
+
+if not HIMS_FIELD_ENCRYPTION_KEYS:
+    raise ImproperlyConfigured("HIMS_FIELD_ENCRYPTION_KEYS must be set (from the secret manager).")
+if HIMS_ENVIRONMENT == "production" and not HIMS_MFA_REQUIRED_FOR_PRIVILEGED:
+    raise ImproperlyConfigured(
+        "Two-factor sign-in for privileged users cannot be disabled in production."
+    )
 
 validate_environment(
     settings_profile="production",

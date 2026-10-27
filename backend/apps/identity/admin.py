@@ -10,8 +10,9 @@ from apps.audit.services import record_audit_event
 from common.admin.options import HimsInline, HimsModelAdmin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
+from . import mfa
 from .invitations import issue_invitation
-from .models import Invitation, PasswordReset, User, UserSession
+from .models import Invitation, MfaDevice, PasswordReset, User, UserSession
 from .sessions import end_user_sessions, track_session
 
 
@@ -35,6 +36,16 @@ class PasswordResetAdmin(ReadOnlyModelAdmin):
     list_display = ("user", "status", "created_at", "expires_at", "used_at")
     search_fields = ("user__email",)
     readonly_fields = ("status",)
+
+
+@admin.register(MfaDevice)
+class MfaDeviceAdmin(ReadOnlyModelAdmin):
+    """Who has two-factor sign-in on. The authenticator secret is never displayed."""
+
+    list_display = ("user", "confirmed_at", "last_used_at", "created_at")
+    list_filter = (("confirmed_at", admin.EmptyFieldListFilter),)
+    search_fields = ("user__email", "user__display_name")
+    exclude = ("secret_encrypted", "last_used_step")
 
 
 @admin.register(UserSession)
@@ -126,7 +137,7 @@ class UserAdmin(HimsModelAdmin, DjangoUserAdmin):
         ),
     )
     inlines = [RoleAssignmentInline]
-    actions = ["send_invitation", "sign_out_everywhere"]
+    actions = ["send_invitation", "sign_out_everywhere", "reset_two_factor"]
 
     @admin.action(description="Send invitation email (activate account)")
     def send_invitation(self, request, queryset):
@@ -145,6 +156,22 @@ class UserAdmin(HimsModelAdmin, DjangoUserAdmin):
                 keep_session_key=request.session.session_key,
             )
         self.message_user(request, f"Signed out {total} session(s).")
+
+    @admin.action(description="Reset two-factor sign-in (lost phone)")
+    def reset_two_factor(self, request, queryset):
+        done = 0
+        for user in queryset:
+            try:
+                mfa.admin_reset(user=user, actor=request.user, request=request)
+                done += 1
+            except DomainError as exc:
+                self.message_user(request, f"{user.email}: {exc.detail}", messages.WARNING)
+        if done:
+            self.message_user(
+                request,
+                f"Reset two-factor for {done} user(s). They were signed out and will set it up "
+                "again at their next sign-in.",
+            )
 
     def user_change_password(self, request, id, form_url=""):
         response = super().user_change_password(request, id, form_url)

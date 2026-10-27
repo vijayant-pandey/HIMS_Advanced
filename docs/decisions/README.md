@@ -23,3 +23,4 @@ default, awaiting the named approver), **Superseded**.
 | [015](ADR-015-scoped-rbac.md) | Scoped, time-bounded RBAC with default deny | Proposed |
 | [016](ADR-016-admin-operations-console.md) | Django admin as an RBAC-gated, audited operations console | Proposed |
 | [017](ADR-017-hosting-and-branch-promotion.md) | Interim hosting on Render + Vercel; branch-per-environment promotion | Proposed |
+| [018](ADR-018-two-factor-sign-in.md) | Two-factor sign-in with authenticator apps (TOTP) | Proposed |
