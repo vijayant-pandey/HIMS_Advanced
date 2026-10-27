@@ -523,6 +523,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/features/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Every feature with its default and settings. With ``?facility=``: per-facility features
+         *     only, with that facility's settings.
+         */
+        get: operations["features_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/features/{key}/change/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Turn a feature on, off or back to the default, for the hospital or one facility. */
+        post: operations["features_change"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/features/effective/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description What is on right now, for the app to show or hide things.
+         *
+         *     Before sign-in only public features are returned (e.g. whether to show "Forgot password?").
+         *     Showing or hiding is a convenience; the server enforces every feature itself.
+         */
+        get: operations["features_effective_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/floors/": {
         parameters: {
             query?: never;
@@ -1357,6 +1416,17 @@ export interface components {
          * @enum {string}
          */
         DocumentTypeEnum: "mrn" | "encounter" | "invoice" | "claim";
+        EffectiveFeatures: {
+            hospital: {
+                [key: string]: boolean;
+            };
+            /** @description Per-facility features, by facility id (signed-in users only). */
+            facilities: {
+                [key: string]: {
+                    [key: string]: boolean;
+                };
+            };
+        };
         /**
          * @description * `active` - Active
          *     * `on_leave` - On leave
@@ -1416,6 +1486,42 @@ export interface components {
          * @enum {string}
          */
         FacilityTypeEnum: "hospital" | "clinic" | "diagnostic_center" | "day_care";
+        FeatureChangeRequest: {
+            /** Format: uuid */
+            facility?: string | null;
+            setting: components["schemas"]["SettingEnum"];
+            reason: string;
+            version: number;
+        };
+        /** @description One stored setting (hospital-wide or for a facility). */
+        FeatureSetting: {
+            setting: components["schemas"]["SettingEnum"];
+            /** @description 0 = never set; send it back when changing. */
+            version: number;
+            reason: string;
+            updated_by_name: string | null;
+            /** Format: date-time */
+            updated_at: string | null;
+        };
+        FeatureState: {
+            key: string;
+            name: string;
+            description: string;
+            category: string;
+            scope: components["schemas"]["ScopeEnum"];
+            /** @description False = not built yet (see planned_phase). */
+            available: boolean;
+            planned_phase: string;
+            countries: string[] | null;
+            offered_in_country: boolean;
+            /** @description Default for this hospital's country. */
+            default: boolean;
+            hospital: components["schemas"]["FeatureSetting"];
+            /** @description Only when ?facility= is given and the feature is per facility. */
+            facility: components["schemas"]["FeatureSetting"] | null;
+            /** @description On or off right now (for the facility if given). */
+            enabled: boolean;
+        };
         Floor: {
             /** Format: uuid */
             readonly id: string;
@@ -1937,6 +2043,8 @@ export interface components {
          *     * `departments.view` - departments.view
          *     * `facilities.manage` - facilities.manage
          *     * `facilities.view` - facilities.view
+         *     * `features.manage` - features.manage
+         *     * `features.view` - features.view
          *     * `locations.manage` - locations.manage
          *     * `locations.view` - locations.view
          *     * `numbering.manage` - numbering.manage
@@ -1949,7 +2057,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "audit.view" | "beds.status.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "audit.view" | "beds.status.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
         QualificationType: {
             /** Format: uuid */
             readonly id: string;
@@ -2070,6 +2178,12 @@ export interface components {
          */
         RoomTypeEnum: "general" | "private" | "semi_private" | "icu_bay" | "isolation" | "operating_room" | "procedure" | "recovery" | "consultation";
         /**
+         * @description * `organization` - Whole hospital
+         *     * `facility` - Per facility
+         * @enum {string}
+         */
+        ScopeEnum: "organization" | "facility";
+        /**
          * @description * `-` - Dash (-)
          *     * `/` - Slash (/)
          *     * `` - None
@@ -2081,6 +2195,13 @@ export interface components {
             /** @description Running number the next record should get, e.g. 54322. */
             next_value: number;
         };
+        /**
+         * @description * `default` - Use the default
+         *     * `on` - On
+         *     * `off` - Off
+         * @enum {string}
+         */
+        SettingEnum: "default" | "on" | "off";
         Specialty: {
             /** Format: uuid */
             readonly id: string;
@@ -3241,6 +3362,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FacilityLocations"];
+                };
+            };
+        };
+    };
+    features_list: {
+        parameters: {
+            query?: {
+                /** @description Facility id */
+                facility?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureState"][];
+                };
+            };
+        };
+    };
+    features_change: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeatureChangeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureState"];
+                };
+            };
+        };
+    };
+    features_effective_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EffectiveFeatures"];
                 };
             };
         };

@@ -18,6 +18,8 @@ class P:
     BEDS_STATUS_MANAGE = "beds.status.manage"
     NUMBERING_VIEW = "numbering.view"
     NUMBERING_MANAGE = "numbering.manage"
+    FEATURES_VIEW = "features.view"
+    FEATURES_MANAGE = "features.manage"
     STAFF_VIEW = "staff.view"
     STAFF_MANAGE = "staff.manage"
     STAFF_CREDENTIALS_VERIFY = "staff.credentials.verify"
@@ -41,6 +43,8 @@ PERMISSIONS: dict[str, str] = {
     P.BEDS_STATUS_MANAGE: "Put beds into or out of maintenance, blocked or out of service",
     P.NUMBERING_VIEW: "View numbering schemes (MRN, encounter, invoice, claim) and issued numbers",
     P.NUMBERING_MANAGE: "Change numbering schemes and continue numbering from a previous system",
+    P.FEATURES_VIEW: "See which features are on for the hospital and each facility",
+    P.FEATURES_MANAGE: "Turn features on or off for the hospital or a facility",
     P.STAFF_VIEW: "View the staff directory, qualifications and credentials",
     P.STAFF_MANAGE: "Onboard staff and maintain their qualifications and credentials",
     P.STAFF_CREDENTIALS_VERIFY: "Verify staff qualifications and professional credentials",
@@ -60,6 +64,7 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.FACILITIES_MANAGE,
         P.LOCATIONS_MANAGE,
         P.NUMBERING_MANAGE,
+        P.FEATURES_MANAGE,
         P.STAFF_MANAGE,
         P.STAFF_CREDENTIALS_VERIFY,
         P.ROLES_MANAGE,
@@ -85,8 +90,8 @@ SYSTEM_ROLES: dict[str, dict] = {
     # Administrative roles usable today (see docs/status/Hospital_Departments_and_Doctors_RBAC.MD).
     "facility-administrator": {
         "name": "Facility (branch) administrator",
-        "description": "Runs one branch: its details, departments, locations and its own "
-        "numbering series. Assign at facility scope.",
+        "description": "Runs one branch: its details, departments, locations, its own "
+        "numbering series and its feature settings. Assign at facility scope.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.FACILITIES_MANAGE,
@@ -97,6 +102,8 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.BEDS_STATUS_MANAGE,
             P.NUMBERING_VIEW,
             P.NUMBERING_MANAGE,
+            P.FEATURES_VIEW,
+            P.FEATURES_MANAGE,
         ],
     },
     "hr-credentialing-officer": {

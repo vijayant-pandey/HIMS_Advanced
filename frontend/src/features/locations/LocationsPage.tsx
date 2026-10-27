@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -258,7 +259,14 @@ export function LocationsPage() {
       </Box>
       {(facilities.isPending || locations.isFetching) && <LinearProgress />}
       {facilities.error && <ErrorAlert error={facilities.error} />}
-      {locations.error && <ErrorAlert error={locations.error} />}
+      {locations.error?.problem.code === "FEATURE_DISABLED" ? (
+        <Alert severity="info">
+          {locations.error.problem.detail}
+          {hasPermissionAt(user, "features.manage", facilityId) && " (menu → Features)"}
+        </Alert>
+      ) : (
+        locations.error && <ErrorAlert error={locations.error} />
+      )}
       {tree && (
         <>
           <Paper sx={{ p: 1.5 }}>

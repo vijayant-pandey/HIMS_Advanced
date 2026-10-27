@@ -15,6 +15,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.access_control.services import assign_role, create_system_roles
+from apps.features.services import ensure_hospital_rows
 from apps.identity.services import create_user
 from apps.numbering.services import ensure_default_schemes
 from apps.organizations.models import Country, Currency
@@ -56,6 +57,7 @@ class Command(BaseCommand):
         )
         roles = create_system_roles(organization)
         ensure_default_schemes(organization)
+        ensure_hospital_rows(organization)
 
         admin = create_user(
             email=opts["admin_email"],

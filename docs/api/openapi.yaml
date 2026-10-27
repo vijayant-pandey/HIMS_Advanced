@@ -923,6 +923,79 @@ paths:
               schema:
                 $ref: '#/components/schemas/FacilityLocations'
           description: ''
+  /api/v1/features/:
+    get:
+      operationId: features_list
+      description: |-
+        Every feature with its default and settings. With ``?facility=``: per-facility features
+        only, with that facility's settings.
+      parameters:
+      - in: query
+        name: facility
+        schema:
+          type: string
+        description: Facility id
+      tags:
+      - features
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeatureState'
+          description: ''
+  /api/v1/features/{key}/change/:
+    post:
+      operationId: features_change
+      description: Turn a feature on, off or back to the default, for the hospital
+        or one facility.
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - features
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureChangeRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureState'
+          description: ''
+  /api/v1/features/effective/:
+    get:
+      operationId: features_effective_retrieve
+      description: |-
+        What is on right now, for the app to show or hide things.
+
+        Before sign-in only public features are returned (e.g. whether to show "Forgot password?").
+        Showing or hiding is a convenience; the server enforces every feature itself.
+      tags:
+      - features
+      security:
+      - sessionAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EffectiveFeatures'
+          description: ''
   /api/v1/floors/:
     get:
       operationId: floors_list
@@ -2620,6 +2693,23 @@ components:
         * `encounter` - Encounter / visit number
         * `invoice` - Invoice number
         * `claim` - Insurance claim number
+    EffectiveFeatures:
+      type: object
+      properties:
+        hospital:
+          type: object
+          additionalProperties:
+            type: boolean
+        facilities:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: boolean
+          description: Per-facility features, by facility id (signed-in users only).
+      required:
+      - facilities
+      - hospital
     EmploymentStatusEnum:
       enum:
       - active
@@ -2790,6 +2880,102 @@ components:
         * `clinic` - Clinic
         * `diagnostic_center` - Diagnostic center
         * `day_care` - Day-care center
+    FeatureChangeRequest:
+      type: object
+      properties:
+        facility:
+          type: string
+          format: uuid
+          nullable: true
+        setting:
+          $ref: '#/components/schemas/SettingEnum'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+        version:
+          type: integer
+          minimum: 0
+      required:
+      - reason
+      - setting
+      - version
+    FeatureSetting:
+      type: object
+      description: One stored setting (hospital-wide or for a facility).
+      properties:
+        setting:
+          $ref: '#/components/schemas/SettingEnum'
+        version:
+          type: integer
+          description: 0 = never set; send it back when changing.
+        reason:
+          type: string
+        updated_by_name:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - reason
+      - setting
+      - updated_at
+      - updated_by_name
+      - version
+    FeatureState:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        scope:
+          $ref: '#/components/schemas/ScopeEnum'
+        available:
+          type: boolean
+          description: False = not built yet (see planned_phase).
+        planned_phase:
+          type: string
+        countries:
+          type: array
+          items:
+            type: string
+          nullable: true
+        offered_in_country:
+          type: boolean
+        default:
+          type: boolean
+          description: Default for this hospital's country.
+        hospital:
+          $ref: '#/components/schemas/FeatureSetting'
+        facility:
+          allOf:
+          - $ref: '#/components/schemas/FeatureSetting'
+          nullable: true
+          description: Only when ?facility= is given and the feature is per facility.
+        enabled:
+          type: boolean
+          description: On or off right now (for the facility if given).
+      required:
+      - available
+      - category
+      - countries
+      - default
+      - description
+      - enabled
+      - facility
+      - hospital
+      - key
+      - name
+      - offered_in_country
+      - planned_phase
+      - scope
     Floor:
       type: object
       properties:
@@ -3921,6 +4107,8 @@ components:
       - departments.view
       - facilities.manage
       - facilities.view
+      - features.manage
+      - features.view
       - locations.manage
       - locations.view
       - numbering.manage
@@ -3942,6 +4130,8 @@ components:
         * `departments.view` - departments.view
         * `facilities.manage` - facilities.manage
         * `facilities.view` - facilities.view
+        * `features.manage` - features.manage
+        * `features.view` - features.view
         * `locations.manage` - locations.manage
         * `locations.view` - locations.view
         * `numbering.manage` - numbering.manage
@@ -4270,6 +4460,14 @@ components:
         * `procedure` - Procedure room
         * `recovery` - Recovery bay
         * `consultation` - Consultation room
+    ScopeEnum:
+      enum:
+      - organization
+      - facility
+      type: string
+      description: |-
+        * `organization` - Whole hospital
+        * `facility` - Per facility
     SeparatorEnum:
       enum:
       - '-'
@@ -4292,6 +4490,16 @@ components:
       required:
       - next_value
       - version
+    SettingEnum:
+      enum:
+      - default
+      - 'on'
+      - 'off'
+      type: string
+      description: |-
+        * `default` - Use the default
+        * `on` - On
+        * `off` - Off
     Specialty:
       type: object
       properties:

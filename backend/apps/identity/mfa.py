@@ -110,8 +110,14 @@ def confirmed_device(user) -> MfaDevice | None:
     return device
 
 
-def is_required(user) -> bool:
+def is_required(user, request=None) -> bool:
     if settings.HIMS_MFA_REQUIRED_FOR_ALL:
+        return True
+    from apps.features.catalog import F
+    from apps.features.services import is_enabled
+
+    # The hospital can require it for everyone on its Features page (HIMS-ORG-004).
+    if is_enabled(F.TWO_FACTOR_FOR_EVERYONE, request=request):
         return True
     if not settings.HIMS_MFA_REQUIRED_FOR_PRIVILEGED:
         return False
@@ -128,7 +134,7 @@ def ensure_satisfied(request) -> None:
     user = request.user
     if not getattr(user, "is_authenticated", False):
         return
-    if session_verified(request) or not is_required(user):
+    if session_verified(request) or not is_required(user, request):
         return
     raise MfaRequired(
         "Your role requires two-factor sign-in. Set it up under Security to continue."
@@ -141,7 +147,7 @@ def status(user, request=None) -> dict:
     device = confirmed_device(user)
     return {
         "enabled": device is not None,
-        "required": is_required(user),
+        "required": is_required(user, request),
         "verified": session_verified(request) if request is not None else False,
         "recovery_codes_remaining": MfaRecoveryCode.objects.filter(
             user=user, used_at__isnull=True

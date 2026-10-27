@@ -9,6 +9,7 @@ api_v1 = [
     path("", include("apps.facilities.api.urls")),
     path("", include("apps.beds.api.urls")),
     path("", include("apps.numbering.api.urls")),
+    path("", include("apps.features.api.urls")),
     path("", include("apps.access_control.api.urls")),
     path("", include("apps.staff.api.urls")),
     path("", include("apps.audit.api.urls")),
