@@ -10,6 +10,11 @@ class DepartmentInline(HimsInline):
     fields = ("code", "name", "department_type", "status")
 
 
+class BuildingInline(HimsInline):
+    model = Building
+    fields = ("code", "name", "is_active")
+
+
 @admin.register(Facility)
 class FacilityAdmin(HimsModelAdmin):
     list_display = ("code", "name", "facility_type", "city", "timezone", "status")
@@ -34,7 +39,7 @@ class FacilityAdmin(HimsModelAdmin):
         ),
         ("Record", {"fields": ("version", "created_at", "updated_at")}),
     )
-    inlines = [DepartmentInline]
+    inlines = [DepartmentInline, BuildingInline]
 
 
 @admin.register(Department)
@@ -69,9 +74,26 @@ class _LocationAdmin(HimsModelAdmin):
         return readonly
 
 
+class FloorInline(HimsInline):
+    model = Floor
+    fields = ("level", "name", "is_active")
+
+
+class WardInline(HimsInline):
+    model = Ward
+    fk_name = "floor"
+    fields = ("code", "name", "ward_type", "department", "is_active")
+
+
+class RoomInline(HimsInline):
+    model = Room
+    fields = ("code", "name", "room_type", "is_isolation_capable", "is_active")
+
+
 @admin.register(Building)
 class BuildingAdmin(_LocationAdmin):
     parent_field = "facility"
+    inlines = [FloorInline]
     list_display = ("code", "name", "facility", "is_active")
     list_filter = ("is_active", "facility")
     search_fields = ("code", "name")
@@ -81,6 +103,7 @@ class BuildingAdmin(_LocationAdmin):
 @admin.register(Floor)
 class FloorAdmin(_LocationAdmin):
     parent_field = "building"
+    inlines = [WardInline]
     list_display = ("name", "level", "building", "is_active")
     list_filter = ("is_active", "building__facility")
     search_fields = ("name", "building__name")
@@ -90,6 +113,7 @@ class FloorAdmin(_LocationAdmin):
 @admin.register(Ward)
 class WardAdmin(_LocationAdmin):
     parent_field = "floor"
+    inlines = [RoomInline]
     list_display = ("code", "name", "ward_type", "floor", "department", "is_active")
     list_filter = ("is_active", "ward_type", "facility")
     search_fields = ("code", "name")

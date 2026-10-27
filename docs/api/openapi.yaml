@@ -1054,6 +1054,205 @@ paths:
               schema:
                 $ref: '#/components/schemas/Floor'
           description: ''
+  /api/v1/issued-numbers/:
+    get:
+      operationId: issued_numbers_list
+      description: Register of numbers handed out (read-only).
+      parameters:
+      - in: query
+        name: document_type
+        schema:
+          type: string
+      - in: query
+        name: facility
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: value
+        schema:
+          type: string
+        description: Part of the number
+      tags:
+      - issued-numbers
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIssuedNumberList'
+          description: ''
+  /api/v1/numbering-schemes/:
+    get:
+      operationId: numbering_schemes_list
+      description: |-
+        Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+        sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+        own scheme needs it at that facility.
+      parameters:
+      - in: query
+        name: document_type
+        schema:
+          type: string
+      tags:
+      - numbering-schemes
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NumberingScheme'
+          description: ''
+    post:
+      operationId: numbering_schemes_create
+      description: |-
+        Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+        sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+        own scheme needs it at that facility.
+      tags:
+      - numbering-schemes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NumberingSchemeCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberingScheme'
+          description: ''
+  /api/v1/numbering-schemes/{id}/:
+    get:
+      operationId: numbering_schemes_retrieve
+      description: |-
+        Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+        sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+        own scheme needs it at that facility.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this numbering scheme.
+        required: true
+      tags:
+      - numbering-schemes
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberingScheme'
+          description: ''
+    patch:
+      operationId: numbering_schemes_partial_update
+      description: |-
+        Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+        sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+        own scheme needs it at that facility.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this numbering scheme.
+        required: true
+      tags:
+      - numbering-schemes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNumberingSchemeUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberingScheme'
+          description: ''
+  /api/v1/numbering-schemes/{id}/next-number/:
+    post:
+      operationId: numbering_schemes_next_number_create
+      description: |-
+        Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+        sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+        own scheme needs it at that facility.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this numbering scheme.
+        required: true
+      tags:
+      - numbering-schemes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetNextNumberRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberingScheme'
+          description: ''
+  /api/v1/numbering-schemes/preview/:
+    post:
+      operationId: numbering_schemes_preview_create
+      description: 'Try settings before saving: returns an example number and any
+        problems.'
+      tags:
+      - numbering-schemes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NumberingPreviewRequestRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberingPreview'
+          description: ''
   /api/v1/organization/:
     get:
       operationId: organization_retrieve
@@ -2110,6 +2309,9 @@ components:
         * `labour` - Labour / delivery
         * `recovery` - Recovery
         * `emergency_trolley` - Emergency trolley
+    BlankEnum:
+      enum:
+      - ''
     Building:
       type: object
       properties:
@@ -2406,6 +2608,18 @@ components:
         * `administration` - Administration & management
         * `support` - Support services
         * `other` - Other
+    DocumentTypeEnum:
+      enum:
+      - mrn
+      - encounter
+      - invoice
+      - claim
+      type: string
+      description: |-
+        * `mrn` - Patient record number (MRN)
+        * `encounter` - Encounter / visit number
+        * `invoice` - Invoice number
+        * `claim` - Insurance claim number
     EmploymentStatusEnum:
       enum:
       - active
@@ -2722,6 +2936,59 @@ components:
           maxLength: 512
       required:
       - token
+    IssuedNumber:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        document_type:
+          allOf:
+          - $ref: '#/components/schemas/DocumentTypeEnum'
+          readOnly: true
+        value:
+          type: string
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        period_key:
+          type: string
+          readOnly: true
+        sequence:
+          type: integer
+          readOnly: true
+        issued_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        issued_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        reference:
+          type: string
+          readOnly: true
+          description: What the number was given to, e.g. 'patient:<id>'.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - document_type
+      - facility
+      - id
+      - issued_by
+      - issued_by_name
+      - period_key
+      - reference
+      - sequence
+      - value
     LoginRequest:
       type: object
       properties:
@@ -2813,6 +3080,213 @@ components:
           type: string
           default: ''
           maxLength: 200
+    NumberingPreview:
+      type: object
+      properties:
+        example:
+          type: string
+          description: What the first number would look like today.
+        longest:
+          type: string
+          description: The longest number this format can produce.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Problems with these settings (empty when they can be saved).
+      required:
+      - errors
+      - example
+      - longest
+    NumberingPreviewRequestRequest:
+      type: object
+      description: Settings to try out before saving; nothing is stored.
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        facility:
+          type: string
+          format: uuid
+          nullable: true
+        prefix:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z0-9]*$
+            maxLength: 10
+          - type: string
+            maxLength: 0
+        separator:
+          oneOf:
+          - $ref: '#/components/schemas/SeparatorEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        include_facility_code:
+          type: boolean
+          description: Put the facility code in the number, e.g. ENC-BLR-2026-0001.
+        period:
+          $ref: '#/components/schemas/PeriodEnum'
+        year_format:
+          $ref: '#/components/schemas/YearFormatEnum'
+        financial_year_start_month:
+          type: integer
+          maximum: 12
+          minimum: 1
+          description: 'India: 4 (April). US: usually 1 (January) or the hospital''s
+            own.'
+        padding:
+          type: integer
+          maximum: 12
+          minimum: 3
+          description: Digits in the running number, e.g. 6 gives 000001.
+        start_at:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: First running number of each new series.
+      required:
+      - document_type
+    NumberingScheme:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        document_type:
+          allOf:
+          - $ref: '#/components/schemas/DocumentTypeEnum'
+          readOnly: true
+        document_type_label:
+          type: string
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Leave empty for the whole hospital. Set to give one facility
+            its own series.
+        facility_name:
+          type: string
+          readOnly: true
+          nullable: true
+        prefix:
+          type: string
+          readOnly: true
+        separator:
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/SeparatorEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        include_facility_code:
+          type: boolean
+          readOnly: true
+          description: Put the facility code in the number, e.g. ENC-BLR-2026-0001.
+        period:
+          allOf:
+          - $ref: '#/components/schemas/PeriodEnum'
+          readOnly: true
+        year_format:
+          allOf:
+          - $ref: '#/components/schemas/YearFormatEnum'
+          readOnly: true
+        financial_year_start_month:
+          type: integer
+          readOnly: true
+          description: 'India: 4 (April). US: usually 1 (January) or the hospital''s
+            own.'
+        padding:
+          type: integer
+          readOnly: true
+          description: Digits in the running number, e.g. 6 gives 000001.
+        start_at:
+          type: integer
+          readOnly: true
+          description: First running number of each new series.
+        is_active:
+          type: boolean
+          readOnly: true
+        next_number:
+          type: string
+          readOnly: true
+          description: The number the next record will get (not used up by viewing
+            it).
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - document_type
+      - document_type_label
+      - facility
+      - facility_name
+      - financial_year_start_month
+      - id
+      - include_facility_code
+      - is_active
+      - next_number
+      - padding
+      - period
+      - prefix
+      - separator
+      - start_at
+      - updated_at
+      - version
+      - year_format
+    NumberingSchemeCreateRequest:
+      type: object
+      properties:
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        facility:
+          type: string
+          format: uuid
+          nullable: true
+        prefix:
+          oneOf:
+          - type: string
+            pattern: ^[A-Z0-9]*$
+            maxLength: 10
+          - type: string
+            maxLength: 0
+        separator:
+          oneOf:
+          - $ref: '#/components/schemas/SeparatorEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        include_facility_code:
+          type: boolean
+          description: Put the facility code in the number, e.g. ENC-BLR-2026-0001.
+        period:
+          $ref: '#/components/schemas/PeriodEnum'
+        year_format:
+          $ref: '#/components/schemas/YearFormatEnum'
+        financial_year_start_month:
+          type: integer
+          maximum: 12
+          minimum: 1
+          description: 'India: 4 (April). US: usually 1 (January) or the hospital''s
+            own.'
+        padding:
+          type: integer
+          maximum: 12
+          minimum: 3
+          description: Digits in the running number, e.g. 6 gives 000001.
+        start_at:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          description: First running number of each new series.
+      required:
+      - document_type
     Organization:
       type: object
       properties:
@@ -3019,6 +3493,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Floor'
+    PaginatedIssuedNumberList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IssuedNumber'
     PaginatedRoleAssignmentList:
       type: object
       required:
@@ -3279,6 +3776,38 @@ components:
           minimum: -5
         is_active:
           type: boolean
+    PatchedNumberingSchemeUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        prefix:
+          type: string
+          maxLength: 10
+        separator:
+          oneOf:
+          - $ref: '#/components/schemas/SeparatorEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        include_facility_code:
+          type: boolean
+        period:
+          $ref: '#/components/schemas/PeriodEnum'
+        year_format:
+          $ref: '#/components/schemas/YearFormatEnum'
+        financial_year_start_month:
+          type: integer
+          maximum: 12
+          minimum: 1
+        padding:
+          type: integer
+          maximum: 12
+          minimum: 3
+        start_at:
+          type: integer
+          minimum: 0
+        is_active:
+          type: boolean
     PatchedOrganizationUpdateRequest:
       type: object
       properties:
@@ -3357,6 +3886,18 @@ components:
           $ref: '#/components/schemas/AgeGroupEnum'
         is_active:
           type: boolean
+    PeriodEnum:
+      enum:
+      - none
+      - calendar_year
+      - financial_year
+      - month
+      type: string
+      description: |-
+        * `none` - Never restarts
+        * `calendar_year` - Restarts every calendar year
+        * `financial_year` - Restarts every financial year
+        * `month` - Restarts every month
     Permission:
       type: object
       properties:
@@ -3382,6 +3923,8 @@ components:
       - facilities.view
       - locations.manage
       - locations.view
+      - numbering.manage
+      - numbering.view
       - organization.manage
       - organization.view
       - platform.admin_console
@@ -3401,6 +3944,8 @@ components:
         * `facilities.view` - facilities.view
         * `locations.manage` - locations.manage
         * `locations.view` - locations.view
+        * `numbering.manage` - numbering.manage
+        * `numbering.view` - numbering.view
         * `organization.manage` - organization.manage
         * `organization.view` - organization.view
         * `platform.admin_console` - platform.admin_console
@@ -3725,6 +4270,28 @@ components:
         * `procedure` - Procedure room
         * `recovery` - Recovery bay
         * `consultation` - Consultation room
+    SeparatorEnum:
+      enum:
+      - '-'
+      - /
+      type: string
+      description: |-
+        * `-` - Dash (-)
+        * `/` - Slash (/)
+        * `` - None
+    SetNextNumberRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        next_value:
+          type: integer
+          minimum: 1
+          description: Running number the next record should get, e.g. 54322.
+      required:
+      - next_value
+      - version
     Specialty:
       type: object
       properties:
@@ -4431,6 +4998,14 @@ components:
         * `day_care` - Day care
         * `operating_theatre` - Operating theatre complex
         * `recovery` - Recovery / PACU
+    YearFormatEnum:
+      enum:
+      - full
+      - short
+      type: string
+      description: |-
+        * `full` - Full (2026, 2026-27)
+        * `short` - Short (26, 26-27)
   securitySchemes:
     sessionAuth:
       type: apiKey

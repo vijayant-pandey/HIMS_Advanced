@@ -39,3 +39,12 @@ static-file serving for admin assets (HIMS-OPS-010).
 guarantees the specification requires. Clinical and financial domains added later must register
 their admins on the same base classes and route state transitions through their services, never
 through raw field edits.
+
+## Update 2026-10-27: full coverage is enforced (HIMS-PLAT-018)
+The product owner asked that everything be manageable in the console. A test
+(`common/admin/tests/test_admin_coverage.py`) now fails when any model is not registered, either on
+its own page or as an inline section of its parent. The only deliberate exception is two-factor
+backup codes (secret hashes); the device page shows how many remain. The same test opens every
+console list and add page. Added at the same time: "Send password reset link" on users, bed status
+changes (all staff-settable states, reason required) on the bed page, and Facility → Building →
+Floor → Ward → Room → Bed sections on each parent page. Inline edits now also bump `version`.

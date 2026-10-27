@@ -30,6 +30,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event); plus 6 more colour themes (10 total) and a compact modern design | Done (visit recorded as `access.none_assigned`; reference = audit request_id) |
 | HIMS-PLAT-016 | OpenTelemetry tracing for API, Celery and outbound HTTP | To do |
 | HIMS-PLAT-017 | Django admin operations console: RBAC-gated, audited, no deletion (ADR-016) | Done |
+| HIMS-PLAT-018 | Admin console coverage: every model manageable (test-enforced), password-reset action, full bed status, location drill-down | Done |
 | HIMS-SEC-015 | Console network restriction (IP allow-list/VPN) before enabling outside local | To do |
 | HIMS-OPS-010 | Static files for admin/API docs in managed environments (WhiteNoise or S3/CloudFront) | To do |
 | HIMS-OPS-012 | Runbook: updating every hospital database after a merge (docs/workflows/database-migrations.md) | Done |
@@ -46,7 +47,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-FAC-003 | Facility admin UI (list + create with idempotency) | Done |
 | HIMS-FAC-004 | Location hierarchy: building → floor → ward/unit → room → bed (config only; allocation is Phase 3) | Done |
 | HIMS-FAC-005 | In-app screens to add/edit buildings, floors, wards, rooms and beds (today: admin console or API) | To do |
-| HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | To do |
+| HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | Done |
 | HIMS-ORG-004 | Feature flags per organization/country/facility | To do |
 
 ## EPIC HIMS-IAM — Identity and access

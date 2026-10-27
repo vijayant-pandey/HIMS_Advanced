@@ -85,6 +85,17 @@ def request_password_reset(*, email: str, request=None) -> None:
     _issue_reset(user=user, request=request)
 
 
+def send_reset_from_console(*, user: User, request=None) -> bool:
+    """Admin console: email a reset link to a user who forgot their password.
+
+    Only for active accounts that already have a password; others need an invitation instead.
+    """
+    if not (user.is_active and user.has_usable_password()):
+        return False
+    _issue_reset(user=user, request=request)
+    return True
+
+
 @transaction.atomic
 def _issue_reset(*, user: User, request=None) -> PasswordReset:
     now = timezone.now()
