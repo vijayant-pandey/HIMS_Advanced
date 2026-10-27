@@ -1,0 +1,15 @@
+# Secret-scanning configuration for CI (gitleaks; spec 32.5, 33.1).
+# Keeps every built-in gitleaks rule and only allow-lists values that are provably not secrets.
+title = "HIMS gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic test passwords and audit event names (never real credentials)"
+regexes = [
+  # Fake passwords used only in automated tests, e.g. Synthetic-Mfa-Passw0rd-2026
+  '''^Synthetic-[A-Za-z]+-Passw0rd-\d{4}$''',
+  # Audit/outbox event names such as auth.mfa.disabled or user.password_reset.requested
+  '''^(auth|user|access|staff|identity)\.[a-z_]+(\.[a-z_]+)*$''',
+]
