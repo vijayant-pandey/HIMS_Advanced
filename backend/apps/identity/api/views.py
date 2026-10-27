@@ -12,6 +12,8 @@ from rest_framework.views import APIView
 from apps.access_control.selectors import list_grants
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction, record_audit_event
+from apps.features.catalog import F
+from apps.features.services import require_enabled
 from apps.organizations.models import Organization
 from common.exceptions import DomainError
 
@@ -206,6 +208,9 @@ class PasswordResetRequestView(_PublicPasswordResetView):
     )
     def post(self, request):
         SessionAuthentication().enforce_csrf(request)
+        # The hospital may turn self-service resets off (HIMS-ORG-004); the answer is the same for
+        # every email address, so it still reveals nothing about accounts.
+        require_enabled(F.SELF_SERVICE_PASSWORD_RESET, request=request)
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         password_reset.request_password_reset(

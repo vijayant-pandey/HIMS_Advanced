@@ -8,6 +8,7 @@ import { RequireAuth } from "../features/auth/RequireAuth";
 import { ResetPasswordPage } from "../features/auth/ResetPasswordPage";
 import { FacilitiesPage } from "../features/facilities/FacilitiesPage";
 import { LocationsPage } from "../features/locations/LocationsPage";
+import { FeaturesPage } from "../features/featureFlags/FeaturesPage";
 import { NumberingPage } from "../features/numbering/NumberingPage";
 import { SecurityPage } from "../features/security/SecurityPage";
 import { StaffPage } from "../features/staff/StaffPage";
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
           { path: "facilities", element: <FacilitiesPage /> },
           { path: "locations", element: <LocationsPage /> },
           { path: "numbering", element: <NumberingPage /> },
+          { path: "features", element: <FeaturesPage /> },
           { path: "staff", element: <StaffPage /> },
           { path: "security", element: <SecurityPage /> },
         ],

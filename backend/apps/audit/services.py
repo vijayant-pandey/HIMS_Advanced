@@ -36,6 +36,8 @@ class AuditAction:
     NUMBERING_SCHEME_CREATED = "numbering.scheme.created"
     NUMBERING_SCHEME_UPDATED = "numbering.scheme.updated"
     NUMBERING_NEXT_NUMBER_SET = "numbering.next_number.set"
+    FEATURE_FLAG_CHANGED = "feature.flag.changed"
+    FEATURE_CATALOG_SYNCED = "feature.catalog.synced"
     USER_CREATED = "user.created"
     USER_INVITATION_ISSUED = "user.invitation.issued"
     USER_INVITATION_ACCEPTED = "user.invitation.accepted"

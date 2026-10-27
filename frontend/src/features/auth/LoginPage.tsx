@@ -6,6 +6,7 @@ import { Navigate, Link as RouterLink, useLocation, useNavigate } from "react-ro
 import { z } from "zod";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
+import { FEATURE, useFeatureOn } from "../featureFlags/api";
 import { isMfaChallenge, useCurrentUser, useLogin, useVerifyLogin } from "./api";
 import { AuthCard } from "./AuthCard";
 
@@ -78,6 +79,8 @@ export function LoginPage() {
   const location = useLocation();
   const { data: user } = useCurrentUser();
   const login = useLogin();
+  // The hospital may turn self-service resets off (Features page); the server enforces it too.
+  const selfServiceReset = useFeatureOn(FEATURE.selfServicePasswordReset);
   const [needsCode, setNeedsCode] = useState(false);
   const {
     register,
@@ -134,9 +137,11 @@ export function LoginPage() {
           <Button type="submit" variant="contained" disabled={login.isPending}>
             Sign in
           </Button>
-          <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ alignSelf: "center" }}>
-            Forgot password?
-          </Link>
+          {selfServiceReset && (
+            <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ alignSelf: "center" }}>
+              Forgot password?
+            </Link>
+          )}
         </Stack>
       </form>
     </AuthCard>

@@ -14,6 +14,8 @@ from apps.access_control.catalog import P
 from apps.access_control.selectors import check_permission, get_permission_scope
 from apps.facilities import location_services
 from apps.facilities.models import Building, Facility, Floor, Room, Ward
+from apps.features.catalog import F
+from apps.features.services import disabled_facility_ids, require_enabled
 from common.idempotency.decorators import idempotent
 from common.permissions import FACILITY, filter_by_facility_scope
 
@@ -52,6 +54,11 @@ class BedViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gene
 
     def get_queryset(self):
         queryset = filter_by_facility_scope(self, Bed.objects.all())
+        if self.action == "list":
+            # Facilities where the hospital turned Locations off (HIMS-ORG-004) are left out.
+            queryset = queryset.exclude(
+                facility_id__in=disabled_facility_ids(F.LOCATIONS, request=self.request)
+            )
         for param, lookup in BED_FILTERS.items():
             value = self.request.query_params.get(param)
             if value:
@@ -62,6 +69,12 @@ class BedViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gene
 
     def get_permission_context(self, obj):
         return obj.facility_id, None
+
+    def get_object(self):
+        obj = super().get_object()
+        # One item in a facility where Locations is off: explain instead of "not found".
+        require_enabled(F.LOCATIONS, facility_id=obj.facility_id, request=self.request)
+        return obj
 
     @extend_schema(
         parameters=[OpenApiParameter(p, str) for p in BED_FILTERS]
@@ -77,6 +90,7 @@ class BedViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gene
         serializer.is_valid(raise_exception=True)
         room = serializer.validated_data["room"]
         check_permission(request.user, P.LOCATIONS_MANAGE, facility_id=room.facility_id)
+        require_enabled(F.LOCATIONS, facility_id=room.facility_id, request=request)
         bed = location_services.create_location(
             Bed, actor=request.user, request=request, **serializer.validated_data
         )
@@ -118,6 +132,7 @@ class BedViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gene
         serializer.is_valid(raise_exception=True)
         room = serializer.validated_data["room"]
         check_permission(request.user, P.LOCATIONS_MANAGE, facility_id=room.facility_id)
+        require_enabled(F.LOCATIONS, facility_id=room.facility_id, request=request)
         beds = services.create_beds_in_room(
             actor=request.user, request=request, **serializer.validated_data
         )
@@ -144,6 +159,7 @@ class FacilityLocationsView(APIView):
             facility_id=pk, department_id=None
         ):
             raise Http404  # out of scope looks the same as missing
+        require_enabled(F.LOCATIONS, facility_id=pk, request=request)
         active_only = request.query_params.get("active") == "true"
 
         def nodes(model):

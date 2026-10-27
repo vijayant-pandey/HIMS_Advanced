@@ -45,3 +45,8 @@
 - Existing privileged accounts are asked to set up two-factor at their next sign-in.
 - Losing both the phone and the backup codes needs an administrator reset (by design).
 - Step-up re-authentication for individual sensitive actions remains HIMS-IAM-007.
+
+## Update 2026-10-28 (HIMS-ORG-004)
+Hospitals can now also require two-factor for everyone themselves, on the Features page
+("Two-factor sign-in for all staff", ADR-019). The setting is audited and needs a reason. The
+server setting `HIMS_MFA_REQUIRED_FOR_ALL` still works and takes precedence.

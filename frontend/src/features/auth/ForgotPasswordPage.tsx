@@ -5,6 +5,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { z } from "zod";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
+import { FEATURE, useFeatureOn } from "../featureFlags/api";
 import { useRequestPasswordReset } from "./api";
 import { AuthCard } from "./AuthCard";
 
@@ -14,6 +15,7 @@ type FormValues = z.infer<typeof schema>;
 /** "Forgot password?" (HIMS-IAM-004). The answer never reveals whether an account exists. */
 export function ForgotPasswordPage() {
   const request = useRequestPasswordReset();
+  const enabled = useFeatureOn(FEATURE.selfServicePasswordReset);
   const {
     register,
     handleSubmit,
@@ -22,7 +24,12 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthCard title="Reset your password">
-      {request.data ? (
+      {!enabled ? (
+        <Alert severity="info">
+          This hospital does not reset passwords by email. Ask your administrator to send you a
+          reset link.
+        </Alert>
+      ) : request.data ? (
         <Alert severity="success">{request.data.detail}</Alert>
       ) : (
         <form onSubmit={handleSubmit((values) => request.mutate(values))} noValidate>

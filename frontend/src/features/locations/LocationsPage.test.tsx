@@ -283,4 +283,30 @@ describe("LocationsPage", () => {
     expect(await screen.findByText("Edit bed B01 · General Ward")).toBeInTheDocument();
     expect(screen.getByLabelText(/Bed type/)).toBeInTheDocument();
   });
+
+  it("explains when Locations is turned off for the facility", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/locations/"))
+        return json(
+          {
+            title: "Feature turned off",
+            status: 409,
+            code: "FEATURE_DISABLED",
+            detail: "Locations and beds is turned off for this facility.",
+          },
+          409,
+        );
+      return json({ count: 1, next: null, previous: null, results: [{ id: FACILITY_ID, name: "Facility A" }] });
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(currentUserKey, null);
+    render(
+      <QueryClientProvider client={queryClient}>
+        <LocationsPage />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("Locations and beds is turned off for this facility.")).toBeInTheDocument();
+  });
 });
+

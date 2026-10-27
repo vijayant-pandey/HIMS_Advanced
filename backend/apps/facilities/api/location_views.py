@@ -6,6 +6,8 @@ from rest_framework.response import Response
 
 from apps.access_control.catalog import P
 from apps.access_control.selectors import check_permission
+from apps.features.catalog import F
+from apps.features.services import disabled_facility_ids, require_enabled
 from common.idempotency.decorators import idempotent
 from common.permissions import FACILITY, filter_by_facility_scope
 
@@ -39,6 +41,11 @@ class LocationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets
 
     def get_queryset(self):
         queryset = filter_by_facility_scope(self, self.model.objects.all())
+        if self.action == "list":
+            # Facilities where the hospital turned Locations off (HIMS-ORG-004) are left out.
+            queryset = queryset.exclude(
+                facility_id__in=disabled_facility_ids(F.LOCATIONS, request=self.request)
+            )
         for param, lookup in self.filters.items():
             value = self.request.query_params.get(param)
             if value:
@@ -50,11 +57,18 @@ class LocationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets
     def get_permission_context(self, obj):
         return obj.facility_id, None
 
+    def get_object(self):
+        obj = super().get_object()
+        # One item in a facility where Locations is off: explain instead of "not found".
+        require_enabled(F.LOCATIONS, facility_id=obj.facility_id, request=self.request)
+        return obj
+
     def _create(self, request):
         serializer = self.create_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         parent = serializer.validated_data[self.parent_field]
         facility_id = parent.pk if self.parent_field == "facility" else parent.facility_id
+        require_enabled(F.LOCATIONS, facility_id=facility_id, request=request)
         check_permission(request.user, P.LOCATIONS_MANAGE, facility_id=facility_id)
         instance = location_services.create_location(
             self.model, actor=request.user, request=request, **serializer.validated_data

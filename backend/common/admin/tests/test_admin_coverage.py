@@ -112,7 +112,7 @@ def test_room_page_lists_beds_and_location_codes_cannot_change(admin_user, facil
 
 @pytest.mark.django_db
 def test_console_sends_password_reset_link(admin_user, make_user):
-    user = make_user(password="Synthetic-Reset-Passw0rd-11")
+    user = make_user(password="Synthetic-Reset-Passw0rd-2026")
     response = console(admin_user).post(
         "/admin/identity/user/",
         {"action": "send_password_reset", "_selected_action": [str(user.pk)]},

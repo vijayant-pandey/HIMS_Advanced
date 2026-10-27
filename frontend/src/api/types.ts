@@ -49,3 +49,7 @@ export type RoomType = Schemas["RoomTypeEnum"];
 export type BedType = Schemas["BedTypeEnum"];
 export type GenderRestriction = Schemas["GenderRestrictionEnum"];
 export type AgeGroup = Schemas["AgeGroupEnum"];
+export type FeatureState = Schemas["FeatureState"];
+export type FeatureSetting = Schemas["FeatureSetting"];
+export type FeatureChangeRequest = Schemas["FeatureChangeRequest"];
+export type EffectiveFeatures = Schemas["EffectiveFeatures"];
