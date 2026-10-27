@@ -77,6 +77,7 @@ class TreeRoomSerializer(serializers.Serializer):
     room_type = serializers.CharField()
     is_isolation_capable = serializers.BooleanField()
     is_active = serializers.BooleanField()
+    version = serializers.IntegerField()
     beds = TreeBedSerializer(many=True)
 
 
@@ -86,9 +87,11 @@ class TreeWardSerializer(serializers.Serializer):
     name = serializers.CharField()
     ward_type = serializers.CharField()
     department = serializers.UUIDField(allow_null=True)
+    department_name = serializers.CharField(allow_null=True)
     gender_restriction = serializers.CharField()
     age_group = serializers.CharField()
     is_active = serializers.BooleanField()
+    version = serializers.IntegerField()
     bed_counts = serializers.DictField(child=serializers.IntegerField(), help_text="by status")
     rooms = TreeRoomSerializer(many=True)
 
@@ -98,6 +101,7 @@ class TreeFloorSerializer(serializers.Serializer):
     level = serializers.IntegerField()
     name = serializers.CharField()
     is_active = serializers.BooleanField()
+    version = serializers.IntegerField()
     wards = TreeWardSerializer(many=True)
 
 
@@ -106,6 +110,7 @@ class TreeBuildingSerializer(serializers.Serializer):
     code = serializers.CharField()
     name = serializers.CharField()
     is_active = serializers.BooleanField()
+    version = serializers.IntegerField()
     floors = TreeFloorSerializer(many=True)
 
 

@@ -360,3 +360,23 @@ def test_managing_locations_requires_two_factor(make_user, system_roles, facilit
     with override_settings(HIMS_MFA_REQUIRED_FOR_PRIVILEGED=True):
         assert is_required(fac_admin)
         assert not is_required(clerk)  # bed status changes are routine ward work
+
+
+@pytest.mark.django_db
+def test_tree_carries_versions_for_editing_in_the_app(
+    client_for, admin_user, facility_a, department_a
+):
+    client = client_for(admin_user)
+    ids = build_structure(client, facility_a, beds=1)
+    client.patch(
+        f"{API}/wards/{ids['ward']}/",
+        {"version": 1, "department": str(department_a.pk)},
+        format="json",
+    )
+    tree = client.get(f"{API}/facilities/{facility_a.pk}/locations/").json()
+    building = tree["buildings"][0]
+    floor = building["floors"][0]
+    ward = floor["wards"][0]
+    room = ward["rooms"][0]
+    assert (building["version"], floor["version"], ward["version"], room["version"]) == (1, 1, 2, 1)
+    assert ward["department_name"] == "Cardiology"  # HIMS-FAC-005: shown on the Locations page

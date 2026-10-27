@@ -4761,6 +4761,8 @@ components:
           type: string
         is_active:
           type: boolean
+        version:
+          type: integer
         floors:
           type: array
           items:
@@ -4771,6 +4773,7 @@ components:
       - id
       - is_active
       - name
+      - version
     TreeFloor:
       type: object
       properties:
@@ -4783,6 +4786,8 @@ components:
           type: string
         is_active:
           type: boolean
+        version:
+          type: integer
         wards:
           type: array
           items:
@@ -4792,6 +4797,7 @@ components:
       - is_active
       - level
       - name
+      - version
       - wards
     TreeRoom:
       type: object
@@ -4809,6 +4815,8 @@ components:
           type: boolean
         is_active:
           type: boolean
+        version:
+          type: integer
         beds:
           type: array
           items:
@@ -4821,6 +4829,7 @@ components:
       - is_isolation_capable
       - name
       - room_type
+      - version
     TreeWard:
       type: object
       properties:
@@ -4837,12 +4846,17 @@ components:
           type: string
           format: uuid
           nullable: true
+        department_name:
+          type: string
+          nullable: true
         gender_restriction:
           type: string
         age_group:
           type: string
         is_active:
           type: boolean
+        version:
+          type: integer
         bed_counts:
           type: object
           additionalProperties:
@@ -4857,11 +4871,13 @@ components:
       - bed_counts
       - code
       - department
+      - department_name
       - gender_restriction
       - id
       - is_active
       - name
       - rooms
+      - version
       - ward_type
     VerificationStatusEnum:
       enum:

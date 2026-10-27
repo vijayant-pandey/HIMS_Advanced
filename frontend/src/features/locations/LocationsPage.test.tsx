@@ -16,12 +16,14 @@ const tree: FacilityLocations = {
       code: "main",
       name: "Main Block",
       is_active: true,
+      version: 1,
       floors: [
         {
           id: "fl1",
           level: 2,
           name: "Second floor",
           is_active: true,
+          version: 1,
           wards: [
             {
               id: "w1",
@@ -29,9 +31,11 @@ const tree: FacilityLocations = {
               name: "General Ward",
               ward_type: "general",
               department: null,
+              department_name: null,
               gender_restriction: "any",
               age_group: "any",
               is_active: true,
+              version: 4,
               bed_counts: { available: 1, occupied: 1 },
               rooms: [
                 {
@@ -41,6 +45,7 @@ const tree: FacilityLocations = {
                   room_type: "general",
                   is_isolation_capable: false,
                   is_active: true,
+                  version: 1,
                   beds: [
                     bed("bed1", "b01", "available"),
                     bed("bed2", "b02", "occupied"),
@@ -94,9 +99,28 @@ function renderPage(permissions: string[]) {
   };
   const fetchMock = vi
     .spyOn(globalThis, "fetch")
-    .mockImplementation(async (input) => {
+    .mockImplementation(async (input, init) => {
       const url = String(input);
       if (url.endsWith("/locations/")) return json(tree);
+      if (url.includes("/departments/"))
+        return json({ count: 0, next: null, previous: null, results: [] });
+      if (url.endsWith("/buildings/") && init?.method === "POST") {
+        const body = JSON.parse(String(init.body)) as { code: string };
+        if (body.code === "main")
+          return json(
+            {
+              title: "Validation failed",
+              status: 400,
+              code: "VALIDATION_ERROR",
+              errors: [{ field: "code", message: "This code is already used in this facility." }],
+            },
+            400,
+          );
+        return json({ id: "b2" }, 201);
+      }
+      if (init?.method === "POST" || init?.method === "PATCH") {
+        if (!url.includes("/status/")) return json({}, url.endsWith("/bulk/") ? 201 : 200);
+      }
       if (url.includes("/facilities/"))
         return json({
           count: 1,
@@ -170,5 +194,93 @@ describe("LocationsPage", () => {
     expect(
       screen.queryByRole("button", { name: "Save" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows no edit buttons to people who may only view", async () => {
+    renderPage(["locations.view"]);
+    await screen.findByText("General Ward");
+    expect(screen.queryByRole("button", { name: "Add building" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Edit/ })).not.toBeInTheDocument();
+  });
+
+  it("adds a building and shows the server's message under the field", async () => {
+    const fetchMock = renderPage(["locations.view", "locations.manage"]);
+    fireEvent.click(await screen.findByRole("button", { name: "Add building" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Add building in Facility A")).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText(/^Code/), { target: { value: "main" } });
+    fireEvent.change(within(dialog).getByLabelText(/^Name/), { target: { value: "Main" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(
+      await within(dialog).findByText("This code is already used in this facility."),
+    ).toBeInTheDocument();
+
+    fireEvent.change(within(dialog).getByLabelText(/^Code/), { target: { value: "Block A" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    const posts = fetchMock.mock.calls.filter(
+      ([url, init]) => String(url).endsWith("/buildings/") && init?.method === "POST",
+    );
+    expect(JSON.parse(String(posts.at(-1)![1]!.body))).toEqual({
+      facility: FACILITY_ID,
+      code: "block-a", // typed "Block A": codes are made safe as you type
+      name: "Main",
+    });
+    expect((posts.at(-1)![1]!.headers as Record<string, string>)["Idempotency-Key"]).toBeTruthy();
+  });
+
+  it("edits a ward with its current version and warns before deactivating", async () => {
+    const fetchMock = renderPage(["locations.view", "locations.manage"]);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit General Ward" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByLabelText(/^Code/)).not.toBeInTheDocument(); // codes never change
+    fireEvent.change(within(dialog).getByLabelText(/^Name/), { target: { value: "Ward A" } });
+    fireEvent.click(within(dialog).getByRole("switch", { name: "Active" }));
+    expect(within(dialog).getByText(/Everything inside it must be deactivated first/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await vi.waitFor(() =>
+      expect(fetchMock.mock.calls.some(([, init]) => init?.method === "PATCH")).toBe(true),
+    );
+    const patch = fetchMock.mock.calls.find(([, init]) => init?.method === "PATCH")!;
+    expect(String(patch[0])).toMatch(/\/wards\/w1\/$/);
+    expect(JSON.parse(String(patch[1]!.body))).toMatchObject({
+      version: 4,
+      name: "Ward A",
+      is_active: false,
+      department: null,
+    });
+  });
+
+  it("adds numbered beds and refuses codes already used in the ward", async () => {
+    const fetchMock = renderPage(["locations.view", "locations.manage"]);
+    fireEvent.click(await screen.findByRole("button", { name: "Add beds" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Already used in this ward: B01, B02/)).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Add beds" })).toBeDisabled();
+
+    fireEvent.change(within(dialog).getByLabelText("Start at"), { target: { value: "3" } });
+    expect(within(dialog).getByText("Creates 4 bed(s): B03 … B06")).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Add beds" }));
+
+    await vi.waitFor(() =>
+      expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/beds/bulk/"))).toBe(true),
+    );
+    const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/beds/bulk/"))!;
+    expect(JSON.parse(String(call[1]!.body))).toEqual({
+      room: "r1",
+      prefix: "b",
+      start: 3,
+      count: 4,
+      bed_type: "general",
+    });
+  });
+
+  it("opens bed details from the status dialog for people who manage locations", async () => {
+    renderPage(["locations.view", "locations.manage", "beds.status.manage"]);
+    fireEvent.click(await screen.findByLabelText("Bed B01, Available"));
+    fireEvent.click(await screen.findByRole("button", { name: "Edit bed details" }));
+    expect(await screen.findByText("Edit bed B01 · General Ward")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Bed type/)).toBeInTheDocument();
   });
 });

@@ -20,7 +20,7 @@ import { useState } from "react";
 import type { CurrentUser, NumberingScheme } from "../../api/types";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { useCurrentUser } from "../auth/api";
-import { hasOrganizationWidePermission, hasPermission } from "../auth/grants";
+import { hasPermission, hasPermissionAt } from "../auth/grants";
 import { useFacilities } from "../facilities/api";
 import { useIssuedNumbers, useNumberingSchemes } from "./api";
 import { ContinueNumberingDialog } from "./ContinueNumberingDialog";
@@ -31,11 +31,8 @@ const MANAGE = "numbering.manage";
 
 /** Hint only; the API checks numbering.manage at the scheme's scope. */
 function canManage(user: CurrentUser | null | undefined, scheme: NumberingScheme): boolean {
-  if (hasOrganizationWidePermission(user, MANAGE)) return true;
-  return (
-    scheme.facility !== null &&
-    !!user?.grants.some((g) => g.permission === MANAGE && g.facility_id === scheme.facility)
-  );
+  // A hospital-wide scheme (facility null) needs an organization-wide grant.
+  return hasPermissionAt(user, MANAGE, scheme.facility);
 }
 
 function IssuedNumbers() {
@@ -105,10 +102,8 @@ export function NumberingPage() {
   const [creating, setCreating] = useState(false);
 
   // Facilities this user may give their own series.
-  const manageableFacilities = (facilities.data?.results ?? []).filter(
-    (f) =>
-      hasOrganizationWidePermission(user, MANAGE) ||
-      !!user?.grants.some((g) => g.permission === MANAGE && g.facility_id === f.id),
+  const manageableFacilities = (facilities.data?.results ?? []).filter((f) =>
+    hasPermissionAt(user, MANAGE, f.id),
   );
 
   return (
