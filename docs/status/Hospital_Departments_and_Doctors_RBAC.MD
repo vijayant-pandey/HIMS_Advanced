@@ -282,12 +282,13 @@ exist now. Assign them in the admin console under **Role assignments**.
 |---|---|---|---|---|
 | **Organization administrator** | Organization | Everything except `audit.view` (organization, facilities, departments, staff, roles, role assignments, admin console) | Sets up the hospital, branches, departments, staff and access | Hospital Administrator, COO, CEO, IT admin |
 | **Auditor / compliance officer** | Organization | `audit.view` | Reviews who did what; investigates incidents | Quality officer, compliance officer |
-| **Facility (branch) administrator** | One facility | facilities view + manage, departments view + manage | Runs one branch: its details and departments | Facility Manager, Medical Superintendent |
+| **Facility (branch) administrator** | One facility | facilities view + manage, departments view + manage, locations view + manage, bed status | Runs one branch: its details, departments, buildings, wards, rooms and beds | Facility Manager, Medical Superintendent |
 | **HR / credentialing officer** | Organization | staff view + manage, credentials verify, facilities + departments view | Onboards staff, records qualifications, verifies licences, sends invitations | HR Executive, Credentialing Officer |
-| **Head of department (HOD)** | One department | facilities view, departments view | Sees their department. Clinical approvals are added with clinical features | HOD, Section Chief, Department Chair |
-| **Basic staff access** | Organization or facility | facilities view, departments view | Minimum access for any employee, so new staff don't see "Permission denied" | Everyone |
+| **Head of department (HOD)** | One department | facilities view, departments view, locations view | Sees their department. Clinical approvals are added with clinical features | HOD, Section Chief, Department Chair |
+| **Basic staff access** | Organization or facility | facilities view, departments view, locations view | Minimum access for any employee, so new staff don't see "Permission denied" | Everyone |
+| **Bed manager / ward clerk** | One facility | facilities view, locations view, bed status | Marks beds available, under maintenance, blocked or out of service (with a reason). Cannot change the building/ward structure. Reserved/occupied/cleaning come from admissions later (Phase 3) | Ward clerk, bed manager, nursing supervisor, admission desk lead |
 
-**Two-factor sign-in is required** for anyone holding Organization administrator, Auditor, Facility administrator or HR / credentialing officer (they can change settings, people, access, or read the audit log). Head of department and Basic staff access do not require it today, but anyone can turn it on under **Security**. See ADR-018.
+**Two-factor sign-in is required** for anyone holding Organization administrator, Auditor, Facility administrator or HR / credentialing officer (they can change settings, people, access, the building/ward/bed structure, or read the audit log). Head of department, Basic staff access and Bed manager do not require it today (changing a bed's status is routine ward work), but anyone can turn it on under **Security**. See ADR-018.
 
 **Users with no role** see a "Welcome, your account is active" page with a **reference number**. An auditor can find it in the admin console (**Audit events**, search the reference) as an `access.none_assigned` event.
 

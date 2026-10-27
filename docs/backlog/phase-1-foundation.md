@@ -44,7 +44,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-FAC-001 | Facilities API: list/create/retrieve/update, scoped visibility, audit | Done |
 | HIMS-FAC-002 | Departments API: create within facility scope, inactive-facility guard | Done |
 | HIMS-FAC-003 | Facility admin UI (list + create with idempotency) | Done |
-| HIMS-FAC-004 | Location hierarchy: building → floor → ward/unit → room → bed (config only; allocation is Phase 3) | To do |
+| HIMS-FAC-004 | Location hierarchy: building → floor → ward/unit → room → bed (config only; allocation is Phase 3) | Done |
+| HIMS-FAC-005 | In-app screens to add/edit buildings, floors, wards, rooms and beds (today: admin console or API) | To do |
 | HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | To do |
 | HIMS-ORG-004 | Feature flags per organization/country/facility | To do |
 

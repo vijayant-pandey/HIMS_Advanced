@@ -13,6 +13,9 @@ class P:
     FACILITIES_MANAGE = "facilities.manage"
     DEPARTMENTS_VIEW = "departments.view"
     DEPARTMENTS_MANAGE = "departments.manage"
+    LOCATIONS_VIEW = "locations.view"
+    LOCATIONS_MANAGE = "locations.manage"
+    BEDS_STATUS_MANAGE = "beds.status.manage"
     STAFF_VIEW = "staff.view"
     STAFF_MANAGE = "staff.manage"
     STAFF_CREDENTIALS_VERIFY = "staff.credentials.verify"
@@ -31,6 +34,9 @@ PERMISSIONS: dict[str, str] = {
     P.FACILITIES_MANAGE: "Create facilities (organization-wide) and change them",
     P.DEPARTMENTS_VIEW: "View departments",
     P.DEPARTMENTS_MANAGE: "Create and change departments",
+    P.LOCATIONS_VIEW: "View buildings, floors, wards, rooms and beds",
+    P.LOCATIONS_MANAGE: "Create, change and deactivate buildings, floors, wards, rooms and beds",
+    P.BEDS_STATUS_MANAGE: "Put beds into or out of maintenance, blocked or out of service",
     P.STAFF_VIEW: "View the staff directory, qualifications and credentials",
     P.STAFF_MANAGE: "Onboard staff and maintain their qualifications and credentials",
     P.STAFF_CREDENTIALS_VERIFY: "Verify staff qualifications and professional credentials",
@@ -48,6 +54,7 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.ADMIN_CONSOLE,
         P.ORGANIZATION_MANAGE,
         P.FACILITIES_MANAGE,
+        P.LOCATIONS_MANAGE,
         P.STAFF_MANAGE,
         P.STAFF_CREDENTIALS_VERIFY,
         P.ROLES_MANAGE,
@@ -79,6 +86,9 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.FACILITIES_MANAGE,
             P.DEPARTMENTS_VIEW,
             P.DEPARTMENTS_MANAGE,
+            P.LOCATIONS_VIEW,
+            P.LOCATIONS_MANAGE,
+            P.BEDS_STATUS_MANAGE,
         ],
     },
     "hr-credentialing-officer": {
@@ -96,11 +106,17 @@ SYSTEM_ROLES: dict[str, dict] = {
         "name": "Head of department (HOD)",
         "description": "Sees their department. Clinical approvals are added with clinical "
         "domains. Assign at department scope.",
-        "permissions": [P.FACILITIES_VIEW, P.DEPARTMENTS_VIEW],
+        "permissions": [P.FACILITIES_VIEW, P.DEPARTMENTS_VIEW, P.LOCATIONS_VIEW],
     },
     "basic-staff": {
         "name": "Basic staff access",
         "description": "Minimum access for any employee: see their hospital and departments.",
-        "permissions": [P.FACILITIES_VIEW, P.DEPARTMENTS_VIEW],
+        "permissions": [P.FACILITIES_VIEW, P.DEPARTMENTS_VIEW, P.LOCATIONS_VIEW],
+    },
+    "bed-manager": {
+        "name": "Bed manager / ward clerk",
+        "description": "Keeps beds usable: marks beds for maintenance, blocked or out of "
+        "service. Bed allocation to patients is added in Phase 3. Assign at facility scope.",
+        "permissions": [P.FACILITIES_VIEW, P.LOCATIONS_VIEW, P.BEDS_STATUS_MANAGE],
     },
 }

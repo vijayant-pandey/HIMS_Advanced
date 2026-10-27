@@ -10,6 +10,7 @@ export interface NavItem {
 /** Main menu. Items appear only for users holding the permission (the API still enforces it). */
 export const NAV_ITEMS: NavItem[] = [
   { to: "/facilities", label: "Facilities", permission: "facilities.view" },
+  { to: "/locations", label: "Locations", permission: "locations.view" },
   { to: "/staff", label: "Staff", permission: "staff.view" },
 ];
 

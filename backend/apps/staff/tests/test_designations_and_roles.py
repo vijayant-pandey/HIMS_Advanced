@@ -14,6 +14,7 @@ EXPECTED_SYSTEM_ROLES = {
     "hr-credentialing-officer",
     "department-head",
     "basic-staff",
+    "bed-manager",
 }
 
 
