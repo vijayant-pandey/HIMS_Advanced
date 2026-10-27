@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.forms import AdminUserCreationForm
@@ -13,6 +14,7 @@ from common.exceptions import DomainError
 from . import mfa
 from .invitations import issue_invitation
 from .models import Invitation, MfaDevice, PasswordReset, User, UserSession
+from .password_reset import send_reset_from_console
 from .sessions import end_user_sessions, track_session
 
 
@@ -137,11 +139,35 @@ class UserAdmin(HimsModelAdmin, DjangoUserAdmin):
         ),
     )
     inlines = [RoleAssignmentInline]
-    actions = ["send_invitation", "sign_out_everywhere", "reset_two_factor"]
+    actions = [
+        "send_invitation",
+        "send_password_reset",
+        "sign_out_everywhere",
+        "reset_two_factor",
+    ]
 
     @admin.action(description="Send invitation email (activate account)")
     def send_invitation(self, request, queryset):
         send_invitations(self, request, queryset)
+
+    @admin.action(description="Send password reset link (forgot password)")
+    def send_password_reset(self, request, queryset):
+        sent = 0
+        for user in queryset:
+            if send_reset_from_console(user=user, request=request):
+                sent += 1
+            else:
+                self.message_user(
+                    request,
+                    f"{user.email}: not active or never activated; send an invitation instead.",
+                    messages.WARNING,
+                )
+        if sent:
+            self.message_user(
+                request,
+                f"Sent a reset link to {sent} user(s). It works for "
+                f"{settings.HIMS_PASSWORD_RESET_TTL_MINUTES} minutes.",
+            )
 
     @admin.action(description="Sign out of all devices")
     def sign_out_everywhere(self, request, queryset):

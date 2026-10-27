@@ -86,6 +86,8 @@ class HimsModelAdmin(_OrganizationField, _ConsolePermissions, admin.ModelAdmin):
             if hasattr(obj, "organization_id") and not obj.organization_id:
                 obj.organization_id = form.instance.organization_id
             created = obj._state.adding
+            if not created and hasattr(obj, "version"):
+                obj.version += 1  # API clients holding the old version now get 409
             obj.save()
             _audit_admin_change(request, obj, created=created, before=befores.get(obj.pk))
         formset.save_m2m()

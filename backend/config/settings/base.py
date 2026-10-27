@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "apps.access_control",
     "apps.staff",
     "apps.beds",
+    "apps.numbering",
 ]
 
 # Django admin is the HIMS operations console (ADR-016): gated by HIMS RBAC rather than

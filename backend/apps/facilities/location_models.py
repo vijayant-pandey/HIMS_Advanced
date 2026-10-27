@@ -16,7 +16,7 @@ class LocationNode(OrganizationOwnedModel, VersionedModel):
     """Common rules for building / floor / ward / room (and beds in apps.beds).
 
     * ``organization`` and ``facility`` are derived from the parent on save, never user input.
-    * The parent cannot change after creation (deactivate and recreate instead).
+    * The parent and the code cannot change after creation (deactivate and recreate instead).
     * Children can only be added under an active parent; a parent with active children cannot
       be deactivated.
     * Codes are checked for uniqueness here as well as in the database, so admin forms show a
@@ -59,17 +59,22 @@ class LocationNode(OrganizationOwnedModel, VersionedModel):
             if not self._parent_is_active():
                 errors[self.PARENT_FIELD] = "Items can only be added under an active parent."
         else:
-            original_parent = (
+            has_code = any(f.name == "code" for f in model._meta.fields)
+            original = (
                 model.objects.filter(pk=self.pk)
-                .values_list(f"{self.PARENT_FIELD}_id", flat=True)
+                .values(f"{self.PARENT_FIELD}_id", *(["code"] if has_code else []))
                 .first()
             )
-            if original_parent is not None and original_parent != getattr(
-                self, f"{self.PARENT_FIELD}_id"
-            ):
-                errors[self.PARENT_FIELD] = (
-                    "This cannot be moved. Deactivate it and create a new one instead."
-                )
+            if original is not None:
+                if original[f"{self.PARENT_FIELD}_id"] != getattr(self, f"{self.PARENT_FIELD}_id"):
+                    errors[self.PARENT_FIELD] = (
+                        "This cannot be moved. Deactivate it and create a new one instead."
+                    )
+                if has_code and original["code"] != self.code:
+                    errors["code"] = (
+                        "Codes cannot change once created (they may be printed on labels and "
+                        "records). Deactivate it and create a new one instead."
+                    )
         code = getattr(self, "code", None)
         if code and self.UNIQUE_WITHIN:
             scope = {f"{self.UNIQUE_WITHIN}_id": getattr(self, f"{self.UNIQUE_WITHIN}_id")}

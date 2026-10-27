@@ -16,6 +16,8 @@ class P:
     LOCATIONS_VIEW = "locations.view"
     LOCATIONS_MANAGE = "locations.manage"
     BEDS_STATUS_MANAGE = "beds.status.manage"
+    NUMBERING_VIEW = "numbering.view"
+    NUMBERING_MANAGE = "numbering.manage"
     STAFF_VIEW = "staff.view"
     STAFF_MANAGE = "staff.manage"
     STAFF_CREDENTIALS_VERIFY = "staff.credentials.verify"
@@ -37,6 +39,8 @@ PERMISSIONS: dict[str, str] = {
     P.LOCATIONS_VIEW: "View buildings, floors, wards, rooms and beds",
     P.LOCATIONS_MANAGE: "Create, change and deactivate buildings, floors, wards, rooms and beds",
     P.BEDS_STATUS_MANAGE: "Put beds into or out of maintenance, blocked or out of service",
+    P.NUMBERING_VIEW: "View numbering schemes (MRN, encounter, invoice, claim) and issued numbers",
+    P.NUMBERING_MANAGE: "Change numbering schemes and continue numbering from a previous system",
     P.STAFF_VIEW: "View the staff directory, qualifications and credentials",
     P.STAFF_MANAGE: "Onboard staff and maintain their qualifications and credentials",
     P.STAFF_CREDENTIALS_VERIFY: "Verify staff qualifications and professional credentials",
@@ -55,6 +59,7 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.ORGANIZATION_MANAGE,
         P.FACILITIES_MANAGE,
         P.LOCATIONS_MANAGE,
+        P.NUMBERING_MANAGE,
         P.STAFF_MANAGE,
         P.STAFF_CREDENTIALS_VERIFY,
         P.ROLES_MANAGE,
@@ -80,7 +85,8 @@ SYSTEM_ROLES: dict[str, dict] = {
     # Administrative roles usable today (see docs/status/Hospital_Departments_and_Doctors_RBAC.MD).
     "facility-administrator": {
         "name": "Facility (branch) administrator",
-        "description": "Runs one branch: its details and departments. Assign at facility scope.",
+        "description": "Runs one branch: its details, departments, locations and its own "
+        "numbering series. Assign at facility scope.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.FACILITIES_MANAGE,
@@ -89,6 +95,8 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.LOCATIONS_VIEW,
             P.LOCATIONS_MANAGE,
             P.BEDS_STATUS_MANAGE,
+            P.NUMBERING_VIEW,
+            P.NUMBERING_MANAGE,
         ],
     },
     "hr-credentialing-officer": {

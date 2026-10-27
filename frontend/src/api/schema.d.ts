@@ -583,6 +583,113 @@ export interface paths {
         patch: operations["floors_partial_update"];
         trace?: never;
     };
+    "/api/v1/issued-numbers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Register of numbers handed out (read-only). */
+        get: operations["issued_numbers_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/numbering-schemes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+         *     sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+         *     own scheme needs it at that facility.
+         */
+        get: operations["numbering_schemes_list"];
+        put?: never;
+        /**
+         * @description Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+         *     sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+         *     own scheme needs it at that facility.
+         */
+        post: operations["numbering_schemes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/numbering-schemes/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+         *     sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+         *     own scheme needs it at that facility.
+         */
+        get: operations["numbering_schemes_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+         *     sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+         *     own scheme needs it at that facility.
+         */
+        patch: operations["numbering_schemes_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/numbering-schemes/{id}/next-number/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Hospital-wide schemes (no facility) apply everywhere, so anyone with ``numbering.view``
+         *     sees them. Changing them needs ``numbering.manage`` for the whole organization; a facility's
+         *     own scheme needs it at that facility.
+         */
+        post: operations["numbering_schemes_next_number_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/numbering-schemes/preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Try settings before saving: returns an example number and any problems. */
+        post: operations["numbering_schemes_preview_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organization/": {
         parameters: {
             query?: never;
@@ -1117,6 +1224,8 @@ export interface components {
          * @enum {string}
          */
         BedTypeEnum: "general" | "semi_private" | "private" | "deluxe" | "icu" | "hdu" | "nicu" | "picu" | "isolation" | "day_care" | "labour" | "recovery" | "emergency_trolley";
+        /** @enum {unknown} */
+        BlankEnum: "";
         Building: {
             /** Format: uuid */
             readonly id: string;
@@ -1241,6 +1350,14 @@ export interface components {
          */
         DesignationCategoryEnum: "medical" | "nursing" | "pharmacy" | "allied_health" | "administration" | "support" | "other";
         /**
+         * @description * `mrn` - Patient record number (MRN)
+         *     * `encounter` - Encounter / visit number
+         *     * `invoice` - Invoice number
+         *     * `claim` - Insurance claim number
+         * @enum {string}
+         */
+        DocumentTypeEnum: "mrn" | "encounter" | "invoice" | "claim";
+        /**
          * @description * `active` - Active
          *     * `on_leave` - On leave
          *     * `suspended` - Suspended
@@ -1358,6 +1475,23 @@ export interface components {
         InvitationTokenRequest: {
             token: string;
         };
+        IssuedNumber: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly document_type: components["schemas"]["DocumentTypeEnum"];
+            readonly value: string;
+            /** Format: uuid */
+            readonly facility: string | null;
+            readonly period_key: string;
+            readonly sequence: number;
+            /** Format: uuid */
+            readonly issued_by: string | null;
+            readonly issued_by_name: string | null;
+            /** @description What the number was given to, e.g. 'patient:<id>'. */
+            readonly reference: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         LoginRequest: {
             /** Format: email */
             email: string;
@@ -1396,6 +1530,83 @@ export interface components {
         NoAccessReportRequest: {
             /** @default  */
             page: string;
+        };
+        NumberingPreview: {
+            /** @description What the first number would look like today. */
+            example: string;
+            /** @description The longest number this format can produce. */
+            longest: string;
+            /** @description Problems with these settings (empty when they can be saved). */
+            errors: {
+                [key: string]: string[];
+            };
+        };
+        /** @description Settings to try out before saving; nothing is stored. */
+        NumberingPreviewRequestRequest: {
+            document_type: components["schemas"]["DocumentTypeEnum"];
+            /** Format: uuid */
+            facility?: string | null;
+            prefix?: string;
+            separator?: components["schemas"]["SeparatorEnum"] | components["schemas"]["BlankEnum"];
+            /** @description Put the facility code in the number, e.g. ENC-BLR-2026-0001. */
+            include_facility_code?: boolean;
+            period?: components["schemas"]["PeriodEnum"];
+            year_format?: components["schemas"]["YearFormatEnum"];
+            /** @description India: 4 (April). US: usually 1 (January) or the hospital's own. */
+            financial_year_start_month?: number;
+            /** @description Digits in the running number, e.g. 6 gives 000001. */
+            padding?: number;
+            /** @description First running number of each new series. */
+            start_at?: number;
+        };
+        NumberingScheme: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly document_type: components["schemas"]["DocumentTypeEnum"];
+            readonly document_type_label: string;
+            /**
+             * Format: uuid
+             * @description Leave empty for the whole hospital. Set to give one facility its own series.
+             */
+            readonly facility: string | null;
+            readonly facility_name: string | null;
+            readonly prefix: string;
+            readonly separator: components["schemas"]["SeparatorEnum"] | components["schemas"]["BlankEnum"];
+            /** @description Put the facility code in the number, e.g. ENC-BLR-2026-0001. */
+            readonly include_facility_code: boolean;
+            readonly period: components["schemas"]["PeriodEnum"];
+            readonly year_format: components["schemas"]["YearFormatEnum"];
+            /** @description India: 4 (April). US: usually 1 (January) or the hospital's own. */
+            readonly financial_year_start_month: number;
+            /** @description Digits in the running number, e.g. 6 gives 000001. */
+            readonly padding: number;
+            /** @description First running number of each new series. */
+            readonly start_at: number;
+            readonly is_active: boolean;
+            /** @description The number the next record will get (not used up by viewing it). */
+            readonly next_number: string;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        NumberingSchemeCreateRequest: {
+            document_type: components["schemas"]["DocumentTypeEnum"];
+            /** Format: uuid */
+            facility?: string | null;
+            prefix?: string;
+            separator?: components["schemas"]["SeparatorEnum"] | components["schemas"]["BlankEnum"];
+            /** @description Put the facility code in the number, e.g. ENC-BLR-2026-0001. */
+            include_facility_code?: boolean;
+            period?: components["schemas"]["PeriodEnum"];
+            year_format?: components["schemas"]["YearFormatEnum"];
+            /** @description India: 4 (April). US: usually 1 (January) or the hospital's own. */
+            financial_year_start_month?: number;
+            /** @description Digits in the running number, e.g. 6 gives 000001. */
+            padding?: number;
+            /** @description First running number of each new series. */
+            start_at?: number;
         };
         Organization: {
             /** Format: uuid */
@@ -1514,6 +1725,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Floor"][];
+        };
+        PaginatedIssuedNumberList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["IssuedNumber"][];
         };
         PaginatedRoleAssignmentList: {
             /** @example 123 */
@@ -1645,6 +1871,18 @@ export interface components {
             level?: number;
             is_active?: boolean;
         };
+        PatchedNumberingSchemeUpdateRequest: {
+            version?: number;
+            prefix?: string;
+            separator?: components["schemas"]["SeparatorEnum"] | components["schemas"]["BlankEnum"];
+            include_facility_code?: boolean;
+            period?: components["schemas"]["PeriodEnum"];
+            year_format?: components["schemas"]["YearFormatEnum"];
+            financial_year_start_month?: number;
+            padding?: number;
+            start_at?: number;
+            is_active?: boolean;
+        };
         PatchedOrganizationUpdateRequest: {
             version?: number;
             legal_name?: string;
@@ -1677,6 +1915,14 @@ export interface components {
             age_group?: components["schemas"]["AgeGroupEnum"];
             is_active?: boolean;
         };
+        /**
+         * @description * `none` - Never restarts
+         *     * `calendar_year` - Restarts every calendar year
+         *     * `financial_year` - Restarts every financial year
+         *     * `month` - Restarts every month
+         * @enum {string}
+         */
+        PeriodEnum: "none" | "calendar_year" | "financial_year" | "month";
         Permission: {
             readonly codename: string;
             readonly description: string;
@@ -1693,6 +1939,8 @@ export interface components {
          *     * `facilities.view` - facilities.view
          *     * `locations.manage` - locations.manage
          *     * `locations.view` - locations.view
+         *     * `numbering.manage` - numbering.manage
+         *     * `numbering.view` - numbering.view
          *     * `organization.manage` - organization.manage
          *     * `organization.view` - organization.view
          *     * `platform.admin_console` - platform.admin_console
@@ -1701,7 +1949,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "audit.view" | "beds.status.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "locations.manage" | "locations.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "audit.view" | "beds.status.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
         QualificationType: {
             /** Format: uuid */
             readonly id: string;
@@ -1821,6 +2069,18 @@ export interface components {
          * @enum {string}
          */
         RoomTypeEnum: "general" | "private" | "semi_private" | "icu_bay" | "isolation" | "operating_room" | "procedure" | "recovery" | "consultation";
+        /**
+         * @description * `-` - Dash (-)
+         *     * `/` - Slash (/)
+         *     * `` - None
+         * @enum {string}
+         */
+        SeparatorEnum: "-" | "/";
+        SetNextNumberRequest: {
+            version: number;
+            /** @description Running number the next record should get, e.g. 54322. */
+            next_value: number;
+        };
         Specialty: {
             /** Format: uuid */
             readonly id: string;
@@ -2088,6 +2348,12 @@ export interface components {
          * @enum {string}
          */
         WardTypeEnum: "general" | "private" | "icu" | "hdu" | "nicu" | "picu" | "emergency" | "maternity" | "isolation" | "day_care" | "operating_theatre" | "recovery";
+        /**
+         * @description * `full` - Full (2026, 2026-27)
+         *     * `short` - Short (26, 26-27)
+         * @enum {string}
+         */
+        YearFormatEnum: "full" | "short";
     };
     responses: never;
     parameters: never;
@@ -3069,6 +3335,175 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Floor"];
+                };
+            };
+        };
+    };
+    issued_numbers_list: {
+        parameters: {
+            query?: {
+                document_type?: string;
+                facility?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description Part of the number */
+                value?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedIssuedNumberList"];
+                };
+            };
+        };
+    };
+    numbering_schemes_list: {
+        parameters: {
+            query?: {
+                document_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NumberingScheme"][];
+                };
+            };
+        };
+    };
+    numbering_schemes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NumberingSchemeCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NumberingScheme"];
+                };
+            };
+        };
+    };
+    numbering_schemes_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this numbering scheme. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NumberingScheme"];
+                };
+            };
+        };
+    };
+    numbering_schemes_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this numbering scheme. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedNumberingSchemeUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NumberingScheme"];
+                };
+            };
+        };
+    };
+    numbering_schemes_next_number_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this numbering scheme. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetNextNumberRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NumberingScheme"];
+                };
+            };
+        };
+    };
+    numbering_schemes_preview_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NumberingPreviewRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NumberingPreview"];
                 };
             };
         };

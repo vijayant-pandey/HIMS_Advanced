@@ -161,3 +161,11 @@ All creates accept `Idempotency-Key`. Edits need the current `version` (stale �
 deleted: send `is_active: false`. Parents and codes cannot be changed after creation. Records
 outside the user's facility scope return 404. The admin console offers the same (parents read-only
 when editing; bed status only through the "Mark available / out of service" actions).
+
+## 7. Update 2026-10-27 (HIMS-PLAT-018)
+* **Codes are locked after creation** in the model (`LocationNode.clean`), so the API, the app and
+  every admin page (including inline sections) refuse a code change. Codes may be printed on
+  labels and records.
+* Admin console: each parent page lists its children (Facility → Buildings → Floors → Wards →
+  Rooms → Beds) and new children can be added there. The bed page has "Change status to" and
+  "Reason" fields, which use the same rules as the app.

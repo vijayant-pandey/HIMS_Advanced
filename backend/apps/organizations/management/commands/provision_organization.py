@@ -1,8 +1,8 @@
 """Provision this deployment's hospital organization (spec 7.2, 17.4 step 1).
 
 Run once per customer deployment by provisioning automation (control plane / release job),
-after migrations. Creates the organization, the system roles, the first organization
-administrator and, optionally, the first auditor.
+after migrations. Creates the organization, the system roles, default numbering schemes, the first
+organization administrator and, optionally, the first auditor.
 
 Initial passwords are read from environment variables named on the command line, never from
 arguments (which leak into shell history and process listings). Without a password the
@@ -16,6 +16,7 @@ from django.db import transaction
 
 from apps.access_control.services import assign_role, create_system_roles
 from apps.identity.services import create_user
+from apps.numbering.services import ensure_default_schemes
 from apps.organizations.models import Country, Currency
 from apps.organizations.services import provision_organization
 
@@ -54,6 +55,7 @@ class Command(BaseCommand):
             default_currency=opts["currency"],
         )
         roles = create_system_roles(organization)
+        ensure_default_schemes(organization)
 
         admin = create_user(
             email=opts["admin_email"],

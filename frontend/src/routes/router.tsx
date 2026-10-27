@@ -8,6 +8,7 @@ import { RequireAuth } from "../features/auth/RequireAuth";
 import { ResetPasswordPage } from "../features/auth/ResetPasswordPage";
 import { FacilitiesPage } from "../features/facilities/FacilitiesPage";
 import { LocationsPage } from "../features/locations/LocationsPage";
+import { NumberingPage } from "../features/numbering/NumberingPage";
 import { SecurityPage } from "../features/security/SecurityPage";
 import { StaffPage } from "../features/staff/StaffPage";
 import { AppShell } from "../layouts/AppShell";
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
           { index: true, element: <HomePage /> },
           { path: "facilities", element: <FacilitiesPage /> },
           { path: "locations", element: <LocationsPage /> },
+          { path: "numbering", element: <NumberingPage /> },
           { path: "staff", element: <StaffPage /> },
           { path: "security", element: <SecurityPage /> },
         ],

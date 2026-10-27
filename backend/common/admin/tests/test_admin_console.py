@@ -106,6 +106,8 @@ def test_creating_a_facility_in_console_is_audited(admin_user, organization):
             "timezone": "Asia/Kolkata",
             "departments-TOTAL_FORMS": "1",
             "departments-INITIAL_FORMS": "0",
+            "buildings-TOTAL_FORMS": "0",  # buildings section (HIMS-FAC-004)
+            "buildings-INITIAL_FORMS": "0",
             "departments-0-code": "er",
             "departments-0-name": "Emergency",
             "departments-0-department_type": "clinical",
@@ -137,6 +139,8 @@ def test_console_edit_bumps_version_and_records_diff(admin_user, facility_a):
         "timezone": facility_a.timezone,
         "departments-TOTAL_FORMS": "0",
         "departments-INITIAL_FORMS": "0",
+        "buildings-TOTAL_FORMS": "0",  # buildings section (HIMS-FAC-004)
+        "buildings-INITIAL_FORMS": "0",
     }
     response = console(admin_user).post(f"/admin/facilities/facility/{facility_a.pk}/change/", data)
     assert response.status_code == 302
