@@ -216,3 +216,73 @@ def verify_credential(
         metadata={"result": credential.verification_status},
     )
     return credential
+
+
+@transaction.atomic
+def end_department_assignment(
+    *, actor, staff: StaffMember, assignment_id, valid_until=None, reason: str = "", request=None
+) -> StaffDepartmentAssignment:
+    """Close a posting (transfer, resignation, end of rotation). The row stays for history."""
+    assignment = (
+        StaffDepartmentAssignment.objects.select_for_update()
+        .select_related("department")
+        .get(pk=assignment_id, staff=staff)
+    )
+    if assignment.valid_until is not None and assignment.valid_until < timezone.localdate():
+        raise ConflictError("This posting has already ended.", code="ALREADY_ENDED")
+    ended_on = valid_until or timezone.localdate()
+    if ended_on < assignment.valid_from:
+        raise ConflictError(
+            "The end date cannot be before the posting started.", code="INVALID_END_DATE"
+        )
+    before = snapshot(assignment, ["valid_until", "is_primary"])
+    assignment.valid_until = ended_on
+    assignment.is_primary = False
+    assignment.full_clean()
+    assignment.save(update_fields=["valid_until", "is_primary", "updated_at"])
+    record_audit_event(
+        action=AuditAction.STAFF_DEPARTMENT_ASSIGNMENT_ENDED,
+        resource_type="staff_department_assignment",
+        resource_id=assignment.pk,
+        facility_id=assignment.department.facility_id,
+        actor=actor,
+        request=request,
+        reason=reason,
+        changes=model_changes(before, snapshot(assignment, ["valid_until", "is_primary"])),
+    )
+    return assignment
+
+
+@transaction.atomic
+def verify_qualification(
+    *, actor, staff: StaffMember, qualification_id, verified: bool, request=None, reason: str = ""
+) -> StaffQualification:
+    """Mark a degree/diploma as checked against the original (or rejected)."""
+    qualification = StaffQualification.objects.select_for_update().get(
+        pk=qualification_id, staff=staff
+    )
+    if staff.user_id and staff.user_id == actor.pk:
+        raise ConflictError("You cannot verify your own qualification.", code="SELF_VERIFICATION")
+    if qualification.verification_status != VerificationStatus.UNVERIFIED:
+        raise ConflictError(
+            "Only unverified qualifications can be verified or rejected.",
+            code="INVALID_STATE_TRANSITION",
+        )
+    qualification.verification_status = (
+        VerificationStatus.VERIFIED if verified else VerificationStatus.REJECTED
+    )
+    qualification.verified_by = actor
+    qualification.verified_at = timezone.now()
+    qualification.save(
+        update_fields=["verification_status", "verified_by", "verified_at", "updated_at"]
+    )
+    record_audit_event(
+        action=AuditAction.STAFF_QUALIFICATION_VERIFIED,
+        resource_type="staff_qualification",
+        resource_id=qualification.pk,
+        actor=actor,
+        request=request,
+        reason=reason,
+        metadata={"result": qualification.verification_status},
+    )
+    return qualification

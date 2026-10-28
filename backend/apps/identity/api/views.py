@@ -54,7 +54,15 @@ def _current_user_payload(user, request=None) -> dict:
         "staff_member_id": staff_member.pk if staff_member else None,
         "grants": list_grants(user),
         "mfa": mfa.status(user, request),
+        "organization": _organization_summary(),
     }
+
+
+def _organization_summary() -> dict | None:
+    from apps.organizations.models import Organization
+
+    organization = Organization.objects.values("display_name", "country").first()
+    return organization  # None only before provisioning
 
 
 def _complete_login(request, user, *, via: str, mfa_verified: bool) -> Response:

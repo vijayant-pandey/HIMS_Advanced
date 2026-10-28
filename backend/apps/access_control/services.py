@@ -3,6 +3,7 @@ from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
 from apps.facilities.models import Department, Facility
+from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError, ScopeViolation
 
 from .catalog import PERMISSIONS, SYSTEM_ROLES
@@ -86,6 +87,12 @@ def validate_role_assignment(
 ) -> Facility | None:
     """All rules for granting a role (also used by the admin console form). Returns the
     effective facility (derived from the department when omitted)."""
+    if actor is not None and user.pk == actor.pk:
+        # Separation of duties (spec 13.2): e.g. temporary access must not be extended by its
+        # holder. Another administrator has to grant it.
+        raise ConflictError(
+            "You cannot give yourself access; ask another administrator.", code="SELF_ASSIGNMENT"
+        )
     if department is not None:
         if facility is None:
             facility = department.facility
@@ -192,3 +199,59 @@ def revoke_role_assignment(*, actor, assignment_id, reason: str, request=None) -
         metadata={"user_id": str(assignment.user_id), "role_id": str(assignment.role_id)},
     )
     return assignment
+
+
+@transaction.atomic
+def update_role(
+    *, actor, role_id, version: int, request=None, name=None, description=None, permissions=None
+) -> Role:
+    """Change a custom role. System roles follow the catalog and cannot be edited here.
+
+    Added permissions must be held by the actor (no privilege escalation). Everyone holding the
+    role gets the new permissions at once.
+    """
+    role = lock_for_update(Role, pk=role_id, expected_version=version)
+    if role.is_system:
+        raise ConflictError(
+            "System roles are kept in line with the catalog and cannot be edited. Create a "
+            "custom role instead.",
+            code="SYSTEM_ROLE_READ_ONLY",
+        )
+    before = {
+        "name": role.name,
+        "description": role.description,
+        "permissions": sorted(role.permissions.values_list("codename", flat=True)),
+    }
+    if permissions is not None:
+        unknown = [p for p in permissions if p not in PERMISSIONS]
+        if unknown:
+            raise ConflictError(f"Unknown permissions: {', '.join(sorted(unknown))}")
+        added = set(permissions) - set(before["permissions"])
+        _require_grantable(actor, added)
+        role.permissions.set(Permission.objects.filter(codename__in=permissions))
+    if name is not None:
+        role.name = name
+    if description is not None:
+        role.description = description
+    bump_version(role)
+    role.save()
+    after = {
+        "name": role.name,
+        "description": role.description,
+        "permissions": sorted(role.permissions.values_list("codename", flat=True)),
+    }
+    if actor is not None:
+        clear_permission_cache(actor)  # others pick up the change on their next request
+    changed = [key for key in after if before[key] != after[key]]
+    record_audit_event(
+        action=AuditAction.ROLE_UPDATED,
+        resource_type="role",
+        resource_id=role.pk,
+        actor=actor,
+        request=request,
+        changes={
+            "before": {key: before[key] for key in changed},
+            "after": {key: after[key] for key in changed},
+        },
+    )
+    return role

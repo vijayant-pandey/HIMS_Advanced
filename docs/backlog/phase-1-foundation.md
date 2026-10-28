@@ -49,6 +49,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-FAC-005 | In-app screens to add/edit buildings, floors, wards, rooms and beds | Done |
 | HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | Done |
 | HIMS-ORG-004 | Feature flags per organization/country/facility | Done |
+| HIMS-ORG-005 | Hospital settings screen (name, legal name, default time zone) | To do |
+| HIMS-FAC-006 | Departments screen + facility edit screen | To do |
 
 ## EPIC HIMS-IAM — Identity and access
 
@@ -66,7 +68,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-010 | Patient-relationship scope (treating team / encounter) | To do (Phase 2) |
 | HIMS-IAM-011 | Break-glass emergency access with reason, audit and review | To do (Phase 2) |
 | HIMS-IAM-012 | Periodic access-review report | To do |
-| HIMS-IAM-013 | Role and access-management UI | To do |
+| HIMS-IAM-013 | Role and access-management UI | Done |
+| HIMS-IAM-015 | Accounts without a staff record: list and manage their access in the app | To do |
 | HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | To do |
 
 ## EPIC HIMS-STAFF — Staff and credentials
@@ -79,7 +82,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-004 | Termination/suspension disables login | Done |
 | HIMS-STAFF-005 | Credential document upload (S3, scanning, signed URLs) | To do |
 | HIMS-STAFF-006 | Credential expiry alerts (scheduled job + notifications) | To do |
-| HIMS-STAFF-007 | Staff detail/onboarding UI | Partial (list + search done) |
+| HIMS-STAFF-007 | Staff detail/onboarding UI | Done |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility | To do |
 | HIMS-STAFF-009 | Designation catalog (IN/US, junior→senior), extended specialty/qualification catalogs, administrative system roles, RBAC document | Done |
 
@@ -89,6 +92,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 |---|---|---|
 | HIMS-AUD-001 | Append-only audit events with DB trigger; audit search for auditors, itself audited (ADR-013) | Done |
 | HIMS-AUD-002 | Access-denied events recorded outside rolled-back transactions | Done |
+| HIMS-AUD-003 | Audit log screen for auditors in the app | To do |
 | HIMS-SEC-010 | Audit tamper evidence (hash chain or S3 Object Lock export) | To do |
 | HIMS-SEC-011 | Threat model and risk assessment (spec 23) | To do |
 | HIMS-SEC-012 | Security headers/CSP for the SPA (CloudFront response headers) | To do |

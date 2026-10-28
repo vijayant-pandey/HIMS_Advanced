@@ -898,7 +898,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["roles_partial_update"];
         trace?: never;
     };
     "/api/v1/rooms/": {
@@ -1073,6 +1073,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/staff/{id}/department-assignments/{assignment_id}/end/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End a posting (transfer, resignation, end of rotation). History is kept. */
+        post: operations["staff_department_assignments_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff/{id}/invitation/": {
         parameters: {
             query?: never;
@@ -1100,6 +1117,23 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["staff_qualifications_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff/{id}/qualifications/{qualification_id}/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Mark a qualification as checked against the original certificate, or rejected. */
+        post: operations["staff_qualifications_verify_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1348,6 +1382,8 @@ export interface components {
             /** @description For navigation only; the API enforces access. */
             grants: components["schemas"]["Grant"][];
             mfa: components["schemas"]["MfaStatus"];
+            /** @description This hospital's name and country (IN/US), for display. */
+            organization: components["schemas"]["OrganizationSummary"] | null;
         };
         /**
          * @description * `USD` - US Dollar
@@ -1435,6 +1471,14 @@ export interface components {
          * @enum {string}
          */
         EmploymentStatusEnum: "active" | "on_leave" | "suspended" | "terminated";
+        EndAssignmentRequest: {
+            /**
+             * Format: date
+             * @description Last day of the posting (default: today).
+             */
+            valid_until?: string | null;
+            reason: string;
+        };
         Facility: {
             /** Format: uuid */
             readonly id: string;
@@ -1735,6 +1779,10 @@ export interface components {
          * @enum {string}
          */
         OrganizationStatusEnum: "active" | "suspended";
+        OrganizationSummary: {
+            display_name: string;
+            country: string;
+        };
         /**
          * @description * `success` - Success
          *     * `denied` - Denied
@@ -1995,6 +2043,12 @@ export interface components {
             display_name?: string;
             default_timezone?: string;
         };
+        PatchedRoleUpdateRequest: {
+            version?: number;
+            name?: string;
+            description?: string;
+            permissions?: components["schemas"]["PermissionsEnum"][];
+        };
         PatchedRoomUpdateRequest: {
             version?: number;
             name?: string;
@@ -2086,6 +2140,12 @@ export interface components {
             readonly description: string;
             readonly is_system: boolean;
             readonly permissions: string[];
+            /**
+             * @description People who hold this role now.
+             * @default 0
+             */
+            readonly active_assignments: number;
+            readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -2097,6 +2157,16 @@ export interface components {
             /** Format: uuid */
             readonly role: string;
             readonly role_code: string;
+            readonly role_name: string;
+            readonly user_display_name: string;
+            /** Format: email */
+            readonly user_email: string;
+            readonly facility_name: string | null;
+            readonly department_name: string | null;
+            readonly granted_by_name: string | null;
+            readonly revoked_by_name: string | null;
+            /** @description Not revoked and not expired. */
+            readonly is_active: boolean;
             /** Format: uuid */
             readonly facility: string | null;
             /** Format: uuid */
@@ -2208,6 +2278,22 @@ export interface components {
             readonly code: string;
             readonly name: string;
         };
+        /** @description The person's sign-in account, so HR can see whether they can log in yet. */
+        StaffAccount: {
+            has_login: boolean;
+            /** Format: email */
+            email: string | null;
+            /** @description False = cannot sign in (e.g. terminated). */
+            is_active: boolean;
+            /** @description The person has chosen a password. */
+            activated: boolean;
+            /**
+             * Format: date-time
+             * @description An open invitation link and when it stops working.
+             */
+            invitation_expires_at: string | null;
+            two_factor_enabled: boolean;
+        };
         StaffCredential: {
             /** Format: uuid */
             readonly id: string;
@@ -2223,8 +2309,12 @@ export interface components {
             readonly verification_status: components["schemas"]["VerificationStatusEnum"];
             /** Format: uuid */
             readonly verified_by: string | null;
+            readonly verified_by_name: string | null;
             /** Format: date-time */
             readonly verified_at: string | null;
+            readonly credential_type_label: string;
+            /** @description no_expiry, valid, expiring_soon (within 60 days) or expired */
+            readonly expiry_state: string;
         };
         StaffCredentialRequest: {
             credential_type: components["schemas"]["CredentialTypeEnum"];
@@ -2252,6 +2342,10 @@ export interface components {
             valid_from: string;
             /** Format: date */
             valid_until?: string | null;
+            readonly department_name: string;
+            readonly facility_name: string;
+            readonly specialty_name: string | null;
+            readonly is_current: boolean;
         };
         StaffDepartmentAssignmentRequest: {
             /** Format: uuid */
@@ -2277,7 +2371,9 @@ export interface components {
             readonly given_name: string;
             readonly family_name: string;
             readonly staff_type: components["schemas"]["StaffTypeEnum"];
+            readonly staff_type_label: string;
             readonly employment_status: components["schemas"]["EmploymentStatusEnum"];
+            readonly employment_status_label: string;
             /** Format: date */
             readonly joined_on: string;
             /** Format: date */
@@ -2312,7 +2408,9 @@ export interface components {
             readonly given_name: string;
             readonly family_name: string;
             readonly staff_type: components["schemas"]["StaffTypeEnum"];
+            readonly staff_type_label: string;
             readonly employment_status: components["schemas"]["EmploymentStatusEnum"];
+            readonly employment_status_label: string;
             /** Format: date */
             readonly joined_on: string;
             /** Format: date */
@@ -2322,6 +2420,7 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+            readonly account: components["schemas"]["StaffAccount"];
             readonly department_assignments: components["schemas"]["StaffDepartmentAssignment"][];
             readonly qualifications: components["schemas"]["StaffQualification"][];
             readonly credentials: components["schemas"]["StaffCredential"][];
@@ -2338,8 +2437,11 @@ export interface components {
             readonly verification_status: components["schemas"]["VerificationStatusEnum"];
             /** Format: uuid */
             readonly verified_by: string | null;
+            readonly verified_by_name: string | null;
             /** Format: date-time */
             readonly verified_at: string | null;
+            readonly qualification_type_name: string;
+            readonly specialty_name: string | null;
         };
         StaffQualificationRequest: {
             /** Format: uuid */
@@ -3783,10 +3885,14 @@ export interface operations {
     role_assignments_list: {
         parameters: {
             query?: {
+                /** @description 'true' = current access only */
+                active?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                role?: string;
+                user?: string;
             };
             header?: never;
             path?: never;
@@ -3944,6 +4050,32 @@ export interface operations {
             };
         };
     };
+    roles_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRoleUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+        };
+    };
     rooms_list: {
         parameters: {
             query?: {
@@ -4066,6 +4198,7 @@ export interface operations {
     staff_list: {
         parameters: {
             query?: {
+                employment_status?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
@@ -4261,6 +4394,33 @@ export interface operations {
             };
         };
     };
+    staff_department_assignments_end_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignment_id: string;
+                /** @description A UUID string identifying this staff member. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndAssignmentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDepartmentAssignment"];
+                };
+            };
+        };
+    };
     staff_invitation_create: {
         parameters: {
             query?: never;
@@ -4300,6 +4460,33 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffQualification"];
+                };
+            };
+        };
+    };
+    staff_qualifications_verify_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this staff member. */
+                id: string;
+                qualification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CredentialVerificationRequest"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

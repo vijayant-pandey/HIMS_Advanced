@@ -22,3 +22,14 @@
 ## Next
 Patient-relationship scope (treating team, encounter) and break-glass emergency access, built with
 the patient domain (HIMS-IAM-010, HIMS-IAM-011); periodic access-review reports (HIMS-IAM-012).
+
+## Update 2026-10-28 (HIMS-IAM-013)
+- **No self-assignment.** Nobody can grant a role to themselves (`409 SELF_ASSIGNMENT`). Together
+  with the existing "cannot revoke your own role" rule, every change to a person's access needs a
+  second administrator. This also stops temporary access from being extended by its holder.
+  The rule is enforced in `validate_role_assignment`, so it applies to the API and the admin
+  console alike.
+- **Custom roles can be edited** (`PATCH /roles/{id}/`): name, description, permissions. Roles now
+  carry `version` (optimistic concurrency). Edits are audited (`access.role.updated`, before/after).
+  Added permissions pass the same escalation guard as grants. System roles stay read-only and
+  follow `access_control.catalog`.

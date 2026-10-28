@@ -1,4 +1,6 @@
-from drf_spectacular.utils import extend_schema
+from django.db.models import Count, Q
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -16,6 +18,7 @@ from .serializers import (
     RoleAssignmentSerializer,
     RoleCreateSerializer,
     RoleSerializer,
+    RoleUpdateSerializer,
 )
 
 
@@ -28,12 +31,24 @@ class PermissionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
 class RoleViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = RoleSerializer
-    queryset = Role.objects.prefetch_related("permissions")
     required_permissions = {
         "list": P.ROLES_VIEW,
         "retrieve": P.ROLES_VIEW,
         "create": P.ROLES_MANAGE,
+        "partial_update": P.ROLES_MANAGE,
     }
+    http_method_names = ["get", "post", "patch", "head"]
+
+    def get_queryset(self):
+        now = timezone.now()
+        active = Q(assignments__revoked_at__isnull=True, assignments__valid_from__lte=now) & (
+            Q(assignments__valid_until__isnull=True) | Q(assignments__valid_until__gt=now)
+        )
+        return (
+            Role.objects.prefetch_related("permissions")
+            .annotate(active_assignments=Count("assignments", filter=active, distinct=True))
+            .order_by("name")
+        )  # aggregation drops Meta.ordering; keep pages stable
 
     @extend_schema(request=RoleCreateSerializer, responses={201: RoleSerializer})
     @idempotent("roles.create")
@@ -47,6 +62,21 @@ class RoleViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gen
             **serializer.validated_data,
         )
         return Response(RoleSerializer(role).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=RoleUpdateSerializer, responses=RoleSerializer)
+    def partial_update(self, request, pk=None):
+        role = self.get_object()
+        serializer = RoleUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        services.update_role(
+            actor=request.user,
+            role_id=role.pk,
+            version=data.pop("version"),
+            request=request,
+            **data,
+        )
+        return Response(RoleSerializer(self.get_queryset().get(pk=role.pk)).data)
 
 
 class RoleAssignmentViewSet(
@@ -64,13 +94,31 @@ class RoleAssignmentViewSet(
     }
 
     def get_queryset(self):
-        queryset = RoleAssignment.objects.select_related("role").order_by("-created_at")
+        queryset = RoleAssignment.objects.select_related(
+            "role", "user", "facility", "department", "granted_by", "revoked_by"
+        ).order_by("-created_at")
         user_id = self.request.query_params.get("user")
         if user_id:
             queryset = queryset.filter(user_id=user_id)
+        role_id = self.request.query_params.get("role")
+        if role_id:
+            queryset = queryset.filter(role_id=role_id)
         if self.request.query_params.get("active") == "true":
-            queryset = queryset.filter(revoked_at__isnull=True)
+            now = timezone.now()
+            queryset = queryset.filter(revoked_at__isnull=True, valid_from__lte=now).filter(
+                Q(valid_until__isnull=True) | Q(valid_until__gt=now)
+            )
         return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("user", str),
+            OpenApiParameter("role", str),
+            OpenApiParameter("active", str, description="'true' = current access only"),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(
         request=RoleAssignmentCreateSerializer, responses={201: RoleAssignmentSerializer}

@@ -90,6 +90,7 @@ function renderPage(permissions: string[]) {
       facility_id: FACILITY_ID,
       department_id: null,
     })),
+    organization: { display_name: "Synthetic Health", country: "IN" },
     mfa: {
       enabled: false,
       required: false,

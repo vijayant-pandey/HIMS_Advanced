@@ -55,6 +55,11 @@ class MfaStatusSerializer(serializers.Serializer):
     recovery_codes_remaining = serializers.IntegerField()
 
 
+class OrganizationSummarySerializer(serializers.Serializer):
+    display_name = serializers.CharField()
+    country = serializers.CharField()
+
+
 class CurrentUserSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     email = serializers.EmailField()
@@ -62,6 +67,9 @@ class CurrentUserSerializer(serializers.Serializer):
     staff_member_id = serializers.UUIDField(allow_null=True)
     grants = GrantSerializer(many=True, help_text="For navigation only; the API enforces access.")
     mfa = MfaStatusSerializer()
+    organization = OrganizationSummarySerializer(
+        allow_null=True, help_text="This hospital's name and country (IN/US), for display."
+    )
 
 
 class NoAccessReportSerializer(serializers.Serializer):
