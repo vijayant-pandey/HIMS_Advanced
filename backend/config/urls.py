@@ -5,6 +5,7 @@ from common import health
 
 api_v1 = [
     path("auth/", include("apps.identity.api.urls")),
+    path("", include("apps.identity.api.account_urls")),
     path("", include("apps.organizations.api.urls")),
     path("", include("apps.facilities.api.urls")),
     path("", include("apps.beds.api.urls")),

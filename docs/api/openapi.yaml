@@ -4,6 +4,232 @@ info:
   version: 1.0.0
   description: Hospital Information Management System REST API (v1).
 paths:
+  /api/v1/accounts/:
+    get:
+      operationId: accounts_list
+      description: |-
+        Everyone who can (or could) sign in. Staff accounts follow the person's employment
+        status; accounts of people who are not staff are switched off and on here.
+      parameters:
+      - in: query
+        name: kind
+        schema:
+          type: string
+        description: staff or not_staff
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Part of a name or email
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: active or inactive
+      tags:
+      - accounts
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAccountList'
+          description: ''
+    post:
+      operationId: accounts_create
+      description: |-
+        Everyone who can (or could) sign in. Staff accounts follow the person's employment
+        status; accounts of people who are not staff are switched off and on here.
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
+  /api/v1/accounts/{id}/:
+    get:
+      operationId: accounts_retrieve
+      description: |-
+        Everyone who can (or could) sign in. Staff accounts follow the person's employment
+        status; accounts of people who are not staff are switched off and on here.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
+  /api/v1/accounts/{id}/deactivate/:
+    post:
+      operationId: accounts_deactivate_create
+      description: Switch off an account of someone who is not staff (signs them out
+        everywhere).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
+  /api/v1/accounts/{id}/invitation/:
+    post:
+      operationId: accounts_invitation_create
+      description: (Re)send the activation email to an account that has not chosen
+        a password yet.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
+  /api/v1/accounts/{id}/reactivate/:
+    post:
+      operationId: accounts_reactivate_create
+      description: |-
+        Everyone who can (or could) sign in. Staff accounts follow the person's employment
+        status; accounts of people who are not staff are switched off and on here.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
+  /api/v1/accounts/{id}/reset-two-factor/:
+    post:
+      operationId: accounts_reset_two_factor_create
+      description: 'Lost phone: remove two-factor; the person sets it up again at
+        the next sign-in.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
+  /api/v1/accounts/{id}/sign-out-everywhere/:
+    post:
+      operationId: accounts_sign_out_everywhere_create
+      description: |-
+        Everyone who can (or could) sign in. Staff accounts follow the person's employment
+        status; accounts of people who are not staff are switched off and on here.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - accounts
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+          description: ''
   /api/v1/audit-events/:
     get:
       operationId: audit_events_list
@@ -2367,6 +2593,87 @@ paths:
           description: ''
 components:
   schemas:
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        display_name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        activated:
+          type: boolean
+          readOnly: true
+          description: Has chosen a password.
+        two_factor_enabled:
+          type: boolean
+          readOnly: true
+        invitation_expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        staff_member_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        roles:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Current roles and where they apply.
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - activated
+      - date_joined
+      - display_name
+      - email
+      - id
+      - invitation_expires_at
+      - is_active
+      - last_login
+      - roles
+      - staff_member_id
+      - two_factor_enabled
+    AccountCreateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        reason:
+          type: string
+          minLength: 1
+          description: e.g. External auditor for FY 26-27
+          maxLength: 2000
+      required:
+      - display_name
+      - email
+      - reason
     ActiveStatusEnum:
       enum:
       - active
@@ -3874,6 +4181,29 @@ components:
         * `success` - Success
         * `denied` - Denied
         * `failure` - Failure
+    PaginatedAccountList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Account'
     PaginatedAuditEventList:
       type: object
       required:
@@ -4450,6 +4780,7 @@ components:
       - access.assignments.manage
       - access.roles.manage
       - access.roles.view
+      - accounts.manage
       - audit.view
       - beds.status.manage
       - departments.manage
@@ -4473,6 +4804,7 @@ components:
         * `access.assignments.manage` - access.assignments.manage
         * `access.roles.manage` - access.roles.manage
         * `access.roles.view` - access.roles.view
+        * `accounts.manage` - accounts.manage
         * `audit.view` - audit.view
         * `beds.status.manage` - beds.status.manage
         * `departments.manage` - departments.manage
@@ -4531,6 +4863,15 @@ components:
         * `diploma` - Diploma
         * `fellowship` - Fellowship
         * `certification` - Certification
+    ReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - reason
     RevokeRequest:
       type: object
       properties:

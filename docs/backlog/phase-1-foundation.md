@@ -49,7 +49,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-FAC-005 | In-app screens to add/edit buildings, floors, wards, rooms and beds | Done |
 | HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | Done |
 | HIMS-ORG-004 | Feature flags per organization/country/facility | Done |
-| HIMS-ORG-005 | Hospital settings screen (name, legal name, default time zone) | To do |
+| HIMS-ORG-005 | Hospital settings screen (name, legal name, default time zone) | Done |
 | HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done |
 | HIMS-FAC-007 | Department head, services offered and operating hours | To do |
 
@@ -70,7 +70,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-011 | Break-glass emergency access with reason, audit and review | To do (Phase 2) |
 | HIMS-IAM-012 | Periodic access-review report | To do |
 | HIMS-IAM-013 | Role and access-management UI | Done |
-| HIMS-IAM-015 | Accounts without a staff record: list and manage their access in the app | To do |
+| HIMS-IAM-015 | Accounts screen incl. people who are not staff; last-administrator protection | Done |
 | HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | To do |
 
 ## EPIC HIMS-STAFF — Staff and credentials

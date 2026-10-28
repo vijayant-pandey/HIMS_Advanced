@@ -411,3 +411,10 @@ Auditors (`audit.view`) now have an **Audit log** page in the app: search by the
 a staff member reports from a "no access" or error screen, by person, area, event or date; open
 an event to see before/after values; download a CSV. Searches and downloads are recorded too.
 Administrators still cannot open it.
+
+## Update 2026-10-28: accounts for people who are not staff (HIMS-IAM-015)
+New permission **`accounts.manage`**: add sign-in accounts for people who are not on the staff
+list (external auditors, IT support), switch accounts off or on, reset two-factor and sign people
+out. Organization administrators have it; two-factor sign-in is required. The **Accounts** page
+lists everyone who can sign in. The hospital's **last** active administrator can never be
+switched off, so the hospital cannot lock itself out.

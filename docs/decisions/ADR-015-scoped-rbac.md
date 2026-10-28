@@ -33,3 +33,12 @@ the patient domain (HIMS-IAM-010, HIMS-IAM-011); periodic access-review reports 
   carry `version` (optimistic concurrency). Edits are audited (`access.role.updated`, before/after).
   Added permissions pass the same escalation guard as grants. System roles stay read-only and
   follow `access_control.catalog`.
+
+## Update 2026-10-28 (HIMS-IAM-015): accounts and lock-out protection
+- **Accounts for people who are not staff** (external auditors, IT support) are created on the
+  Accounts page with the new permission `accounts.manage` (two-factor required). They start with
+  no access and an emailed invitation. Staff accounts keep following employment status.
+- **No lock-out:** the last active holder of the organization-wide *Organization administrator*
+  role can never be switched off, whether on the Accounts page, in the admin console
+  (`User.clean`), or by suspending/terminating them as staff (`409 LAST_ADMINISTRATOR`).
+- Nobody can switch their own account off or on (`SELF_ACCOUNT_CHANGE`).

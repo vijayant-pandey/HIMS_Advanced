@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin, messages
 
 from apps.identity.admin import send_invitations
@@ -16,6 +17,28 @@ from .models import (
 from .services import apply_employment_status_change, emit_staff_created, verify_credential
 
 VERIFICATION_FIELDS = ("verification_status", "verified_by", "verified_at")
+
+
+class StaffMemberForm(forms.ModelForm):
+    """Stops the console from suspending or terminating the hospital's last administrator."""
+
+    def clean(self):
+        cleaned = super().clean()
+        status = cleaned.get("employment_status")
+        user = self.instance.user if self.instance.pk else None
+        losing_access = status in (
+            StaffMember.EmploymentStatus.SUSPENDED,
+            StaffMember.EmploymentStatus.TERMINATED,
+        )
+        if user is not None and user.is_active and losing_access:
+            from apps.identity.accounts import ensure_not_last_administrator
+            from common.exceptions import ConflictError
+
+            try:
+                ensure_not_last_administrator(user)
+            except ConflictError as exc:
+                self.add_error("employment_status", exc.detail)
+        return cleaned
 
 
 class StaffDepartmentAssignmentInline(HimsInline):
@@ -89,6 +112,8 @@ class StaffMemberAdmin(HimsModelAdmin):
             )
         users = [staff.user for staff in queryset.select_related("user") if staff.user_id]
         send_invitations(self, request, users)
+
+    form = StaffMemberForm
 
     def save_model(self, request, obj, form, change):
         status_changed = change and "employment_status" in form.changed_data

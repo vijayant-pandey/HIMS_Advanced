@@ -78,6 +78,10 @@ def apply_employment_status_change(staff: StaffMember) -> None:
             StaffMember.EmploymentStatus.ACTIVE,
             StaffMember.EmploymentStatus.ON_LEAVE,
         )
+        if not user.is_active:
+            from apps.identity.accounts import ensure_not_last_administrator
+
+            ensure_not_last_administrator(user)  # the hospital must never be locked out
         user.save(update_fields=["is_active"])
     publish_event(
         event_type="staff.member.employment_status_changed",
