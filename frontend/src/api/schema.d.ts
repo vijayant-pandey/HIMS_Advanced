@@ -4,6 +4,141 @@
  */
 
 export interface paths {
+    "/api/v1/accounts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Everyone who can (or could) sign in. Staff accounts follow the person's employment
+         *     status; accounts of people who are not staff are switched off and on here.
+         */
+        get: operations["accounts_list"];
+        put?: never;
+        /**
+         * @description Everyone who can (or could) sign in. Staff accounts follow the person's employment
+         *     status; accounts of people who are not staff are switched off and on here.
+         */
+        post: operations["accounts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Everyone who can (or could) sign in. Staff accounts follow the person's employment
+         *     status; accounts of people who are not staff are switched off and on here.
+         */
+        get: operations["accounts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{id}/deactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Switch off an account of someone who is not staff (signs them out everywhere). */
+        post: operations["accounts_deactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{id}/invitation/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description (Re)send the activation email to an account that has not chosen a password yet. */
+        post: operations["accounts_invitation_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{id}/reactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Everyone who can (or could) sign in. Staff accounts follow the person's employment
+         *     status; accounts of people who are not staff are switched off and on here.
+         */
+        post: operations["accounts_reactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{id}/reset-two-factor/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Lost phone: remove two-factor; the person sets it up again at the next sign-in. */
+        post: operations["accounts_reset_two_factor_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{id}/sign-out-everywhere/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Everyone who can (or could) sign in. Staff accounts follow the person's employment
+         *     status; accounts of people who are not staff are switched off and on here.
+         */
+        post: operations["accounts_sign_out_everywhere_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit-events/": {
         parameters: {
             query?: never;
@@ -1238,6 +1373,34 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Account: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: email */
+            readonly email: string;
+            readonly display_name: string;
+            readonly is_active: boolean;
+            /** @description Has chosen a password. */
+            readonly activated: boolean;
+            readonly two_factor_enabled: boolean;
+            /** Format: date-time */
+            readonly invitation_expires_at: string | null;
+            /** Format: uuid */
+            readonly staff_member_id: string | null;
+            /** @description Current roles and where they apply. */
+            readonly roles: string[];
+            /** Format: date-time */
+            readonly last_login: string | null;
+            /** Format: date-time */
+            readonly date_joined: string;
+        };
+        AccountCreateRequest: {
+            /** Format: email */
+            email: string;
+            display_name: string;
+            /** @description e.g. External auditor for FY 26-27 */
+            reason: string;
+        };
         /**
          * @description * `active` - Active
          *     * `inactive` - Inactive
@@ -1841,6 +2004,21 @@ export interface components {
          * @enum {string}
          */
         OutcomeEnum: "success" | "denied" | "failure";
+        PaginatedAccountList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Account"][];
+        };
         PaginatedAuditEventList: {
             /** @example 123 */
             count: number;
@@ -2142,6 +2320,7 @@ export interface components {
          * @description * `access.assignments.manage` - access.assignments.manage
          *     * `access.roles.manage` - access.roles.manage
          *     * `access.roles.view` - access.roles.view
+         *     * `accounts.manage` - accounts.manage
          *     * `audit.view` - audit.view
          *     * `beds.status.manage` - beds.status.manage
          *     * `departments.manage` - departments.manage
@@ -2162,7 +2341,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "audit.view" | "beds.status.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
         QualificationType: {
             /** Format: uuid */
             readonly id: string;
@@ -2180,6 +2359,9 @@ export interface components {
          * @enum {string}
          */
         QualificationTypeCategoryEnum: "degree" | "diploma" | "fellowship" | "certification";
+        ReasonRequest: {
+            reason: string;
+        };
         RevokeRequest: {
             reason: string;
         };
@@ -2642,6 +2824,199 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    accounts_list: {
+        parameters: {
+            query?: {
+                /** @description staff or not_staff */
+                kind?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description Part of a name or email */
+                search?: string;
+                /** @description active or inactive */
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAccountList"];
+                };
+            };
+        };
+    };
+    accounts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+        };
+    };
+    accounts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+        };
+    };
+    accounts_deactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+        };
+    };
+    accounts_invitation_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+        };
+    };
+    accounts_reactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+        };
+    };
+    accounts_reset_two_factor_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+        };
+    };
+    accounts_sign_out_everywhere_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+        };
+    };
     audit_events_list: {
         parameters: {
             query?: {

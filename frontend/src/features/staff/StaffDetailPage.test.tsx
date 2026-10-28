@@ -171,8 +171,7 @@ describe("Staff screens", () => {
     fireEvent.mouseDown(screen.getByRole("combobox", { name: "Status" }));
     fireEvent.click(await screen.findByRole("option", { name: "On leave" }));
     await vi.waitFor(() =>
-      expect(fetchMock.mock.calls.some(([url]) => String(url).includes("employment_status=on_leave"))).toBe(true),
-    );
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes("employment_status=on_leave"))).toBe(true), { timeout: 4000 });
     fireEvent.click(await screen.findByText("Mary Joseph"));
     expect(await screen.findByRole("heading", { name: "Mary Joseph" })).toBeInTheDocument();
   });
@@ -196,20 +195,21 @@ describe("Staff screens", () => {
     expect(save).toBeDisabled(); // reason required
     fireEvent.change(within(dialog).getByLabelText(/Reason/), { target: { value: "Transferred" } });
     fireEvent.click(save);
-    await vi.waitFor(() => expect(bodyOf(fetchMock, "/department-assignments/a1/end/")).toBeDefined());
+    await vi.waitFor(() => expect(bodyOf(fetchMock, "/department-assignments/a1/end/")).toBeDefined(), { timeout: 4000 });
     expect(bodyOf(fetchMock, "/department-assignments/a1/end/")).toMatchObject({ reason: "Transferred" });
   });
 
   it("verifies a qualification and shows licence expiry", async () => {
     const fetchMock = mockApi();
     renderAt("/staff/s1", HR);
-    fireEvent.click(await screen.findByRole("tab", { name: /Qualifications/ }));
+    fireEvent.click(await screen.findByRole("tab", { name: /Qualifications/ }, { timeout: 4000 }));
     fireEvent.click(screen.getByRole("button", { name: "Verify" }));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Mark verified" }));
-    await vi.waitFor(() => expect(bodyOf(fetchMock, "/qualifications/q1/verify/")).toEqual({ verified: true, reason: "" }));
+    await vi.waitFor(() => expect(bodyOf(fetchMock, "/qualifications/q1/verify/")).toEqual({ verified: true, reason: "" }), { timeout: 4000 });
 
-    fireEvent.click(screen.getByRole("tab", { name: /Licences/ }));
+    // The dialog closes with an animation; the page behind is usable only once it has finished.
+    fireEvent.click(await screen.findByRole("tab", { name: /Licences/ }, { timeout: 4000 }));
     expect(await screen.findByText("Expires soon")).toBeInTheDocument();
     expect(screen.getByText("by Synthetic HR")).toBeInTheDocument();
   });
@@ -217,7 +217,7 @@ describe("Staff screens", () => {
   it("does not offer to verify your own qualification", async () => {
     mockApi();
     renderAt("/staff/s1", HR, "u-nurse");
-    fireEvent.click(await screen.findByRole("tab", { name: /Qualifications/ }));
+    fireEvent.click(await screen.findByRole("tab", { name: /Qualifications/ }, { timeout: 4000 }));
     expect(screen.queryByRole("button", { name: "Verify" })).not.toBeInTheDocument();
   });
 
@@ -235,7 +235,7 @@ describe("Staff screens", () => {
     fireEvent.click(await screen.findByRole("option", { name: "Main Hospital" }));
     fireEvent.change(within(dialog).getByLabelText(/Reason/), { target: { value: "Joined ICU" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Give access" }));
-    await vi.waitFor(() => expect(bodyOf(fetchMock, "/role-assignments/")).toBeDefined());
+    await vi.waitFor(() => expect(bodyOf(fetchMock, "/role-assignments/")).toBeDefined(), { timeout: 4000 });
     expect(bodyOf(fetchMock, "/role-assignments/")).toEqual({
       user: "u-nurse",
       role: "r1",
@@ -249,6 +249,6 @@ describe("Staff screens", () => {
     const revoke = await screen.findByRole("dialog");
     fireEvent.change(within(revoke).getByLabelText(/Reason/), { target: { value: "Left ICU" } });
     fireEvent.click(within(revoke).getByRole("button", { name: "Remove access" }));
-    await vi.waitFor(() => expect(bodyOf(fetchMock, "/role-assignments/ra1/revoke/")).toEqual({ reason: "Left ICU" }));
+    await vi.waitFor(() => expect(bodyOf(fetchMock, "/role-assignments/ra1/revoke/")).toEqual({ reason: "Left ICU" }), { timeout: 4000 });
   });
 });

@@ -27,6 +27,7 @@ class P:
     ROLES_MANAGE = "access.roles.manage"
     ROLE_ASSIGNMENTS_MANAGE = "access.assignments.manage"
     AUDIT_VIEW = "audit.view"
+    ACCOUNTS_MANAGE = "accounts.manage"
     ADMIN_CONSOLE = "platform.admin_console"
 
 
@@ -52,6 +53,10 @@ PERMISSIONS: dict[str, str] = {
     P.ROLES_MANAGE: "Create roles and change role permissions",
     P.ROLE_ASSIGNMENTS_MANAGE: "Grant and revoke role assignments",
     P.AUDIT_VIEW: "Search the audit log",
+    P.ACCOUNTS_MANAGE: (
+        "Add sign-in accounts for people who are not staff, switch accounts off or on, "
+        "reset their two-factor and sign them out"
+    ),
 }
 
 # Holding any of these makes two-factor sign-in mandatory (spec 13.1: "MFA for privileged
@@ -69,6 +74,7 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.STAFF_CREDENTIALS_VERIFY,
         P.ROLES_MANAGE,
         P.ROLE_ASSIGNMENTS_MANAGE,
+        P.ACCOUNTS_MANAGE,
         P.AUDIT_VIEW,
     }
 )

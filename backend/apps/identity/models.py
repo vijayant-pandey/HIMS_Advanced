@@ -50,6 +50,22 @@ class User(UUIDPrimaryKeyModel, AbstractBaseUser):
     def clean(self):
         super().clean()
         self.email = self.email.strip().lower()
+        switching_off = (
+            not self._state.adding
+            and not self.is_active
+            and User.objects.filter(pk=self.pk, is_active=True).exists()
+        )
+        if switching_off:
+            from django.core.exceptions import ValidationError
+
+            from common.exceptions import ConflictError
+
+            from .accounts import ensure_not_last_administrator
+
+            try:
+                ensure_not_last_administrator(self)
+            except ConflictError as exc:
+                raise ValidationError({"is_active": exc.detail}) from exc
 
     def __str__(self) -> str:
         return self.display_name
