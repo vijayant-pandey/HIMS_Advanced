@@ -405,3 +405,9 @@ When these are approved, each clinical feature (Phase 2 onward) adds its permiss
   * System roles cannot be edited; they follow this document's catalog.
   * Editing a custom role changes access for everyone holding it, on their next request; edits
     are versioned (two people cannot overwrite each other) and audited.
+
+## Update 2026-10-28: the auditor's screen (HIMS-AUD-003)
+Auditors (`audit.view`) now have an **Audit log** page in the app: search by the reference number
+a staff member reports from a "no access" or error screen, by person, area, event or date; open
+an event to see before/after values; download a CSV. Searches and downloads are recorded too.
+Administrators still cannot open it.

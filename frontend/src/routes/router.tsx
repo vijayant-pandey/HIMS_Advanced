@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { AccessPage } from "../features/accessControl/AccessPage";
+import { AuditLogPage } from "../features/audit/AuditLogPage";
 import { HomePage } from "../features/access/HomePage";
 import { ActivatePage } from "../features/auth/ActivatePage";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
           { path: "staff", element: <StaffPage /> },
           { path: "staff/:id", element: <StaffDetailPage /> },
           { path: "access", element: <AccessPage /> },
+          { path: "audit", element: <AuditLogPage /> },
           { path: "security", element: <SecurityPage /> },
         ],
       },

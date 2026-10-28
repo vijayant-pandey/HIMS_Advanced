@@ -11,8 +11,42 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Audit search for auditors. Searching the audit log is itself audited. */
+        /** @description Audit search for auditors. Searching and exporting the audit log are themselves audited. */
         get: operations["audit_events_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-events/actions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Every known event type with a plain-language name, for the filter list. */
+        get: operations["audit_events_actions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-events/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Download matching events as CSV (newest first, at most 5,000 rows). */
+        get: operations["audit_events_export_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1225,6 +1259,11 @@ export interface components {
          * @enum {string}
          */
         AgeGroupEnum: "any" | "adult" | "pediatric" | "neonatal";
+        AuditAction: {
+            action: string;
+            label: string;
+            category: string;
+        };
         AuditEvent: {
             /** Format: uuid */
             readonly id: string;
@@ -1232,10 +1271,15 @@ export interface components {
             readonly occurred_at: string;
             /** Format: uuid */
             readonly facility_id: string | null;
+            readonly facility_name: string | null;
             readonly actor_type: components["schemas"]["ActorTypeEnum"];
             /** Format: uuid */
             readonly actor_id: string | null;
+            readonly actor_name: string | null;
+            readonly actor_email: string | null;
             readonly action: string;
+            readonly action_label: string;
+            readonly category: string;
             readonly resource_type: string;
             readonly resource_id: string;
             readonly outcome: components["schemas"]["OutcomeEnum"];
@@ -2603,6 +2647,12 @@ export interface operations {
             query?: {
                 action?: string;
                 actor_id?: string;
+                /** @description First part of the action, e.g. auth, access, staff, admin. */
+                category?: string;
+                /** @description From this day (inclusive). */
+                date_from?: string;
+                /** @description Up to this day (inclusive). */
+                date_to?: string;
                 facility_id?: string;
                 occurred_after?: string;
                 occurred_before?: string;
@@ -2611,6 +2661,10 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /** @description Part of a person's name or email. */
+                person?: string;
+                /** @description Reference number shown on an error screen. */
+                request_id?: string;
                 resource_id?: string;
                 resource_type?: string;
             };
@@ -2626,6 +2680,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedAuditEventList"];
+                };
+            };
+        };
+    };
+    audit_events_actions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditAction"][];
+                };
+            };
+        };
+    };
+    audit_events_export_retrieve: {
+        parameters: {
+            query?: {
+                action?: string;
+                actor_id?: string;
+                /** @description First part of the action, e.g. auth, access, staff, admin. */
+                category?: string;
+                /** @description From this day (inclusive). */
+                date_from?: string;
+                /** @description Up to this day (inclusive). */
+                date_to?: string;
+                facility_id?: string;
+                occurred_after?: string;
+                occurred_before?: string;
+                outcome?: string;
+                /** @description Part of a person's name or email. */
+                person?: string;
+                /** @description Reference number shown on an error screen. */
+                request_id?: string;
+                resource_id?: string;
+                resource_type?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
                 };
             };
         };

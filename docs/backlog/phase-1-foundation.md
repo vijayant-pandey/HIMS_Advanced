@@ -93,7 +93,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 |---|---|---|
 | HIMS-AUD-001 | Append-only audit events with DB trigger; audit search for auditors, itself audited (ADR-013) | Done |
 | HIMS-AUD-002 | Access-denied events recorded outside rolled-back transactions | Done |
-| HIMS-AUD-003 | Audit log screen for auditors in the app | To do |
+| HIMS-AUD-003 | Audit log screen for auditors in the app + CSV export | Done |
 | HIMS-SEC-010 | Audit tamper evidence (hash chain or S3 Object Lock export) | To do |
 | HIMS-SEC-011 | Threat model and risk assessment (spec 23) | To do |
 | HIMS-SEC-012 | Security headers/CSP for the SPA (CloudFront response headers) | To do |

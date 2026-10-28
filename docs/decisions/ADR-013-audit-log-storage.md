@@ -23,3 +23,16 @@
   (HIMS-SEC-010).
 - **Read auditing of patient charts:** introduced with the patient domain. Expect high volume and
   size storage accordingly.
+
+## Update 2026-10-28 (HIMS-AUD-003): reading the log
+- **Audit log screen** for `audit.view` holders: filters for reference number (case-insensitive),
+  person (name or email), area, event, outcome and date range. Names of people and facilities
+  are looked up in the same query (audit rows keep no foreign keys, so the log survives any
+  other data change). Event names come from `apps/audit/catalog.py`; a test fails if a new
+  event has no label.
+- **CSV export** (`GET /audit-events/export/`): newest first, at most 5,000 rows per file
+  (`X-Export-Truncated` says if more matched). Cells that start with `= + - @` are prefixed so
+  spreadsheets don't run them as formulas. Every search and every export is itself recorded
+  (`audit.events.searched`, `audit.events.exported`, with the filters used).
+- Bad filter values (e.g. a mistyped date) return a clear 400 instead of a server error.
+- Still administrators cannot read the log (separation of duties).

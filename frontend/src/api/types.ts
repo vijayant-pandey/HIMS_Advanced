@@ -86,3 +86,6 @@ export type DepartmentUpdateRequest = Schemas["PatchedDepartmentUpdateRequest"];
 export type FacilityUpdateRequest = Schemas["PatchedFacilityUpdateRequest"];
 export type DepartmentType = Schemas["DepartmentTypeEnum"];
 export type FacilityType = Schemas["FacilityTypeEnum"];
+export type AuditEvent = Schemas["AuditEvent"];
+export type AuditAction = Schemas["AuditAction"];
+export type PaginatedAuditEventList = Schemas["PaginatedAuditEventList"];
