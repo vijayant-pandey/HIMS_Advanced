@@ -13,17 +13,32 @@ class AuditEventAdmin(admin.ModelAdmin):
 
     list_display = (
         "occurred_at",
-        "action",
+        "what",
         "outcome",
-        "actor_type",
-        "actor_id",
+        "who",
         "resource_type",
         "resource_id",
+        "request_id",
     )
     list_filter = ("outcome", "actor_type", "resource_type")
     search_fields = ("action", "resource_id", "request_id", "actor_id")
     date_hierarchy = "occurred_at"
     ordering = ("-occurred_at",)
+
+    def get_queryset(self, request):
+        from .api.views import with_names
+
+        return with_names(super().get_queryset(request))
+
+    @admin.display(description="What happened", ordering="action")
+    def what(self, obj):
+        from .catalog import label
+
+        return label(obj.action)
+
+    @admin.display(description="Who")
+    def who(self, obj):
+        return obj.actor_name or obj.actor_type
 
     def has_module_permission(self, request):
         return can_view_audit(request.user)

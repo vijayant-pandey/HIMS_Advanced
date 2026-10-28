@@ -71,6 +71,7 @@ class AuditAction:
     STAFF_CREDENTIAL_ADDED = "staff.credential.added"
     STAFF_CREDENTIAL_VERIFIED = "staff.credential.verified"
     AUDIT_SEARCHED = "audit.events.searched"
+    AUDIT_EXPORTED = "audit.events.exported"
 
 
 def _jsonable(value):

@@ -7,7 +7,8 @@ paths:
   /api/v1/audit-events/:
     get:
       operationId: audit_events_list
-      description: Audit search for auditors. Searching the audit log is itself audited.
+      description: Audit search for auditors. Searching and exporting the audit log
+        are themselves audited.
       parameters:
       - in: query
         name: action
@@ -17,6 +18,21 @@ paths:
         name: actor_id
         schema:
           type: string
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: First part of the action, e.g. auth, access, staff, admin.
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: From this day (inclusive).
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Up to this day (inclusive).
       - in: query
         name: facility_id
         schema:
@@ -46,6 +62,16 @@ paths:
         schema:
           type: integer
       - in: query
+        name: person
+        schema:
+          type: string
+        description: Part of a person's name or email.
+      - in: query
+        name: request_id
+        schema:
+          type: string
+        description: Reference number shown on an error screen.
+      - in: query
         name: resource_id
         schema:
           type: string
@@ -64,6 +90,97 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedAuditEventList'
           description: ''
+  /api/v1/audit-events/actions/:
+    get:
+      operationId: audit_events_actions_list
+      description: Every known event type with a plain-language name, for the filter
+        list.
+      tags:
+      - audit-events
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditAction'
+          description: ''
+  /api/v1/audit-events/export/:
+    get:
+      operationId: audit_events_export_retrieve
+      description: Download matching events as CSV (newest first, at most 5,000 rows).
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - in: query
+        name: actor_id
+        schema:
+          type: string
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: First part of the action, e.g. auth, access, staff, admin.
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: From this day (inclusive).
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Up to this day (inclusive).
+      - in: query
+        name: facility_id
+        schema:
+          type: string
+      - in: query
+        name: occurred_after
+        schema:
+          type: string
+      - in: query
+        name: occurred_before
+        schema:
+          type: string
+      - in: query
+        name: outcome
+        schema:
+          type: string
+      - in: query
+        name: person
+        schema:
+          type: string
+        description: Part of a person's name or email.
+      - in: query
+        name: request_id
+        schema:
+          type: string
+        description: Reference number shown on an error screen.
+      - in: query
+        name: resource_id
+        schema:
+          type: string
+      - in: query
+        name: resource_type
+        schema:
+          type: string
+      tags:
+      - audit-events
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+          description: CSV file
   /api/v1/auth/csrf/:
     get:
       operationId: auth_csrf_retrieve
@@ -2280,6 +2397,19 @@ components:
         * `adult` - Adults
         * `pediatric` - Children
         * `neonatal` - Newborns
+    AuditAction:
+      type: object
+      properties:
+        action:
+          type: string
+        label:
+          type: string
+        category:
+          type: string
+      required:
+      - action
+      - category
+      - label
     AuditEvent:
       type: object
       properties:
@@ -2296,6 +2426,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        facility_name:
+          type: string
+          readOnly: true
+          nullable: true
         actor_type:
           allOf:
           - $ref: '#/components/schemas/ActorTypeEnum'
@@ -2305,7 +2439,21 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        actor_name:
+          type: string
+          readOnly: true
+          nullable: true
+        actor_email:
+          type: string
+          readOnly: true
+          nullable: true
         action:
+          type: string
+          readOnly: true
+        action_label:
+          type: string
+          readOnly: true
+        category:
           type: string
           readOnly: true
         resource_type:
@@ -2334,10 +2482,15 @@ components:
           readOnly: true
       required:
       - action
+      - action_label
+      - actor_email
       - actor_id
+      - actor_name
       - actor_type
+      - category
       - changes
       - facility_id
+      - facility_name
       - id
       - ip_address
       - metadata
