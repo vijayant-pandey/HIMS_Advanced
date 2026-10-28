@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.http import Http404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -14,6 +15,7 @@ from ..models import Designation, QualificationType, Specialty, StaffCredential,
 from .serializers import (
     CredentialVerificationSerializer,
     DesignationSerializer,
+    EndAssignmentSerializer,
     InvitationSentSerializer,
     QualificationTypeSerializer,
     SpecialtySerializer,
@@ -78,6 +80,8 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         "add_qualification": P.STAFF_MANAGE,
         "add_credential": P.STAFF_MANAGE,
         "send_invitation": P.STAFF_MANAGE,
+        "end_department_assignment": P.STAFF_MANAGE,
+        "verify_qualification": P.STAFF_CREDENTIALS_VERIFY,
     }
     http_method_names = ["get", "post", "patch", "head"]
 
@@ -88,7 +92,13 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         queryset = StaffMember.objects.select_related("user")
         if self.action == "retrieve":
             queryset = queryset.prefetch_related(
-                "department_assignments__designation", "qualifications", "credentials"
+                "department_assignments__designation",
+                "department_assignments__department__facility",
+                "department_assignments__specialty",
+                "qualifications__qualification_type",
+                "qualifications__specialty",
+                "qualifications__verified_by",
+                "credentials__verified_by",
             )
         search = self.request.query_params.get("search", "").strip()
         if search:
@@ -100,12 +110,16 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         staff_type = self.request.query_params.get("staff_type")
         if staff_type:
             queryset = queryset.filter(staff_type=staff_type)
+        employment_status = self.request.query_params.get("employment_status")
+        if employment_status:
+            queryset = queryset.filter(employment_status=employment_status)
         return queryset
 
     @extend_schema(
         parameters=[
             OpenApiParameter("search", str, description="Name contains, or exact employee number"),
             OpenApiParameter("staff_type", str),
+            OpenApiParameter("employment_status", str),
         ]
     )
     def list(self, request, *args, **kwargs):
@@ -184,6 +198,46 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         )
         return Response(StaffCredentialSerializer(credential).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(request=EndAssignmentSerializer, responses=StaffDepartmentAssignmentSerializer)
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"department-assignments/(?P<assignment_id>[0-9a-f-]+)/end",
+    )
+    def end_department_assignment(self, request, pk=None, assignment_id=None):
+        """End a posting (transfer, resignation, end of rotation). History is kept."""
+        staff = self.get_object()
+        serializer = EndAssignmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        assignment = services.end_department_assignment(
+            actor=request.user,
+            staff=staff,
+            assignment_id=_existing(staff.department_assignments, assignment_id),
+            request=request,
+            **serializer.validated_data,
+        )
+        return Response(StaffDepartmentAssignmentSerializer(assignment).data)
+
+    @extend_schema(request=CredentialVerificationSerializer, responses=StaffQualificationSerializer)
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"qualifications/(?P<qualification_id>[0-9a-f-]+)/verify",
+    )
+    def verify_qualification(self, request, pk=None, qualification_id=None):
+        """Mark a qualification as checked against the original certificate, or rejected."""
+        staff = self.get_object()
+        serializer = CredentialVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        qualification = services.verify_qualification(
+            actor=request.user,
+            staff=staff,
+            qualification_id=_existing(staff.qualifications, qualification_id),
+            request=request,
+            **serializer.validated_data,
+        )
+        return Response(StaffQualificationSerializer(qualification).data)
+
     @extend_schema(request=None, responses={202: InvitationSentSerializer})
     @action(detail=True, methods=["post"], url_path="invitation")
     def send_invitation(self, request, pk=None):
@@ -200,6 +254,13 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
             ).data,
             status=status.HTTP_202_ACCEPTED,
         )
+
+
+def _existing(related_manager, item_id):
+    """The id if it belongs to this staff member, else 404 (never another person's record)."""
+    if not related_manager.filter(pk=item_id).exists():
+        raise Http404
+    return item_id
 
 
 class StaffCredentialViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):

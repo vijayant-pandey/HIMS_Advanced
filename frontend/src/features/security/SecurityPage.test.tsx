@@ -17,6 +17,7 @@ const admin: CurrentUser = {
   display_name: "Admin",
   staff_member_id: null,
   grants: [{ permission: "platform.admin_console", facility_id: null, department_id: null }],
+  organization: { display_name: "Synthetic Health", country: "IN" },
   mfa: { enabled: false, required: true, verified: false, recovery_codes_remaining: 0 },
 };
 

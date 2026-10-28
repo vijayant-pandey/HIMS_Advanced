@@ -390,3 +390,18 @@ Country notes:
 
 When these are approved, each clinical feature (Phase 2 onward) adds its permissions to the catalog
 (`apps/access_control/catalog.py`) and the matching system roles, and this document is updated.
+
+---
+
+## Update 2026-10-28: managing access in the app (HIMS-IAM-013)
+* **Staff → a person → Access** shows their roles (where and until when) and lets an administrator
+  with `access.assignments.manage` **give access** (role, whole hospital / one facility / one
+  department, optional end date for temporary cover, reason) or **remove** it (reason).
+* **Access** page: "Who has access" (everyone's current access, filter by role) and "Roles" (what
+  each role can do; create and edit **custom** roles with `access.roles.manage`).
+* Safety rules (enforced by the server, in the app and the admin console):
+  * **Nobody can give themselves access or remove their own**, so another administrator must do it.
+  * You can only give permissions you hold yourself at that place (no privilege escalation).
+  * System roles cannot be edited; they follow this document's catalog.
+  * Editing a custom role changes access for everyone holding it, on their next request; edits
+    are versioned (two people cannot overwrite each other) and audited.

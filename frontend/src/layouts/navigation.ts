@@ -14,6 +14,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/numbering", label: "Numbering", permission: "numbering.view" },
   { to: "/features", label: "Features", permission: "features.view" },
   { to: "/staff", label: "Staff", permission: "staff.view" },
+  { to: "/access", label: "Access", permission: "access.roles.view" },
 ];
 
 export function visibleNavItems(user: CurrentUser | null | undefined): NavItem[] {

@@ -1,5 +1,6 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
+import { AccessPage } from "../features/accessControl/AccessPage";
 import { HomePage } from "../features/access/HomePage";
 import { ActivatePage } from "../features/auth/ActivatePage";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
@@ -11,6 +12,7 @@ import { LocationsPage } from "../features/locations/LocationsPage";
 import { FeaturesPage } from "../features/featureFlags/FeaturesPage";
 import { NumberingPage } from "../features/numbering/NumberingPage";
 import { SecurityPage } from "../features/security/SecurityPage";
+import { StaffDetailPage } from "../features/staff/StaffDetailPage";
 import { StaffPage } from "../features/staff/StaffPage";
 import { AppShell } from "../layouts/AppShell";
 
@@ -31,6 +33,8 @@ export const router = createBrowserRouter([
           { path: "numbering", element: <NumberingPage /> },
           { path: "features", element: <FeaturesPage /> },
           { path: "staff", element: <StaffPage /> },
+          { path: "staff/:id", element: <StaffDetailPage /> },
+          { path: "access", element: <AccessPage /> },
           { path: "security", element: <SecurityPage /> },
         ],
       },

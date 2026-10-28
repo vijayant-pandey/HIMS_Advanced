@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
-from common.models import OrganizationOwnedModel, UUIDPrimaryKeyModel
+from common.models import OrganizationOwnedModel, UUIDPrimaryKeyModel, VersionedModel
 
 
 class Permission(UUIDPrimaryKeyModel):
@@ -21,7 +21,7 @@ class Permission(UUIDPrimaryKeyModel):
         return self.codename
 
 
-class Role(OrganizationOwnedModel):
+class Role(OrganizationOwnedModel, VersionedModel):
     code = models.SlugField(max_length=64)
     name = models.CharField(max_length=128)
     description = models.TextField(blank=True)
