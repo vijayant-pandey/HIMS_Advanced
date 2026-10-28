@@ -47,6 +47,8 @@ function mockApi() {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
     const method = init?.method ?? "GET";
+    // Saving hospital settings reloads the signed-in user (to show the new name).
+    if (url.endsWith("/auth/me/")) return json(signedIn(ADMIN));
     if (url.includes("/organization/")) return json(ORGANIZATION);
     if (method === "POST" && url.endsWith("/accounts/")) return json({ ...AUDITOR, id: "u-new" }, 201);
     if (method === "POST") return json({ ...AUDITOR, is_active: false });
@@ -56,8 +58,8 @@ function mockApi() {
   });
 }
 
-function renderAt(path: string, grants: string[]) {
-  const user: CurrentUser = {
+function signedIn(grants: string[]): CurrentUser {
+  return {
     id: "u-admin",
     email: "admin@synthetic.test",
     display_name: "Synthetic Admin",
@@ -66,6 +68,10 @@ function renderAt(path: string, grants: string[]) {
     organization: { display_name: "Synthetic Health", country: "IN" },
     mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 10 },
   };
+}
+
+function renderAt(path: string, grants: string[]) {
+  const user = signedIn(grants);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   queryClient.setQueryData(currentUserKey, user);
   render(

@@ -5,14 +5,14 @@ import type { CurrentUser } from "../../api/types";
  * every permission (spec 15.2, 26.4).
  */
 export function hasPermission(user: CurrentUser | null | undefined, permission: string): boolean {
-  return !!user?.grants.some((grant) => grant.permission === permission);
+  return !!user?.grants?.some((grant) => grant.permission === permission);
 }
 
 export function hasOrganizationWidePermission(
   user: CurrentUser | null | undefined,
   permission: string,
 ): boolean {
-  return !!user?.grants.some(
+  return !!user?.grants?.some(
     (grant) => grant.permission === permission && grant.facility_id === null,
   );
 }
@@ -23,7 +23,7 @@ export function hasPermissionAt(
   permission: string,
   facilityId: string | null | undefined,
 ): boolean {
-  return !!user?.grants.some(
+  return !!user?.grants?.some(
     (grant) =>
       grant.permission === permission &&
       (grant.facility_id === null || grant.facility_id === facilityId),
