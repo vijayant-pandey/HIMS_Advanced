@@ -1396,10 +1396,15 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly facility: string;
+            readonly facility_name: string;
             readonly code: string;
             readonly name: string;
             readonly department_type: components["schemas"]["DepartmentTypeEnum"];
+            readonly department_type_label: string;
             readonly status: components["schemas"]["ActiveStatusEnum"];
+            /** @description Staff posted here now or later. */
+            readonly current_staff: number;
+            readonly active_wards: number;
             readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -1494,6 +1499,8 @@ export interface components {
             readonly timezone: string;
             readonly phone: string;
             readonly status: components["schemas"]["ActiveStatusEnum"];
+            readonly facility_type_label: string;
+            readonly active_departments: number;
             readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -3238,6 +3245,8 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /** @description active or inactive */
+                status?: string;
             };
             header?: never;
             path?: never;
@@ -4198,6 +4207,8 @@ export interface operations {
     staff_list: {
         parameters: {
             query?: {
+                /** @description Posted in this department now */
+                department?: string;
                 employment_status?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;

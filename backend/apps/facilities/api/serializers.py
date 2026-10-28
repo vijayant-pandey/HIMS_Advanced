@@ -1,3 +1,5 @@
+from django.db.models import Count, Q
+from django.utils import timezone
 from rest_framework import serializers
 
 from common.validators import validate_timezone
@@ -5,7 +7,37 @@ from common.validators import validate_timezone
 from ..models import Department, Facility
 
 
+def facility_counts(queryset):
+    """Active departments per facility (shown before someone tries to deactivate it)."""
+    return queryset.annotate(
+        active_departments=Count(
+            "departments", filter=Q(departments__status="active"), distinct=True
+        )
+    )
+
+
+def department_counts(queryset):
+    """Current staff postings and active wards per department."""
+    today = timezone.localdate()
+    current = Q(staff_assignments__valid_until__isnull=True) | Q(
+        staff_assignments__valid_until__gte=today
+    )
+    return queryset.annotate(
+        current_staff=Count("staff_assignments", filter=current, distinct=True),
+        active_wards=Count("wards", filter=Q(wards__is_active=True), distinct=True),
+    )
+
+
 class FacilitySerializer(serializers.ModelSerializer):
+    facility_type_label = serializers.CharField(source="get_facility_type_display", read_only=True)
+    active_departments = serializers.SerializerMethodField()
+
+    def get_active_departments(self, facility) -> int:
+        cached = getattr(facility, "active_departments", None)
+        if cached is not None:
+            return cached
+        return facility.departments.filter(status="active").count()
+
     class Meta:
         model = Facility
         fields = [
@@ -22,6 +54,8 @@ class FacilitySerializer(serializers.ModelSerializer):
             "timezone",
             "phone",
             "status",
+            "facility_type_label",
+            "active_departments",
             "version",
             "created_at",
             "updated_at",
@@ -66,15 +100,38 @@ class FacilityUpdateSerializer(serializers.Serializer):
 
 
 class DepartmentSerializer(serializers.ModelSerializer):
+    facility_name = serializers.CharField(source="facility.name", read_only=True)
+    department_type_label = serializers.CharField(
+        source="get_department_type_display", read_only=True
+    )
+    current_staff = serializers.SerializerMethodField(help_text="Staff posted here now or later.")
+    active_wards = serializers.SerializerMethodField()
+
+    def get_current_staff(self, department) -> int:
+        cached = getattr(department, "current_staff", None)
+        if cached is not None:
+            return cached
+        return department_counts(Department.objects.filter(pk=department.pk)).get().current_staff
+
+    def get_active_wards(self, department) -> int:
+        cached = getattr(department, "active_wards", None)
+        if cached is not None:
+            return cached
+        return department.wards.filter(is_active=True).count()
+
     class Meta:
         model = Department
         fields = [
             "id",
             "facility",
+            "facility_name",
             "code",
             "name",
             "department_type",
+            "department_type_label",
             "status",
+            "current_staff",
+            "active_wards",
             "version",
             "created_at",
             "updated_at",
