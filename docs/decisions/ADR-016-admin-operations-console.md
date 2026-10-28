@@ -48,3 +48,8 @@ backup codes (secret hashes); the device page shows how many remain. The same te
 console list and add page. Added at the same time: "Send password reset link" on users, bed status
 changes (all staff-settable states, reason required) on the bed page, and Facility → Building →
 Floor → Ward → Room → Bed sections on each parent page. Inline edits now also bump `version`.
+
+## Update 2026-10-28 (HIMS-FAC-006)
+Departments and facilities follow the same "close in order" rules in the console as in the app
+(`Department.clean` / `Facility.clean`). A department with staff posted, access limited to it,
+or active wards cannot be set to inactive, and the console shows the same plain-language message.

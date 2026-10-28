@@ -16,6 +16,8 @@ from .serializers import (
     FacilityCreateSerializer,
     FacilitySerializer,
     FacilityUpdateSerializer,
+    department_counts,
+    facility_counts,
 )
 
 
@@ -31,7 +33,8 @@ class FacilityViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets
     http_method_names = ["get", "post", "patch", "head"]
 
     def get_queryset(self):
-        return filter_by_facility_scope(self, Facility.objects.all(), facility_field="pk")
+        queryset = filter_by_facility_scope(self, Facility.objects.all(), facility_field="pk")
+        return facility_counts(queryset).order_by("name")  # counting drops Meta.ordering
 
     def get_permission_context(self, obj):
         return obj.pk, None
@@ -80,13 +83,19 @@ class DepartmentViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewse
         facility_id = self.request.query_params.get("facility")
         if facility_id:
             queryset = queryset.filter(facility_id=facility_id)
-        return queryset
+        status_filter = self.request.query_params.get("status")
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        return department_counts(queryset).order_by("facility__name", "name")
 
     def get_permission_context(self, obj):
         return obj.facility_id, obj.pk
 
     @extend_schema(
-        parameters=[OpenApiParameter("facility", str, description="Filter by facility ID")]
+        parameters=[
+            OpenApiParameter("facility", str, description="Filter by facility ID"),
+            OpenApiParameter("status", str, description="active or inactive"),
+        ]
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)

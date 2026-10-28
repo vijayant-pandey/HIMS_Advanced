@@ -50,7 +50,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | Done |
 | HIMS-ORG-004 | Feature flags per organization/country/facility | Done |
 | HIMS-ORG-005 | Hospital settings screen (name, legal name, default time zone) | To do |
-| HIMS-FAC-006 | Departments screen + facility edit screen | To do |
+| HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done |
+| HIMS-FAC-007 | Department head, services offered and operating hours | To do |
 
 ## EPIC HIMS-IAM — Identity and access
 

@@ -16,10 +16,11 @@ import {
   Typography,
 } from "@mui/material";
 import { useDeferredValue, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { useCurrentUser } from "../auth/api";
+import { useDepartmentList } from "../facilities/api";
 import { hasOrganizationWidePermission } from "../auth/grants";
 import { useStaff } from "./api";
 import { EMPLOYMENT_STATUSES, STATUS_COLOR, options } from "./labels";
@@ -31,7 +32,12 @@ export function StaffPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const deferredSearch = useDeferredValue(search.trim());
-  const { data, isFetching, error } = useStaff(deferredSearch, status);
+  // Opened from the Departments page: only people posted in that department.
+  const [params, setParams] = useSearchParams();
+  const department = params.get("department") ?? "";
+  const departments = useDepartmentList();
+  const departmentName = departments.data?.results.find((d) => d.id === department)?.name;
+  const { data, isFetching, error } = useStaff(deferredSearch, status, 1, department);
   const [adding, setAdding] = useState(false);
   // Hint only: the API checks staff.manage (staff records are hospital-wide).
   const canAdd = hasOrganizationWidePermission(user, "staff.manage");
@@ -70,6 +76,14 @@ export function StaffPage() {
           ))}
         </TextField>
       </Stack>
+      {department && (
+        <Box>
+          <Chip
+            label={`Department: ${departmentName ?? "selected"}`}
+            onDelete={() => setParams({})}
+          />
+        </Box>
+      )}
       {error && <ErrorAlert error={error} />}
       <TableContainer component={Paper}>
         {isFetching && <LinearProgress />}

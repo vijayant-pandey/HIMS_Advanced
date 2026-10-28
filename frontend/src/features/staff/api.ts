@@ -24,12 +24,12 @@ import type {
 
 export const staffKey = ["staff"] as const;
 
-export function useStaff(search: string, employmentStatus = "", page = 1) {
+export function useStaff(search: string, employmentStatus = "", page = 1, department = "") {
   return useQuery<PaginatedStaffMemberList, ApiError>({
-    queryKey: [...staffKey, "list", { search, employmentStatus, page }],
+    queryKey: [...staffKey, "list", { search, employmentStatus, page, department }],
     queryFn: ({ signal }) =>
       api.get<PaginatedStaffMemberList>("/staff/", {
-        query: { search, employment_status: employmentStatus, page },
+        query: { search, employment_status: employmentStatus, page, department },
         signal,
       }),
     placeholderData: keepPreviousData,

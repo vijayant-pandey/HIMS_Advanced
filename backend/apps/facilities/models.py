@@ -46,6 +46,23 @@ class Facility(OrganizationOwnedModel, VersionedModel):
     def __str__(self) -> str:
         return self.name
 
+    def clean(self):
+        super().clean()
+        if _deactivating(self):
+            from .closing import explain, facility_blockers
+
+            blockers = facility_blockers(self)
+            if blockers:
+                raise ValidationError({"status": explain(blockers)})
+
+
+def _deactivating(instance) -> bool:
+    """True when an existing active record is being set to inactive."""
+    if instance._state.adding or instance.status != "inactive":
+        return False
+    previous = type(instance).objects.filter(pk=instance.pk).values_list("status", flat=True)
+    return previous.first() == "active"
+
 
 class Department(OrganizationOwnedModel, VersionedModel):
     class DepartmentType(models.TextChoices):
@@ -86,6 +103,20 @@ class Department(OrganizationOwnedModel, VersionedModel):
             raise ValidationError(
                 {"facility": "Departments can only be added to an active facility."}
             )
+        reactivating_under_inactive = (
+            not self._state.adding
+            and self.status == self.Status.ACTIVE
+            and self.facility_id
+            and self.facility.status != Facility.Status.ACTIVE
+        )
+        if reactivating_under_inactive:
+            raise ValidationError({"status": "Reactivate the facility first."})
+        if _deactivating(self):
+            from .closing import department_blockers, explain
+
+            blockers = department_blockers(self)
+            if blockers:
+                raise ValidationError({"status": explain(blockers)})
 
 
 # Physical locations (building, floor, ward, room) live in their own module.

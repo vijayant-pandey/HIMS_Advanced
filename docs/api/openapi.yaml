@@ -693,6 +693,11 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: active or inactive
       tags:
       - departments
       security:
@@ -1767,6 +1772,11 @@ paths:
       operationId: staff_list
       parameters:
       - in: query
+        name: department
+        schema:
+          type: string
+        description: Posted in this department now
+      - in: query
         name: employment_status
         schema:
           type: string
@@ -2679,6 +2689,9 @@ components:
           type: string
           format: uuid
           readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
         code:
           type: string
           readOnly: true
@@ -2690,9 +2703,19 @@ components:
           allOf:
           - $ref: '#/components/schemas/DepartmentTypeEnum'
           readOnly: true
+        department_type_label:
+          type: string
+          readOnly: true
         status:
           allOf:
           - $ref: '#/components/schemas/ActiveStatusEnum'
+          readOnly: true
+        current_staff:
+          type: integer
+          readOnly: true
+          description: Staff posted here now or later.
+        active_wards:
+          type: integer
           readOnly: true
         version:
           type: integer
@@ -2706,10 +2729,14 @@ components:
           format: date-time
           readOnly: true
       required:
+      - active_wards
       - code
       - created_at
+      - current_staff
       - department_type
+      - department_type_label
       - facility
+      - facility_name
       - id
       - name
       - status
@@ -2904,6 +2931,12 @@ components:
           allOf:
           - $ref: '#/components/schemas/ActiveStatusEnum'
           readOnly: true
+        facility_type_label:
+          type: string
+          readOnly: true
+        active_departments:
+          type: integer
+          readOnly: true
         version:
           type: integer
           readOnly: true
@@ -2916,6 +2949,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - active_departments
       - address_line1
       - address_line2
       - city
@@ -2923,6 +2957,7 @@ components:
       - country
       - created_at
       - facility_type
+      - facility_type_label
       - id
       - name
       - phone

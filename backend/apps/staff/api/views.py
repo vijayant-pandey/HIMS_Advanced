@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.access_control.catalog import P
+from apps.facilities.closing import current_postings_q
 from apps.identity.invitations import issue_invitation
 from common.exceptions import ConflictError
 from common.idempotency.decorators import idempotent
@@ -113,6 +114,13 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         employment_status = self.request.query_params.get("employment_status")
         if employment_status:
             queryset = queryset.filter(employment_status=employment_status)
+        department = self.request.query_params.get("department")
+        if department:
+            # People posted there now (or starting later), as counted on the Departments page.
+            queryset = queryset.filter(
+                current_postings_q("department_assignments__"),
+                department_assignments__department_id=department,
+            ).distinct()
         return queryset
 
     @extend_schema(
@@ -120,6 +128,7 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
             OpenApiParameter("search", str, description="Name contains, or exact employee number"),
             OpenApiParameter("staff_type", str),
             OpenApiParameter("employment_status", str),
+            OpenApiParameter("department", str, description="Posted in this department now"),
         ]
     )
     def list(self, request, *args, **kwargs):

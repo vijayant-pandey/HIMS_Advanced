@@ -4,7 +4,7 @@ Tracks delivery against [HIMS_Architecture_Specification_v2.MD](../../HIMS_Archi
 The specification is the source of truth and is **not** edited by this tracker.
 Updated after every completed work item.
 
-**Last updated:** 2026-10-28 · **Overall:** ~21% of the full specification · **Phase 1:** ~91%
+**Last updated:** 2026-10-28 · **Overall:** ~21% of the full specification · **Phase 1:** ~92%
 
 **Legend**
 - ✅ Done: implemented and covered by automated tests
@@ -44,10 +44,11 @@ Updated after every completed work item.
 | 6b | Admin console coverage check (items 1–5) | 13, ADR-016 | HIMS-PLAT-018 | ✅ Done: every model manageable in the admin console (test fails if one is missing); added "Send password reset link" (item 2), bed status Maintenance/Blocked with reason (item 5), Facility → Building → Floor → Ward → Room → Bed drill-down (item 5); location codes locked after creation |
 | 7 | Feature flags per organization/country/facility | 4.1 | HIMS-ORG-004 | ✅ Done: Features page (whole hospital or per facility, reason required, audited); 3 live features (forgot-password emails, two-factor for all staff, Locations per facility) enforced by the server; 12 planned modules shown as "Coming in Phase N" and locked; country rules (ABDM/India TPAs India-only, Stedi US-only); admin console lists every feature; [ADR-019](../decisions/ADR-019-feature-flags.md). Admin console re-checked for items 1–7 |
 | 8 | Staff UI: detail, onboarding, departments, roles and access | 15 | HIMS-STAFF-007, IAM-013 | ✅ Done: Staff page (add staff, status filter, open a person); staff detail page (edit, employment status with sign-out warning, invitation status and send/resend, department postings add/end, qualifications add/verify, licences add/verify with expiry warning, Access tab); Access page (who has access where, remove access; roles with their permissions, create/edit custom roles); new rules: nobody can give themselves access, system roles locked, no granting what you don't hold, role edits versioned and audited. Admin console re-checked for items 1–8 |
-| 8b | Departments screen (add/edit/deactivate departments per facility) and facility edit screen (today only list + create in the app) | 4.1, 4.2, 15.1 | HIMS-FAC-006 | 🔓 **next** (staff postings depend on departments, which today can only be created in the admin console) |
-| 8c | Audit log screen for auditors (search by person, action, date, reference number; today admin console only) | 13.4, 4.25 | HIMS-AUD-003 | 🔓 |
+| 8b | Departments screen (add/edit/deactivate departments per facility) and facility edit screen (today only list + create in the app) | 4.1, 4.2, 15.1 | HIMS-FAC-006 | ✅ Done: Departments page (by facility and status; staff and ward counts; staff count opens the staff list for that department; add, edit, deactivate, reactivate); Facilities page shows type and active departments and has Edit (address, time zone, phone, status); "close in order" rules for departments and facilities, also in the admin console; [design doc](../architecture/data-architecture/facilities-and-departments.md). Admin console re-checked for items 1–8b |
+| 8c | Audit log screen for auditors (search by person, action, date, reference number; today admin console only) | 13.4, 4.25 | HIMS-AUD-003 | 🔓 **next** (compliance: auditors and investigations need it before go-live) |
 | 8d | Hospital settings screen (name, legal name, default time zone; today admin console only) | 4.1 | HIMS-ORG-005 | 🔓 |
 | 8e | Accounts without a staff record (e.g. the first administrator and auditor created at provisioning): list them and manage their access in the app (today admin console only) | 4.4, 15.1 | HIMS-IAM-015 | 🔓 |
+| 8f | Department head, services offered and operating hours (spec 4.2 "Left") | 4.2 | HIMS-FAC-007 | 🔓 |
 | 9 | Credential documents (local storage adapter; S3 later) + expiry alerts | 4.3, 4.22 | HIMS-STAFF-005/006 | 🔓 |
 | 10 | Audit tamper evidence (hash chain) | 13.4 | HIMS-SEC-010 | 🔓 |
 | 11 | Periodic access-review report | 4.4, 13.2 | HIMS-IAM-012 | 🔓 |
@@ -92,7 +93,8 @@ Everything marked ✅ below was re-verified before starting item 5.
 | #11 | HIMS-ORG-003, HIMS-PLAT-018 | Numbering schemes (MRN, visit, invoice, claim) with Numbering page; admin console coverage for items 1–5 |
 | #12 | HIMS-FAC-005 | Set up locations in the app: add/edit/deactivate buildings, floors, wards, rooms and beds on the Locations page |
 | #13 | HIMS-ORG-004 | Feature settings per hospital, country and facility; Features page; ADR-019 |
-| #14 (this item; number assigned by GitHub) | HIMS-STAFF-007, HIMS-IAM-013 | Staff detail/onboarding screens; roles and access screens; no self-granted access |
+| #14 | HIMS-STAFF-007, HIMS-IAM-013 | Staff detail/onboarding screens; roles and access screens; no self-granted access |
+| #15 (this item; number assigned by GitHub) | HIMS-FAC-006 | Departments screen, facility edit screen, "close in order" rules |
 | (before PRs) | HIMS-PLAT-*, HIMS-ORG-*, HIMS-FAC-001..003, HIMS-IAM-001/002/009, HIMS-STAFF-001..004, HIMS-AUD-*, HIMS-PLAT-017, HIMS-UI-001 | Phase 1 foundation, admin console, launcher, themes (direct commits before the PR workflow existed) |
 
 ## Section-by-section
@@ -110,8 +112,8 @@ Everything marked ✅ below was re-verified before starting item 5.
 
 | § | Domain | Status | Done | Left (🔓 = can do now) | Dependency |
 |---|---|---|---|---|---|
-| 4.1 | Hospital & branches | 🟡 90% | Organization (one per deployment), facilities, country/timezone/currency, admin, **locations: buildings, floors, wards/units, rooms, beds** (HIMS-FAC-004), **numbering schemes for MRN, encounters, invoices, claims** (HIMS-ORG-003), **feature flags by organization, country and facility** (HIMS-ORG-004) | 🔓 logo/templates | Tax rules: 🔒 LEGAL |
-| 4.2 | Departments | 🟡 40% | Create/edit, facility scope; department catalog & people per department documented; 52 specialties | 🔓 head, services, operating hours | Pricing/slots/escalation: 🔒 CLIN |
+| 4.1 | Hospital & branches | 🟡 92% | Organization (one per deployment), facilities, country/timezone/currency, admin, **locations: buildings, floors, wards/units, rooms, beds** (HIMS-FAC-004), **numbering schemes for MRN, encounters, invoices, claims** (HIMS-ORG-003), **feature flags by organization, country and facility** (HIMS-ORG-004) | 🔓 logo/templates | Tax rules: 🔒 LEGAL |
+| 4.2 | Departments | 🟡 60% | Create/edit, facility scope; department catalog & people per department documented; 52 specialties; **Departments screen** (counts of staff and wards, add/edit/deactivate) with **close-in-order rules** (HIMS-FAC-006) | 🔓 head, services, operating hours (queue 8f) | Pricing/slots/escalation: 🔒 CLIN |
 | 4.3 | Staff & credentials | 🟡 88% | Staff, qualifications (57 IN/US types), credentials, verification, termination, **designation catalog (106 titles, seniority 1–10, IN/US)** | 🔓 documents, 🔓 expiry alerts (expiry is now shown on screen: expired / expires within 60 days), 🔓 shifts/leave/on-call; screens done: staff detail, onboarding, postings, qualification and licence verification (HIMS-STAFF-007) | Clinical privileges: 🔒 CLIN |
 | 4.4 | Identity & access | 🟡 92% | Login, sessions, scoped RBAC, suspension, admin console, invitation & activation, password reset (no enumeration, 60 min single-use link, ends all sessions, security notice), **session management** (register of sign-ins per user, end all sessions on suspension/termination/deactivation, "sign out of all devices"), **two-factor sign-in (MFA)** for privileged roles, **roles and access screens** (who has access where, give/remove access, custom roles; HIMS-IAM-013) | 🔓 access reviews, 🔓 delegation, 🔓 accounts without a staff record in the app (8e) | SSO: 🔒 PO; break-glass rules: 🔒 CLIN |
 | 4.5 | Patient registration & MPI | ⬜ | — | Demographics, MRN, duplicate detection | 🔒 PO+CLIN P0 sign-off |
@@ -176,7 +178,7 @@ Everything marked ✅ below was re-verified before starting item 5.
 |---|---|---|---|---|
 | §14.2 Transactional outbox | ✅ | Dispatcher, retries, dead-lettering, consumer deduplication, inline mode for local development; first real consumers (invitation emails) | — | — |
 | §14.3 Reliability rules | 🟡 | Late acknowledgement, idempotent tasks, durable state | Queue monitoring | 🔒 AWS (alarms); local Redis optional |
-| §15.1 Role workspaces | 🟡 1/7 | Hospital-admin workspace (facilities, locations and beds with full in-app setup, numbering, features, staff with full detail and onboarding, roles and access) | 🔓 more admin screens | Clinical workspaces: 🔒 domains |
+| §15.1 Role workspaces | 🟡 1/7 | Hospital-admin workspace (facilities with edit, departments, locations and beds with full in-app setup, numbering, features, staff with full detail and onboarding, roles and access) | 🔓 more admin screens | Clinical workspaces: 🔒 domains |
 | §15.2 Frontend decisions | 🟡 | TypeScript, typed contracts, TanStack, RHF, backend authorization, **theme selector (10 white-based themes, WCAG AA contrast tested)**, compact modern design system (13px base, small sentence-case buttons, dense inputs/tables), permission-aware navigation and home page | 🔓 accessibility checks, 🔓 code splitting | — |
 | §15.3 Patient chart | ⬜ | — | All | 🔒 4.5+ |
 | §16 Endpoint table (18) | 🟡 4/18 | Hospital setup (provisioning), departments, staff, audit events; plus locations and beds (`/buildings`, `/floors`, `/wards`, `/rooms`, `/beds`, `/beds/{id}/status`, `/beds/bulk`, `/facilities/{id}/locations`) and numbering (`/numbering-schemes`, `/numbering-schemes/preview`, `/numbering-schemes/{id}/next-number`, `/issued-numbers`) and features (`/features`, `/features/{key}/change`, `/features/effective`); staff postings end, qualification verify, role edit | 14 domain endpoints | 🔒 domains |
@@ -188,10 +190,10 @@ Everything marked ✅ below was re-verified before starting item 5.
 |---|---|---|---|---|
 | §17 AWS deployment | ⬜ | Dockerfile ready | All | 🔒 AWS (deferred by choice) |
 | §18 Non-functional requirements | 🟡 30% | Consistency, request IDs, structured logs | 🔓 local tracing; SLO measurement | 🔒 AWS |
-| §19.1 Backend tests | 🟡 | 217 tests (incl. staff and access screens: detail names/account/expiry, end posting, verify qualification incl. no self-verification, custom role edit with version, system roles locked, no escalation, no self-granted access; and feature settings: defaults, hospital/facility/country rules, planned features locked, reason + version + audit, the 3 live features enforced, permissions, admin console): constraints, permissions, isolation, concurrency, outbox, admin (incl. every console page opens and every model is in the console), migrations, locations and bed status rules, numbering (formats, periods, no duplicates under 6 parallel threads, no gaps on rollback, GST length) | 🔓 secret-leak and restore tests | Insurance contract tests: 🔒 PAYER |
-| §19.2 Frontend tests | 🟡 | 42 tests (incl. staff list/detail, end posting, verify, give/remove access, roles page; and Features page, forgot-password link hidden when off, Locations "turned off" message): client, themes, link tokens, home/no-access page, two-factor setup/sign-in/redirect, Locations page and bed status dialog, location setup (view-only hides buttons, add building with field error, edit ward with version + deactivation warning, add numbered beds with clash check, bed details), Numbering page (list, view-only, live preview + save, continue numbering) | 🔓 Playwright end-to-end, 🔓 accessibility | — |
+| §19.1 Backend tests | 🟡 | 224 tests (incl. close-in-order rules for departments and facilities incl. admin console, counts and filters; and staff and access screens: detail names/account/expiry, end posting, verify qualification incl. no self-verification, custom role edit with version, system roles locked, no escalation, no self-granted access; and feature settings: defaults, hospital/facility/country rules, planned features locked, reason + version + audit, the 3 live features enforced, permissions, admin console): constraints, permissions, isolation, concurrency, outbox, admin (incl. every console page opens and every model is in the console), migrations, locations and bed status rules, numbering (formats, periods, no duplicates under 6 parallel threads, no gaps on rollback, GST length) | 🔓 secret-leak and restore tests | Insurance contract tests: 🔒 PAYER |
+| §19.2 Frontend tests | 🟡 | 47 tests (incl. Departments page, facility edit; and staff list/detail, end posting, verify, give/remove access, roles page; and Features page, forgot-password link hidden when off, Locations "turned off" message): client, themes, link tokens, home/no-access page, two-factor setup/sign-in/redirect, Locations page and bed status dialog, location setup (view-only hides buttons, add building with field error, edit ward with version + deactivation warning, add numbered beds with clash check, bed details), Numbering page (list, view-only, live preview + save, continue numbering) | 🔓 Playwright end-to-end, 🔓 accessibility | — |
 | §19.3 Clinical validation | ⬜ | — | All | 🔒 CLIN |
-| §20 Phase 1 | 🟡 91% | See tracker | Queue items 8b–8e, 9–14 | — |
+| §20 Phase 1 | 🟡 92% | See tracker | Queue items 8c–8f, 9–14 | — |
 | §20 Phases 2–6 | ⬜ | — | All | 🔒 P0/CLIN/PAYER/VENDOR |
 | §21 Vertical slice (14 steps) | 🟡 4/14 | Steps 1–4 (hospital, departments, doctor onboarding, scoped access) | Steps 5–14 | 🔒 domains |
 
@@ -210,8 +212,8 @@ Everything marked ✅ below was re-verified before starting item 5.
 |---|---|---|---|---|
 | §25 Requirement IDs & traceability | 🟡 | Ticket IDs in backlog and code | 🔓 formal HIMS-FR records for built features | — |
 | P0-A Functional specs | 🟡 | Foundation domains | Clinical domains | 🔒 CLIN |
-| P0-B Database design | 🟡 | Built domains (constraints, migrations); [locations and beds design](../architecture/data-architecture/locations-and-beds.md), [numbering design](../architecture/data-architecture/numbering-schemes.md) | 🔓 data dictionary | — |
-| P0-C State machines | 🟡 | Employment status, credential verification, **bed status** (operational part; ADT part designed) | Clinical state machines | 🔒 CLIN |
+| P0-B Database design | 🟡 | Built domains (constraints, migrations); [locations and beds design](../architecture/data-architecture/locations-and-beds.md), [numbering design](../architecture/data-architecture/numbering-schemes.md), [facilities and departments](../architecture/data-architecture/facilities-and-departments.md) | 🔓 data dictionary | — |
+| P0-C State machines | 🟡 | Employment status, credential verification, **bed status** (operational part; ADT part designed), **facility/department open-close rules** | Clinical state machines | 🔒 CLIN |
 | P0-D Permission matrix | 🟡 | Administrative permissions (21) + 7 system roles (bed manager added; numbering and feature settings for facility administrators); full clinical matrix **drafted** in [RBAC doc §8](Hospital_Departments_and_Doctors_RBAC.MD) | Approval | 🔒 CLIN |
 | P0-E Provisioning/isolation | 🟡 | Application side, IN+US locally | Infrastructure side | 🔒 AWS |
 | P0-F Integration contracts | ⬜ | — | All | 🔒 PAYER/VENDOR |
@@ -224,7 +226,7 @@ Everything marked ✅ below was re-verified before starting item 5.
 
 | Item | Status | Done | Left | Dependency |
 |---|---|---|---|---|
-| §28 Artifact A — data architecture | 🟡 30% | Schemas via migrations; §28.2 standards followed; domain design documents: locations and beds (tables, constraints, indexes, state machine), numbering schemes (business identifiers separate from keys, uniqueness and concurrency rules) | 🔓 ERD + data dictionary for built domains | — |
+| §28 Artifact A — data architecture | 🟡 30% | Schemas via migrations; §28.2 standards followed; domain design documents: locations and beds (tables, constraints, indexes, state machine), numbering schemes (business identifiers separate from keys, uniqueness and concurrency rules), facilities and departments (close-in-order rules) | 🔓 ERD + data dictionary for built domains | — |
 | §29 Artifact B — API contracts | 🟡 60% | Baseline, problem errors, idempotency, event envelope, OpenAPI check in CI | 🔓 per-endpoint contract docs; webhooks/adapters | 🔒 PAYER |
 | §30 Artifact C — AWS/operations | ⬜ 5% | Dockerfile, infrastructure layout | Terraform, network, KMS, backups | 🔒 AWS |
 
@@ -262,3 +264,4 @@ Everything marked ✅ below was re-verified before starting item 5.
 | 2026-10-28 | HIMS-FAC-005: set up locations in the app (add/edit/deactivate buildings, floors, wards, rooms; add numbered beds; bed details); location tree now carries versions and department names; admin console re-checked for items 1–6 | 4.10, 15.1, 19 |
 | 2026-10-28 | HIMS-ORG-004: feature settings by organization, country and facility (Features page, 3 live features, 12 planned modules, admin console, ADR-019); admin console re-checked for items 1–7 | 4.1, 7.2, 13.1, 15.1, 16, 19, 22, 26 (P0-D), 31.4 |
 | 2026-10-28 | HIMS-STAFF-007 + HIMS-IAM-013: staff detail/onboarding screens, roles and access screens, end postings, verify qualifications, edit custom roles, nobody can give themselves access; gaps recorded as queue items 8b–8e (departments, audit log, hospital settings, accounts without a staff record) | 3, 4.3, 4.4, 13.2, 15.1, 16, 19 |
+| 2026-10-28 | HIMS-FAC-006: Departments screen, facility edit screen, close-in-order rules (app, API and admin console), staff list by department, design doc; gap recorded as queue item 8f (department head, services, hours) | 4.1, 4.2, 15.1, 19, 26 (P0-B/C), 28 |
