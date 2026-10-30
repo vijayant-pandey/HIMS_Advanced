@@ -4,6 +4,72 @@
  */
 
 export interface paths {
+    "/api/v1/access-delegations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["access_delegations_list"];
+        put?: never;
+        post: operations["access_delegations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-delegations/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["access_delegations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-delegations/{id}/end/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End the cover now; every lent role is removed at once. */
+        post: operations["access_delegations_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-delegations/delegable/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The person's own current access, and whether each can be lent. */
+        get: operations["access_delegations_delegable_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/access-reviews/": {
         parameters: {
             query?: never;
@@ -1168,6 +1234,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/my-delegations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Cover arrangements the signed-in person is part of (covering or covered): current ones
+         *     and those that ended in the last 90 days.
+         */
+        get: operations["my_delegations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/numbering-schemes/": {
         parameters: {
             query?: never;
@@ -1838,6 +1924,77 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccessDelegation: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly delegator: components["schemas"]["Person"];
+            readonly delegate: components["schemas"]["Person"];
+            /** Format: date-time */
+            readonly starts_at: string;
+            /** Format: date-time */
+            readonly ends_at: string;
+            readonly reason: string;
+            readonly status: components["schemas"]["DelegationStatusEnum"];
+            readonly status_label: string;
+            readonly created_by_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly ended_at: string | null;
+            readonly ended_by_name: string | null;
+            readonly end_reason: string;
+            readonly lent_access: components["schemas"]["LentAccess"][];
+            readonly version: number;
+        };
+        AccessDelegationCreateRequest: {
+            /**
+             * Format: uuid
+             * @description The person being covered.
+             */
+            delegator: string;
+            /**
+             * Format: uuid
+             * @description The person covering.
+             */
+            delegate: string;
+            /**
+             * Format: date-time
+             * @description Empty = now.
+             */
+            starts_at?: string | null;
+            /** Format: date-time */
+            ends_at: string;
+            reason: string;
+            /** @description Which of the covered person's access to lend. Empty = all that can be lent. */
+            assignments?: string[] | null;
+        };
+        AccessDelegationCreated: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly delegator: components["schemas"]["Person"];
+            readonly delegate: components["schemas"]["Person"];
+            /** Format: date-time */
+            readonly starts_at: string;
+            /** Format: date-time */
+            readonly ends_at: string;
+            readonly reason: string;
+            readonly status: components["schemas"]["DelegationStatusEnum"];
+            readonly status_label: string;
+            readonly created_by_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly ended_at: string | null;
+            readonly ended_by_name: string | null;
+            readonly end_reason: string;
+            readonly lent_access: components["schemas"]["LentAccess"][];
+            readonly version: number;
+            readonly skipped: components["schemas"]["SkippedAccess"][];
+        };
+        AccessDelegationEndRequest: {
+            version: number;
+            reason: string;
+        };
         AccessReview: {
             /** Format: uuid */
             readonly id: string;
@@ -2226,6 +2383,24 @@ export interface components {
          * @enum {string}
          */
         DefaultCurrencyEnum: "USD" | "INR";
+        DelegableAccess: {
+            /** Format: uuid */
+            id: string;
+            role_name: string;
+            scope: string;
+            /** Format: date-time */
+            valid_until: string | null;
+            can_lend: boolean;
+            why_not: string;
+        };
+        /**
+         * @description * `scheduled` - Starts later
+         *     * `active` - Active now
+         *     * `finished` - Finished
+         *     * `ended_early` - Ended early
+         * @enum {string}
+         */
+        DelegationStatusEnum: "scheduled" | "active" | "finished" | "ended_early";
         Department: {
             /** Format: uuid */
             readonly id: string;
@@ -2656,6 +2831,22 @@ export interface components {
             readonly reference: string;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        /** @description One copy of the covered person's access lent to the covering person. */
+        LentAccess: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly role_name: string;
+            readonly scope: string;
+            /** Format: date-time */
+            readonly valid_from: string;
+            /** Format: date-time */
+            readonly valid_until: string | null;
+            /** Format: date-time */
+            readonly revoked_at: string | null;
+            readonly revocation_reason: string;
+            /** @description Usable right now. */
+            readonly is_active: boolean;
         };
         LoginRequest: {
             /** Format: email */
@@ -3207,6 +3398,13 @@ export interface components {
          * @enum {string}
          */
         PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        Person: {
+            /** Format: uuid */
+            id: string;
+            display_name: string;
+            /** Format: email */
+            email: string;
+        };
         QualificationType: {
             /** Format: uuid */
             readonly id: string;
@@ -3293,6 +3491,10 @@ export interface components {
             readonly revocation_reason: string;
             /** Format: date-time */
             readonly created_at: string;
+            /** Format: uuid */
+            readonly delegation: string | null;
+            /** @description Set when this access is lent for cover (HIMS-IAM-017): whose access it is. */
+            readonly covering_for_name: string | null;
         };
         RoleAssignmentCreateRequest: {
             /** Format: uuid */
@@ -3383,6 +3585,11 @@ export interface components {
          * @enum {string}
          */
         SettingEnum: "default" | "on" | "off";
+        SkippedAccess: {
+            role_name: string;
+            scope: string;
+            why: string;
+        };
         Specialty: {
             /** Format: uuid */
             readonly id: string;
@@ -3760,6 +3967,122 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    access_delegations_list: {
+        parameters: {
+            query?: {
+                /** @description Only cover this person gives or gets. */
+                person?: string;
+                /** @description current (default) = active or starting later; past = finished or ended early. */
+                status?: "all" | "current" | "past";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessDelegation"][];
+                };
+            };
+        };
+    };
+    access_delegations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessDelegationCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessDelegationCreated"];
+                };
+            };
+        };
+    };
+    access_delegations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this access delegation. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessDelegation"];
+                };
+            };
+        };
+    };
+    access_delegations_end_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this access delegation. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessDelegationEndRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessDelegation"];
+                };
+            };
+        };
+    };
+    access_delegations_delegable_list: {
+        parameters: {
+            query: {
+                user: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DelegableAccess"][];
+                };
+            };
+        };
+    };
     access_reviews_list: {
         parameters: {
             query?: never;
@@ -5588,6 +5911,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedIssuedNumberList"];
+                };
+            };
+        };
+    };
+    my_delegations_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessDelegation"][];
                 };
             };
         };

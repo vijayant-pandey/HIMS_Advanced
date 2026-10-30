@@ -87,6 +87,23 @@ class RoleAssignment(OrganizationOwnedModel):
         related_name="+",
     )
     revocation_reason = models.TextField(blank=True)
+    # Cover arrangements (HIMS-IAM-017): a copy of another person's assignment, lent for a
+    # limited time. Both empty for ordinary access.
+    delegation = models.ForeignKey(
+        "AccessDelegation",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="assignments",
+    )
+    delegated_from = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="delegated_copies",
+        help_text="The covered person's assignment this one copies.",
+    )
 
     class Meta:
         db_table = "role_assignments"
@@ -222,3 +239,74 @@ class AccessReviewReminder(UUIDPrimaryKeyModel):
 
     def __str__(self) -> str:
         return f"{self.get_kind_display()} ({self.due_on})"
+
+
+class AccessDelegation(OrganizationOwnedModel, VersionedModel):
+    """Cover arrangement (spec 4.4 "delegated access"; HIMS-IAM-017): for a limited time, one
+    person (the delegate) works with some or all of another person's access (the delegator),
+    e.g. during leave. The access is lent as copies of the delegator's role assignments
+    (``RoleAssignment.delegation``), so every permission rule, scope and audit applies
+    unchanged. Never deleted; ended early with a reason, or it simply runs out.
+    """
+
+    class Status(models.TextChoices):
+        SCHEDULED = "scheduled", "Starts later"
+        ACTIVE = "active", "Active now"
+        FINISHED = "finished", "Finished"
+        ENDED_EARLY = "ended_early", "Ended early"
+
+    delegator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="+",
+        help_text="The person being covered (whose access is lent).",
+    )
+    delegate = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="+",
+        help_text="The person covering.",
+    )
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    reason = models.TextField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    end_reason = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "access_delegations"
+        ordering = ["-starts_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(ends_at__gt=models.F("starts_at")),
+                name="access_delegation_valid_period",
+            ),
+            models.CheckConstraint(
+                condition=~Q(delegator=models.F("delegate")),
+                name="access_delegation_two_people",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["delegate", "ends_at"], name="access_deleg_delegate_idx"),
+            models.Index(fields=["delegator", "ends_at"], name="access_deleg_delegator_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.delegate} covers {self.delegator}"
+
+    @property
+    def status(self) -> str:
+        now = timezone.now()
+        if self.ended_at is not None:
+            return self.Status.ENDED_EARLY
+        if now < self.starts_at:
+            return self.Status.SCHEDULED
+        if now >= self.ends_at:
+            return self.Status.FINISHED
+        return self.Status.ACTIVE

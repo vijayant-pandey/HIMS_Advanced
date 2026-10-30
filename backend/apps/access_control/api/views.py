@@ -107,7 +107,13 @@ class RoleAssignmentViewSet(
 
     def get_queryset(self):
         queryset = RoleAssignment.objects.select_related(
-            "role", "user", "facility", "department", "granted_by", "revoked_by"
+            "role",
+            "user",
+            "facility",
+            "department",
+            "granted_by",
+            "revoked_by",
+            "delegation__delegator",
         ).order_by("-created_at")
         user_id = self.request.query_params.get("user")
         if user_id:

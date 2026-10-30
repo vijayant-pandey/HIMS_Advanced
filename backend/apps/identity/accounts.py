@@ -29,6 +29,7 @@ def active_administrators():
         facility__isnull=True,
         revoked_at__isnull=True,
         valid_from__lte=now,
+        delegation__isnull=True,  # access lent for cover does not make someone an administrator
     ).values("user_id")
     return User.objects.filter(is_active=True, pk__in=holders)
 

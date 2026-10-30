@@ -449,3 +449,17 @@ switched off, so the hospital cannot lock itself out.
 * Everyone can see their own sign-ins on the **Security** page and sign out other devices; no
   permission is needed for your own account.
 
+## Update 2026-10-30: cover arrangements / delegated access (HIMS-IAM-017)
+
+- **Cover** page (menu → Cover): an administrator lets a colleague work with some or all of a
+  person's own access for up to 30 days, e.g. during leave, with a reason. It starts now or on a
+  later day and ends by itself. Both people are emailed and see it on their Security page.
+- The lent access is a time-limited copy of each role at the same place (whole hospital,
+  facility or department), so it follows the same permission rules, and privileged roles still
+  need two-factor sign-in. Everything is recorded under the covering person's own name.
+- Safety: nobody arranges cover for themselves; you can only lend what you hold yourself; auditor
+  access is never lent; lent access cannot be lent on and never counts as a hospital
+  administrator; it ends early when the original role is removed or either account is switched off.
+- Not yet: clinical delegation (patients, orders, signing) needs clinical governance decisions
+  (HIMS-IAM-018); emergency "break-glass" access stays 🔒 CLIN.
+- Design: [cover-arrangements.md](../architecture/data-architecture/cover-arrangements.md).

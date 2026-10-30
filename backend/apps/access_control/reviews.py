@@ -36,8 +36,17 @@ def current_assignments():
     return (
         RoleAssignment.objects.filter(revoked_at__isnull=True, valid_from__lte=now)
         .filter(Q(valid_until__isnull=True) | Q(valid_until__gt=now))
-        .select_related("user", "role", "facility", "department")
+        .select_related("user", "role", "facility", "department", "delegation__delegator")
     )
+
+
+def role_label(assignment: RoleAssignment) -> str:
+    """Role name; access lent for cover says so, so reviewers can tell it apart (HIMS-IAM-017)."""
+    name = assignment.role.name
+    if assignment.delegation_id is not None:
+        until = timezone.localtime(assignment.delegation.ends_at).strftime("%d %b %Y")
+        name = f"{name} (cover for {assignment.delegation.delegator.display_name} until {until})"
+    return name[:128]
 
 
 def scope_label(assignment: RoleAssignment) -> str:
@@ -82,7 +91,7 @@ def start_review(*, actor, organization, title: str, due_on: date | None = None,
             person_email=a.user.email,
             account_active=a.user.is_active,
             last_signed_in_at=a.user.last_login,
-            role_name=a.role.name,
+            role_name=role_label(a),
             scope=scope_label(a),
             granted_at=a.valid_from,
             access_ends_at=a.valid_until,

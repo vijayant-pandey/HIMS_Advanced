@@ -80,6 +80,9 @@ export function UserAccessPanel({ userId, personName }: { userId: string; person
               <TableRow key={a.id}>
                 <TableCell>
                   {a.role_name}
+                  {a.covering_for_name && (
+                    <Chip size="small" variant="outlined" label={`Cover for ${a.covering_for_name}`} sx={{ ml: 1 }} />
+                  )}
                   {a.reason && (
                     <Typography variant="caption" component="p">
                       {a.reason}
