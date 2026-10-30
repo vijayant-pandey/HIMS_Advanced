@@ -401,7 +401,7 @@ The department **page** (head, hours, services) is tested in Part 10, after you 
 - [ ] **Expect:** Ravi's page opens. The **Access** area says "No sign-in account (no email recorded)."
 - [ ] **Do:** back to **Staff** → **Add staff member**: `Asha`, `Nurse`, `T-1002`, **Nurse**,
       joined date, Work email `asha.nurse@test.local` → **Add**.
-- [ ] **Expect:** Asha's page says "Not activated yet. Send an invitation to asha.nurse@test.local."
+- [ ] **Expect:** Asha's page says "Invitation sent to asha.nurse@test.local; the link works until …" (the invitation is emailed **automatically** when a work email is entered).
 - [ ] **Do:** add someone with the same employee number `T-1001`.
 - [ ] **Expect:** refused.
 
@@ -457,8 +457,7 @@ The department **page** (head, hours, services) is tested in Part 10, after you 
 Now you need **Window A** (you, admin) and **Window B** (Chrome Incognito, `Ctrl+Shift+N`) for Asha.
 
 ### 9.1 Send the invitation
-- [ ] **Window A:** Asha's page → **Send invitation**.
-- [ ] **Expect:** "Invitation sent to asha.nurse@test.local; the link works until …" (72 hours).
+- [ ] **Window A:** nothing to click: the invitation was sent when you added Asha. (Optional: **Resend invitation** sends a new link and the old one stops working.)
 - [ ] **Launcher window:** find the email that was just printed (lines start with `🇮🇳 [backend]`)
       and the link `http://localhost:5175/activate#token=...`. Copy the **whole** link.
 

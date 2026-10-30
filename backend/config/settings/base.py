@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "common.idempotency",
     "common.outbox",
     "common.datadict",  # generates the data dictionary (spec 28); no tables
+    "common.devtools",  # developer/test-only commands (browser-test database); no tables
     # Business domains
     "apps.audit",
     "apps.organizations",
@@ -270,6 +271,10 @@ EMAIL_BACKEND = env.str(
     "DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
 )
 DEFAULT_FROM_EMAIL = env.str("DJANGO_DEFAULT_FROM_EMAIL", default="HIMS <no-reply@hims.invalid>")
+# Folder for django.core.mail.backends.filebased.EmailBackend: browser tests read invitation and
+# reset links from here (HIMS-QA-001). Unused with any other email backend.
+if env.str("HIMS_EMAIL_FILE_PATH", default=""):
+    EMAIL_FILE_PATH = env.str("HIMS_EMAIL_FILE_PATH")
 
 # --- Two-factor sign-in and field encryption (HIMS-IAM-005; spec 4.4, 13.1, 13.3) -----------
 # Users holding any permission in access_control.catalog.MFA_REQUIRED_PERMISSIONS must use

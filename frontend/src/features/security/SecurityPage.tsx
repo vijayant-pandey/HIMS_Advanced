@@ -71,18 +71,16 @@ function CodeField({
   );
 }
 
-/** Two-factor setup: scan, confirm, save backup codes (HIMS-IAM-005). */
-function SetupFlow() {
+/**
+ * Two-factor setup: scan, confirm (HIMS-IAM-005). The backup codes are handed to the page
+ * (`onEnabled`), because once two-factor is on the page shows a different section and this one
+ * goes away; keeping the codes here would lose them before the person saw them.
+ */
+function SetupFlow({ onEnabled }: { onEnabled: (codes: string[]) => void }) {
   const start = useStartMfaSetup();
   const confirm = useConfirmMfaSetup();
   const [setup, setSetup] = useState<MfaSetup | null>(null);
   const [code, setCode] = useState("");
-  const [codes, setCodes] = useState<string[] | null>(null);
-  const navigate = useNavigate();
-
-  if (codes) {
-    return <RecoveryCodes codes={codes} onDone={() => navigate("/", { replace: true })} />;
-  }
 
   if (!setup) {
     return (
@@ -119,7 +117,7 @@ function SetupFlow() {
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          confirm.mutate({ code }, { onSuccess: (data) => setCodes(data.recovery_codes) });
+          confirm.mutate({ code }, { onSuccess: (data) => onEnabled(data.recovery_codes) });
         }}
       >
         <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
@@ -267,6 +265,8 @@ export function SecurityPage() {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
   const navigate = useNavigate();
+  // Backup codes from turning two-factor on: shown once, until the person confirms saving them.
+  const [newCodes, setNewCodes] = useState<string[] | null>(null);
   if (!user) return null;
   const { mfa } = user;
 
@@ -295,7 +295,9 @@ export function SecurityPage() {
               before you can continue.
             </Alert>
           )}
-          {mfa.enabled && !mfa.verified ? (
+          {newCodes ? (
+            <RecoveryCodes codes={newCodes} onDone={() => navigate("/", { replace: true })} />
+          ) : mfa.enabled && !mfa.verified ? (
             <Stack spacing={2} sx={{ alignItems: "flex-start" }}>
               <Alert severity="info">
                 Two-factor is on for your account, but this session started without it. Sign out
@@ -316,7 +318,7 @@ export function SecurityPage() {
               <ManageEnabled required={mfa.required} />
             </>
           ) : (
-            <SetupFlow />
+            <SetupFlow onEnabled={setNewCodes} />
           )}
         </Stack>
       </Paper>

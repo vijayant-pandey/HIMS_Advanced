@@ -1,16 +1,15 @@
 import { Alert, Box, Button, CircularProgress, Typography } from "@mui/material";
-import { useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { useConfirmPasswordReset, usePasswordResetDetails } from "./api";
 import { AuthCard } from "./AuthCard";
-import { takeLinkTokenFromUrl } from "./linkToken";
+import { useLinkToken } from "./linkToken";
 import { NewPasswordForm } from "./NewPasswordForm";
 
 /** Landing page for the link in the password-reset email (HIMS-IAM-004). */
 export function ResetPasswordPage() {
-  const [token] = useState(takeLinkTokenFromUrl);
+  const token = useLinkToken();
   const details = usePasswordResetDetails(token);
   const confirm = useConfirmPasswordReset();
 

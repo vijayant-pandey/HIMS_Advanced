@@ -23,6 +23,14 @@ const FONT_STACK = [
 
 const BORDER = "#e5e7eb";
 
+/** Status chip/button colours used on every theme (see themes.test.ts). */
+export const STATUS_COLORS = {
+  info: "#01579b",
+  warning: "#b45309",
+  success: "#2e7d32",
+  error: "#c62828",
+} as const;
+
 /**
  * Compact, modern look (HIMS-UI-002): 13px base text, a tighter type scale, flat bordered
  * surfaces, small sentence-case buttons and dense inputs/tables. Information-dense clinical
@@ -34,6 +42,12 @@ function buildTheme(id: ThemeId) {
     palette: {
       mode: "light",
       primary: { main: colors.primary, dark: colors.dark, contrastText: "#ffffff" },
+      // Status colours dark enough for white text (WCAG AA 4.5:1; MUI's default blue "info" and
+      // orange "warning" are 3.9 and 3.1). Checked in themes.test.ts.
+      info: { main: STATUS_COLORS.info },
+      warning: { main: STATUS_COLORS.warning },
+      success: { main: STATUS_COLORS.success },
+      error: { main: STATUS_COLORS.error },
       background: { default: "#f7f8fa", paper: "#ffffff" },
       divider: BORDER,
       text: { primary: "#1f2937", secondary: "#6b7280" },
@@ -60,6 +74,9 @@ function buildTheme(id: ThemeId) {
         styleOverrides: { root: { border: 0, borderBottom: `1px solid ${colors.dark}` } },
       },
       MuiToolbar: { defaultProps: { variant: "dense" } },
+      // Screen readers announce every loading bar as "Loading" (WCAG 4.1.2; HIMS-QA-001). A bar
+      // can still pass its own aria-label.
+      MuiLinearProgress: { defaultProps: { "aria-label": "Loading" } },
       MuiPaper: {
         defaultProps: { elevation: 0 },
         styleOverrides: { root: { border: `1px solid ${BORDER}` } },

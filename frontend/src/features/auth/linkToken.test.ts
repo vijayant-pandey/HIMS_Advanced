@@ -13,3 +13,19 @@ describe("takeLinkTokenFromUrl", () => {
     expect(takeLinkTokenFromUrl()).toBeNull();
   });
 });
+
+describe("useLinkToken", () => {
+  it("picks up a newer link pasted into the same tab", async () => {
+    const { renderHook, act } = await import("@testing-library/react");
+    const { useLinkToken } = await import("./linkToken");
+    window.history.replaceState(null, "", "/activate#token=old");
+    const { result } = renderHook(() => useLinkToken());
+    expect(result.current).toBe("old");
+    act(() => {
+      window.history.replaceState(null, "", "/activate#token=new");
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(result.current).toBe("new");
+    expect(window.location.hash).toBe("");
+  });
+});

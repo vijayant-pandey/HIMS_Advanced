@@ -118,6 +118,14 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-DATA-002 | Check indexes with production-like synthetic volume and query plans (spec 28.6) | To do |
 | HIMS-DATA-003 | Artifact A for each P0 domain before release (patients/MPI first; spec 28.8) | To do (🔒 with Phase 2 P0 sign-off) |
 
+## EPIC HIMS-QA — Quality
+
+| ID | Ticket | Status |
+|---|---|---|
+| HIMS-QA-001 | Playwright browser tests for Phase 1 flows with axe accessibility checks; CI workflow ([how-to](../testing/browser-tests.md)) | Done |
+| HIMS-QA-002 | Make `browser-tests` a required check once it has run green for two weeks | To do (PO: branch ruleset) |
+| HIMS-QA-003 | Browser tests for the US deployment and the admin console | To do |
+
 ## EPIC HIMS-OPS — Delivery and operations
 
 | ID | Ticket | Status |

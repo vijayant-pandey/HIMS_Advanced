@@ -1,6 +1,10 @@
 import type { CurrentUser } from "../api/types";
 import { hasPermission } from "../features/auth/grants";
 
+/** Menu text strength and the darkening behind the current page (see AppShell, themes.test.ts). */
+export const MENU_TEXT_OPACITY = 0.95;
+export const MENU_ACTIVE_SHADE = 0.22;
+
 export interface NavItem {
   to: string;
   label: string;
