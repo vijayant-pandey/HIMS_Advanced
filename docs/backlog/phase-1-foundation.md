@@ -74,7 +74,9 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-013 | Role and access-management UI | Done |
 | HIMS-IAM-015 | Accounts screen incl. people who are not staff; last-administrator protection | Done |
 | HIMS-IAM-016 | "My sign-ins": see own open sessions and sign out other devices on the Security page | Done |
-| HIMS-IAM-017 | Delegated access: temporary, time-limited cover with reason and audit (spec 4.4) | To do |
+| HIMS-IAM-017 | Delegated access: temporary, time-limited cover with reason and audit (spec 4.4); Cover page, admin console ([design](../architecture/data-architecture/cover-arrangements.md)) | Done |
+| HIMS-IAM-018 | Clinical delegation (a consultant's patients, orders, signing rights) on top of cover arrangements (gap found in HIMS-IAM-017) | To do (🔒 CLIN) |
+| HIMS-IAM-019 | Self-service cover requests: the away person proposes cover, an administrator approves (optional; gap found in HIMS-IAM-017) | To do (when hospitals ask) |
 | HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | To do |
 
 ## EPIC HIMS-STAFF — Staff and credentials

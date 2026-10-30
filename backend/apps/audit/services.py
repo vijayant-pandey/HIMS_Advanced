@@ -64,6 +64,8 @@ class AuditAction:
     ACCESS_REVIEW_CANCELLED = "access.review.cancelled"
     ACCESS_REVIEW_EXPORTED = "access.review.exported"
     ACCESS_REVIEW_REMINDER_SENT = "access.review.reminder_sent"
+    ACCESS_DELEGATION_CREATED = "access.delegation.created"
+    ACCESS_DELEGATION_ENDED = "access.delegation.ended"
     AUTH_MFA_ENABLED = "auth.mfa.enabled"
     AUTH_MFA_DISABLED = "auth.mfa.disabled"
     AUTH_MFA_RESET = "auth.mfa.reset"

@@ -52,3 +52,8 @@ download), `access.review.reminder_sent`, plus the normal `access.role.revoked` 
 
 The admin console has the same controls: Access reviews (start; complete or cancel selected),
 Access review items (keep or remove selected, same rules) and the reminders log (read only).
+
+**Update 2026-10-30 (HIMS-IAM-017):** access lent for cover appears in a review as
+"Role (cover for Name until date)", so reviewers can tell it apart. Removing such an entry removes
+only the lent copy; removing a person's own role also removes any cover copied from it. See
+[cover-arrangements.md](cover-arrangements.md).

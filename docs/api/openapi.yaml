@@ -4,6 +4,131 @@ info:
   version: 1.0.0
   description: Hospital Information Management System REST API (v1).
 paths:
+  /api/v1/access-delegations/:
+    get:
+      operationId: access_delegations_list
+      parameters:
+      - in: query
+        name: person
+        schema:
+          type: string
+        description: Only cover this person gives or gets.
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - all
+          - current
+          - past
+        description: current (default) = active or starting later; past = finished
+          or ended early.
+      tags:
+      - access-delegations
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccessDelegation'
+          description: ''
+    post:
+      operationId: access_delegations_create
+      tags:
+      - access-delegations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessDelegationCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessDelegationCreated'
+          description: ''
+  /api/v1/access-delegations/{id}/:
+    get:
+      operationId: access_delegations_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this access delegation.
+        required: true
+      tags:
+      - access-delegations
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessDelegation'
+          description: ''
+  /api/v1/access-delegations/{id}/end/:
+    post:
+      operationId: access_delegations_end_create
+      description: End the cover now; every lent role is removed at once.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this access delegation.
+        required: true
+      tags:
+      - access-delegations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessDelegationEndRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessDelegation'
+          description: ''
+  /api/v1/access-delegations/delegable/:
+    get:
+      operationId: access_delegations_delegable_list
+      description: The person's own current access, and whether each can be lent.
+      parameters:
+      - in: query
+        name: user
+        schema:
+          type: string
+        required: true
+      tags:
+      - access-delegations
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DelegableAccess'
+          description: ''
   /api/v1/access-reviews/:
     get:
       operationId: access_reviews_list
@@ -2040,6 +2165,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedIssuedNumberList'
           description: ''
+  /api/v1/my-delegations/:
+    get:
+      operationId: my_delegations_list
+      description: |-
+        Cover arrangements the signed-in person is part of (covering or covered): current ones
+        and those that ended in the last 90 days.
+      tags:
+      - my-delegations
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccessDelegation'
+          description: ''
   /api/v1/numbering-schemes/:
     get:
       operationId: numbering_schemes_list
@@ -3391,6 +3535,215 @@ paths:
           description: ''
 components:
   schemas:
+    AccessDelegation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        delegator:
+          allOf:
+          - $ref: '#/components/schemas/Person'
+          readOnly: true
+        delegate:
+          allOf:
+          - $ref: '#/components/schemas/Person'
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DelegationStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ended_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        end_reason:
+          type: string
+          readOnly: true
+        lent_access:
+          type: array
+          items:
+            $ref: '#/components/schemas/LentAccess'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - created_by_name
+      - delegate
+      - delegator
+      - end_reason
+      - ended_at
+      - ended_by_name
+      - ends_at
+      - id
+      - lent_access
+      - reason
+      - starts_at
+      - status
+      - status_label
+      - version
+    AccessDelegationCreateRequest:
+      type: object
+      properties:
+        delegator:
+          type: string
+          format: uuid
+          description: The person being covered.
+        delegate:
+          type: string
+          format: uuid
+          description: The person covering.
+        starts_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Empty = now.
+        ends_at:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        assignments:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+          description: Which of the covered person's access to lend. Empty = all that
+            can be lent.
+      required:
+      - delegate
+      - delegator
+      - ends_at
+      - reason
+    AccessDelegationCreated:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        delegator:
+          allOf:
+          - $ref: '#/components/schemas/Person'
+          readOnly: true
+        delegate:
+          allOf:
+          - $ref: '#/components/schemas/Person'
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DelegationStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ended_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        end_reason:
+          type: string
+          readOnly: true
+        lent_access:
+          type: array
+          items:
+            $ref: '#/components/schemas/LentAccess'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        skipped:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkippedAccess'
+          readOnly: true
+      required:
+      - created_at
+      - created_by_name
+      - delegate
+      - delegator
+      - end_reason
+      - ended_at
+      - ended_by_name
+      - ends_at
+      - id
+      - lent_access
+      - reason
+      - skipped
+      - starts_at
+      - status
+      - status_label
+      - version
+    AccessDelegationEndRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - reason
+      - version
     AccessReview:
       type: object
       properties:
@@ -4376,6 +4729,43 @@ components:
       description: |-
         * `USD` - US Dollar
         * `INR` - Indian Rupee
+    DelegableAccess:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        role_name:
+          type: string
+        scope:
+          type: string
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        can_lend:
+          type: boolean
+        why_not:
+          type: string
+      required:
+      - can_lend
+      - id
+      - role_name
+      - scope
+      - valid_until
+      - why_not
+    DelegationStatusEnum:
+      enum:
+      - scheduled
+      - active
+      - finished
+      - ended_early
+      type: string
+      description: |-
+        * `scheduled` - Starts later
+        * `active` - Active now
+        * `finished` - Finished
+        * `ended_early` - Ended early
     Department:
       type: object
       properties:
@@ -5477,6 +5867,50 @@ components:
       - reference
       - sequence
       - value
+    LentAccess:
+      type: object
+      description: One copy of the covered person's access lent to the covering person.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        role_name:
+          type: string
+          readOnly: true
+        scope:
+          type: string
+          readOnly: true
+        valid_from:
+          type: string
+          format: date-time
+          readOnly: true
+        valid_until:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        revocation_reason:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+          description: Usable right now.
+      required:
+      - id
+      - is_active
+      - revocation_reason
+      - revoked_at
+      - role_name
+      - scope
+      - valid_from
+      - valid_until
     LoginRequest:
       type: object
       properties:
@@ -6633,6 +7067,21 @@ components:
         * `staff.credentials.verify` - staff.credentials.verify
         * `staff.manage` - staff.manage
         * `staff.view` - staff.view
+    Person:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        email:
+          type: string
+          format: email
+      required:
+      - display_name
+      - email
+      - id
     QualificationType:
       type: object
       properties:
@@ -6863,8 +7312,21 @@ components:
           type: string
           format: date-time
           readOnly: true
+        delegation:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        covering_for_name:
+          type: string
+          readOnly: true
+          nullable: true
+          description: 'Set when this access is lent for cover (HIMS-IAM-017): whose
+            access it is.'
       required:
+      - covering_for_name
       - created_at
+      - delegation
       - department
       - department_name
       - facility
@@ -7088,6 +7550,19 @@ components:
         * `default` - Use the default
         * `on` - On
         * `off` - Off
+    SkippedAccess:
+      type: object
+      properties:
+        role_name:
+          type: string
+        scope:
+          type: string
+        why:
+          type: string
+      required:
+      - role_name
+      - scope
+      - why
     Specialty:
       type: object
       properties:

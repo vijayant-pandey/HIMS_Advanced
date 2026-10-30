@@ -140,7 +140,12 @@ def assign_role(
     valid_until=None,
     reason: str = "",
     request=None,
+    valid_from=None,
+    delegation=None,
+    delegated_from: RoleAssignment | None = None,
 ) -> RoleAssignment:
+    """Grant a role. ``valid_from``/``delegation``/``delegated_from`` are used by cover
+    arrangements (delegations.py) to lend a copy of another person's assignment."""
     facility = validate_role_assignment(
         actor=actor,
         user=user,
@@ -155,9 +160,12 @@ def assign_role(
         role=role,
         facility=facility,
         department=department,
+        valid_from=valid_from or timezone.now(),
         valid_until=valid_until,
         reason=reason,
         granted_by=actor,
+        delegation=delegation,
+        delegated_from=delegated_from,
     )
     clear_permission_cache(user)
     record_audit_event(
@@ -172,6 +180,7 @@ def assign_role(
             "user_id": str(user.pk),
             "role": role.code,
             "department_id": str(department.pk) if department else None,
+            **({"delegation_id": str(delegation.pk)} if delegation is not None else {}),
         },
     )
     return assignment
@@ -182,6 +191,8 @@ def _ensure_not_last_administrator_grant(assignment: RoleAssignment) -> None:
     from apps.identity.accounts import ADMIN_ROLE, active_administrators
 
     role = assignment.role
+    if assignment.delegation_id is not None:
+        return  # lent cover access never counts as one of the hospital's administrators
     if role.code != ADMIN_ROLE or not role.is_system or assignment.facility_id is not None:
         return
     if not active_administrators().exclude(pk=assignment.user_id).exists():
@@ -189,6 +200,43 @@ def _ensure_not_last_administrator_grant(assignment: RoleAssignment) -> None:
             "This is the last active hospital administrator. Give another person the "
             "Organization administrator role first, so the hospital is never locked out.",
             code="LAST_ADMINISTRATOR",
+        )
+
+
+def close_assignment(
+    assignment: RoleAssignment, *, actor, reason: str, request=None, metadata=None
+) -> None:
+    """Revoke one assignment and record it (no permission rules; callers check those).
+    Copies lent to someone covering for this person end with it (HIMS-IAM-017)."""
+    assignment.revoked_at = timezone.now()
+    assignment.revoked_by = actor
+    assignment.revocation_reason = reason
+    assignment.save(update_fields=["revoked_at", "revoked_by", "revocation_reason", "updated_at"])
+    clear_permission_cache(assignment.user)
+    record_audit_event(
+        action=AuditAction.ROLE_REVOKED,
+        resource_type="role_assignment",
+        resource_id=assignment.pk,
+        facility_id=assignment.facility_id,
+        actor=actor,
+        request=request,
+        reason=reason,
+        metadata={
+            "user_id": str(assignment.user_id),
+            "role_id": str(assignment.role_id),
+            **(metadata or {}),
+        },
+    )
+    copies = RoleAssignment.objects.select_for_update().filter(
+        delegated_from=assignment, revoked_at__isnull=True
+    )
+    for copy in copies:
+        close_assignment(
+            copy,
+            actor=actor,
+            reason="The covered person's own access ended, so the cover for it ended too.",
+            request=request,
+            metadata={"delegation_id": str(copy.delegation_id), "cascade": True},
         )
 
 
@@ -200,20 +248,7 @@ def revoke_role_assignment(*, actor, assignment_id, reason: str, request=None) -
     if actor is not None and assignment.user_id == actor.pk:
         raise ConflictError("You cannot revoke your own role assignments.")
     _ensure_not_last_administrator_grant(assignment)
-    assignment.revoked_at = timezone.now()
-    assignment.revoked_by = actor
-    assignment.revocation_reason = reason
-    assignment.save(update_fields=["revoked_at", "revoked_by", "revocation_reason", "updated_at"])
-    record_audit_event(
-        action=AuditAction.ROLE_REVOKED,
-        resource_type="role_assignment",
-        resource_id=assignment.pk,
-        facility_id=assignment.facility_id,
-        actor=actor,
-        request=request,
-        reason=reason,
-        metadata={"user_id": str(assignment.user_id), "role_id": str(assignment.role_id)},
-    )
+    close_assignment(assignment, actor=actor, reason=reason, request=request)
     return assignment
 
 

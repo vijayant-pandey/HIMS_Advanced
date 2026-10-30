@@ -177,6 +177,8 @@ HIMS_CREDENTIAL_ALERT_DAYS = env.list("HIMS_CREDENTIAL_ALERT_DAYS", cast=int, de
 # Periodic access review (HIMS-IAM-012): how often a full review is due, and how long one runs.
 HIMS_ACCESS_REVIEW_INTERVAL_DAYS = env.int("HIMS_ACCESS_REVIEW_INTERVAL_DAYS", default=90)
 HIMS_ACCESS_REVIEW_DEFAULT_DAYS_TO_FINISH = 14
+# Longest cover arrangement (delegated access, HIMS-IAM-017), in days. Arrange a new one after.
+HIMS_DELEGATION_MAX_DAYS = env.int("HIMS_DELEGATION_MAX_DAYS", default=30)
 # Tamper evidence for the audit log (HIMS-SEC-010, ADR-013). Keys for the keyed chain hash as
 # "key-id:secret", newest first; keep older keys listed so older links can still be checked.
 # They live outside the database (secret manager), so someone with database access alone
@@ -224,6 +226,7 @@ SPECTACULAR_SETTINGS = {
         "QualificationTypeCategoryEnum": "apps.staff.models.QualificationType.Category",
         "OutcomeEnum": "apps.audit.models.AuditEvent.Outcome",
         "IntegrityOutcomeEnum": "apps.audit.models.AuditIntegrityCheck.Outcome",
+        "DelegationStatusEnum": "apps.access_control.models.AccessDelegation.Status",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)

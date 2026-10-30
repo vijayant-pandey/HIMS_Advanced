@@ -93,7 +93,7 @@ says "open the link from the email", look in the launcher window for lines that 
 | Numbering | How patient record (MRN), visit, invoice and claim numbers will look |
 | Features | Turn parts of HIMS on or off for the hospital or one facility |
 | Staff | Staff list, postings to departments, qualifications, licences, documents, verification, licence expiry alerts, job titles catalog |
-| Access | Roles, giving and removing access, custom roles, accounts (including people who are not staff), access reviews |
+| Access | Roles, giving and removing access, custom roles, accounts (including people who are not staff), access reviews, cover arrangements (lend someone's access to a colleague for a limited time) |
 | Audit | Audit log for auditors: search, details, CSV download; **Audit integrity**: proof that no audit record was changed or removed (tamper check) |
 | Admin console | Every item above can also be managed in the Django admin console, and every change is audited |
 
@@ -610,6 +610,46 @@ Now you need **Window A** (you, admin) and **Window B** (Chrome Incognito, `Ctrl
 - [ ] **Expect:** Asha must set up two-factor again (scan a **new** QR code). Do it. On the phone,
       delete the old "HIMS Asha test" entry and keep the new one.
 
+### 12.6 Cover arrangements: lend Asha's access while she is away (needs PR #23)
+Asha is the HR officer (Part 9.4). Pretend she goes on leave and **External Auditor Test**
+(12.2) covers for her. ("External auditor" is only the test name; any account works.)
+
+- [ ] **Window A:** menu → **Cover**.
+- [ ] **Expect:** "No cover arranged at the moment."
+- [ ] **Do:** **Arrange cover**. **Person being covered** = type `Asha` → pick **Asha Nurse**.
+      **Person covering** = type `Exte` → pick **External Auditor Test**.
+- [ ] **Expect:** under **Access to lend**, Asha's roles appear, all ticked (e.g. **HR /
+      credentialing officer**).
+- [ ] **Do:** **Ends on** = a date 7 days from today. **Reason** = `Annual leave test` →
+      **Arrange cover**.
+- [ ] **Expect:** green message "External Auditor Test covers for Asha Nurse until …". The table
+      shows the row with **Active now** and the lent role.
+- [ ] **Launcher window (India):** two emails: "HIMS: you are covering for Asha Nurse" and
+      "HIMS: External Auditor Test is covering for you".
+- [ ] **Do:** **Accounts** → open **External Auditor Test**.
+- [ ] **Expect:** the access list shows **HR / credentialing officer** with a **Cover for Asha
+      Nurse** label and an end date 7 days away.
+- [ ] **Window B (Asha):** **Security** page (top right menu).
+- [ ] **Expect:** a **Cover arrangements** box: "External Auditor Test covers for you", with the
+      dates and the role.
+- [ ] **Do (Window A):** **Arrange cover** again with the same two people and dates.
+- [ ] **Expect:** refused: "… already covers for … in this period."
+- [ ] **Do:** **Arrange cover** → open the **Ends on** calendar.
+- [ ] **Expect:** days more than 30 days ahead cannot be picked ("At most 30 days"). The server
+      refuses longer cover too. Press **Cancel**.
+- [ ] **Do:** in the table → **End now** → reason `Back early` → **End cover now**.
+- [ ] **Expect:** the row moves to the **Past** tab with **Ended early** and your reason; the
+      role is crossed out ("removed: Cover ended early …"). Two more emails ("cover arrangement
+      ended"). On External Auditor Test's account, switch on **Show removed and expired**: the role
+      shows **Removed**.
+- [ ] **Do (optional):** arrange cover again, then switch **External Auditor Test**'s account off
+      (Accounts) and back on.
+- [ ] **Expect:** the cover is **Ended early**, reason "…'s account was switched off."
+- [ ] **Admin console (Window A, admin tab):** **Access control → Access delegations**.
+- [ ] **Expect:** both arrangements, with who, when, status and the access lent. **Add access
+      delegation** works like the Cover page (lends everything that can be lent). The action
+      **End selected cover now** ends one. Nothing can be deleted.
+
 ---
 
 ## Part 13: licence expiry and alert emails
@@ -935,6 +975,7 @@ Each of these must be **refused** with a clear message. A refusal here is a **pa
 | 20.10 | Access review: try to **Keep** your own row (no button) | Not possible; "Your own access: another reviewer decides" |
 | 20.11 | Look for any **Delete** button in the app or admin console | None exists. Records are switched off, revoked or archived instead. Only exception: a department's opening-hours rows in the admin console (they are settings, and changes are audited) |
 | 20.12 | Window A (admin): type http://localhost:5175/audit/integrity in the address bar | "You don't have access to this". Administrators cannot see or run the tamper check (only auditors can) |
+| 20.13 | **Cover** → **Arrange cover** with yourself as the **Person covering** | Refused: "You cannot arrange cover that gives yourself access" |
 
 ---
 
@@ -1036,7 +1077,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 9 | Invitation, activation, no-access page, giving access | | | |
 | 10 | Department page: head, hours, services | | | |
 | 11 | Roles and access | | | |
-| 12 | Accounts | | | |
+| 12 | Accounts (incl. cover arrangements) | | | |
 | 13 | Licence expiry and alerts | | | |
 | 14 | Features | | | |
 | 15 | Security, My sign-ins, forgot password | | | |

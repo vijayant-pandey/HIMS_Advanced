@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { AccessPage } from "../features/accessControl/AccessPage";
 import { AccessReviewDetailPage, AccessReviewsPage } from "../features/accessControl/AccessReviewsPage";
+import { CoverPage } from "../features/accessControl/CoverPage";
 import { AccountDetailPage } from "../features/accounts/AccountDetailPage";
 import { AccountsPage } from "../features/accounts/AccountsPage";
 import { AuditIntegrityDetailPage, AuditIntegrityPage } from "../features/audit/AuditIntegrityPage";
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
           { path: "access", element: <AccessPage /> },
           { path: "access-reviews", element: <AccessReviewsPage /> },
           { path: "access-reviews/:id", element: <AccessReviewDetailPage /> },
+          { path: "cover", element: <CoverPage /> },
           { path: "accounts", element: <AccountsPage /> },
           { path: "accounts/:id", element: <AccountDetailPage /> },
           { path: "settings", element: <HospitalSettingsPage /> },

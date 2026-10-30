@@ -30,6 +30,7 @@ import {
   useSignOutOtherDevices,
   useStartMfaSetup,
 } from "../auth/api";
+import { MyCoverSection } from "../accessControl/MyCoverSection";
 import { RecoveryCodes } from "./RecoveryCodes";
 
 function QrCode({ value }: { value: string }) {
@@ -320,6 +321,7 @@ export function SecurityPage() {
         </Stack>
       </Paper>
       <MySignIns />
+      <MyCoverSection />
     </Box>
   );
 }

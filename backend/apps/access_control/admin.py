@@ -6,8 +6,9 @@ from apps.organizations.selectors import get_deployment_organization
 from common.admin.options import HimsInline, HimsModelAdmin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
-from . import reviews
+from . import delegations, reviews
 from .models import (
+    AccessDelegation,
     AccessReview,
     AccessReviewItem,
     AccessReviewReminder,
@@ -100,7 +101,12 @@ class RoleAssignmentAdmin(HimsModelAdmin):
     """Grants go through the same service as the API: scope rules, escalation guard, audit."""
 
     list_display = ("user", "role", "facility", "department", "valid_until", "revoked_at")
-    list_filter = ("role", ("revoked_at", admin.EmptyFieldListFilter), "facility")
+    list_filter = (
+        "role",
+        ("revoked_at", admin.EmptyFieldListFilter),
+        ("delegation", admin.EmptyFieldListFilter),
+        "facility",
+    )
     search_fields = ("user__email", "user__display_name", "role__code")
     autocomplete_fields = ("user",)
     actions = ["revoke_selected"]
@@ -127,6 +133,8 @@ class RoleAssignmentAdmin(HimsModelAdmin):
             "revoked_at",
             "revoked_by",
             "revocation_reason",
+            "delegation",
+            "delegated_from",
         ]
 
     def get_readonly_fields(self, request, obj=None):
@@ -313,3 +321,132 @@ class AccessReviewItemAdmin(ReadOnlyModelAdmin):
 class AccessReviewReminderAdmin(ReadOnlyModelAdmin):
     list_display = ("kind", "due_on", "recipients", "sent_at")
     list_filter = ("kind",)
+
+
+# --- Cover arrangements / delegated access (HIMS-IAM-017) ---------------------------------------
+# Same service as the API: time limit, reason, no self-granted access, no escalation, auditor
+# access never lent, audited. Nothing is deleted; cover is ended early with the action below.
+
+
+class AccessDelegationForm(forms.ModelForm):
+    class Meta:
+        model = AccessDelegation
+        fields = ("delegator", "delegate", "starts_at", "ends_at", "reason")
+        help_texts = {
+            "starts_at": "When the cover starts (now or later).",
+            "ends_at": "When it ends by itself (at most HIMS_DELEGATION_MAX_DAYS days later).",
+        }
+
+    request = None  # set by AccessDelegationAdmin.get_form
+
+    def clean(self):
+        data = super().clean()
+        if self.errors:
+            return data
+        try:
+            delegations.validate_delegation(
+                actor=self.request.user,
+                delegator=data["delegator"],
+                delegate=data["delegate"],
+                starts_at=data.get("starts_at"),
+                ends_at=data["ends_at"],
+                reason=data.get("reason", ""),
+            )
+        except DomainError as exc:
+            raise ValidationError(str(exc.detail)) from exc
+        return data
+
+
+@admin.register(AccessDelegation)
+class AccessDelegationAdmin(HimsModelAdmin):
+    """Cover arrangements. Adding one lends everything the covered person can lend; use the
+    app to choose only some roles."""
+
+    list_display = ("delegate", "delegator", "starts_at", "ends_at", "status_label", "ended_at")
+    list_filter = (("ended_at", admin.EmptyFieldListFilter),)
+    search_fields = (
+        "delegator__email",
+        "delegator__display_name",
+        "delegate__email",
+        "delegate__display_name",
+    )
+    autocomplete_fields = ("delegator", "delegate")
+    actions = ["end_selected"]
+
+    @admin.display(description="Status")
+    def status_label(self, obj):
+        return AccessDelegation.Status(obj.status).label
+
+    @admin.display(description="Access lent")
+    def lent_access(self, obj):
+        rows = obj.assignments.select_related("role", "facility", "department")
+        lines = [
+            f"{a.role.name} ({reviews.scope_label(a)})"
+            + (f" - removed: {a.revocation_reason}" if a.revoked_at else "")
+            for a in rows
+        ]
+        return "; ".join(lines) or "-"
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        if obj is None:
+            kwargs["form"] = type(
+                "BoundAccessDelegationForm", (AccessDelegationForm,), {"request": request}
+            )
+        return super().get_form(request, obj, change=change, **kwargs)
+
+    def get_fields(self, request, obj=None):
+        if obj is None:
+            return list(AccessDelegationForm.Meta.fields)
+        return [
+            "delegator",
+            "delegate",
+            "starts_at",
+            "ends_at",
+            "reason",
+            "status_label",
+            "lent_access",
+            "created_by",
+            "created_at",
+            "ended_at",
+            "ended_by",
+            "end_reason",
+            "version",
+        ]
+
+    def get_readonly_fields(self, request, obj=None):
+        return self.get_fields(request, obj) if obj is not None else []
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            return  # end early with the action; arrange a new period instead of editing
+        data = form.cleaned_data
+        delegation, skipped = delegations.create_delegation(
+            actor=request.user,
+            delegator=data["delegator"],
+            delegate=data["delegate"],
+            starts_at=data["starts_at"],
+            ends_at=data["ends_at"],
+            reason=data["reason"],
+            request=request,
+        )
+        for item in skipped:
+            self.message_user(
+                request, f"Not lent: {item['role_name']} ({item['scope']}): {item['why']}"
+            )
+        obj.pk = delegation.pk
+        obj._state.adding = False
+
+    @admin.action(description="End selected cover now")
+    def end_selected(self, request, queryset):
+        for delegation in queryset:
+            try:
+                delegations.end_delegation(
+                    actor=request.user,
+                    delegation_id=delegation.pk,
+                    version=delegation.version,
+                    reason="Ended in the admin console",
+                    request=request,
+                )
+                self.message_user(request, f"{delegation}: ended.")
+            except DomainError as exc:
+                self.message_user(request, f"{delegation}: {exc.detail}", messages.ERROR)

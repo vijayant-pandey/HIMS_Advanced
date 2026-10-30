@@ -4,7 +4,14 @@ from rest_framework import serializers
 from apps.facilities.models import Department, Facility
 
 from ..catalog import PERMISSIONS
-from ..models import AccessReview, AccessReviewItem, Permission, Role, RoleAssignment
+from ..models import (
+    AccessDelegation,
+    AccessReview,
+    AccessReviewItem,
+    Permission,
+    Role,
+    RoleAssignment,
+)
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -74,6 +81,13 @@ class RoleAssignmentSerializer(serializers.ModelSerializer):
         source="revoked_by.display_name", read_only=True, default=None, allow_null=True
     )
     is_active = serializers.SerializerMethodField(help_text="Not revoked and not expired.")
+    covering_for_name = serializers.CharField(
+        source="delegation.delegator.display_name",
+        read_only=True,
+        default=None,
+        allow_null=True,
+        help_text="Set when this access is lent for cover (HIMS-IAM-017): whose access it is.",
+    )
 
     def get_is_active(self, assignment) -> bool:
         from django.utils import timezone
@@ -110,6 +124,8 @@ class RoleAssignmentSerializer(serializers.ModelSerializer):
             "revoked_by",
             "revocation_reason",
             "created_at",
+            "delegation",
+            "covering_for_name",
         ]
         read_only_fields = fields
 
@@ -238,3 +254,129 @@ class AccessReviewScheduleSerializer(serializers.Serializer):
     review_due = serializers.BooleanField(help_text="No review in progress and one is due.")
     open_review_id = serializers.UUIDField(allow_null=True)
     open_review_overdue = serializers.BooleanField()
+
+
+# --- Cover arrangements / delegated access (HIMS-IAM-017) -------------------------------------
+
+
+class PersonSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    display_name = serializers.CharField()
+    email = serializers.EmailField()
+
+
+class LentAccessSerializer(serializers.ModelSerializer):
+    """One copy of the covered person's access lent to the covering person."""
+
+    role_name = serializers.CharField(source="role.name", read_only=True)
+    scope = serializers.SerializerMethodField()
+    is_active = serializers.SerializerMethodField(help_text="Usable right now.")
+
+    def get_scope(self, assignment) -> str:
+        from ..reviews import scope_label
+
+        return scope_label(assignment)
+
+    def get_is_active(self, assignment) -> bool:
+        return RoleAssignmentSerializer().get_is_active(assignment)
+
+    class Meta:
+        model = RoleAssignment
+        fields = [
+            "id",
+            "role_name",
+            "scope",
+            "valid_from",
+            "valid_until",
+            "revoked_at",
+            "revocation_reason",
+            "is_active",
+        ]
+        read_only_fields = fields
+
+
+class AccessDelegationSerializer(serializers.ModelSerializer):
+    delegator = PersonSerializer(read_only=True)
+    delegate = PersonSerializer(read_only=True)
+    status = serializers.ChoiceField(choices=AccessDelegation.Status.choices, read_only=True)
+    status_label = serializers.SerializerMethodField()
+    created_by_name = serializers.CharField(
+        source="created_by.display_name", read_only=True, default=None, allow_null=True
+    )
+    ended_by_name = serializers.CharField(
+        source="ended_by.display_name", read_only=True, default=None, allow_null=True
+    )
+    lent_access = LentAccessSerializer(source="assignments", many=True, read_only=True)
+
+    def get_status_label(self, delegation) -> str:
+        return AccessDelegation.Status(delegation.status).label
+
+    class Meta:
+        model = AccessDelegation
+        fields = [
+            "id",
+            "delegator",
+            "delegate",
+            "starts_at",
+            "ends_at",
+            "reason",
+            "status",
+            "status_label",
+            "created_by_name",
+            "created_at",
+            "ended_at",
+            "ended_by_name",
+            "end_reason",
+            "lent_access",
+            "version",
+        ]
+        read_only_fields = fields
+
+
+class SkippedAccessSerializer(serializers.Serializer):
+    role_name = serializers.CharField()
+    scope = serializers.CharField()
+    why = serializers.CharField()
+
+
+class AccessDelegationCreatedSerializer(AccessDelegationSerializer):
+    skipped = SkippedAccessSerializer(many=True, read_only=True, default=list)
+
+    class Meta(AccessDelegationSerializer.Meta):
+        fields = [*AccessDelegationSerializer.Meta.fields, "skipped"]
+        read_only_fields = fields
+
+
+class AccessDelegationCreateSerializer(serializers.Serializer):
+    delegator = serializers.PrimaryKeyRelatedField(
+        queryset=get_user_model().objects.all(), help_text="The person being covered."
+    )
+    delegate = serializers.PrimaryKeyRelatedField(
+        queryset=get_user_model().objects.all(), help_text="The person covering."
+    )
+    starts_at = serializers.DateTimeField(
+        required=False, allow_null=True, default=None, help_text="Empty = now."
+    )
+    ends_at = serializers.DateTimeField()
+    reason = serializers.CharField(max_length=2000)
+    assignments = serializers.ListField(
+        child=serializers.UUIDField(),
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Which of the covered person's access to lend. Empty = all that can be lent.",
+    )
+
+
+class AccessDelegationEndSerializer(serializers.Serializer):
+    version = serializers.IntegerField(min_value=1)
+    reason = serializers.CharField(max_length=2000)
+
+
+class DelegableAccessSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    role_name = serializers.CharField()
+    scope = serializers.CharField()
+    valid_until = serializers.DateTimeField(allow_null=True)
+    can_lend = serializers.BooleanField()
+    why_not = serializers.CharField(allow_blank=True)
