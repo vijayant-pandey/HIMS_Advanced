@@ -79,6 +79,22 @@ const STAFF: StaffMemberDetail = {
       expiry_state: "expiring_soon",
     },
   ],
+  documents: [
+    {
+      id: "doc1",
+      staff: "s1",
+      credential: "c1",
+      qualification: null,
+      original_name: "KNC certificate.pdf",
+      content_type: "application/pdf",
+      size_bytes: 52000,
+      uploaded_by_name: "Synthetic HR",
+      created_at: "2026-02-01T00:00:00Z",
+      is_archived: false,
+      archived_at: null,
+      archive_reason: "",
+    },
+  ],
 };
 
 const ASSIGNMENT: RoleAssignment = {
@@ -106,6 +122,19 @@ const ASSIGNMENT: RoleAssignment = {
   created_at: "2026-01-05T00:00:00Z",
 };
 
+const EXPIRING = [
+  {
+    ...STAFF.credentials[0]!,
+    staff_member_id: "s1",
+    staff_name: "Mary Joseph",
+    employee_number: "EMP-0101",
+    staff_type_label: "Nurse",
+    days_left: 22,
+    last_alert: "30 days before",
+    last_alert_at: "2026-10-28T06:00:00Z",
+  },
+];
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -120,6 +149,7 @@ function mockApi() {
     const url = String(input);
     const method = init?.method ?? "GET";
     if (method !== "GET") return json({}, url.endsWith("/role-assignments/") ? 201 : 200);
+    if (url.includes("/staff-credentials/expiring/")) return json(EXPIRING);
     if (url.includes("/staff/s1/")) return json(STAFF);
     if (url.includes("/staff/")) return json(page([STAFF]));
     if (url.includes("/role-assignments/")) return json(page([ASSIGNMENT]));
@@ -250,5 +280,57 @@ describe("Staff screens", () => {
     fireEvent.change(within(revoke).getByLabelText(/Reason/), { target: { value: "Left ICU" } });
     fireEvent.click(within(revoke).getByRole("button", { name: "Remove access" }));
     await vi.waitFor(() => expect(bodyOf(fetchMock, "/role-assignments/ra1/revoke/")).toEqual({ reason: "Left ICU" }), { timeout: 4000 });
+  });
+
+  it("shows the licence-expiry banner on the Staff page", async () => {
+    mockApi();
+    renderAt("/staff", HR);
+    expect(await screen.findByText(/1 expire within 60 days/)).toBeInTheDocument();
+  });
+
+  it("opens, downloads and uploads licence documents", async () => {
+    const fetchMock = mockApi();
+    renderAt("/staff/s1", HR);
+    fireEvent.click(await screen.findByRole("tab", { name: /Licences/ }, { timeout: 4000 }));
+    const open = await screen.findByRole("link", { name: "KNC certificate.pdf" });
+    expect(open.getAttribute("href")).toBe("/api/v1/staff-documents/doc1/download/?inline=true");
+    expect(open.getAttribute("target")).toBe("_blank");
+    expect(screen.getByRole("link", { name: "download" }).getAttribute("href")).toBe(
+      "/api/v1/staff-documents/doc1/download/",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Upload document for Nursing council/ }));
+    const dialog = await screen.findByRole("dialog");
+    const save = within(dialog).getByRole("button", { name: "Upload" });
+    expect(save).toBeDisabled();
+    const file = new File(["%PDF-1.4"], "renewed.pdf", { type: "application/pdf" });
+    fireEvent.change(within(dialog).getByLabelText("Document file"), { target: { files: [file] } });
+    fireEvent.click(save);
+    await vi.waitFor(
+      () =>
+        expect(
+          fetchMock.mock.calls.some(([u, i]) => String(u).endsWith("/staff/s1/documents/") && i?.method === "POST"),
+        ).toBe(true),
+      { timeout: 4000 },
+    );
+    const call = fetchMock.mock.calls.find(([u]) => String(u).endsWith("/staff/s1/documents/"))!;
+    const body = call[1]!.body as FormData;
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("credential")).toBe("c1");
+    expect((body.get("file") as File).name).toBe("renewed.pdf");
+    expect((call[1]!.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+  });
+
+  it("refuses files over 10 MB before uploading", async () => {
+    mockApi();
+    renderAt("/staff/s1", HR);
+    fireEvent.click(await screen.findByRole("tab", { name: /Licences/ }, { timeout: 4000 }));
+    fireEvent.click(await screen.findByRole("button", { name: /Upload document for Nursing council/ }));
+    const dialog = await screen.findByRole("dialog");
+    const big = new File(["x"], "huge.pdf", { type: "application/pdf" });
+    Object.defineProperty(big, "size", { value: 11 * 1024 * 1024 });
+    fireEvent.change(within(dialog).getByLabelText("Document file"), { target: { files: [big] } });
+    expect(within(dialog).getByText(/larger than 10 MB/)).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Upload" })).toBeDisabled();
   });
 });

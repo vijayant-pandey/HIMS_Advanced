@@ -2,15 +2,17 @@ from django import forms
 from django.contrib import admin, messages
 
 from apps.identity.admin import send_invitations
-from common.admin.options import HimsInline, HimsModelAdmin
+from common.admin.options import HimsInline, HimsModelAdmin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
 from .models import (
+    CredentialExpiryAlert,
     Designation,
     QualificationType,
     Specialty,
     StaffCredential,
     StaffDepartmentAssignment,
+    StaffDocument,
     StaffMember,
     StaffQualification,
 )
@@ -187,3 +189,128 @@ class QualificationTypeAdmin(HimsModelAdmin):
     list_display = ("code", "name", "category", "country", "is_active")
     list_filter = ("category", "country", "is_active")
     search_fields = ("code", "name")
+
+
+# --- Documents and expiry alerts (HIMS-STAFF-005/006) ----------------------------------------
+
+
+class StaffDocumentForm(forms.ModelForm):
+    """Same file checks as the app; a file is never replaced (archive and upload a new one)."""
+
+    archive_reason_input = forms.CharField(
+        required=False,
+        max_length=255,
+        label="Archive with reason",
+        help_text="Fill in to archive this document (e.g. 'Wrong file'). It is never deleted.",
+    )
+
+    class Meta:
+        model = StaffDocument
+        fields = ("staff", "credential", "qualification", "file")
+
+    def clean_file(self):
+        upload = self.cleaned_data.get("file")
+        if upload is not None and hasattr(upload, "content_type"):  # a newly uploaded file
+            from .uploads import validate_upload
+
+            self.detected = validate_upload(upload)  # plain-language error shown on the field
+        return upload
+
+
+@admin.register(StaffDocument)
+class StaffDocumentAdmin(HimsModelAdmin):
+    form = StaffDocumentForm
+    list_display = (
+        "original_name",
+        "staff",
+        "attached_to",
+        "size",
+        "uploaded_by",
+        "created_at",
+        "archived",
+    )
+    list_filter = ("content_type",)
+    search_fields = ("original_name", "staff__family_name", "staff__employee_number")
+    readonly_fields = (
+        "open_file",
+        "original_name",
+        "content_type",
+        "size_bytes",
+        "sha256",
+        "uploaded_by",
+        "archived_at",
+        "archived_by",
+        "archive_reason",
+    )
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if obj is not None:
+            readonly += ["staff", "credential", "qualification", "file"]
+        return readonly
+
+    def get_fields(self, request, obj=None):
+        fields = ["staff", "credential", "qualification", "file", "open_file"]
+        if obj is not None:
+            fields += [
+                "original_name",
+                "content_type",
+                "size_bytes",
+                "sha256",
+                "uploaded_by",
+                "archived_at",
+                "archived_by",
+                "archive_reason",
+            ]
+            if obj.archived_at is None:
+                fields.append("archive_reason_input")
+        return fields
+
+    @admin.display(description="Attached to")
+    def attached_to(self, obj):
+        return obj.credential or obj.qualification
+
+    @admin.display(description="Size")
+    def size(self, obj):
+        return f"{obj.size_bytes / 1024:.0f} KB"
+
+    @admin.display(boolean=True, description="Archived")
+    def archived(self, obj):
+        return obj.archived_at is not None
+
+    @admin.display(description="File")
+    def open_file(self, obj):
+        from django.utils.html import format_html
+
+        if not obj or not obj.pk:
+            return "Shown after saving"
+        url = f"/api/v1/staff-documents/{obj.pk}/download/?inline=true"
+        return format_html('<a href="{}" target="_blank" rel="noopener">Open (audited)</a>', url)
+
+    def save_model(self, request, obj, form, change):
+        from .documents import archive_document
+        from .uploads import safe_original_name, sha256_of
+
+        if not change:
+            upload = form.cleaned_data["file"]
+            obj.organization_id = obj.staff.organization_id
+            obj.original_name = safe_original_name(upload.name)
+            obj.content_type = form.detected[0]
+            obj.size_bytes = upload.size
+            obj.sha256 = sha256_of(upload)
+            obj.uploaded_by = request.user
+        super().save_model(request, obj, form, change)
+        reason = form.cleaned_data.get("archive_reason_input")
+        if change and reason and obj.archived_at is None:
+            archive_document(actor=request.user, document_id=obj.pk, reason=reason, request=request)
+
+
+@admin.register(CredentialExpiryAlert)
+class CredentialExpiryAlertAdmin(ReadOnlyModelAdmin):
+    list_display = ("credential", "stage", "expires_at", "recipients", "sent_at")
+    list_filter = ("days_before",)
+    date_hierarchy = "sent_at"
+
+    @admin.display(description="Stage")
+    def stage(self, obj):
+        return "Expired" if obj.days_before == 0 else f"{obj.days_before} days before"

@@ -1,10 +1,11 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { ApiError, api } from "../../api/client";
+import { API_BASE, ApiError, api } from "../../api/client";
 import type {
   CredentialVerificationRequest,
   Designation,
   EndAssignmentRequest,
+  ExpiringCredential,
   InvitationSent,
   PaginatedDepartmentList,
   PaginatedStaffMemberList,
@@ -14,6 +15,7 @@ import type {
   StaffCredentialRequest,
   StaffDepartmentAssignment,
   StaffDepartmentAssignmentRequest,
+  StaffDocument,
   StaffMember,
   StaffMemberCreateRequest,
   StaffMemberDetail,
@@ -151,4 +153,41 @@ export function useVerify(staffId: string, kind: "qualification" | "credential",
     (body) => api.post(path, body),
     { refreshOnError: true },
   );
+}
+
+// --- Documents and licence expiry (HIMS-STAFF-005/006) ---------------------------------------
+
+/** Where a document opens (in a new tab) or downloads; every use is audited by the server. */
+export function documentUrl(id: string, inline: boolean): string {
+  return `${API_BASE}/staff-documents/${id}/download/${inline ? "?inline=true" : ""}`;
+}
+
+export function useUploadDocument(staffId: string) {
+  return useStaffMutation<StaffDocument, { file: File; credential?: string; qualification?: string }>(
+    ({ file, credential, qualification }) => {
+      const form = new FormData();
+      form.append("file", file);
+      if (credential) form.append("credential", credential);
+      if (qualification) form.append("qualification", qualification);
+      return api.post<StaffDocument>(`/staff/${staffId}/documents/`, form);
+    },
+  );
+}
+
+export function useArchiveDocument(id: string) {
+  return useStaffMutation<StaffDocument, { reason: string }>(
+    (body) => api.post<StaffDocument>(`/staff-documents/${id}/archive/`, body),
+    { refreshOnError: true },
+  );
+}
+
+export function useExpiringCredentials(within: number, includeExpired: boolean) {
+  return useQuery<ExpiringCredential[], ApiError>({
+    queryKey: [...staffKey, "expiring", { within, includeExpired }],
+    queryFn: ({ signal }) =>
+      api.get<ExpiringCredential[]>("/staff-credentials/expiring/", {
+        query: { within, include_expired: includeExpired ? undefined : "false" },
+        signal,
+      }),
+  });
 }

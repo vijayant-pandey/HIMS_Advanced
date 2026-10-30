@@ -55,6 +55,10 @@ def _configure_queues_and_schedule(sender, **kwargs):
             "task": "platform.clear_expired_sessions",
             "schedule": timedelta(hours=24),
         },
+        "credential-expiry-alerts": {
+            "task": "notifications.credential_expiry_alerts",
+            "schedule": timedelta(hours=24),
+        },
     }
 
 

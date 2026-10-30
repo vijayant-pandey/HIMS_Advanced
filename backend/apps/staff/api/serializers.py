@@ -12,6 +12,7 @@ from ..models import (
     Specialty,
     StaffCredential,
     StaffDepartmentAssignment,
+    StaffDocument,
     StaffMember,
     StaffQualification,
 )
@@ -191,6 +192,34 @@ class StaffMemberSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class StaffDocumentSerializer(serializers.ModelSerializer):
+    uploaded_by_name = serializers.CharField(
+        source="uploaded_by.display_name", read_only=True, default=None, allow_null=True
+    )
+    is_archived = serializers.SerializerMethodField()
+
+    def get_is_archived(self, document) -> bool:
+        return document.archived_at is not None
+
+    class Meta:
+        model = StaffDocument
+        fields = [
+            "id",
+            "staff",
+            "credential",
+            "qualification",
+            "original_name",
+            "content_type",
+            "size_bytes",
+            "uploaded_by_name",
+            "created_at",
+            "is_archived",
+            "archived_at",
+            "archive_reason",
+        ]
+        read_only_fields = fields
+
+
 class StaffAccountSerializer(serializers.Serializer):
     """The person's sign-in account, so HR can see whether they can log in yet."""
 
@@ -208,6 +237,9 @@ class StaffMemberDetailSerializer(StaffMemberSerializer):
     department_assignments = StaffDepartmentAssignmentSerializer(many=True, read_only=True)
     qualifications = StaffQualificationSerializer(many=True, read_only=True)
     credentials = StaffCredentialSerializer(many=True, read_only=True)
+    documents = serializers.SerializerMethodField(
+        help_text="Licence and qualification documents, newest first (archived ones included)."
+    )
     account = serializers.SerializerMethodField()
 
     class Meta(StaffMemberSerializer.Meta):
@@ -217,8 +249,13 @@ class StaffMemberDetailSerializer(StaffMemberSerializer):
             "department_assignments",
             "qualifications",
             "credentials",
+            "documents",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(StaffDocumentSerializer(many=True))
+    def get_documents(self, staff) -> list:
+        return StaffDocumentSerializer(staff.documents.all(), many=True).data
 
     @extend_schema_field(StaffAccountSerializer)
     def get_account(self, staff) -> dict:
@@ -301,3 +338,70 @@ class EndAssignmentSerializer(serializers.Serializer):
 class InvitationSentSerializer(serializers.Serializer):
     email = serializers.EmailField()
     expires_at = serializers.DateTimeField()
+
+
+# --- Documents and licence expiry (HIMS-STAFF-005/006) ---------------------------------------
+
+
+class StaffDocumentUploadSerializer(serializers.Serializer):
+    file = serializers.FileField(help_text="PDF, JPG or PNG, up to 10 MB")
+    credential = serializers.UUIDField(required=False, allow_null=True)
+    qualification = serializers.UUIDField(required=False, allow_null=True)
+
+    def validate(self, data):
+        if bool(data.get("credential")) == bool(data.get("qualification")):
+            raise serializers.ValidationError(
+                "Choose the licence or the qualification this document belongs to."
+            )
+        return data
+
+
+class ArchiveSerializer(serializers.Serializer):
+    reason = serializers.CharField(max_length=255)
+
+
+class ExpiringCredentialSerializer(StaffCredentialSerializer):
+    staff_member_id = serializers.UUIDField(source="staff_id", read_only=True)
+    staff_name = serializers.SerializerMethodField()
+    employee_number = serializers.CharField(source="staff.employee_number", read_only=True)
+    staff_type_label = serializers.CharField(source="staff.get_staff_type_display", read_only=True)
+    days_left = serializers.SerializerMethodField(help_text="Negative = days since it expired")
+    last_alert = serializers.SerializerMethodField(
+        help_text="Last alert sent: 'expired', 'N days before' or null"
+    )
+    last_alert_at = serializers.SerializerMethodField()
+
+    class Meta(StaffCredentialSerializer.Meta):
+        fields = [
+            *StaffCredentialSerializer.Meta.fields,
+            "staff_member_id",
+            "staff_name",
+            "employee_number",
+            "staff_type_label",
+            "days_left",
+            "last_alert",
+            "last_alert_at",
+        ]
+        read_only_fields = fields
+
+    def get_staff_name(self, credential) -> str:
+        return f"{credential.staff.given_name} {credential.staff.family_name}"
+
+    def get_days_left(self, credential) -> int:
+        return (credential.expires_at - timezone.localdate()).days
+
+    def _alert(self, credential):
+        alerts = [
+            a for a in credential.expiry_alerts.all() if a.expires_at == credential.expires_at
+        ]
+        return max(alerts, key=lambda a: a.sent_at) if alerts else None
+
+    def get_last_alert(self, credential) -> str | None:
+        alert = self._alert(credential)
+        if alert is None:
+            return None
+        return "expired" if alert.days_before == 0 else f"{alert.days_before} days before"
+
+    def get_last_alert_at(self, credential) -> str | None:
+        alert = self._alert(credential)
+        return alert.sent_at.isoformat() if alert else None

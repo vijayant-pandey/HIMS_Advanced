@@ -27,6 +27,7 @@ import { UserAccessPanel } from "../accessControl/UserAccessPanel";
 import { useCurrentUser } from "../auth/api";
 import { hasOrganizationWidePermission, hasPermission } from "../auth/grants";
 import { useSendInvitation, useStaffMember } from "./api";
+import { DocumentCell } from "./Documents";
 import { EXPIRY, STATUS_COLOR, VERIFICATION } from "./labels";
 import {
   AddCredentialDialog,
@@ -255,6 +256,7 @@ export function StaffDetailPage() {
                   <TableCell>Institution</TableCell>
                   <TableCell>Year</TableCell>
                   <TableCell>Verification</TableCell>
+                  <TableCell>Documents</TableCell>
                   <TableCell />
                 </TableRow>
               </TableHead>
@@ -281,6 +283,15 @@ export function StaffDetailPage() {
                           </Typography>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <DocumentCell
+                          staffId={staff.id}
+                          documents={staff.documents.filter((d) => d.qualification === q.id)}
+                          target={{ qualification: q.id }}
+                          label={q.qualification_type_name}
+                          canManage={canManage}
+                        />
+                      </TableCell>
                       <TableCell align="right">
                         {canVerify && !isSelf && q.verification_status === "unverified" && (
                           <Button
@@ -303,7 +314,7 @@ export function StaffDetailPage() {
                 })}
                 {staff.qualifications.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5}>No qualifications recorded.</TableCell>
+                    <TableCell colSpan={6}>No qualifications recorded.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -332,6 +343,7 @@ export function StaffDetailPage() {
                   <TableCell>Issued by</TableCell>
                   <TableCell>Expires</TableCell>
                   <TableCell>Verification</TableCell>
+                  <TableCell>Documents</TableCell>
                   <TableCell />
                 </TableRow>
               </TableHead>
@@ -363,6 +375,15 @@ export function StaffDetailPage() {
                           </Typography>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <DocumentCell
+                          staffId={staff.id}
+                          documents={staff.documents.filter((d) => d.credential === c.id)}
+                          target={{ credential: c.id }}
+                          label={c.credential_type_label}
+                          canManage={canManage}
+                        />
+                      </TableCell>
                       <TableCell align="right">
                         {canVerify && !isSelf && c.verification_status === "unverified" && (
                           <Button
@@ -385,7 +406,7 @@ export function StaffDetailPage() {
                 })}
                 {staff.credentials.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6}>No licences recorded.</TableCell>
+                    <TableCell colSpan={7}>No licences recorded.</TableCell>
                   </TableRow>
                 )}
               </TableBody>

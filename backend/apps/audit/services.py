@@ -11,6 +11,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from django.db import models
+from django.db.models.fields.files import FieldFile
 
 from common.request_context import get_request_id
 
@@ -73,6 +74,10 @@ class AuditAction:
     STAFF_DEPARTMENT_ASSIGNMENT_ENDED = "staff.department.assignment_ended"
     STAFF_CREDENTIAL_ADDED = "staff.credential.added"
     STAFF_CREDENTIAL_VERIFIED = "staff.credential.verified"
+    STAFF_DOCUMENT_UPLOADED = "staff.document.uploaded"
+    STAFF_DOCUMENT_DOWNLOADED = "staff.document.downloaded"
+    STAFF_DOCUMENT_ARCHIVED = "staff.document.archived"
+    CREDENTIAL_EXPIRY_ALERT_SENT = "staff.credential.expiry_alert_sent"
     AUDIT_SEARCHED = "audit.events.searched"
     AUDIT_EXPORTED = "audit.events.exported"
 
@@ -80,6 +85,8 @@ class AuditAction:
 def _jsonable(value):
     if isinstance(value, (UUID, Decimal)):
         return str(value)
+    if isinstance(value, FieldFile):
+        return value.name or ""  # the stored path, never the file's content
     if isinstance(value, (datetime, date)):
         return value.isoformat()
     if isinstance(value, models.Model):

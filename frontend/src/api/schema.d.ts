@@ -1194,6 +1194,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/staff-credentials/expiring/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Licences of working staff that are expired or expire soon, soonest first. */
+        get: operations["staff_credentials_expiring_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff-documents/{id}/archive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description A wrong or outdated file is archived with a reason, never deleted. */
+        post: operations["staff_documents_archive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff-documents/{id}/download/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Open/download or archive one document. Files have no public URL (ADR-020). */
+        get: operations["staff_documents_download_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff/{id}/": {
         parameters: {
             query?: never;
@@ -1253,6 +1304,24 @@ export interface paths {
         put?: never;
         /** @description End a posting (transfer, resignation, end of rotation). History is kept. */
         post: operations["staff_department_assignments_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff/{id}/documents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description This person's licence and qualification documents (archived ones included). */
+        get: operations["staff_documents_list"];
+        put?: never;
+        /** @description Attach a PDF/JPG/PNG to one of this person's licences or qualifications. */
+        post: operations["staff_documents_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1422,6 +1491,9 @@ export interface components {
          * @enum {string}
          */
         AgeGroupEnum: "any" | "adult" | "pediatric" | "neonatal";
+        ArchiveRequest: {
+            reason: string;
+        };
         AuditAction: {
             action: string;
             label: string;
@@ -1690,6 +1762,38 @@ export interface components {
              */
             valid_until?: string | null;
             reason: string;
+        };
+        ExpiringCredential: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly credential_type: components["schemas"]["CredentialTypeEnum"];
+            readonly registration_number: string;
+            readonly issuing_authority: string;
+            /** @description ISO 3166-2, e.g. IN-KA or US-CA */
+            readonly jurisdiction: string;
+            /** Format: date */
+            readonly valid_from: string | null;
+            /** Format: date */
+            readonly expires_at: string | null;
+            readonly verification_status: components["schemas"]["VerificationStatusEnum"];
+            /** Format: uuid */
+            readonly verified_by: string | null;
+            readonly verified_by_name: string | null;
+            /** Format: date-time */
+            readonly verified_at: string | null;
+            readonly credential_type_label: string;
+            /** @description no_expiry, valid, expiring_soon (within 60 days) or expired */
+            readonly expiry_state: string;
+            /** Format: uuid */
+            readonly staff_member_id: string;
+            readonly staff_name: string;
+            readonly employee_number: string;
+            readonly staff_type_label: string;
+            /** @description Negative = days since it expired */
+            readonly days_left: number;
+            /** @description Last alert sent: 'expired', 'N days before' or null */
+            readonly last_alert: string | null;
+            readonly last_alert_at: string | null;
         };
         Facility: {
             /** Format: uuid */
@@ -2169,6 +2273,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Room"][];
         };
+        PaginatedStaffDocumentList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["StaffDocument"][];
+        };
         PaginatedStaffMemberList: {
             /** @example 123 */
             count: number;
@@ -2593,6 +2712,37 @@ export interface components {
             /** Format: date */
             valid_until?: string | null;
         };
+        StaffDocument: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly staff: string;
+            /** Format: uuid */
+            readonly credential: string | null;
+            /** Format: uuid */
+            readonly qualification: string | null;
+            readonly original_name: string;
+            readonly content_type: string;
+            readonly size_bytes: number;
+            readonly uploaded_by_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly is_archived: boolean;
+            /** Format: date-time */
+            readonly archived_at: string | null;
+            readonly archive_reason: string;
+        };
+        StaffDocumentUploadRequest: {
+            /**
+             * Format: binary
+             * @description PDF, JPG or PNG, up to 10 MB
+             */
+            file: string;
+            /** Format: uuid */
+            credential?: string | null;
+            /** Format: uuid */
+            qualification?: string | null;
+        };
         StaffMember: {
             /** Format: uuid */
             readonly id: string;
@@ -2657,6 +2807,8 @@ export interface components {
             readonly department_assignments: components["schemas"]["StaffDepartmentAssignment"][];
             readonly qualifications: components["schemas"]["StaffQualification"][];
             readonly credentials: components["schemas"]["StaffCredential"][];
+            /** @description Licence and qualification documents, newest first (archived ones included). */
+            readonly documents: components["schemas"]["StaffDocument"][];
         };
         StaffQualification: {
             /** Format: uuid */
@@ -4792,6 +4944,81 @@ export interface operations {
             };
         };
     };
+    staff_credentials_expiring_list: {
+        parameters: {
+            query?: {
+                /** @description 'false' hides expired */
+                include_expired?: string;
+                /** @description Days ahead to include (default 60) */
+                within?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpiringCredential"][];
+                };
+            };
+        };
+    };
+    staff_documents_archive_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this staff document. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArchiveRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDocument"];
+                };
+            };
+        };
+    };
+    staff_documents_download_retrieve: {
+        parameters: {
+            query?: {
+                /** @description 'true' = open in the browser */
+                inline?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this staff document. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+        };
+    };
     staff_retrieve: {
         parameters: {
             query?: never;
@@ -4915,6 +5142,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffDepartmentAssignment"];
+                };
+            };
+        };
+    };
+    staff_documents_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this staff member. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedStaffDocumentList"];
+                };
+            };
+        };
+    };
+    staff_documents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this staff member. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["StaffDocumentUploadRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDocument"];
                 };
             };
         };
