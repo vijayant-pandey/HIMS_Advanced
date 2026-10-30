@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "apps.beds",
     "apps.numbering",
     "apps.features",
+    "apps.notifications",
 ]
 
 # Django admin is the HIMS operations console (ADR-016): gated by HIMS RBAC rather than
@@ -271,6 +272,20 @@ EMAIL_BACKEND = env.str(
     "DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
 )
 DEFAULT_FROM_EMAIL = env.str("DJANGO_DEFAULT_FROM_EMAIL", default="HIMS <no-reply@hims.invalid>")
+# SMTP (e.g. Gmail with an app password, or Amazon SES) when DJANGO_EMAIL_BACKEND is
+# django.core.mail.backends.smtp.EmailBackend. See docs/workflows/notifications.md.
+EMAIL_HOST = env.str("EMAIL_HOST", default="localhost")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_HOST_USER = env.str("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env.str("EMAIL_HOST_PASSWORD", default="")
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT", default=20)
+# SMS (HIMS-NOTIF-001): printed to the server output until an SMS provider is chosen.
+HIMS_SMS_BACKEND = env.str(
+    "HIMS_SMS_BACKEND", default="apps.notifications.backends.ConsoleSmsBackend"
+)
+# A failed email/SMS is retried after 5, 15, 60 and 240 minutes, then given up.
+HIMS_NOTIFICATION_MAX_ATTEMPTS = env.int("HIMS_NOTIFICATION_MAX_ATTEMPTS", default=5)
 # Folder for django.core.mail.backends.filebased.EmailBackend: browser tests read invitation and
 # reset links from here (HIMS-QA-001). Unused with any other email backend.
 if env.str("HIMS_EMAIL_FILE_PATH", default=""):

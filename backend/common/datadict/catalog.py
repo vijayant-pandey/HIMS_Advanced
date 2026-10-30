@@ -60,6 +60,11 @@ DOMAINS: dict[str, dict] = {
         "owner": "Audit domain (separate security boundary)",
         "docs": ["audit-integrity.md", "../../decisions/ADR-013-audit-log-storage.md"],
     },
+    "notifications": {
+        "name": "Notifications: emails and SMS",
+        "owner": "Platform (each sending domain owns its wording)",
+        "docs": ["../../workflows/notifications.md"],
+    },
     "outbox": {
         "name": "Platform: transactional outbox",
         "owner": "Platform",
@@ -128,6 +133,8 @@ LIFECYCLE: dict[str, str] = {
     "audit_integrity_checks": "Append-only (database trigger); one row per check.",
     "outbox_events": "Kept after publishing; archival job pending (HIMS-PLAT-014).",
     "outbox_processed_events": "Kept for duplicate detection; archival with HIMS-PLAT-014.",
+    "notifications": "Kept as the delivery log; the real (secret-bearing) text is erased once "
+    "delivered. Retention period: decision pending with the other records (🔒 LEGAL).",
     "idempotency_records": "Purged hourly once expired (48 hours, "
     "`HIMS_IDEMPOTENCY_RETENTION_HOURS`).",
 }
@@ -165,6 +172,11 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "facilities.address_line2": (INTERNAL, "Facility address"),
     "facilities.postal_code": (INTERNAL, "Facility address"),
     "staff_documents.sha256": (INTERNAL, "Checksum"),
+    "notifications.recipients": (RESTRICTED, "Contact"),
+    "notifications.subject": (RESTRICTED, "Message (secrets hidden)"),
+    "notifications.body": (RESTRICTED, "Message (secrets hidden)"),
+    "notifications.body_encrypted": (SECRET, "Message until delivered (encrypted)"),
+    "notifications.last_error": (INTERNAL, "System diagnostics"),
     "staff_documents.original_name": (RESTRICTED, "Document (file name)"),
     "access_review_items.account_active": (RESTRICTED, "Access evidence"),
     "access_review_items.last_signed_in_at": (RESTRICTED, "Access evidence"),

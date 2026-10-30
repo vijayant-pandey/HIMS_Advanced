@@ -93,6 +93,8 @@ class AuditAction:
     CREDENTIAL_EXPIRY_ALERT_SENT = "staff.credential.expiry_alert_sent"
     AUDIT_SEARCHED = "audit.events.searched"
     AUDIT_EXPORTED = "audit.events.exported"
+    NOTIFICATION_RETRIED = "notification.retried"
+    NOTIFICATION_TEST_SENT = "notification.test_sent"
     AUDIT_INTEGRITY_CHECKED = "audit.integrity.checked"
     AUDIT_INTEGRITY_ALERT_SENT = "audit.integrity.alert_sent"
 

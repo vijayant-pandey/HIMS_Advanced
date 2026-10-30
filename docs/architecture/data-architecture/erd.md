@@ -48,6 +48,7 @@ erDiagram
     audit_events
     audit_chain_entries
     audit_integrity_checks
+    notifications
     outbox_events
     outbox_processed_events
     idempotency_records
@@ -808,6 +809,32 @@ erDiagram
         integer unsealed_overdue
     }
     audit_events ||--o| audit_chain_entries : "event_id"
+```
+
+## Notifications: emails and SMS (logical)
+
+```mermaid
+erDiagram
+    notifications {
+        uuid id PK
+        timestamptz created_at
+        varchar channel
+        varchar category
+        varchar template
+        jsonb recipients
+        varchar subject
+        text body
+        text body_encrypted
+        varchar status
+        smallint attempts
+        timestamptz next_attempt_at
+        varchar last_error
+        timestamptz sent_at
+        varchar skip_reason
+        varchar related_type
+        varchar related_id
+        uuid requested_by_id
+    }
 ```
 
 ## Platform: transactional outbox (logical)

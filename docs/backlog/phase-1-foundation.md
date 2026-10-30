@@ -126,6 +126,24 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-QA-002 | Make `browser-tests` a required check once it has run green for two weeks | To do (PO: branch ruleset) |
 | HIMS-QA-003 | Browser tests for the US deployment and the admin console | To do |
 
+## EPIC HIMS-NOTIF — Notifications
+
+| ID | Ticket | Status |
+|---|---|---|
+| HIMS-NOTIF-001 | Notification service: email + SMS, delivery log, retries, hidden secrets, Messages page, admin console ([how-to](../workflows/notifications.md)) | Done |
+| HIMS-NOTIF-002 | SMS gateway (India DLT-registered; US provider) | To do (🔒 VENDOR) |
+| HIMS-NOTIF-003 | Hospital-editable message templates and per-patient opt-out | To do |
+
+## EPIC HIMS-COMP — Compliance documentation (doctor: "production grade")
+
+| ID | Ticket | Status |
+|---|---|---|
+| HIMS-COMP-001 | US: HIPAA Security Rule risk analysis, policies and procedures, BAA list | To do |
+| HIMS-COMP-002 | India: DPDP Act 2023 / DPDP Rules 2025 assessment, privacy notice, consent and breach-notification procedure | To do |
+| HIMS-COMP-003 | India: ABDM Health Data Management Policy and IT Act security practices assessment | To do |
+| HIMS-COMP-004 | Both: data retention schedule, incident response runbook, access-control policy, vendor list | To do |
+| HIMS-COMP-005 | Threat model and risk register (spec 23) | To do |
+
 ## EPIC HIMS-OPS — Delivery and operations
 
 | ID | Ticket | Status |
