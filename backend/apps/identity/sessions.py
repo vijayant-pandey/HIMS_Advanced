@@ -21,6 +21,7 @@ from django.db.models.signals import post_save, pre_save
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
+from common.exceptions import ConflictError
 
 from .models import User, UserSession
 
@@ -56,14 +57,17 @@ def end_user_sessions(
     actor=None,
     request=None,
     keep_session_key: str | None = None,
+    only_ids=None,
 ) -> int:
     """Delete every open session of ``user`` (optionally keeping the caller's own) and audit it.
 
-    Returns the number of sessions ended.
+    ``only_ids`` limits it to those register entries (one device). Returns the number ended.
     """
     open_sessions = UserSession.objects.filter(user=user, ended_at__isnull=True)
     if keep_session_key:
         open_sessions = open_sessions.exclude(session_key=keep_session_key)
+    if only_ids is not None:
+        open_sessions = open_sessions.filter(pk__in=only_ids)
     keys = list(open_sessions.values_list("session_key", flat=True))
 
     store = _session_store_class()
@@ -80,6 +84,65 @@ def end_user_sessions(
         metadata={"reason": reason, "sessions_ended": len(keys)},
     )
     return len(keys)
+
+
+def open_sessions_for(user: User):
+    """The person's sessions that still work: not ended and (DB sessions) not yet expired."""
+    sessions = UserSession.objects.filter(user=user, ended_at__isnull=True)
+    if settings.SESSION_ENGINE == "django.contrib.sessions.backends.db":
+        from django.contrib.sessions.models import Session
+
+        live = Session.objects.filter(expire_date__gt=timezone.now()).values("session_key")
+        sessions = sessions.filter(session_key__in=live)
+    return sessions.order_by("-created_at")
+
+
+_BROWSERS = (
+    ("Edg/", "Edge"),
+    ("OPR/", "Opera"),
+    ("Firefox/", "Firefox"),
+    ("Chrome/", "Chrome"),
+    ("Safari/", "Safari"),
+)
+_SYSTEMS = (
+    ("Windows", "Windows"),
+    ("Android", "Android"),
+    ("iPhone", "iPhone"),
+    ("iPad", "iPad"),
+    ("Mac OS X", "Mac"),
+    ("CrOS", "ChromeOS"),
+    ("Linux", "Linux"),
+)
+
+
+def describe_device(user_agent: str) -> str:
+    """A readable device name such as "Chrome on Windows", from the browser's user agent.
+
+    Only a hint for people recognising their own devices; never used for security decisions.
+    """
+    browser = next((name for marker, name in _BROWSERS if marker in user_agent), None)
+    system = next((name for marker, name in _SYSTEMS if marker in user_agent), None)
+    if browser and system:
+        return f"{browser} on {system}"
+    return browser or system or (user_agent[:60] if user_agent else "Unknown device")
+
+
+def end_own_session(*, user: User, session_id, request) -> None:
+    """The person signs out one of their other devices ("My sign-ins", HIMS-IAM-016)."""
+    entry = open_sessions_for(user).filter(pk=session_id).first()
+    if entry is None:
+        raise ConflictError("This sign-in has already ended.", code="SESSION_ALREADY_ENDED")
+    if entry.session_key == request.session.session_key:
+        raise ConflictError(
+            "This is the device you are using. Use Sign out instead.", code="CURRENT_SESSION"
+        )
+    end_user_sessions(
+        user,
+        reason=UserSession.EndReason.SIGNED_OUT_BY_USER,
+        actor=user,
+        request=request,
+        only_ids=[entry.pk],
+    )
 
 
 def clear_expired_sessions() -> int:

@@ -4,6 +4,10 @@ import {
   Button,
   Chip,
   Divider,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemText,
   Paper,
   Stack,
   TextField,
@@ -20,7 +24,10 @@ import {
   useCurrentUser,
   useDisableMfa,
   useLogout,
+  useMySessions,
   useRegenerateRecoveryCodes,
+  useSignOutDevice,
+  useSignOutOtherDevices,
   useStartMfaSetup,
 } from "../auth/api";
 import { RecoveryCodes } from "./RecoveryCodes";
@@ -166,6 +173,95 @@ function ManageEnabled({ required }: { required: boolean }) {
   );
 }
 
+const signedInAt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+/** "My sign-ins" (HIMS-IAM-016): see where you are signed in and sign out other devices. */
+function MySignIns() {
+  const { data, isPending, error } = useMySessions();
+  const signOutOne = useSignOutDevice();
+  const signOutOthers = useSignOutOtherDevices();
+  const [ended, setEnded] = useState<number | null>(null);
+  const sessions = Array.isArray(data) ? data : [];
+  const others = sessions.filter((s) => !s.is_current);
+
+  return (
+    <Paper sx={{ p: 3, mt: 3 }}>
+      <Stack spacing={2}>
+        <Typography variant="h6" component="h2">
+          My sign-ins
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Where your account is signed in now. If you see a device you do not recognise, or you
+          lost a phone or forgot to sign out on a shared computer, sign it out here and change
+          your password.
+        </Typography>
+        {isPending && <LinearProgress />}
+        {error && <ErrorAlert error={error} />}
+        {(signOutOne.error ?? signOutOthers.error) && (
+          <ErrorAlert error={signOutOne.error ?? signOutOthers.error} />
+        )}
+        {ended !== null && (
+          <Alert severity="success" onClose={() => setEnded(null)}>
+            Signed out {ended} other device{ended === 1 ? "" : "s"}.
+          </Alert>
+        )}
+        <List dense aria-label="My sign-ins" disablePadding>
+          {sessions.map((s) => (
+            <ListItem
+              key={s.id}
+              divider
+              secondaryAction={
+                s.is_current ? (
+                  <Chip size="small" color="primary" label="This device" />
+                ) : (
+                  <Button
+                    size="small"
+                    color="error"
+                    disabled={signOutOne.isPending}
+                    aria-label={`Sign out ${s.device} signed in ${signedInAt.format(new Date(s.signed_in_at))}`}
+                    onClick={() => {
+                      setEnded(null);
+                      signOutOne.mutate(s.id);
+                    }}
+                  >
+                    Sign out
+                  </Button>
+                )
+              }
+            >
+              <ListItemText
+                primary={s.device}
+                secondary={`Signed in ${signedInAt.format(new Date(s.signed_in_at))}${
+                  s.ip_address ? ` · from ${s.ip_address}` : ""
+                }`}
+              />
+            </ListItem>
+          ))}
+        </List>
+        {data && others.length === 0 && (
+          <Typography variant="body2">You are not signed in anywhere else.</Typography>
+        )}
+        {others.length > 0 && (
+          <Box>
+            <Button
+              variant="outlined"
+              color="error"
+              disabled={signOutOthers.isPending}
+              onClick={() =>
+                signOutOthers.mutate(undefined, {
+                  onSuccess: (result) => setEnded(result?.sessions_ended ?? 0),
+                })
+              }
+            >
+              Sign out all other devices
+            </Button>
+          </Box>
+        )}
+      </Stack>
+    </Paper>
+  );
+}
+
 export function SecurityPage() {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
@@ -223,6 +319,7 @@ export function SecurityPage() {
           )}
         </Stack>
       </Paper>
+      <MySignIns />
     </Box>
   );
 }

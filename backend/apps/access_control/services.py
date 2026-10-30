@@ -177,6 +177,21 @@ def assign_role(
     return assignment
 
 
+def _ensure_not_last_administrator_grant(assignment: RoleAssignment) -> None:
+    """Never remove the hospital's last organization administrator role (no lock-out)."""
+    from apps.identity.accounts import ADMIN_ROLE, active_administrators
+
+    role = assignment.role
+    if role.code != ADMIN_ROLE or not role.is_system or assignment.facility_id is not None:
+        return
+    if not active_administrators().exclude(pk=assignment.user_id).exists():
+        raise ConflictError(
+            "This is the last active hospital administrator. Give another person the "
+            "Organization administrator role first, so the hospital is never locked out.",
+            code="LAST_ADMINISTRATOR",
+        )
+
+
 @transaction.atomic
 def revoke_role_assignment(*, actor, assignment_id, reason: str, request=None) -> RoleAssignment:
     assignment = RoleAssignment.objects.select_for_update().get(pk=assignment_id)
@@ -184,6 +199,7 @@ def revoke_role_assignment(*, actor, assignment_id, reason: str, request=None) -
         raise ConflictError("This role assignment is already revoked.")
     if actor is not None and assignment.user_id == actor.pk:
         raise ConflictError("You cannot revoke your own role assignments.")
+    _ensure_not_last_administrator_grant(assignment)
     assignment.revoked_at = timezone.now()
     assignment.revoked_by = actor
     assignment.revocation_reason = reason

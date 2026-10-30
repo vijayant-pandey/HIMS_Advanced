@@ -4,6 +4,158 @@
  */
 
 export interface paths {
+    "/api/v1/access-reviews/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+         *     reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+         */
+        get: operations["access_reviews_list"];
+        put?: never;
+        /**
+         * @description Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+         *     reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+         */
+        post: operations["access_reviews_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-reviews/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+         *     reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+         */
+        get: operations["access_reviews_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-reviews/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+         *     reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+         */
+        post: operations["access_reviews_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-reviews/{id}/complete/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+         *     reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+         */
+        post: operations["access_reviews_complete_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-reviews/{id}/decide/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Keep or remove access for one or more people. Removing ends the access at once. */
+        post: operations["access_reviews_decide_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-reviews/{id}/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Download the review with every decision as CSV (evidence for auditors). */
+        get: operations["access_reviews_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-reviews/{id}/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Everyone's access in this review (all rows; filter with decision / search). */
+        get: operations["access_reviews_items_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/access-reviews/schedule/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description When the next review is due, and whether the one in progress is overdue. */
+        get: operations["access_reviews_schedule_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/accounts/": {
         parameters: {
             query?: never;
@@ -460,6 +612,57 @@ export interface paths {
         put?: never;
         /** @description Always answers 202 with the same message, whether or not the account exists. */
         post: operations["auth_password_reset_request_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description "My sign-ins" (HIMS-IAM-016): the person's own open sessions, newest first. */
+        get: operations["auth_sessions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/{session_id}/sign-out/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sign out one of the person's other devices. */
+        post: operations["auth_sessions_sign_out_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/sign-out-others/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sign out every device except this one (e.g. after a lost phone). */
+        post: operations["auth_sessions_sign_out_others_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1583,6 +1786,111 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccessReview: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly title: string;
+            readonly status: components["schemas"]["AccessReviewStatusEnum"];
+            /** Format: date */
+            readonly due_on: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly started_by_name: string | null;
+            /** Format: date-time */
+            readonly completed_at: string | null;
+            readonly completed_by_name: string | null;
+            /** @description Summary or reason for cancelling. */
+            readonly notes: string;
+            readonly summary: components["schemas"]["AccessReviewSummary"];
+            readonly version: number;
+        };
+        AccessReviewCancelRequest: {
+            version: number;
+            reason: string;
+        };
+        AccessReviewCompleteRequest: {
+            version: number;
+            /** @default  */
+            notes: string;
+        };
+        /**
+         * @description * `keep` - keep
+         *     * `remove` - remove
+         * @enum {string}
+         */
+        AccessReviewDecideDecisionEnum: "keep" | "remove";
+        AccessReviewDecideRequest: {
+            items: string[];
+            decision: components["schemas"]["AccessReviewDecideDecisionEnum"];
+            /** @default  */
+            comment: string;
+        };
+        AccessReviewItem: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly person_name: string;
+            /** Format: email */
+            readonly person_email: string;
+            /** @description Could the person sign in when it started? */
+            readonly account_active: boolean;
+            /** Format: date-time */
+            readonly last_signed_in_at: string | null;
+            readonly role_name: string;
+            /** @description Where, e.g. "Whole hospital". */
+            readonly scope: string;
+            /** Format: date-time */
+            readonly granted_at: string;
+            /** Format: date-time */
+            readonly access_ends_at: string | null;
+            readonly decision: components["schemas"]["AccessReviewItemDecisionEnum"];
+            readonly decided_by_name: string | null;
+            /** Format: date-time */
+            readonly decided_at: string | null;
+            readonly comment: string;
+            /** @description Your own access: someone else must decide it. */
+            readonly is_own: boolean;
+        };
+        /**
+         * @description * `pending` - Not reviewed yet
+         *     * `keep` - Keep
+         *     * `remove` - Removed
+         *     * `ended` - Already ended elsewhere
+         * @enum {string}
+         */
+        AccessReviewItemDecisionEnum: "pending" | "keep" | "remove" | "ended";
+        AccessReviewSchedule: {
+            interval_days: number;
+            /** Format: date-time */
+            last_completed_at: string | null;
+            /** Format: date */
+            next_due_on: string;
+            /** @description No review in progress and one is due. */
+            review_due: boolean;
+            /** Format: uuid */
+            open_review_id: string | null;
+            open_review_overdue: boolean;
+        };
+        AccessReviewStartRequest: {
+            title: string;
+            /**
+             * Format: date
+             * @description Finish by (default 14 days).
+             */
+            due_on?: string | null;
+        };
+        /**
+         * @description * `open` - In progress
+         *     * `completed` - Completed
+         *     * `cancelled` - Cancelled
+         * @enum {string}
+         */
+        AccessReviewStatusEnum: "open" | "completed" | "cancelled";
+        AccessReviewSummary: {
+            pending: number;
+            keep: number;
+            remove: number;
+            ended: number;
+        };
         Account: {
             /** Format: uuid */
             readonly id: string;
@@ -2253,6 +2561,18 @@ export interface components {
             verified: boolean;
             recovery_codes_remaining: number;
         };
+        /** @description One of the person's own sign-ins (HIMS-IAM-016). The session key is never sent. */
+        MySession: {
+            /** Format: uuid */
+            id: string;
+            /** @description Readable device, e.g. "Chrome on Windows". */
+            device: string;
+            ip_address: string | null;
+            /** Format: date-time */
+            signed_in_at: string;
+            /** @description The device making this request. */
+            is_current: boolean;
+        };
         NoAccessReference: {
             /** @description Quote this to an administrator or support. */
             reference: string;
@@ -2733,6 +3053,8 @@ export interface components {
         };
         /**
          * @description * `access.assignments.manage` - access.assignments.manage
+         *     * `access.reviews.manage` - access.reviews.manage
+         *     * `access.reviews.view` - access.reviews.view
          *     * `access.roles.manage` - access.roles.manage
          *     * `access.roles.view` - access.roles.view
          *     * `accounts.manage` - accounts.manage
@@ -2757,7 +3079,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
         QualificationType: {
             /** Format: uuid */
             readonly id: string;
@@ -2919,6 +3241,9 @@ export interface components {
          * @enum {string}
          */
         SeparatorEnum: "-" | "/";
+        SessionsEnded: {
+            sessions_ended: number;
+        };
         SetNextNumberRequest: {
             version: number;
             /** @description Running number the next record should get, e.g. 54322. */
@@ -3301,6 +3626,217 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    access_reviews_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReview"][];
+                };
+            };
+        };
+    };
+    access_reviews_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessReviewStartRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReview"];
+                };
+            };
+        };
+    };
+    access_reviews_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this access review. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReview"];
+                };
+            };
+        };
+    };
+    access_reviews_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this access review. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessReviewCancelRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReview"];
+                };
+            };
+        };
+    };
+    access_reviews_complete_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this access review. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessReviewCompleteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReview"];
+                };
+            };
+        };
+    };
+    access_reviews_decide_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this access review. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessReviewDecideRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReviewItem"][];
+                };
+            };
+        };
+    };
+    access_reviews_export_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this access review. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
+    access_reviews_items_list: {
+        parameters: {
+            query?: {
+                /** @description pending, keep, remove or ended */
+                decision?: string;
+                /** @description Name, email, role or place */
+                search?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this access review. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReviewItem"][];
+                };
+            };
+        };
+    };
+    access_reviews_schedule_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessReviewSchedule"];
+                };
+            };
+        };
+    };
     accounts_list: {
         parameters: {
             query?: {
@@ -3942,6 +4478,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PasswordResetRequested"];
+                };
+            };
+        };
+    };
+    auth_sessions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MySession"][];
+                };
+            };
+        };
+    };
+    auth_sessions_sign_out_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_sessions_sign_out_others_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionsEnded"];
                 };
             };
         };

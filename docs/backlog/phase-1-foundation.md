@@ -70,10 +70,11 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-009 | Scoped RBAC: catalog, roles, facility/department assignments, default deny, escalation guard (ADR-015) | Done |
 | HIMS-IAM-010 | Patient-relationship scope (treating team / encounter) | To do (Phase 2) |
 | HIMS-IAM-011 | Break-glass emergency access with reason, audit and review | To do (Phase 2) |
-| HIMS-IAM-012 | Periodic access-review report | To do |
+| HIMS-IAM-012 | Periodic access-review report | Done (Access reviews page; reminders every 90 days; CSV evidence; admin console) |
 | HIMS-IAM-013 | Role and access-management UI | Done |
 | HIMS-IAM-015 | Accounts screen incl. people who are not staff; last-administrator protection | Done |
-| HIMS-IAM-016 | "My sign-ins": see own open sessions and sign out other devices on the Security page | To do |
+| HIMS-IAM-016 | "My sign-ins": see own open sessions and sign out other devices on the Security page | Done |
+| HIMS-IAM-017 | Delegated access: temporary, time-limited cover with reason and audit (spec 4.4) | To do |
 | HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | To do |
 
 ## EPIC HIMS-STAFF — Staff and credentials

@@ -98,3 +98,17 @@ class MfaSetupSerializer(serializers.Serializer):
 
 class MfaRecoveryCodesSerializer(serializers.Serializer):
     recovery_codes = serializers.ListField(child=serializers.CharField())
+
+
+class MySessionSerializer(serializers.Serializer):
+    """One of the person's own sign-ins (HIMS-IAM-016). The session key is never sent."""
+
+    id = serializers.UUIDField()
+    device = serializers.CharField(help_text='Readable device, e.g. "Chrome on Windows".')
+    ip_address = serializers.IPAddressField(allow_null=True)
+    signed_in_at = serializers.DateTimeField(source="created_at")
+    is_current = serializers.BooleanField(help_text="The device making this request.")
+
+
+class SessionsEndedSerializer(serializers.Serializer):
+    sessions_ended = serializers.IntegerField()

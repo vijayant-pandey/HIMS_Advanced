@@ -61,11 +61,15 @@ describe("two-factor sign-in (HIMS-IAM-005)", () => {
   });
 
   it("sets up two-factor: key, first code, then backup codes", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(json(201, { secret: fakeManualKey, otpauth_uri: "otpauth://totp/x" }))
-      .mockResolvedValueOnce(json(200, { recovery_codes: ["aaaaa-bbbbb", "ccccc-ddddd"] }))
-      .mockResolvedValue(json(200, { ...admin, mfa: { ...admin.mfa, enabled: true, verified: true } }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/auth/sessions/")) return json(200, []);
+      if (url.endsWith("/auth/mfa/setup/"))
+        return json(201, { secret: fakeManualKey, otpauth_uri: "otpauth://totp/x" });
+      if (url.endsWith("/auth/mfa/confirm/"))
+        return json(200, { recovery_codes: ["aaaaa-bbbbb", "ccccc-ddddd"] });
+      return json(200, { ...admin, mfa: { ...admin.mfa, enabled: true, verified: true } });
+    });
     renderAt("/security", admin, <Route path="/security" element={<SecurityPage />} />);
 
     expect(screen.getByText("Required for your role")).toBeInTheDocument();
@@ -76,7 +80,7 @@ describe("two-factor sign-in (HIMS-IAM-005)", () => {
     fireEvent.change(screen.getByLabelText("6-digit code"), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: "Turn on" }));
     expect(await screen.findByTestId("recovery-codes")).toHaveTextContent("aaaaa-bbbbb");
-    expect(fetchMock.mock.calls[1]![0]).toBe("/api/v1/auth/mfa/confirm/");
+    expect(fetchMock.mock.calls.some(([url]) => url === "/api/v1/auth/mfa/confirm/")).toBe(true);
   });
 
   it("asks for the code after the password when two-factor is on", async () => {
@@ -95,5 +99,74 @@ describe("two-factor sign-in (HIMS-IAM-005)", () => {
     expect(screen.getByLabelText("Authentication code")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Use a backup code/ }));
     expect(screen.getByLabelText("Backup code")).toBeInTheDocument();
+  });
+});
+
+describe("My sign-ins (HIMS-IAM-016)", () => {
+  const signedIn: CurrentUser = {
+    ...admin,
+    mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 8 },
+  };
+  const SESSIONS = [
+    {
+      id: "s1",
+      device: "Chrome on Windows",
+      ip_address: "10.0.0.7",
+      signed_in_at: "2026-10-30T08:00:00Z",
+      is_current: true,
+    },
+    {
+      id: "s2",
+      device: "Safari on iPhone",
+      ip_address: "10.0.0.9",
+      signed_in_at: "2026-10-29T18:30:00Z",
+      is_current: false,
+    },
+  ];
+
+  function mockApi(sessions: unknown) {
+    return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/sign-out-others/")) return json(200, { sessions_ended: 1 });
+      if (url.endsWith("/sign-out/")) return new Response(null, { status: 204 });
+      if (url.endsWith("/auth/sessions/") && (!init?.method || init.method === "GET"))
+        return json(200, sessions);
+      return json(200, signedIn);
+    });
+  }
+
+  it("lists this device and the others", async () => {
+    mockApi(SESSIONS);
+    renderAt("/security", signedIn, <Route path="/security" element={<SecurityPage />} />);
+    expect(await screen.findByText("Safari on iPhone")).toBeInTheDocument();
+    expect(screen.getByText("Chrome on Windows")).toBeInTheDocument();
+    expect(screen.getByText("This device")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Sign out Safari on iPhone/ })).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: /^Sign out Chrome on Windows/ })).not.toBeInTheDocument();
+  });
+
+  it("signs out one other device", async () => {
+    const fetchMock = mockApi(SESSIONS);
+    renderAt("/security", signedIn, <Route path="/security" element={<SecurityPage />} />);
+    fireEvent.click(await screen.findByRole("button", { name: /^Sign out Safari on iPhone/ }));
+    await vi.waitFor(() =>
+      expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/auth/sessions/s2/sign-out/"))).toBe(
+        true,
+      ),
+    );
+  });
+
+  it("signs out all other devices and says how many", async () => {
+    mockApi(SESSIONS);
+    renderAt("/security", signedIn, <Route path="/security" element={<SecurityPage />} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Sign out all other devices" }));
+    expect(await screen.findByText("Signed out 1 other device.")).toBeInTheDocument();
+  });
+
+  it("says so when there are no other devices", async () => {
+    mockApi([SESSIONS[0]]);
+    renderAt("/security", signedIn, <Route path="/security" element={<SecurityPage />} />);
+    expect(await screen.findByText("You are not signed in anywhere else.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sign out all other devices" })).not.toBeInTheDocument();
   });
 });

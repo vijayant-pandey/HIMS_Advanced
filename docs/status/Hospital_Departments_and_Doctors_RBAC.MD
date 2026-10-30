@@ -433,3 +433,19 @@ switched off, so the hospital cannot lock itself out.
 * New permission **`catalogs.manage`** (HR / credentialing officer, organization administrator):
   add, rename and switch off job titles, specialties and qualification types on the
   **Job titles & catalogs** page. Standard entries ship with HIMS; codes never change.
+
+## Update 2026-10-30: access reviews and "My sign-ins" (HIMS-IAM-012, HIMS-IAM-016)
+* New permission **`access.reviews.manage`** (organization administrator; two-factor required):
+  start a periodic access review, keep or remove each person's access, complete or cancel it.
+  Removing access in a review ends it at once (same rule as "Remove" on the Access page).
+  **Nobody can decide on their own access**: another reviewer must do it.
+* New permission **`access.reviews.view`** (auditor, organization administrator): read reviews
+  and download them as CSV evidence. The **auditor** role now has `audit.view` and
+  `access.reviews.view`.
+* A review is due every 90 days (setting `HIMS_ACCESS_REVIEW_INTERVAL_DAYS`); reviewers get one
+  email when it is due and one when the review in progress passes its finish-by date.
+* The hospital's **last** organization administrator role can no longer be removed (Access page,
+  access review or admin console), in addition to the account not being switchable off.
+* Everyone can see their own sign-ins on the **Security** page and sign out other devices; no
+  permission is needed for your own account.
+
