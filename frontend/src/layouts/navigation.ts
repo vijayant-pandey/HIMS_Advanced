@@ -22,7 +22,13 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/accounts", label: "Accounts", permission: "access.roles.view" },
   { to: "/access-reviews", label: "Access reviews", permission: "access.reviews.view" },
   { to: "/audit", label: "Audit log", permission: "audit.view" },
+  { to: "/audit/integrity", label: "Audit integrity", permission: "audit.view" },
 ];
+
+/** True when another item lives under this one (e.g. /audit and /audit/integrity), so only the exact page is highlighted. */
+export function hasNestedItem(item: NavItem): boolean {
+  return NAV_ITEMS.some((other) => other.to.startsWith(`${item.to}/`));
+}
 
 export function visibleNavItems(user: CurrentUser | null | undefined): NavItem[] {
   return NAV_ITEMS.filter((item) => hasPermission(user, item.permission));

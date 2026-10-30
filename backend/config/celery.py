@@ -63,6 +63,15 @@ def _configure_queues_and_schedule(sender, **kwargs):
             "task": "notifications.access_review_reminders",
             "schedule": timedelta(hours=24),
         },
+        "audit-seal-events": {
+            "task": "platform.audit_seal_events",
+            "schedule": timedelta(minutes=1),
+            "options": {"expires": 60},
+        },
+        "audit-integrity-check": {
+            "task": "platform.audit_integrity_check",
+            "schedule": timedelta(hours=24),
+        },
     }
 
 

@@ -12,6 +12,7 @@ from .base import *  # noqa: F403
 from .base import (
     DATABASES,
     DEBUG,
+    HIMS_AUDIT_CHAIN_KEYS,
     HIMS_DATABASE_ENVIRONMENT,
     HIMS_DEPLOYMENT_ID,
     HIMS_ENVIRONMENT,
@@ -40,6 +41,15 @@ if HIMS_ENVIRONMENT == "production" and not HIMS_MFA_REQUIRED_FOR_PRIVILEGED:
     raise ImproperlyConfigured(
         "Two-factor sign-in for privileged users cannot be disabled in production."
     )
+if not HIMS_AUDIT_CHAIN_KEYS:
+    raise ImproperlyConfigured("HIMS_AUDIT_CHAIN_KEYS must be set (from the secret manager).")
+for _entry in HIMS_AUDIT_CHAIN_KEYS:
+    _key_id, _, _secret = _entry.partition(":")
+    if not _key_id or len(_key_id) > 32 or len(_secret) < 32:
+        raise ImproperlyConfigured(
+            "Each HIMS_AUDIT_CHAIN_KEYS entry must look like 'key-id:secret' "
+            "(id up to 32 characters, secret at least 32 characters)."
+        )
 
 validate_environment(
     settings_profile="production",

@@ -342,6 +342,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit-integrity-checks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Results of the tamper-evidence check, newest first, and "Check now". */
+        get: operations["audit_integrity_checks_list"];
+        put?: never;
+        /** @description Seal new events and check the whole chain now. Takes a few seconds. */
+        post: operations["audit_integrity_checks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-integrity-checks/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Results of the tamper-evidence check, newest first, and "Check now". */
+        get: operations["audit_integrity_checks_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit-integrity-checks/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Where the chain stands now, and the latest check. */
+        get: operations["audit_integrity_checks_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf/": {
         parameters: {
             query?: never;
@@ -1973,6 +2025,61 @@ export interface components {
             readonly changes: unknown;
             readonly metadata: unknown;
         };
+        AuditIntegrityCheck: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly started_at: string;
+            /** Format: date-time */
+            readonly finished_at: string;
+            readonly trigger: components["schemas"]["TriggerEnum"];
+            readonly trigger_label: string;
+            readonly requested_by_name: string | null;
+            readonly outcome: components["schemas"]["IntegrityOutcomeEnum"];
+            /** @description Events sealed into the chain just before this check. */
+            readonly events_sealed: number;
+            readonly entries_checked: number;
+            readonly last_sequence: number;
+            readonly chain_head: string;
+            readonly problem_count: number;
+            /** @description Events older than the sealing window that are not in the chain (written outside the normal path, or with a back-dated time). */
+            readonly unsealed_overdue: number;
+        };
+        AuditIntegrityCheckDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly started_at: string;
+            /** Format: date-time */
+            readonly finished_at: string;
+            readonly trigger: components["schemas"]["TriggerEnum"];
+            readonly trigger_label: string;
+            readonly requested_by_name: string | null;
+            readonly outcome: components["schemas"]["IntegrityOutcomeEnum"];
+            /** @description Events sealed into the chain just before this check. */
+            readonly events_sealed: number;
+            readonly entries_checked: number;
+            readonly last_sequence: number;
+            readonly chain_head: string;
+            readonly problem_count: number;
+            /** @description Events older than the sealing window that are not in the chain (written outside the normal path, or with a back-dated time). */
+            readonly unsealed_overdue: number;
+            readonly problems: components["schemas"]["IntegrityProblem"][];
+        };
+        AuditIntegrityStatus: {
+            /** @description Events in the chain so far. */
+            sealed_events: number;
+            /** Format: date-time */
+            last_sealed_at: string | null;
+            /** @description Fingerprint of the newest link. */
+            chain_head: string;
+            /** @description New events not sealed yet (normally sealed within a minute). */
+            waiting_to_be_sealed: number;
+            /** @description Name of the key signing new links (never the key). */
+            key_id: string;
+            check_interval_hours: number;
+            last_check: components["schemas"]["AuditIntegrityCheck"] | null;
+        };
         Bed: {
             /** Format: uuid */
             readonly id: string;
@@ -2491,6 +2598,26 @@ export interface components {
             opens_at: string;
             /** Format: time */
             closes_at: string;
+        };
+        /**
+         * @description * `passed` - Passed: nothing was changed
+         *     * `failed` - Problems found
+         * @enum {string}
+         */
+        IntegrityOutcomeEnum: "passed" | "failed";
+        /** @description One problem. Which fields are present depends on the kind. */
+        IntegrityProblem: {
+            kind: string;
+            text: string;
+            sequence?: number;
+            last_missing?: number;
+            event_id?: string;
+            action?: string;
+            action_label?: string;
+            occurred_at?: string;
+            key_id?: string;
+            previous_last_sequence?: number;
+            last_sequence?: number;
         };
         InvitationAcceptRequest: {
             token: string;
@@ -3546,6 +3673,13 @@ export interface components {
             rooms: components["schemas"]["TreeRoom"][];
         };
         /**
+         * @description * `scheduled` - Daily automatic check
+         *     * `on_demand` - Started by a person
+         *     * `command` - Started from the server command line
+         * @enum {string}
+         */
+        TriggerEnum: "scheduled" | "on_demand" | "command";
+        /**
          * @description * `unverified` - Unverified
          *     * `verified` - Verified
          *     * `rejected` - Rejected
@@ -4126,6 +4260,85 @@ export interface operations {
                 };
                 content: {
                     "text/csv": string;
+                };
+            };
+        };
+    };
+    audit_integrity_checks_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditIntegrityCheck"][];
+                };
+            };
+        };
+    };
+    audit_integrity_checks_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditIntegrityCheckDetail"];
+                };
+            };
+        };
+    };
+    audit_integrity_checks_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this audit integrity check. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditIntegrityCheckDetail"];
+                };
+            };
+        };
+    };
+    audit_integrity_checks_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditIntegrityStatus"];
                 };
             };
         };

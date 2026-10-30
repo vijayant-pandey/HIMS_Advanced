@@ -4,6 +4,7 @@ import { AccessPage } from "../features/accessControl/AccessPage";
 import { AccessReviewDetailPage, AccessReviewsPage } from "../features/accessControl/AccessReviewsPage";
 import { AccountDetailPage } from "../features/accounts/AccountDetailPage";
 import { AccountsPage } from "../features/accounts/AccountsPage";
+import { AuditIntegrityDetailPage, AuditIntegrityPage } from "../features/audit/AuditIntegrityPage";
 import { AuditLogPage } from "../features/audit/AuditLogPage";
 import { HomePage } from "../features/access/HomePage";
 import { ActivatePage } from "../features/auth/ActivatePage";
@@ -54,6 +55,8 @@ export const router = createBrowserRouter([
           { path: "accounts/:id", element: <AccountDetailPage /> },
           { path: "settings", element: <HospitalSettingsPage /> },
           { path: "audit", element: <AuditLogPage /> },
+          { path: "audit/integrity", element: <AuditIntegrityPage /> },
+          { path: "audit/integrity/:id", element: <AuditIntegrityDetailPage /> },
           { path: "security", element: <SecurityPage /> },
         ],
       },

@@ -99,11 +99,13 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-AUD-001 | Append-only audit events with DB trigger; audit search for auditors, itself audited (ADR-013) | Done |
 | HIMS-AUD-002 | Access-denied events recorded outside rolled-back transactions | Done |
 | HIMS-AUD-003 | Audit log screen for auditors in the app + CSV export | Done |
-| HIMS-SEC-010 | Audit tamper evidence (hash chain or S3 Object Lock export) | To do |
+| HIMS-SEC-010 | Audit tamper evidence: keyed hash chain over every audit event, sealed every minute, daily + on-demand integrity check, alerts to auditors, Audit integrity screen and admin console ([design](../architecture/data-architecture/audit-integrity.md)) | Done |
 | HIMS-SEC-011 | Threat model and risk assessment (spec 23) | To do |
 | HIMS-SEC-012 | Security headers/CSP for the SPA (CloudFront response headers) | To do |
 | HIMS-SEC-013 | Upload validation/malware scanning service | To do |
 | HIMS-SEC-014 | Trust `X-Forwarded-For` only from the ALB for audit IPs | To do |
+| HIMS-SEC-016 | Copy each passed check's audit chain head to write-once storage (S3 Object Lock) as an independent anchor (gap found in HIMS-SEC-010) | To do (🔒 AWS) |
+| HIMS-SEC-017 | Run the on-demand audit integrity check as a background job with progress once the audit log nears ~1 million records (gap found in HIMS-SEC-010) | To do (when volume is near) |
 
 ## EPIC HIMS-OPS — Delivery and operations
 

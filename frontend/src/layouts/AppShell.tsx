@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { ThemePicker } from "../components/ThemePicker";
 import { useCurrentUser, useLogout } from "../features/auth/api";
-import { visibleNavItems } from "./navigation";
+import { hasNestedItem, visibleNavItems } from "./navigation";
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -29,6 +29,7 @@ export function AppShell() {
                 color="inherit"
                 component={NavLink}
                 to={item.to}
+                end={hasNestedItem(item)}
                 sx={{ opacity: 0.85, "&.active": { opacity: 1, bgcolor: "rgba(255,255,255,0.16)" } }}
               >
                 {item.label}

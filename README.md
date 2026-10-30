@@ -79,7 +79,8 @@ Privileged accounts (administrators, auditors, HR/credentialing, facility admini
 set up two-factor sign-in with an authenticator app at their next sign-in (ADR-018). On a
 developer machine only, it can be switched off temporarily by adding
 `HIMS_MFA_REQUIRED_FOR_PRIVILEGED=false` to `backend/.env`; production refuses to start like that.
-Managed environments must set `HIMS_FIELD_ENCRYPTION_KEYS` (see `common/crypto.py`).
+Managed environments must set `HIMS_FIELD_ENCRYPTION_KEYS` (see `common/crypto.py`) and
+`HIMS_AUDIT_CHAIN_KEYS` (audit tamper evidence; see `apps/audit/integrity.py`).
 
 ## Updating the databases after a merge
 

@@ -177,6 +177,15 @@ HIMS_CREDENTIAL_ALERT_DAYS = env.list("HIMS_CREDENTIAL_ALERT_DAYS", cast=int, de
 # Periodic access review (HIMS-IAM-012): how often a full review is due, and how long one runs.
 HIMS_ACCESS_REVIEW_INTERVAL_DAYS = env.int("HIMS_ACCESS_REVIEW_INTERVAL_DAYS", default=90)
 HIMS_ACCESS_REVIEW_DEFAULT_DAYS_TO_FINISH = 14
+# Tamper evidence for the audit log (HIMS-SEC-010, ADR-013). Keys for the keyed chain hash as
+# "key-id:secret", newest first; keep older keys listed so older links can still be checked.
+# They live outside the database (secret manager), so someone with database access alone
+# cannot rebuild the chain. Required in managed environments; developer machines and tests
+# fall back to a key derived from DJANGO_SECRET_KEY. See apps/audit/integrity.py.
+HIMS_AUDIT_CHAIN_KEYS = env.list("HIMS_AUDIT_CHAIN_KEYS", default=[])
+# Sealing also picks up events written up to this long before its last run (a slow transaction
+# commits late). Older events that are not in the chain are reported by the integrity check.
+HIMS_AUDIT_SEAL_LOOKBACK_HOURS = env.int("HIMS_AUDIT_SEAL_LOOKBACK_HOURS", default=24)
 
 # --- REST API (spec 16, 29) --------------------------------------------------------------
 REST_FRAMEWORK = {
@@ -213,6 +222,8 @@ SPECTACULAR_SETTINGS = {
         "ActiveStatusEnum": "apps.facilities.models.Facility.Status",
         "DesignationCategoryEnum": "apps.staff.models.Designation.Category",
         "QualificationTypeCategoryEnum": "apps.staff.models.QualificationType.Category",
+        "OutcomeEnum": "apps.audit.models.AuditEvent.Outcome",
+        "IntegrityOutcomeEnum": "apps.audit.models.AuditIntegrityCheck.Outcome",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)
