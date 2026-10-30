@@ -26,12 +26,12 @@ import logging
 from datetime import timedelta
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
+from apps.notifications.services import send_email
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
@@ -368,11 +368,12 @@ def _period(delegation: AccessDelegation) -> str:
 def _send(subject: str, body: str, *emails: str) -> None:
     recipients = [e for e in emails if e]
     if recipients:
-        send_mail(
+        send_email(
             subject=subject,
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=recipients,
+            body=body,
+            to=recipients,
+            category="access",
+            template="access.cover",
         )
 
 

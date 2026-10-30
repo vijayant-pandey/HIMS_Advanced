@@ -51,9 +51,9 @@ to end.
 | D3 | Unknown/unconscious patients | Allowed: "Unknown male/female, approx. age", flagged; details completed later | DR | |
 | D4 | Duplicate check | Warn on likely duplicates (same ID number; or similar name + same birth year; or same phone + similar name). Receptionist must pick the existing patient or confirm "different person" with a reason | PO | |
 | D5 | Who merges duplicate records? | **Medical records officer** requests; a **second** officer or admin approves (two-person rule); undo possible within 30 days | PO, DR | |
-| D6 | Aadhaar (India) | **Do not store** the full Aadhaar number; store only the last 4 digits as a reference (Aadhaar Act rules) | LEGAL | |
-| D7 | SSN (US) | **Do not collect** SSN; optional last 4 digits only if a payer requires it later | LEGAL | |
-| D8 | ABHA (India) | Phase 2: record ABHA number/address typed in (marked "not verified"). Verified ABHA creation/linking via ABDM is a separate project (needs ABDM registration) | PO | |
+| D6 | Aadhaar (India) | **Do not store** the full Aadhaar number; store only the last 4 digits as a reference (Aadhaar Act rules) | LEGAL | **PO 2026-10-30:** allow entering the number now (no UIDAI API yet), marked *not verified*; stored **encrypted**, shown masked; verification when the API is available. **Go-live item for LEGAL:** UIDAI rules on storing full Aadhaar numbers (Aadhaar Data Vault) |
+| D7 | SSN (US) | **Do not collect** SSN; optional last 4 digits only if a payer requires it later | LEGAL | **PO 2026-10-30:** allow entering it now, *not verified*, stored **encrypted**, shown masked (last 4). **Go-live item for LEGAL** |
+| D8 | ABHA (India) | Phase 2: record ABHA number/address typed in (marked "not verified"). Verified ABHA creation/linking via ABDM is a separate project (needs ABDM registration) | PO | **PO 2026-10-30: agreed** (enter any number now; ABDM API later) |
 | D9 | Consent at registration (DPDP / HIPAA notice) | Record that the privacy notice was given and the patient agreed to data processing for care; record SMS/email consent separately | LEGAL | |
 | D10 | Appointment model | Slots per doctor session (e.g. 10 minutes) **plus** token numbers per doctor per day; walk-ins get the next token | PO, DR | |
 | D11 | Overbooking | Not allowed by default; a doctor's schedule can allow "up to N extra" per session | PO | |
@@ -72,6 +72,12 @@ to end.
 | D24 | Retention of patient records | Never deleted by users; legal retention period per country to be set by LEGAL before go-live | LEGAL | |
 | D25 | Patient photo | Not in Phase 2 (privacy + storage); add later if wanted | PO | |
 | D26 | Languages / local scripts | Names stored as typed (Unicode, any script); screens in English for Phase 2 | PO | |
+
+## Decisions recorded so far
+
+- 2026-10-30, PO: D6, D7, D8 as above. Email printed to the console now, Gmail SMTP later (by settings); SMS printed to the console until a gateway is chosen (built: notification service, HIMS-NOTIF-001).
+- 2026-10-30, reviewing doctor (via PO): "production grade, not a toy": compliance documentation (HIPAA; India DPDP, ABDM, IT Act) is part of the work (backlog HIMS-COMP).
+- Still open: the remaining decisions and the formal sign-off below.
 
 ## Sign-off (spec 26.10)
 

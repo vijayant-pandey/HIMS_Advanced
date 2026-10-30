@@ -20,6 +20,7 @@ CATEGORIES: dict[str, str] = {
     "feature": "Features",
     "admin": "Admin console",
     "audit": "Audit log",
+    "notification": "Emails and SMS",
 }
 
 LABELS: dict[str, str] = {
@@ -89,6 +90,8 @@ LABELS: dict[str, str] = {
     A.CREDENTIAL_EXPIRY_ALERT_SENT: "Licence expiry alert sent",
     A.ACCESS_DELEGATION_CREATED: "Cover arranged (access lent for a time)",
     A.ACCESS_DELEGATION_ENDED: "Cover ended early",
+    A.NOTIFICATION_RETRIED: "Email/SMS sent again",
+    A.NOTIFICATION_TEST_SENT: "Test email/SMS sent",
     A.AUDIT_SEARCHED: "Audit log searched",
     A.AUDIT_EXPORTED: "Audit log exported",
     A.AUDIT_INTEGRITY_CHECKED: "Audit log integrity checked",

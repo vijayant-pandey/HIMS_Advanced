@@ -28,12 +28,12 @@ from functools import lru_cache
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.core.mail import send_mail
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection, transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.notifications.services import send_email
 from common.crypto import LOCAL_ENVIRONMENTS
 from common.exceptions import ConflictError
 
@@ -437,11 +437,12 @@ def _alert_auditors(check: AuditIntegrityCheck) -> None:
         f"See the details (sign-in needed): {link}\n"
     )
     if recipients:
-        send_mail(
+        send_email(
             subject="HIMS: audit log integrity check found problems",
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=recipients,
+            body=body,
+            to=recipients,
+            category="audit",
+            template="audit.integrity_alert",
         )
     record_audit_event(
         action=AuditAction.AUDIT_INTEGRITY_ALERT_SENT,

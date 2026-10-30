@@ -18,12 +18,12 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction, record_audit_event
+from apps.notifications.services import send_email
 from common.exceptions import ConflictError, DomainError
 from common.outbox.services import publish_event
 
@@ -114,11 +114,12 @@ def send_invitation_email(invitation: Invitation) -> None:
         f"The link can be used once and expires on {expires}.\n"
         f"If you were not expecting this email, you can ignore it.\n"
     )
-    send_mail(
+    send_email(
         subject=f"Activate your {hospital} HIMS account",
-        message=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[invitation.user.email],
+        body=body,
+        to=[invitation.user.email],
+        category="account",
+        template="identity.invitation",
     )
 
 

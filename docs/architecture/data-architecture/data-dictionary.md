@@ -27,6 +27,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations)
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
+- **Notifications: emails and SMS**: [`notifications`](#notifications)
 - **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events)
 - **Platform: idempotency**: [`idempotency_records`](#idempotency_records)
 
@@ -950,6 +951,40 @@ Result of one run of the audit integrity check (HIMS-SEC-010). Written once, nev
 | `problem_count` | integer | no | `0` | 0 or more | Person | Restricted: Security record | Problem count |
 | `problems` | jsonb | no | list() | — | Person | Restricted: Audit content | Problems |
 | `unsealed_overdue` | integer | no | `0` | 0 or more | Person | Restricted: Security record | Events older than the sealing window that are not in the chain (written outside the normal path, or with a back-dated time). |
+
+## Notifications: emails and SMS
+
+**Owner (source of truth):** Platform (each sending domain owns its wording). **Design:** [notifications](../../workflows/notifications.md).
+
+<a id="notifications"></a>
+### `notifications`
+
+One email or SMS sent by HIMS (spec 4.23; HIMS-NOTIF-001), with its delivery outcome.
+
+- **Model:** `notifications.Notification`
+- **Lifecycle:** Kept as the delivery log; the real (secret-bearing) text is erased once delivered. Retention period: decision pending with the other records (🔒 LEGAL).
+- **Extra indexes:** `notification_retry_idx`: status, next_attempt_at; `notification_created_idx`: created_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now() | — | System | Internal: System metadata | When the row was created (UTC) |
+| `channel` | varchar(8) | no | — | `email` (Email), `sms` (SMS) | Person | Internal: Business data | Channel |
+| `category` | varchar(40) | no | — | up to 40 characters | Person | Internal: Business data | What it is about, e.g. account, security, staff, access, audit. |
+| `template` | varchar(80) | no | — | up to 80 characters | Person | Internal: Business data | Which message, e.g. identity.invitation (no personal data). |
+| `recipients` | jsonb | no | list() | — | Person | Restricted: Contact | Email addresses or phone numbers. |
+| `subject` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Message (secrets hidden) | Subject |
+| `body` | text | no | — | — | Person | Restricted: Message (secrets hidden) | Readable copy with sign-in links and secrets hidden. |
+| `body_encrypted` | text | no | — | — | Person | Secret: Message until delivered (encrypted) | Real text until delivered. |
+| `status` | varchar(10) | no | `Notification.Status.PENDING` | `pending` (Waiting to be sent), `sent` (Sent), `failed` (Failed, will retry), `gave_up` (Failed, no more retries), `skipped` (Not sent) | Person | Internal: Business data | Status |
+| `attempts` | smallint | no | `0` | — | Person | Internal: Business data | Attempts |
+| `next_attempt_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Next attempt at |
+| `last_error` | varchar(300) | no | — | up to 300 characters | Person | Internal: System diagnostics | Last error |
+| `sent_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Sent at |
+| `skip_reason` | varchar(200) | no | — | up to 200 characters | Person | Internal: Business data | Skip reason |
+| `related_type` | varchar(40) | no | — | up to 40 characters | Person | Internal: Business data | Related type |
+| `related_id` | varchar(64) | no | — | up to 64 characters | Person | Internal: Business data | Related id |
+| `requested_by_id` | uuid | yes | — | — | Person | Internal: Business data | Requested by id |
 
 ## Platform: transactional outbox
 

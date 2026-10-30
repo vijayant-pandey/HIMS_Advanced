@@ -2184,6 +2184,119 @@ paths:
                 items:
                   $ref: '#/components/schemas/AccessDelegation'
           description: ''
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_list
+      parameters:
+      - in: query
+        name: channel
+        schema:
+          type: string
+          enum:
+          - email
+          - sms
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Part of subject, message name or recipient
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - failed
+          - gave_up
+          - pending
+          - sent
+          - skipped
+      tags:
+      - notifications
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /api/v1/notifications/{id}/:
+    get:
+      operationId: notifications_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - notifications
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/notifications/{id}/send-again/:
+    post:
+      operationId: notifications_send_again_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - notifications
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/v1/notifications/test/:
+    post:
+      operationId: notifications_test_create
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestMessageRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
   /api/v1/numbering-schemes/:
     get:
       operationId: numbering_schemes_list
@@ -4649,6 +4762,14 @@ components:
       - count
       - prefix
       - room
+    ChannelEnum:
+      enum:
+      - email
+      - sms
+      type: string
+      description: |-
+        * `email` - Email
+        * `sms` - SMS
     CountryEnum:
       enum:
       - US
@@ -6028,6 +6149,105 @@ components:
           type: string
           default: ''
           maxLength: 200
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        channel:
+          allOf:
+          - $ref: '#/components/schemas/ChannelEnum'
+          readOnly: true
+        channel_label:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+          description: What it is about, e.g. account, security, staff, access, audit.
+        template:
+          type: string
+          readOnly: true
+          description: Which message, e.g. identity.invitation (no personal data).
+        recipients:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        subject:
+          type: string
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+          description: Readable copy with sign-in links and secrets hidden.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/NotificationStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        attempts:
+          type: integer
+          readOnly: true
+        last_error:
+          type: string
+          readOnly: true
+        next_attempt_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        skip_reason:
+          type: string
+          readOnly: true
+        can_send_again:
+          type: boolean
+          readOnly: true
+      required:
+      - attempts
+      - body
+      - can_send_again
+      - category
+      - channel
+      - channel_label
+      - created_at
+      - id
+      - last_error
+      - next_attempt_at
+      - recipients
+      - sent_at
+      - skip_reason
+      - status
+      - status_label
+      - subject
+      - template
+    NotificationStatusEnum:
+      enum:
+      - pending
+      - sent
+      - failed
+      - gave_up
+      - skipped
+      type: string
+      description: |-
+        * `pending` - Waiting to be sent
+        * `sent` - Sent
+        * `failed` - Failed, will retry
+        * `gave_up` - Failed, no more retries
+        * `skipped` - Not sent
     NumberingPreview:
       type: object
       properties:
@@ -6497,6 +6717,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IssuedNumber'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
     PaginatedRoleAssignmentList:
       type: object
       required:
@@ -7032,6 +7275,8 @@ components:
       - features.view
       - locations.manage
       - locations.view
+      - notifications.manage
+      - notifications.view
       - numbering.manage
       - numbering.view
       - organization.manage
@@ -7059,6 +7304,8 @@ components:
         * `features.view` - features.view
         * `locations.manage` - locations.manage
         * `locations.view` - locations.view
+        * `notifications.manage` - notifications.manage
+        * `notifications.view` - notifications.view
         * `numbering.manage` - numbering.manage
         * `numbering.view` - numbering.view
         * `organization.manage` - organization.manage
@@ -8200,6 +8447,19 @@ components:
         * `dietitian` - Dietitian
         * `administrator` - Administrator
         * `support` - Support staff
+    TestMessageRequest:
+      type: object
+      properties:
+        channel:
+          $ref: '#/components/schemas/ChannelEnum'
+        to:
+          type: string
+          minLength: 1
+          description: An email address, or a phone number like +919876543210.
+          maxLength: 254
+      required:
+      - channel
+      - to
     TreeBed:
       type: object
       properties:

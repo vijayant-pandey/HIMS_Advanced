@@ -30,6 +30,8 @@ class P:
     ACCESS_REVIEWS_MANAGE = "access.reviews.manage"
     AUDIT_VIEW = "audit.view"
     ACCOUNTS_MANAGE = "accounts.manage"
+    NOTIFICATIONS_VIEW = "notifications.view"
+    NOTIFICATIONS_MANAGE = "notifications.manage"
     CATALOGS_MANAGE = "catalogs.manage"
     ADMIN_CONSOLE = "platform.admin_console"
 
@@ -61,6 +63,8 @@ PERMISSIONS: dict[str, str] = {
     ),
     P.AUDIT_VIEW: "Search the audit log",
     P.CATALOGS_MANAGE: "Add and change job titles, specialties and qualification types",
+    P.NOTIFICATIONS_VIEW: "See the emails and SMS HIMS has sent and whether they arrived",
+    P.NOTIFICATIONS_MANAGE: "Send failed emails and SMS again; send a test message",
     P.ACCOUNTS_MANAGE: (
         "Add sign-in accounts for people who are not staff, switch accounts off or on, "
         "reset their two-factor and sign them out"
@@ -85,6 +89,8 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.ACCESS_REVIEWS_MANAGE,
         P.ACCOUNTS_MANAGE,
         P.AUDIT_VIEW,
+        P.NOTIFICATIONS_VIEW,
+        P.NOTIFICATIONS_MANAGE,
     }
 )
 

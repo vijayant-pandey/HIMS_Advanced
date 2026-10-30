@@ -64,6 +64,7 @@ test.describe("administrator", () => {
       ["Accounts", /Accounts/],
       ["Licence expiry", /Licence/],
       ["Job titles & catalogs", /Job titles/],
+      ["Messages", /Messages/],
     ] as const) {
       await page.goto("/");
       await openMenu(page, menu);

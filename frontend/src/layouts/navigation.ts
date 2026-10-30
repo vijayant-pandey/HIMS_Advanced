@@ -26,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/accounts", label: "Accounts", permission: "access.roles.view" },
   { to: "/access-reviews", label: "Access reviews", permission: "access.reviews.view" },
   { to: "/cover", label: "Cover", permission: "access.roles.view" },
+  { to: "/notifications", label: "Messages", permission: "notifications.view" },
   { to: "/audit", label: "Audit log", permission: "audit.view" },
   { to: "/audit/integrity", label: "Audit integrity", permission: "audit.view" },
 ];

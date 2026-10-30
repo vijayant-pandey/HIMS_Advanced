@@ -1254,6 +1254,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["notifications_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["notifications_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{id}/send-again/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["notifications_send_again_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/test/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["notifications_test_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/numbering-schemes/": {
         parameters: {
             query?: never;
@@ -2342,6 +2406,12 @@ export interface components {
             bed_type: components["schemas"]["BedTypeEnum"];
         };
         /**
+         * @description * `email` - Email
+         *     * `sms` - SMS
+         * @enum {string}
+         */
+        ChannelEnum: "email" | "sms";
+        /**
          * @description * `US` - United States
          *     * `IN` - India
          * @enum {string}
@@ -2899,6 +2969,41 @@ export interface components {
             /** @default  */
             page: string;
         };
+        Notification: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly channel: components["schemas"]["ChannelEnum"];
+            readonly channel_label: string;
+            /** @description What it is about, e.g. account, security, staff, access, audit. */
+            readonly category: string;
+            /** @description Which message, e.g. identity.invitation (no personal data). */
+            readonly template: string;
+            readonly recipients: string[];
+            readonly subject: string;
+            /** @description Readable copy with sign-in links and secrets hidden. */
+            readonly body: string;
+            readonly status: components["schemas"]["NotificationStatusEnum"];
+            readonly status_label: string;
+            readonly attempts: number;
+            readonly last_error: string;
+            /** Format: date-time */
+            readonly next_attempt_at: string | null;
+            /** Format: date-time */
+            readonly sent_at: string | null;
+            readonly skip_reason: string;
+            readonly can_send_again: boolean;
+        };
+        /**
+         * @description * `pending` - Waiting to be sent
+         *     * `sent` - Sent
+         *     * `failed` - Failed, will retry
+         *     * `gave_up` - Failed, no more retries
+         *     * `skipped` - Not sent
+         * @enum {string}
+         */
+        NotificationStatusEnum: "pending" | "sent" | "failed" | "gave_up" | "skipped";
         NumberingPreview: {
             /** @description What the first number would look like today. */
             example: string;
@@ -3127,6 +3232,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["IssuedNumber"][];
+        };
+        PaginatedNotificationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Notification"][];
         };
         PaginatedRoleAssignmentList: {
             /** @example 123 */
@@ -3387,6 +3507,8 @@ export interface components {
          *     * `features.view` - features.view
          *     * `locations.manage` - locations.manage
          *     * `locations.view` - locations.view
+         *     * `notifications.manage` - notifications.manage
+         *     * `notifications.view` - notifications.view
          *     * `numbering.manage` - numbering.manage
          *     * `numbering.view` - numbering.view
          *     * `organization.manage` - organization.manage
@@ -3397,7 +3519,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
         Person: {
             /** Format: uuid */
             id: string;
@@ -3821,6 +3943,11 @@ export interface components {
          * @enum {string}
          */
         StaffTypeEnum: "doctor" | "nurse" | "pharmacist" | "lab_technician" | "radiologist" | "dietitian" | "administrator" | "support";
+        TestMessageRequest: {
+            channel: components["schemas"]["ChannelEnum"];
+            /** @description An email address, or a phone number like +919876543210. */
+            to: string;
+        };
         TreeBed: {
             /** Format: uuid */
             id: string;
@@ -5930,6 +6057,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccessDelegation"][];
+                };
+            };
+        };
+    };
+    notifications_list: {
+        parameters: {
+            query?: {
+                channel?: "email" | "sms";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description Part of subject, message name or recipient */
+                search?: string;
+                status?: "failed" | "gave_up" | "pending" | "sent" | "skipped";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedNotificationList"];
+                };
+            };
+        };
+    };
+    notifications_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this notification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notification"];
+                };
+            };
+        };
+    };
+    notifications_send_again_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this notification. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notification"];
+                };
+            };
+        };
+    };
+    notifications_test_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TestMessageRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notification"];
                 };
             };
         };

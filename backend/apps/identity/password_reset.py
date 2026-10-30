@@ -21,12 +21,12 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction, record_audit_event
+from apps.notifications.services import send_email
 from common.exceptions import DomainError
 from common.outbox.services import publish_event
 
@@ -206,11 +206,12 @@ def send_reset_email(reset: PasswordReset) -> None:
         f"{settings.HIMS_PASSWORD_RESET_TTL_MINUTES} minutes.\n"
         f"If you did not ask for this, you can ignore this email; your password stays the same.\n"
     )
-    send_mail(
+    send_email(
         subject=f"Reset your {hospital} HIMS password",
-        message=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[reset.user.email],
+        body=body,
+        to=[reset.user.email],
+        category="security",
+        template="identity.password_reset",
     )
 
 
@@ -222,9 +223,10 @@ def send_password_changed_notice(user: User) -> None:
         f"that were signed in have been signed out.\n\n"
         f"If you did not do this, contact your hospital administrator immediately.\n"
     )
-    send_mail(
+    send_email(
         subject=f"Your {hospital} HIMS password was changed",
-        message=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
+        body=body,
+        to=[user.email],
+        category="security",
+        template="identity.password_changed",
     )

@@ -63,6 +63,11 @@ def _configure_queues_and_schedule(sender, **kwargs):
             "task": "notifications.access_review_reminders",
             "schedule": timedelta(hours=24),
         },
+        "notification-retries": {
+            "task": "notifications.retry_failed",
+            "schedule": timedelta(minutes=5),
+            "options": {"expires": 300},
+        },
         "audit-seal-events": {
             "task": "platform.audit_seal_events",
             "schedule": timedelta(minutes=1),

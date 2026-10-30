@@ -9,12 +9,12 @@ job twice, or after a missed day, never repeats or skips an alert (spec 14.3).
 from datetime import date, timedelta
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
+from apps.notifications.services import send_email
 
 from .models import CredentialExpiryAlert, StaffCredential, StaffMember, VerificationStatus
 
@@ -101,15 +101,16 @@ def send_credential_expiry_alerts(today: date | None = None) -> int:
         if line:
             sent_lines.append(line)
     if sent_lines and hr:
-        send_mail(
+        send_email(
             subject=f"{hospital}: {len(sent_lines)} licence(s) expiring or expired",
-            message=(
+            body=(
                 "These staff licences need attention (renewal or a new copy):\n\n"
                 + "\n".join(sent_lines)
                 + "\n\nSee the Licence expiry page in HIMS for the full list.\n"
             ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=hr,
+            to=hr,
+            category="staff",
+            template="staff.licence_expiry_hr",
         )
     return len(sent_lines)
 
@@ -142,16 +143,17 @@ def _send_one(credential, stage: int, hr: list[str], hospital: str) -> str | Non
     if person is not None and person.is_active:
         when = credential.expires_at.strftime("%d %b %Y")
         what = f"{credential.get_credential_type_display()} {credential.registration_number}"
-        send_mail(
+        send_email(
             subject=f"{hospital}: your licence {'has expired' if stage == 0 else 'expires soon'}",
-            message=(
+            body=(
                 f"Hello {credential.staff.given_name},\n\n"
                 f"Your {what} ({credential.issuing_authority}) "
                 f"{'expired on' if stage == 0 else 'expires on'} {when}.\n"
                 "Please renew it and give a copy of the new licence to HR.\n"
             ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[person.email],
+            to=[person.email],
+            category="staff",
+            template="staff.licence_expiry_person",
         )
         alert.recipients += 1
         alert.save(update_fields=["recipients"])

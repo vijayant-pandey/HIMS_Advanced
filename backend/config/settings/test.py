@@ -41,6 +41,7 @@ REST_FRAMEWORK = {
 # Tests drive outbox processing explicitly (or opt in to inline mode per test).
 HIMS_OUTBOX_DISPATCH_INLINE = False
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+HIMS_SMS_BACKEND = "apps.notifications.backends.LocmemSmsBackend"
 HIMS_APP_BASE_URL = "http://app.test"
 # Uploaded files go to a throw-away folder, never the real one.
 import tempfile  # noqa: E402

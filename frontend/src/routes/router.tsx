@@ -105,6 +105,10 @@ export const routes = [
               { path: "audit/integrity", lazy: screen(audit, (m) => m.AuditIntegrityPage) },
               { path: "audit/integrity/:id", lazy: screen(audit, (m) => m.AuditIntegrityDetailPage) },
               {
+                path: "notifications",
+                lazy: screen(() => import("../features/notifications/NotificationsPage"), (m) => m.NotificationsPage),
+              },
+              {
                 path: "security",
                 lazy: screen(() => import("../features/security/SecurityPage"), (m) => m.SecurityPage),
               },

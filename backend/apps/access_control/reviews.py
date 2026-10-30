@@ -11,12 +11,12 @@ from datetime import date, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
+from apps.notifications.services import send_email
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
@@ -359,10 +359,11 @@ def send_access_review_reminders(today: date | None = None) -> int:
     except IntegrityError:
         return 0  # already sent
     if recipients:
-        send_mail(
+        send_email(
             subject=subject,
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=recipients,
+            body=body,
+            to=recipients,
+            category="access",
+            template="access.review_reminder",
         )
     return 1
