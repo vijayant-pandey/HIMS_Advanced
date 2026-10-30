@@ -13,7 +13,7 @@ from apps.identity.invitations import issue_invitation
 from common.exceptions import ConflictError
 from common.idempotency.decorators import idempotent
 
-from .. import documents, expiry, services
+from .. import catalogs, documents, expiry, services
 from ..models import (
     CredentialExpiryAlert,
     Designation,
@@ -26,12 +26,18 @@ from ..models import (
 from .serializers import (
     ArchiveSerializer,
     CredentialVerificationSerializer,
+    DesignationCreateSerializer,
     DesignationSerializer,
+    DesignationUpdateSerializer,
     EndAssignmentSerializer,
     ExpiringCredentialSerializer,
     InvitationSentSerializer,
+    QualificationTypeCreateSerializer,
     QualificationTypeSerializer,
+    QualificationTypeUpdateSerializer,
+    SpecialtyCreateSerializer,
     SpecialtySerializer,
+    SpecialtyUpdateSerializer,
     StaffCredentialSerializer,
     StaffDepartmentAssignmentSerializer,
     StaffDocumentSerializer,
@@ -44,15 +50,71 @@ from .serializers import (
 )
 
 
-class DesignationViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Job-title catalog (junior to senior). Filter with ?country=IN|US and ?category=."""
+class _CatalogViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+    with ?include_inactive=true, everything for the catalog screen; add and change entries."""
 
-    serializer_class = DesignationSerializer
+    kind = ""
+    model = None
+    create_serializer = None
+    update_serializer = None
     pagination_class = None
-    required_permissions = {"list": P.STAFF_VIEW}
+    required_permissions = {
+        "list": P.STAFF_VIEW,
+        "create": P.CATALOGS_MANAGE,
+        "partial_update": P.CATALOGS_MANAGE,
+    }
+    http_method_names = ["get", "post", "patch", "head"]
 
     def get_queryset(self):
-        queryset = Designation.objects.filter(is_active=True)
+        queryset = self.model.objects.all()
+        # Drop-down lists show active entries only; switched-off ones stay editable (and can be
+        # switched back on) and are listed with ?include_inactive=true.
+        listing_active_only = self.action == "list" and (
+            self.request.query_params.get("include_inactive") != "true"
+        )
+        return queryset.filter(is_active=True) if listing_active_only else queryset
+
+    def create(self, request):
+        serializer = self.create_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        item = catalogs.create_catalog_item(
+            self.kind, actor=request.user, request=request, **serializer.validated_data
+        )
+        return Response(self.get_serializer(item).data, status=status.HTTP_201_CREATED)
+
+    def partial_update(self, request, pk=None):
+        item = self.get_object()
+        serializer = self.update_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        item = catalogs.update_catalog_item(
+            self.kind,
+            actor=request.user,
+            item_id=item.pk,
+            version=data.pop("version"),
+            request=request,
+            **data,
+        )
+        return Response(self.get_serializer(item).data)
+
+
+INCLUDE_INACTIVE = OpenApiParameter(
+    "include_inactive", str, description="'true' = also switched-off entries"
+)
+
+
+class DesignationViewSet(_CatalogViewSet):
+    """Job-title catalog (junior to senior). Filter with ?country=IN|US and ?category=."""
+
+    kind = "designation"
+    model = Designation
+    serializer_class = DesignationSerializer
+    create_serializer = DesignationCreateSerializer
+    update_serializer = DesignationUpdateSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
         country = self.request.query_params.get("country")
         if country:
             queryset = queryset.filter(country__in=[country, ""])
@@ -65,24 +127,64 @@ class DesignationViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         parameters=[
             OpenApiParameter("country", str, description="IN or US (shared titles included)"),
             OpenApiParameter("category", str),
+            INCLUDE_INACTIVE,
         ]
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
+    @extend_schema(request=DesignationCreateSerializer, responses={201: DesignationSerializer})
+    @idempotent("catalogs.designations.create")
+    def create(self, request):
+        return super().create(request)
 
-class SpecialtyViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    @extend_schema(request=DesignationUpdateSerializer, responses=DesignationSerializer)
+    def partial_update(self, request, pk=None):
+        return super().partial_update(request, pk)
+
+
+class SpecialtyViewSet(_CatalogViewSet):
+    kind = "specialty"
+    model = Specialty
     serializer_class = SpecialtySerializer
-    queryset = Specialty.objects.filter(is_active=True)
-    pagination_class = None
-    required_permissions = {"list": P.STAFF_VIEW}
+    create_serializer = SpecialtyCreateSerializer
+    update_serializer = SpecialtyUpdateSerializer
+
+    @extend_schema(parameters=[INCLUDE_INACTIVE])
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(request=SpecialtyCreateSerializer, responses={201: SpecialtySerializer})
+    @idempotent("catalogs.specialties.create")
+    def create(self, request):
+        return super().create(request)
+
+    @extend_schema(request=SpecialtyUpdateSerializer, responses=SpecialtySerializer)
+    def partial_update(self, request, pk=None):
+        return super().partial_update(request, pk)
 
 
-class QualificationTypeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class QualificationTypeViewSet(_CatalogViewSet):
+    kind = "qualification_type"
+    model = QualificationType
     serializer_class = QualificationTypeSerializer
-    queryset = QualificationType.objects.filter(is_active=True)
-    pagination_class = None
-    required_permissions = {"list": P.STAFF_VIEW}
+    create_serializer = QualificationTypeCreateSerializer
+    update_serializer = QualificationTypeUpdateSerializer
+
+    @extend_schema(parameters=[INCLUDE_INACTIVE])
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        request=QualificationTypeCreateSerializer, responses={201: QualificationTypeSerializer}
+    )
+    @idempotent("catalogs.qualification_types.create")
+    def create(self, request):
+        return super().create(request)
+
+    @extend_schema(request=QualificationTypeUpdateSerializer, responses=QualificationTypeSerializer)
+    def partial_update(self, request, pk=None):
+        return super().partial_update(request, pk)
 
 
 class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):

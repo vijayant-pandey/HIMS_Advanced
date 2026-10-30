@@ -191,3 +191,26 @@ export function useExpiringCredentials(within: number, includeExpired: boolean) 
       }),
   });
 }
+
+// --- Catalogs: job titles, specialties, qualification types (HIMS-STAFF-010) ------------------
+
+export type CatalogKind = "designations" | "specialties" | "qualification-types";
+
+/** Everything in one catalog, including switched-off entries (for the Catalogs page). */
+export function useCatalog<T>(kind: CatalogKind) {
+  return useQuery<T[], ApiError>({
+    queryKey: ["catalog", kind, "all"],
+    queryFn: ({ signal }) =>
+      api.get<T[]>(`/${kind}/`, { query: { include_inactive: "true" }, signal }),
+  });
+}
+
+export function useSaveCatalogItem(kind: CatalogKind, id: string | undefined, idempotencyKey: string) {
+  const queryClient = useQueryClient();
+  return useMutation<unknown, ApiError, Record<string, unknown>>({
+    mutationFn: (body) =>
+      id ? api.patch(`/${kind}/${id}/`, body) : api.post(`/${kind}/`, body, { idempotencyKey }),
+    // Drop-down lists use the same catalog: refresh both (also after "changed by someone else").
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["catalog"] }),
+  });
+}

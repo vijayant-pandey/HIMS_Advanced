@@ -208,6 +208,8 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "OrganizationStatusEnum": "apps.organizations.models.Organization.Status",
         "ActiveStatusEnum": "apps.facilities.models.Facility.Status",
+        "DesignationCategoryEnum": "apps.staff.models.Designation.Category",
+        "QualificationTypeCategoryEnum": "apps.staff.models.QualificationType.Category",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)

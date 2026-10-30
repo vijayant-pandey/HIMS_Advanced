@@ -2,9 +2,10 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.staff.models import StaffMember
 from common.validators import validate_timezone
 
-from ..models import Department, Facility
+from ..models import Department, DepartmentHours, DepartmentService, Facility
 
 
 def facility_counts(queryset):
@@ -106,6 +107,11 @@ class DepartmentSerializer(serializers.ModelSerializer):
     )
     current_staff = serializers.SerializerMethodField(help_text="Staff posted here now or later.")
     active_wards = serializers.SerializerMethodField()
+    head_name = serializers.SerializerMethodField()
+
+    def get_head_name(self, department) -> str | None:
+        head = department.head
+        return f"{head.given_name} {head.family_name}" if head else None
 
     def get_current_staff(self, department) -> int:
         cached = getattr(department, "current_staff", None)
@@ -132,6 +138,9 @@ class DepartmentSerializer(serializers.ModelSerializer):
             "status",
             "current_staff",
             "active_wards",
+            "head",
+            "head_name",
+            "open_24_hours",
             "version",
             "created_at",
             "updated_at",
@@ -153,3 +162,64 @@ class DepartmentUpdateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255, required=False)
     department_type = serializers.ChoiceField(Department.DepartmentType.choices, required=False)
     status = serializers.ChoiceField(Department.Status.choices, required=False)
+    head = serializers.PrimaryKeyRelatedField(
+        queryset=StaffMember.objects.all(),
+        required=False,
+        allow_null=True,
+        help_text="A working staff member currently posted here; null removes the head.",
+    )
+
+
+# --- Department head, services and opening hours (HIMS-FAC-007) -------------------------------
+
+
+class DepartmentServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DepartmentService
+        fields = ["id", "department", "name", "description", "is_active", "version", "created_at"]
+        read_only_fields = fields
+
+
+class DepartmentServiceCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150)
+    description = serializers.CharField(
+        max_length=500, required=False, allow_blank=True, default=""
+    )
+
+
+class DepartmentServiceUpdateSerializer(serializers.Serializer):
+    version = serializers.IntegerField(min_value=1)
+    name = serializers.CharField(max_length=150, required=False)
+    description = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    is_active = serializers.BooleanField(required=False)
+
+
+class HoursSessionSerializer(serializers.Serializer):
+    weekday = serializers.ChoiceField(DepartmentHours.Weekday.choices, help_text="0 = Monday")
+    opens_at = serializers.TimeField(format="%H:%M")
+    closes_at = serializers.TimeField(format="%H:%M")
+
+
+class DepartmentHoursSerializer(serializers.Serializer):
+    """The whole weekly timetable (in the facility's time zone). A day with no sessions is
+    closed; open_24_hours overrides the sessions."""
+
+    version = serializers.IntegerField(min_value=1, write_only=True)
+    open_24_hours = serializers.BooleanField()
+    sessions = HoursSessionSerializer(many=True)
+
+
+class DepartmentDetailSerializer(DepartmentSerializer):
+    services = DepartmentServiceSerializer(many=True, read_only=True)
+    hours = HoursSessionSerializer(many=True, read_only=True)
+    timezone = serializers.CharField(source="facility.timezone", read_only=True)
+
+    class Meta(DepartmentSerializer.Meta):
+        fields = [*DepartmentSerializer.Meta.fields, "timezone", "services", "hours"]
+        read_only_fields = fields
+
+
+class HeadCandidateSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    designation = serializers.CharField(allow_null=True)

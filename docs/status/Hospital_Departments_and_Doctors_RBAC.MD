@@ -425,3 +425,11 @@ switched off, so the hospital cannot lock itself out.
 * `staff.manage`: upload documents and archive them (with a reason; nothing is deleted).
 * Expiry emails go to HR (holders of `staff.credentials.verify` or `staff.manage`) and to the
   person whose licence it is.
+
+## Update 2026-10-30: department heads and catalogs (HIMS-FAC-007, HIMS-STAFF-010)
+* **Head of department** is now recorded on each department (Departments → department → Head).
+  It must be someone currently posted there. It is a label, not a permission: give the
+  "Head of department (HOD)" role on the Access page for the matching access.
+* New permission **`catalogs.manage`** (HR / credentialing officer, organization administrator):
+  add, rename and switch off job titles, specialties and qualification types on the
+  **Job titles & catalogs** page. Standard entries ship with HIMS; codes never change.

@@ -1015,6 +1015,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/Building'
           description: ''
+  /api/v1/department-services/{id}/:
+    patch:
+      operationId: department_services_partial_update
+      description: Change or switch off one department service (never deleted).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this department service.
+        required: true
+      tags:
+      - department-services
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDepartmentServiceUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentService'
+          description: ''
   /api/v1/departments/:
     get:
       operationId: departments_list
@@ -1091,7 +1119,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Department'
+                $ref: '#/components/schemas/DepartmentDetail'
           description: ''
     patch:
       operationId: departments_partial_update
@@ -1119,6 +1147,90 @@ paths:
               schema:
                 $ref: '#/components/schemas/Department'
           description: ''
+  /api/v1/departments/{id}/head-candidates/:
+    get:
+      operationId: departments_head_candidates_list
+      description: 'Working staff currently posted in this department: the people
+        who can be its head.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this department.
+        required: true
+      tags:
+      - departments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HeadCandidate'
+          description: ''
+  /api/v1/departments/{id}/hours/:
+    put:
+      operationId: departments_hours_update
+      description: Replace the weekly opening hours (and the open-24-hours switch)
+        in one go.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this department.
+        required: true
+      tags:
+      - departments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentHoursRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentDetail'
+          description: ''
+  /api/v1/departments/{id}/services/:
+    post:
+      operationId: departments_services_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this department.
+        required: true
+      tags:
+      - departments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentServiceCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentService'
+          description: ''
   /api/v1/designations/:
     get:
       operationId: designations_list
@@ -1134,6 +1246,11 @@ paths:
         schema:
           type: string
         description: IN or US (shared titles included)
+      - in: query
+        name: include_inactive
+        schema:
+          type: string
+        description: '''true'' = also switched-off entries'
       tags:
       - designations
       security:
@@ -1146,6 +1263,56 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Designation'
+          description: ''
+    post:
+      operationId: designations_create
+      description: Job-title catalog (junior to senior). Filter with ?country=IN|US
+        and ?category=.
+      tags:
+      - designations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DesignationCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Designation'
+          description: ''
+  /api/v1/designations/{id}/:
+    patch:
+      operationId: designations_partial_update
+      description: Job-title catalog (junior to senior). Filter with ?country=IN|US
+        and ?category=.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this designation.
+        required: true
+      tags:
+      - designations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDesignationUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Designation'
           description: ''
   /api/v1/facilities/:
     get:
@@ -1731,6 +1898,15 @@ paths:
   /api/v1/qualification-types/:
     get:
       operationId: qualification_types_list
+      description: |-
+        A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+        with ?include_inactive=true, everything for the catalog screen; add and change entries.
+      parameters:
+      - in: query
+        name: include_inactive
+        schema:
+          type: string
+        description: '''true'' = also switched-off entries'
       tags:
       - qualification-types
       security:
@@ -1743,6 +1919,58 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/QualificationType'
+          description: ''
+    post:
+      operationId: qualification_types_create
+      description: |-
+        A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+        with ?include_inactive=true, everything for the catalog screen; add and change entries.
+      tags:
+      - qualification-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QualificationTypeCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualificationType'
+          description: ''
+  /api/v1/qualification-types/{id}/:
+    patch:
+      operationId: qualification_types_partial_update
+      description: |-
+        A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+        with ?include_inactive=true, everything for the catalog screen; add and change entries.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this qualification type.
+        required: true
+      tags:
+      - qualification-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedQualificationTypeUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualificationType'
           description: ''
   /api/v1/role-assignments/:
     get:
@@ -2097,6 +2325,15 @@ paths:
   /api/v1/specialties/:
     get:
       operationId: specialties_list
+      description: |-
+        A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+        with ?include_inactive=true, everything for the catalog screen; add and change entries.
+      parameters:
+      - in: query
+        name: include_inactive
+        schema:
+          type: string
+        description: '''true'' = also switched-off entries'
       tags:
       - specialties
       security:
@@ -2109,6 +2346,58 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Specialty'
+          description: ''
+    post:
+      operationId: specialties_create
+      description: |-
+        A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+        with ?include_inactive=true, everything for the catalog screen; add and change entries.
+      tags:
+      - specialties
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpecialtyCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Specialty'
+          description: ''
+  /api/v1/specialties/{id}/:
+    patch:
+      operationId: specialties_partial_update
+      description: |-
+        A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+        with ?include_inactive=true, everything for the catalog screen; add and change entries.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this specialty.
+        required: true
+      tags:
+      - specialties
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSpecialtyUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Specialty'
           description: ''
   /api/v1/staff/:
     get:
@@ -3338,6 +3627,20 @@ components:
         active_wards:
           type: integer
           readOnly: true
+        head:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Must be a working staff member currently posted in this department.
+        head_name:
+          type: string
+          nullable: true
+          readOnly: true
+        open_24_hours:
+          type: boolean
+          readOnly: true
+          description: e.g. Emergency, ICU. Weekly hours are ignored when set.
         version:
           type: integer
           readOnly: true
@@ -3358,8 +3661,11 @@ components:
       - department_type_label
       - facility
       - facility_name
+      - head
+      - head_name
       - id
       - name
+      - open_24_hours
       - status
       - updated_at
       - version
@@ -3384,6 +3690,171 @@ components:
       - code
       - department_type
       - facility
+      - name
+    DepartmentDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        department_type:
+          allOf:
+          - $ref: '#/components/schemas/DepartmentTypeEnum'
+          readOnly: true
+        department_type_label:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ActiveStatusEnum'
+          readOnly: true
+        current_staff:
+          type: integer
+          readOnly: true
+          description: Staff posted here now or later.
+        active_wards:
+          type: integer
+          readOnly: true
+        head:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Must be a working staff member currently posted in this department.
+        head_name:
+          type: string
+          nullable: true
+          readOnly: true
+        open_24_hours:
+          type: boolean
+          readOnly: true
+          description: e.g. Emergency, ICU. Weekly hours are ignored when set.
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        timezone:
+          type: string
+          readOnly: true
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepartmentService'
+          readOnly: true
+        hours:
+          type: array
+          items:
+            $ref: '#/components/schemas/HoursSession'
+          readOnly: true
+      required:
+      - active_wards
+      - code
+      - created_at
+      - current_staff
+      - department_type
+      - department_type_label
+      - facility
+      - facility_name
+      - head
+      - head_name
+      - hours
+      - id
+      - name
+      - open_24_hours
+      - services
+      - status
+      - timezone
+      - updated_at
+      - version
+    DepartmentHoursRequest:
+      type: object
+      description: |-
+        The whole weekly timetable (in the facility's time zone). A day with no sessions is
+        closed; open_24_hours overrides the sessions.
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          writeOnly: true
+        open_24_hours:
+          type: boolean
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/HoursSessionRequest'
+      required:
+      - open_24_hours
+      - sessions
+      - version
+    DepartmentService:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        department:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - department
+      - description
+      - id
+      - is_active
+      - name
+      - version
+    DepartmentServiceCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
       - name
     DepartmentTypeEnum:
       enum:
@@ -3425,13 +3896,30 @@ components:
           type: integer
           readOnly: true
           description: 1 = entry level ... 10 = leadership
+        description:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        is_custom:
+          type: boolean
+          readOnly: true
+          description: Added by this hospital (standard entries come with HIMS).
+        version:
+          type: integer
+          readOnly: true
       required:
       - category
       - code
       - country
+      - description
       - id
+      - is_active
+      - is_custom
       - name
       - seniority
+      - version
     DesignationCategoryEnum:
       enum:
       - medical
@@ -3450,6 +3938,34 @@ components:
         * `administration` - Administration & management
         * `support` - Support services
         * `other` - Other
+    DesignationCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/DesignationCategoryEnum'
+        country:
+          description: IN, US, or blank for both countries
+          oneOf:
+          - type: string
+            maxLength: 2
+            pattern: ^(IN|US)?$
+          - type: string
+            maxLength: 0
+        seniority:
+          type: integer
+          maximum: 10
+          minimum: 1
+        description:
+          type: string
+          default: ''
+      required:
+      - category
+      - name
+      - seniority
     DocumentTypeEnum:
       enum:
       - mrn
@@ -3962,6 +4478,73 @@ components:
       - department_id
       - facility_id
       - permission
+    HeadCandidate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        designation:
+          type: string
+          nullable: true
+      required:
+      - designation
+      - id
+      - name
+    HoursSession:
+      type: object
+      properties:
+        weekday:
+          allOf:
+          - $ref: '#/components/schemas/WeekdayEnum'
+          description: |-
+            0 = Monday
+
+            * `0` - Monday
+            * `1` - Tuesday
+            * `2` - Wednesday
+            * `3` - Thursday
+            * `4` - Friday
+            * `5` - Saturday
+            * `6` - Sunday
+        opens_at:
+          type: string
+          format: time
+        closes_at:
+          type: string
+          format: time
+      required:
+      - closes_at
+      - opens_at
+      - weekday
+    HoursSessionRequest:
+      type: object
+      properties:
+        weekday:
+          allOf:
+          - $ref: '#/components/schemas/WeekdayEnum'
+          description: |-
+            0 = Monday
+
+            * `0` - Monday
+            * `1` - Tuesday
+            * `2` - Wednesday
+            * `3` - Thursday
+            * `4` - Friday
+            * `5` - Saturday
+            * `6` - Sunday
+        opens_at:
+          type: string
+          format: time
+        closes_at:
+          type: string
+          format: time
+      required:
+      - closes_at
+      - opens_at
+      - weekday
     InvitationAcceptRequest:
       type: object
       properties:
@@ -4842,6 +5425,21 @@ components:
           maxLength: 255
         is_active:
           type: boolean
+    PatchedDepartmentServiceUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+          maxLength: 500
+        is_active:
+          type: boolean
     PatchedDepartmentUpdateRequest:
       type: object
       properties:
@@ -4856,6 +5454,40 @@ components:
           $ref: '#/components/schemas/DepartmentTypeEnum'
         status:
           $ref: '#/components/schemas/ActiveStatusEnum'
+        head:
+          type: string
+          format: uuid
+          nullable: true
+          description: A working staff member currently posted here; null removes
+            the head.
+    PatchedDesignationUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/DesignationCategoryEnum'
+        country:
+          description: IN, US, or blank for both countries
+          oneOf:
+          - type: string
+            maxLength: 2
+            pattern: ^(IN|US)?$
+          - type: string
+            maxLength: 0
+        seniority:
+          type: integer
+          maximum: 10
+          minimum: 1
+        description:
+          type: string
+        is_active:
+          type: boolean
     PatchedFacilityUpdateRequest:
       type: object
       properties:
@@ -4962,6 +5594,28 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+    PatchedQualificationTypeUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/QualificationTypeCategoryEnum'
+        country:
+          description: IN, US, or blank for both countries
+          oneOf:
+          - type: string
+            maxLength: 2
+            pattern: ^(IN|US)?$
+          - type: string
+            maxLength: 0
+        is_active:
+          type: boolean
     PatchedRoleUpdateRequest:
       type: object
       properties:
@@ -4992,6 +5646,18 @@ components:
           $ref: '#/components/schemas/RoomTypeEnum'
         is_isolation_capable:
           type: boolean
+        is_active:
+          type: boolean
+    PatchedSpecialtyUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
         is_active:
           type: boolean
     PatchedStaffMemberUpdateRequest:
@@ -5070,6 +5736,7 @@ components:
       - accounts.manage
       - audit.view
       - beds.status.manage
+      - catalogs.manage
       - departments.manage
       - departments.view
       - facilities.manage
@@ -5094,6 +5761,7 @@ components:
         * `accounts.manage` - accounts.manage
         * `audit.view` - audit.view
         * `beds.status.manage` - beds.status.manage
+        * `catalogs.manage` - catalogs.manage
         * `departments.manage` - departments.manage
         * `departments.view` - departments.view
         * `facilities.manage` - facilities.manage
@@ -5132,12 +5800,25 @@ components:
           type: string
           readOnly: true
           description: Blank when not country-bound
+        is_active:
+          type: boolean
+          readOnly: true
+        is_custom:
+          type: boolean
+          readOnly: true
+          description: Added by this hospital (standard entries come with HIMS).
+        version:
+          type: integer
+          readOnly: true
       required:
       - category
       - code
       - country
       - id
+      - is_active
+      - is_custom
       - name
+      - version
     QualificationTypeCategoryEnum:
       enum:
       - degree
@@ -5150,6 +5831,26 @@ components:
         * `diploma` - Diploma
         * `fellowship` - Fellowship
         * `certification` - Certification
+    QualificationTypeCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        category:
+          $ref: '#/components/schemas/QualificationTypeCategoryEnum'
+        country:
+          description: IN, US, or blank for both countries
+          oneOf:
+          - type: string
+            maxLength: 2
+            pattern: ^(IN|US)?$
+          - type: string
+            maxLength: 0
+      required:
+      - category
+      - name
     ReasonRequest:
       type: object
       properties:
@@ -5539,9 +6240,31 @@ components:
         name:
           type: string
           readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        is_custom:
+          type: boolean
+          readOnly: true
+          description: Added by this hospital (standard entries come with HIMS).
+        version:
+          type: integer
+          readOnly: true
       required:
       - code
       - id
+      - is_active
+      - is_custom
+      - name
+      - version
+    SpecialtyCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
       - name
     StaffAccount:
       type: object
@@ -6431,6 +7154,24 @@ components:
         * `day_care` - Day care
         * `operating_theatre` - Operating theatre complex
         * `recovery` - Recovery / PACU
+    WeekdayEnum:
+      enum:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      type: integer
+      description: |-
+        * `0` - Monday
+        * `1` - Tuesday
+        * `2` - Wednesday
+        * `3` - Thursday
+        * `4` - Friday
+        * `5` - Saturday
+        * `6` - Sunday
     YearFormatEnum:
       enum:
       - full

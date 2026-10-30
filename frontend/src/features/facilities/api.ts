@@ -4,10 +4,14 @@ import { ApiError, api } from "../../api/client";
 import type {
   Department,
   DepartmentCreateRequest,
+  DepartmentDetail,
+  DepartmentHoursRequest,
+  DepartmentService,
   DepartmentUpdateRequest,
   Facility,
   FacilityCreateRequest,
   FacilityUpdateRequest,
+  HeadCandidate,
   PaginatedDepartmentList,
   PaginatedFacilityList,
 } from "../../api/types";
@@ -73,6 +77,56 @@ export function useUpdateDepartment(id: string) {
   const refresh = useRefreshSetup();
   return useMutation<Department, ApiError, DepartmentUpdateRequest>({
     mutationFn: (body) => api.patch<Department>(`/departments/${id}/`, body),
+    onSettled: refresh,
+  });
+}
+
+// --- Department page: head, services, opening hours (HIMS-FAC-007) ---------------------------
+
+export function useDepartment(id: string | undefined) {
+  return useQuery<DepartmentDetail, ApiError>({
+    queryKey: [...departmentsKey, "detail", id],
+    queryFn: ({ signal }) => api.get<DepartmentDetail>(`/departments/${id}/`, { signal }),
+    enabled: !!id,
+  });
+}
+
+export function useHeadCandidates(id: string, enabled: boolean) {
+  return useQuery<HeadCandidate[], ApiError>({
+    queryKey: [...departmentsKey, "head-candidates", id],
+    queryFn: ({ signal }) =>
+      api.get<HeadCandidate[]>(`/departments/${id}/head-candidates/`, { signal }),
+    enabled,
+  });
+}
+
+export function useSetHours(id: string) {
+  const refresh = useRefreshSetup();
+  return useMutation<DepartmentDetail, ApiError, DepartmentHoursRequest>({
+    mutationFn: (body) => api.put<DepartmentDetail>(`/departments/${id}/hours/`, body),
+    onSettled: refresh,
+  });
+}
+
+export function useAddService(departmentId: string, idempotencyKey: string) {
+  const refresh = useRefreshSetup();
+  return useMutation<DepartmentService, ApiError, { name: string; description: string }>({
+    mutationFn: (body) =>
+      api.post<DepartmentService>(`/departments/${departmentId}/services/`, body, {
+        idempotencyKey,
+      }),
+    onSuccess: refresh,
+  });
+}
+
+export function useUpdateService(id: string) {
+  const refresh = useRefreshSetup();
+  return useMutation<
+    DepartmentService,
+    ApiError,
+    { version: number; name?: string; description?: string; is_active?: boolean }
+  >({
+    mutationFn: (body) => api.patch<DepartmentService>(`/department-services/${id}/`, body),
     onSettled: refresh,
   });
 }
