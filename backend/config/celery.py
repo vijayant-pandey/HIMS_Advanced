@@ -88,6 +88,14 @@ def _attach_request_id(headers=None, **kwargs):
         headers[_REQUEST_ID_HEADER] = request_id
 
 
+@signals.worker_process_init.connect
+def _start_tracing(**kwargs):
+    # In each worker process after it starts (span exporters do not survive a fork).
+    from common.tracing import configure_tracing
+
+    configure_tracing("hims-worker", django=False)
+
+
 @signals.task_prerun.connect
 def _restore_request_id(task=None, **kwargs):
     from common.request_context import new_request_id, set_request_id

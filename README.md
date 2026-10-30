@@ -25,7 +25,7 @@ get the databases is `docker compose up -d`.
 # Backend
 cd backend
 python -m venv .venv && .venv/Scripts/activate      # macOS/Linux: source .venv/bin/activate
-pip install -r requirements/dev.txt
+pip install --require-hashes -r requirements/dev.txt   # hash-locked; docs/workflows/dependencies.md
 cp .env.example .env
 python manage.py migrate
 ADMIN_PW='choose-a-long-local-password' python manage.py provision_organization \

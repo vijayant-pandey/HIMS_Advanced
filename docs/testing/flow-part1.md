@@ -1040,6 +1040,9 @@ made up. Do not create test data like this on a real hospital server later.
 | Can't find the invitation or reset link | It is in the **launcher window**, not your real email. Scroll up. Make sure you copy the **whole** link. |
 | "This record changed since you loaded it" | Someone (or another tab) changed it. Refresh the page and try again. This is correct behaviour. |
 | Signed out suddenly | 30 minutes without activity, or someone signed you out on purpose in the test. Sign in again. |
+| A thin bar appears at the top when you open a screen | Normal: each screen is downloaded the first time you open it (faster start). |
+| "HIMS was updated" with a **Reload** button | HIMS was updated while the page was open. Press **Reload**; nothing you saved is lost. |
+| "ModuleNotFoundError: opentelemetry" in the launcher window after a pull | The new libraries are not installed yet. Run the install block at the top of docs/workflows/database-migrations.md. |
 | A page shows "Something went wrong" with a **Reference** number | Write the reference down. Report it (see below). The auditor can find the exact event with it. |
 | You changed `login.md` passwords and forgot them | Ask Claude to help reset the admin password from the command line. |
 

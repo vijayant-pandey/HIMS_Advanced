@@ -11,6 +11,7 @@
     "dev:in": "vite --mode in",
     "dev:us": "vite --mode us",
     "build": "tsc -b && vite build",
+    "size": "node scripts/check-bundle-size.mjs",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
