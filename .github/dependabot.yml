@@ -1,0 +1,16 @@
+# Weekly update proposals for the pinned GitHub Actions (spec 33.6, HIMS-PLAT-013). Dependabot
+# keeps the commit-SHA pins and updates the release comment; review each PR like any other.
+# Python and npm libraries are upgraded by hand with the hash-locked process in
+# docs/workflows/dependencies.md (Dependabot cannot regenerate the universal uv lockfiles).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: development
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "HIMS-PLAT-013"

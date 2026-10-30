@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     # Shared platform services
     "common.idempotency",
     "common.outbox",
+    "common.datadict",  # generates the data dictionary (spec 28); no tables
     # Business domains
     "apps.audit",
     "apps.organizations",
