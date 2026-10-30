@@ -35,7 +35,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-OPS-010 | Static files for admin/API docs in managed environments (WhiteNoise or S3/CloudFront) | To do |
 | HIMS-OPS-012 | Runbook: updating every hospital database after a merge (docs/workflows/database-migrations.md) | Done |
 | HIMS-OPS-015 | S3-compatible document storage (KMS encryption, block public access, versioning) for hosted environments | To do (🔒 AWS / hosting) |
-| HIMS-OPS-016 | Phase 1 manual test guide for the product owner (browser, India + US, expected results) | To do |
+| HIMS-OPS-016 | Phase 1 manual test guide for the product owner (browser, India + US, expected results) | Done (docs/testing/flow-part1.md) |
 | HIMS-OPS-011 | Real email provider per hosted environment (e.g. Amazon SES / Render-compatible SMTP); console email locally | To do |
 
 ## EPIC HIMS-ORG — Organization and facilities
