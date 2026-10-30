@@ -323,3 +323,11 @@ def test_deploy_check_warns_about_local_document_storage():
 
     warnings = document_storage_is_durable(None)
     assert [w.id for w in warnings] == ["hims.W001"]
+
+
+@override_settings(HIMS_ENVIRONMENT="staging", HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE=True)
+def test_throwaway_runs_can_accept_local_storage_explicitly():
+    """Only CI smoke tests and short demos set this; real hospitals never do (ADR-020)."""
+    from apps.staff.checks import document_storage_is_durable
+
+    assert document_storage_is_durable(None) == []

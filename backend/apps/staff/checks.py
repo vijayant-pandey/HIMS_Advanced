@@ -11,7 +11,8 @@ def document_storage_is_durable(app_configs, **kwargs):
     from django.core.files.storage import FileSystemStorage, default_storage
 
     hosted = settings.HIMS_ENVIRONMENT in ("qa", "staging", "production")
-    if hosted and isinstance(default_storage, FileSystemStorage):
+    accepted = settings.HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE  # throw-away runs only (e.g. CI)
+    if hosted and not accepted and isinstance(default_storage, FileSystemStorage):
         return [
             Warning(
                 "Staff documents are stored on local disk.",

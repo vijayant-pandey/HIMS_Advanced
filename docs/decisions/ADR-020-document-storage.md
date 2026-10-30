@@ -34,6 +34,9 @@ photos), so they must not be reachable by anyone who merely guesses a link.
    - Until that is set up, `manage.py check --deploy` warns (`hims.W001`) in QA, staging and
      production, because local disk on container hosts such as Render is wiped on each deploy.
    - Tracked as **HIMS-OPS-015** (🔒 AWS / hosting decision).
+   - Only throw-away runs may set `HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE=true` to accept local disk
+     on purpose. The CI image smoke test does this, because it checks the image starts and has no
+     real data. A real hospital deployment must never set it.
 6. **Malware scanning** plugs into `apps/staff/uploads.py` when the scanning service exists
    (HIMS-SEC-013). Until then, accepting only PDF/JPEG/PNG with verified signatures, never
    serving files inline without a sandbox, and keeping them away from the web root limit the risk.

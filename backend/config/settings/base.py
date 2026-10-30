@@ -169,6 +169,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_ROOT = env.path("HIMS_MEDIA_ROOT", default=BASE_DIR / "media" / HIMS_DEPLOYMENT_ID)
 MEDIA_URL = "/media-not-served/"
 HIMS_UPLOAD_MAX_BYTES = env.int("HIMS_UPLOAD_MAX_BYTES", default=10 * 1024 * 1024)
+# Only for throw-away runs (CI image smoke test, short demos): accept that uploaded files on the
+# server's own disk are lost on the next deploy. Never set this for a real hospital.
+HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE = env.bool("HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE", default=False)
 # Days before expiry at which HR and the person are warned (and again once expired).
 HIMS_CREDENTIAL_ALERT_DAYS = env.list("HIMS_CREDENTIAL_ALERT_DAYS", cast=int, default=[60, 30, 7])
 
