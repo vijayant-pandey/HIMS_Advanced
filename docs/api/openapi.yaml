@@ -642,6 +642,77 @@ paths:
               schema:
                 type: string
           description: CSV file
+  /api/v1/audit-integrity-checks/:
+    get:
+      operationId: audit_integrity_checks_list
+      description: Results of the tamper-evidence check, newest first, and "Check
+        now".
+      tags:
+      - audit-integrity-checks
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditIntegrityCheck'
+          description: ''
+    post:
+      operationId: audit_integrity_checks_create
+      description: Seal new events and check the whole chain now. Takes a few seconds.
+      tags:
+      - audit-integrity-checks
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditIntegrityCheckDetail'
+          description: ''
+  /api/v1/audit-integrity-checks/{id}/:
+    get:
+      operationId: audit_integrity_checks_retrieve
+      description: Results of the tamper-evidence check, newest first, and "Check
+        now".
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this audit integrity check.
+        required: true
+      tags:
+      - audit-integrity-checks
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditIntegrityCheckDetail'
+          description: ''
+  /api/v1/audit-integrity-checks/status/:
+    get:
+      operationId: audit_integrity_checks_status_retrieve
+      description: Where the chain stands now, and the latest check.
+      tags:
+      - audit-integrity-checks
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditIntegrityStatus'
+          description: ''
   /api/v1/auth/csrf/:
     get:
       operationId: auth_csrf_retrieve
@@ -3805,6 +3876,175 @@ components:
       - request_id
       - resource_id
       - resource_type
+    AuditIntegrityCheck:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/TriggerEnum'
+          readOnly: true
+        trigger_label:
+          type: string
+          readOnly: true
+        requested_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/IntegrityOutcomeEnum'
+          readOnly: true
+        events_sealed:
+          type: integer
+          readOnly: true
+          description: Events sealed into the chain just before this check.
+        entries_checked:
+          type: integer
+          readOnly: true
+        last_sequence:
+          type: integer
+          readOnly: true
+        chain_head:
+          type: string
+          readOnly: true
+        problem_count:
+          type: integer
+          readOnly: true
+        unsealed_overdue:
+          type: integer
+          readOnly: true
+          description: Events older than the sealing window that are not in the chain
+            (written outside the normal path, or with a back-dated time).
+      required:
+      - chain_head
+      - entries_checked
+      - events_sealed
+      - finished_at
+      - id
+      - last_sequence
+      - outcome
+      - problem_count
+      - requested_by_name
+      - started_at
+      - trigger
+      - trigger_label
+      - unsealed_overdue
+    AuditIntegrityCheckDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/TriggerEnum'
+          readOnly: true
+        trigger_label:
+          type: string
+          readOnly: true
+        requested_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/IntegrityOutcomeEnum'
+          readOnly: true
+        events_sealed:
+          type: integer
+          readOnly: true
+          description: Events sealed into the chain just before this check.
+        entries_checked:
+          type: integer
+          readOnly: true
+        last_sequence:
+          type: integer
+          readOnly: true
+        chain_head:
+          type: string
+          readOnly: true
+        problem_count:
+          type: integer
+          readOnly: true
+        unsealed_overdue:
+          type: integer
+          readOnly: true
+          description: Events older than the sealing window that are not in the chain
+            (written outside the normal path, or with a back-dated time).
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntegrityProblem'
+          readOnly: true
+      required:
+      - chain_head
+      - entries_checked
+      - events_sealed
+      - finished_at
+      - id
+      - last_sequence
+      - outcome
+      - problem_count
+      - problems
+      - requested_by_name
+      - started_at
+      - trigger
+      - trigger_label
+      - unsealed_overdue
+    AuditIntegrityStatus:
+      type: object
+      properties:
+        sealed_events:
+          type: integer
+          description: Events in the chain so far.
+        last_sealed_at:
+          type: string
+          format: date-time
+          nullable: true
+        chain_head:
+          type: string
+          description: Fingerprint of the newest link.
+        waiting_to_be_sealed:
+          type: integer
+          description: New events not sealed yet (normally sealed within a minute).
+        key_id:
+          type: string
+          description: Name of the key signing new links (never the key).
+        check_interval_hours:
+          type: integer
+        last_check:
+          allOf:
+          - $ref: '#/components/schemas/AuditIntegrityCheck'
+          nullable: true
+      required:
+      - chain_head
+      - check_interval_hours
+      - key_id
+      - last_check
+      - last_sealed_at
+      - sealed_events
+      - waiting_to_be_sealed
     Bed:
       type: object
       properties:
@@ -5093,6 +5333,43 @@ components:
       - closes_at
       - opens_at
       - weekday
+    IntegrityOutcomeEnum:
+      enum:
+      - passed
+      - failed
+      type: string
+      description: |-
+        * `passed` - Passed: nothing was changed
+        * `failed` - Problems found
+    IntegrityProblem:
+      type: object
+      description: One problem. Which fields are present depends on the kind.
+      properties:
+        kind:
+          type: string
+        text:
+          type: string
+        sequence:
+          type: integer
+        last_missing:
+          type: integer
+        event_id:
+          type: string
+        action:
+          type: string
+        action_label:
+          type: string
+        occurred_at:
+          type: string
+        key_id:
+          type: string
+        previous_last_sequence:
+          type: integer
+        last_sequence:
+          type: integer
+      required:
+      - kind
+      - text
     InvitationAcceptRequest:
       type: object
       properties:
@@ -7604,6 +7881,16 @@ components:
       - rooms
       - version
       - ward_type
+    TriggerEnum:
+      enum:
+      - scheduled
+      - on_demand
+      - command
+      type: string
+      description: |-
+        * `scheduled` - Daily automatic check
+        * `on_demand` - Started by a person
+        * `command` - Started from the server command line
     VerificationStatusEnum:
       enum:
       - unverified

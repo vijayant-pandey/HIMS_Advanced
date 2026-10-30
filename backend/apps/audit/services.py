@@ -91,6 +91,8 @@ class AuditAction:
     CREDENTIAL_EXPIRY_ALERT_SENT = "staff.credential.expiry_alert_sent"
     AUDIT_SEARCHED = "audit.events.searched"
     AUDIT_EXPORTED = "audit.events.exported"
+    AUDIT_INTEGRITY_CHECKED = "audit.integrity.checked"
+    AUDIT_INTEGRITY_ALERT_SENT = "audit.integrity.alert_sent"
 
 
 def _jsonable(value):

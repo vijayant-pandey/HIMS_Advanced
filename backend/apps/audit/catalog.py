@@ -89,6 +89,8 @@ LABELS: dict[str, str] = {
     A.CREDENTIAL_EXPIRY_ALERT_SENT: "Licence expiry alert sent",
     A.AUDIT_SEARCHED: "Audit log searched",
     A.AUDIT_EXPORTED: "Audit log exported",
+    A.AUDIT_INTEGRITY_CHECKED: "Audit log integrity checked",
+    A.AUDIT_INTEGRITY_ALERT_SENT: "Audit integrity problem: auditors alerted",
 }
 
 

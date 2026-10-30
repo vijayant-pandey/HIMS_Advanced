@@ -94,7 +94,7 @@ says "open the link from the email", look in the launcher window for lines that 
 | Features | Turn parts of HIMS on or off for the hospital or one facility |
 | Staff | Staff list, postings to departments, qualifications, licences, documents, verification, licence expiry alerts, job titles catalog |
 | Access | Roles, giving and removing access, custom roles, accounts (including people who are not staff), access reviews |
-| Audit | Audit log for auditors: search, details, CSV download |
+| Audit | Audit log for auditors: search, details, CSV download; **Audit integrity**: proof that no audit record was changed or removed (tamper check) |
 | Admin console | Every item above can also be managed in the Django admin console, and every change is audited |
 
 **Not built yet (do not look for it):** patients, appointments, doctors' notes, pharmacy, lab,
@@ -805,8 +805,8 @@ python manage.py send_access_review_reminders
 - [ ] **Do:** http://localhost:5175 → sign in with the India **auditor** email and password from `login.md`.
 - [ ] **Expect:** if two-factor isn't set up yet, the Security page asks for it. Set it up with
       your phone (name it **"HIMS India auditor"**) and save the backup codes.
-- [ ] **Expect:** the auditor's menu shows **Audit log** and **Access reviews** only. **No** Staff,
-      Accounts or settings.
+- [ ] **Expect:** the auditor's menu shows **Access reviews**, **Audit log** and **Audit integrity**
+      only. **No** Staff, Accounts or settings.
 
 ### 17.2 Search
 - [ ] **Do:** **Audit log** → leave everything empty → **Search**.
@@ -828,13 +828,43 @@ python manage.py send_access_review_reminders
 
 ### 17.3 Auditor in the admin console
 - [ ] **Window C:** http://localhost:8000/admin/ → sign in as auditor (with code).
-- [ ] **Expect:** only **Audit** → **Audit events** is visible. Open one event: you can read it,
-      but there is no Save or Delete.
+- [ ] **Expect:** only the **Audit** section is visible: **Audit events**, **Audit chain links** and
+      **Audit integrity checks**. Open one event: you can read it, but there is no Save or Delete.
 
 ### 17.4 Auditor and access reviews
 - [ ] **Window C (app):** **Access reviews** → open the completed review.
 - [ ] **Expect:** the auditor can read and **Download (CSV)**, but sees **no** Keep, Remove,
       Complete or Start buttons.
+
+### 17.5 Audit integrity: proof that nobody changed the audit log (needs PR #22)
+Every audit record is "sealed" into a chain, like a wax seal. If anyone changes or removes a
+record directly in the database, the seal breaks and HIMS reports it.
+
+- [ ] **Window C (app):** menu → **Audit integrity**.
+- [ ] **Expect:** "Latest check: **Never checked**" the first time, **Records sealed** = 0 and
+      **Waiting to be sealed** = a number (all records made today). This is normal on your PC:
+      there is no background job here, so sealing happens when a check runs.
+- [ ] **Do:** press **Check now**. Wait a few seconds.
+- [ ] **Expect:** green message "Passed: N record(s) checked, nothing was changed."; Latest check
+      = **Passed**, "Started by a person (your auditor name)"; **Records sealed** is now N; a
+      long **Chain fingerprint** (64 letters and numbers) is shown; **Signing key name** = `local`.
+- [ ] **Do:** press **Check now** again.
+- [ ] **Expect:** passed again, with a few more records (your first check is itself in the log).
+      **Past checks** lists both, newest first.
+- [ ] **Do:** click the date of a past check.
+- [ ] **Expect:** the check's page: Passed, records checked, the chain fingerprint and a reference.
+- [ ] **Do:** **Audit log** → **Area** = **Audit log use** → **Search**.
+- [ ] **Expect:** "Audit log integrity checked" events, one for each check.
+- [ ] **Window C (admin console):** **Audit** → **Audit integrity checks** → button
+      **Run integrity check now** (top right).
+- [ ] **Expect:** "Passed: … nothing was changed." and the check's details open. **Audit chain
+      links** lists the links (numbers and fingerprints only, no Save or Delete).
+- [ ] **Do (optional, terminal):** in a second Command Prompt in `backend`, with the virtual
+      environment on: `python manage.py check_audit_log`
+- [ ] **Expect:** `PASSED. Sealed … checked … chain head …`.
+- [ ] **Do NOT** try to tamper with your real database to "see it fail". This is tested
+      automatically on a throwaway database. A failed check shows a red warning, "possible
+      security incident", and emails every auditor.
 
 ---
 
@@ -904,6 +934,7 @@ Each of these must be **refused** with a clear message. A refusal here is a **pa
 | 20.9 | Window B: as a person **without** a role, type http://localhost:5175/staff in the address bar | "You don't have access to this", with a reference number |
 | 20.10 | Access review: try to **Keep** your own row (no button) | Not possible; "Your own access: another reviewer decides" |
 | 20.11 | Look for any **Delete** button in the app or admin console | None exists. Records are switched off, revoked or archived instead. Only exception: a department's opening-hours rows in the admin console (they are settings, and changes are audited) |
+| 20.12 | Window A (admin): type http://localhost:5175/audit/integrity in the address bar | "You don't have access to this". Administrators cannot see or run the tamper check (only auditors can) |
 
 ---
 
@@ -1010,7 +1041,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 14 | Features | | | |
 | 15 | Security, My sign-ins, forgot password | | | |
 | 16 | Access reviews | | | |
-| 17 | Audit log (auditor) | | | |
+| 17 | Audit log and audit integrity (auditor) | | | |
 | 18 | Admin console tour | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |

@@ -3,6 +3,7 @@ import {
   Button,
   Chip,
   LinearProgress,
+  Link,
   MenuItem,
   Paper,
   Stack,
@@ -17,7 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 
 import type { AuditEvent } from "../../api/types";
 import { ErrorAlert } from "../../components/ErrorAlert";
@@ -75,6 +76,9 @@ export function AuditLogPage() {
           Who did what, when and where. Records cannot be changed or deleted. Your searches and
           downloads are recorded too.
         </Typography>
+        <Link component={RouterLink} to="/audit/integrity" variant="body2">
+          Check that no record was changed (audit integrity)
+        </Link>
       </Box>
 
       <Paper

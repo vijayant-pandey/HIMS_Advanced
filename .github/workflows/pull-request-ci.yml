@@ -100,6 +100,7 @@ jobs:
             -e DJANGO_SECRET_KEY="$(openssl rand -hex 32)" \
             -e DJANGO_ALLOWED_HOSTS=ci.invalid \
             -e HIMS_FIELD_ENCRYPTION_KEYS="$(openssl rand -base64 32 | tr '+/' '-_')" \
+            -e HIMS_AUDIT_CHAIN_KEYS="ci:$(openssl rand -hex 32)" \
             -e DATABASE_URL=postgres://u:p@db.ci.invalid:5432/hims \
             -e HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE=true \
             hims-backend:${{ github.sha }} python manage.py check --deploy --fail-level WARNING

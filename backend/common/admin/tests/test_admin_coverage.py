@@ -9,7 +9,7 @@ from django.contrib import admin
 from django.core.cache import cache
 from django.test import Client
 
-from apps.audit.models import AuditEvent
+from apps.audit.models import AuditChainEntry, AuditEvent, AuditIntegrityCheck
 from apps.beds.models import Bed
 from apps.facilities.models import Building, Floor, Room, Ward
 from apps.identity.models import PasswordReset
@@ -64,7 +64,9 @@ def test_every_console_page_opens(admin_user, auditor_user, organization):
         if not model.__module__.startswith(("apps.", "common.")):
             continue
         meta = model._meta
-        client = auditor if model is AuditEvent else administrator
+        # Audit pages are for auditors only (separation of duties).
+        auditor_only = model in (AuditEvent, AuditChainEntry, AuditIntegrityCheck)
+        client = auditor if auditor_only else administrator
         url = f"/admin/{meta.app_label}/{meta.model_name}/"
         assert client.get(url).status_code == 200, url
         if model_admin.has_add_permission(type("R", (), {"user": admin_user})()):
