@@ -9,6 +9,8 @@ Closes #<!-- issue number --> <!-- every PR links to at least one ticket (spec 3
 - [ ] Acceptance criteria met; tests added/updated (unit, API, permission/isolation)
 - [ ] Database migrations reviewed (expand-and-contract; no irreversible data rewrite without a recovery plan)
 - [ ] API contract regenerated (`docs/api/openapi.yaml`, `frontend/src/api/schema.d.ts`) if the API changed
+- [ ] Data dictionary regenerated (`python manage.py data_dictionary`) if a model changed; new tables have a lifecycle rule and sensitive columns a classification (`common/datadict/catalog.py`)
+- [ ] New libraries pinned and hash-locked (`docs/workflows/dependencies.md`); new GitHub Actions pinned to a commit SHA
 - [ ] Permissions enforced in the backend; new endpoints declare `required_permissions`
 - [ ] Audit events recorded for sensitive reads/writes
 - [ ] Idempotency / concurrency / retry behaviour covered where required

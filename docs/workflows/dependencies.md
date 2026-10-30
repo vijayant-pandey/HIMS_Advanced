@@ -48,6 +48,10 @@ npm ci
 
 `--universal` makes one lockfile that works on Windows (your PC) and Linux (CI and servers).
 
+## GitHub Actions used by CI (HIMS-PLAT-013)
+
+Each action in `.github/workflows/` is pinned to a full commit SHA, with its release in a comment, e.g. `actions/checkout@11d5960… # v4.4.0`. A tag can be moved by whoever controls the action; a commit SHA cannot. Dependabot opens one grouped PR a week when new releases exist: check the release notes, then merge it like any PR. Jobs get a read-only token, checkouts keep no git credentials, and the workflow uses no secrets except GitHub's built-in token. `common/tests/test_ci_workflows.py` fails if any of this is broken.
+
 ## Adding or upgrading a frontend library
 
 `npm install <name>@<exact version> --save-exact` in `frontend`, then `npm audit` and the

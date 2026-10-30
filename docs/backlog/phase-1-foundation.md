@@ -23,7 +23,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-PLAT-010 | OpenAPI contract generated and validated; frontend types generated from it | Done |
 | HIMS-PLAT-011 | Backend container image (non-root, single image for all roles) | Done |
 | HIMS-PLAT-012 | Hash-locked Python lockfile (uv, universal, `--require-hashes` in CI and image; [how-to](../workflows/dependencies.md)) | Done |
-| HIMS-PLAT-013 | Pin GitHub Actions to commit SHAs; least-privilege tokens per job | To do |
+| HIMS-PLAT-013 | Pin GitHub Actions to commit SHAs; least-privilege tokens per job; Dependabot for actions (test-enforced) | Done |
 | HIMS-PLAT-014 | Outbox and idempotency retention/archival jobs and runbook | Partial (idempotency purge done) |
 | HIMS-PLAT-015 | Route-level code splitting in the SPA (first download 1,045 → 494 kB; CI bundle budget 500 kB; reload page after updates) | Done |
 | HIMS-UI-001 | Theme selector (white & blue/red/green, minimal black & white) across launcher, apps and admin | Done (extended to 10 themes in HIMS-UI-002) |
@@ -109,6 +109,14 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-SEC-014 | Trust `X-Forwarded-For` only from the ALB for audit IPs | To do |
 | HIMS-SEC-016 | Copy each passed check's audit chain head to write-once storage (S3 Object Lock) as an independent anchor (gap found in HIMS-SEC-010) | To do (🔒 AWS) |
 | HIMS-SEC-017 | Run the on-demand audit integrity check as a background job with progress once the audit log nears ~1 million records (gap found in HIMS-SEC-010) | To do (when volume is near) |
+
+## EPIC HIMS-DATA — Data architecture (Artifact A, spec 28)
+
+| ID | Ticket | Status |
+|---|---|---|
+| HIMS-DATA-001 | Artifact A for built domains: generated data dictionary and ERDs (CI freshness check), classification, lifecycle, index ↔ query patterns, transactions, history, migrations, catalogs, data flows, synthetic data ([index](../architecture/data-architecture/README.md)) | Done |
+| HIMS-DATA-002 | Check indexes with production-like synthetic volume and query plans (spec 28.6) | To do |
+| HIMS-DATA-003 | Artifact A for each P0 domain before release (patients/MPI first; spec 28.8) | To do (🔒 with Phase 2 P0 sign-off) |
 
 ## EPIC HIMS-OPS — Delivery and operations
 
