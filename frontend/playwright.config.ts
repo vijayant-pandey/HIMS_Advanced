@@ -16,9 +16,11 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
+  // No retries: the tests are one story on one hospital (a retry would e.g. add the same nurse
+  // twice), so a failure must be fixed, not retried.
+  retries: 0,
+  timeout: 90_000,
+  expect: { timeout: process.env.CI ? 20_000 : 10_000 },
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
   use: {
     baseURL: E2E.appUrl,
@@ -40,9 +42,11 @@ export default defineConfig({
       stderr: "pipe",
     },
     {
-      command: `npx vite --port ${E2E.appPort} --strictPort`,
+      // The production build, as hospitals get it (no slow first-visit compiling like the dev
+      // server). `vite preview` uses the same /api proxy as the dev server.
+      command: `npx vite build --logLevel warn && npx vite preview --port ${E2E.appPort} --strictPort`,
       url: E2E.appUrl,
-      timeout: 120_000,
+      timeout: 180_000,
       reuseExistingServer: false,
       env: { VITE_API_TARGET: `http://127.0.0.1:${E2E.apiPort}`, VITE_DEV_PORT: String(E2E.appPort) },
     },

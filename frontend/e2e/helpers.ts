@@ -125,6 +125,8 @@ export async function openMenu(page: Page, label: string): Promise<void> {
  * findings do not fail the run.
  */
 export async function expectAccessible(page: Page, screen: string): Promise<void> {
+  // Measure final colours, not a button or menu caught half-way through a fade.
+  await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; animation: none !important; }" });
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   const blocking = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   const summary = blocking.map(

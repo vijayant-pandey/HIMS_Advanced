@@ -17,8 +17,9 @@ problems fail the test).
 | `04-audit-and-safety.spec.ts` | Auditor finds the nurse's visit by reference, audit integrity check, review read-only; administrator refused the audit log; remaining screens; keyboard-only menu use |
 
 Every test runs against a **throw-away database `hims_e2e`** and its own servers (API on port
-8100, app on 5180), so the normal India and US hospitals keep running untouched. All people and
-passwords are synthetic.
+8100, app on 5180, served from a production build like hospitals get), so the normal India and
+US hospitals keep running untouched. All people and passwords are synthetic. There are no
+retries: the tests are one story on one hospital, so a failure is investigated, not retried.
 
 ## Run them on your PC (CMD)
 
