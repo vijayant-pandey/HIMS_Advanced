@@ -165,7 +165,10 @@ export function useConfirmMfaSetup() {
   const refresh = useRefreshCurrentUser();
   return useMutation<MfaRecoveryCodes, ApiError, { code: string }>({
     mutationFn: (body) => api.post<MfaRecoveryCodes>("/auth/mfa/confirm/", body),
-    onSuccess: () => refresh(),
+    // Not awaited: the caller must get the one-time backup codes before the page re-renders.
+    onSuccess: () => {
+      void refresh();
+    },
   });
 }
 

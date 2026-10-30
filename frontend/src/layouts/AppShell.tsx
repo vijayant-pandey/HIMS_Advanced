@@ -3,7 +3,22 @@ import { NavLink, Outlet, useNavigate, useNavigation } from "react-router-dom";
 
 import { ThemePicker } from "../components/ThemePicker";
 import { useCurrentUser, useLogout } from "../features/auth/api";
-import { hasNestedItem, visibleNavItems } from "./navigation";
+import { MENU_ACTIVE_SHADE, MENU_TEXT_OPACITY, hasNestedItem, visibleNavItems } from "./navigation";
+
+/**
+ * Menu items: the current page is darkened and underlined (not lightened), so white text keeps
+ * at least 4.5:1 contrast on every theme (WCAG 2.1 AA; checked in themes.test.ts and by the
+ * browser accessibility tests, HIMS-QA-001).
+ */
+export const MENU_ITEM = {
+  opacity: MENU_TEXT_OPACITY,
+  "&.active": {
+    opacity: 1,
+    bgcolor: `rgba(0,0,0,${MENU_ACTIVE_SHADE})`,
+    textDecoration: "underline",
+    textUnderlineOffset: "4px",
+  },
+} as const;
 
 export function AppShell() {
   const navigate = useNavigate();
@@ -31,7 +46,7 @@ export function AppShell() {
                 component={NavLink}
                 to={item.to}
                 end={hasNestedItem(item)}
-                sx={{ opacity: 0.85, "&.active": { opacity: 1, bgcolor: "rgba(255,255,255,0.16)" } }}
+                sx={MENU_ITEM}
               >
                 {item.label}
               </Button>
@@ -43,7 +58,7 @@ export function AppShell() {
             component={NavLink}
             to="/security"
             title="Security: two-factor sign-in"
-            sx={{ opacity: 0.9, "&.active": { opacity: 1, bgcolor: "rgba(255,255,255,0.16)" } }}
+            sx={MENU_ITEM}
           >
             {user?.display_name} · Security
           </Button>

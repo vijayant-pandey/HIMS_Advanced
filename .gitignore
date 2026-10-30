@@ -36,6 +36,12 @@ coverage/
 Thumbs.db
 
 # Generated
+# Browser tests (HIMS-QA-001): emails, uploads, sign-in state and reports of the last run
+frontend/e2e/.mail/
+frontend/e2e/.media/
+frontend/e2e/.state/
+frontend/playwright-report/
+frontend/test-results/
 backend/staticfiles/
 backend/media/
 

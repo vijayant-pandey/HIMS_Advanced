@@ -1,6 +1,6 @@
-/// <reference types="vitest/config" />
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
+import { configDefaults } from "vitest/config";
 
 // The dev server proxies the API so the session and CSRF cookies stay same-origin,
 // matching the CloudFront/ALB topology used in managed environments (spec 17, 30.2).
@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: ["./src/test/setup.ts"],
+      // Browser tests (e2e/) run with Playwright, not Vitest (HIMS-QA-001).
+      exclude: [...configDefaults.exclude, "e2e/**"],
     },
   };
 });

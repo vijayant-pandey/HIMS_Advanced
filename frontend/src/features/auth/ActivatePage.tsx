@@ -1,17 +1,16 @@
 import { Alert, Box, Button, CircularProgress, Typography } from "@mui/material";
-import { useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { useAcceptInvitation, useInvitationDetails } from "./api";
 import { AuthCard } from "./AuthCard";
-import { takeLinkTokenFromUrl } from "./linkToken";
+import { useLinkToken } from "./linkToken";
 import { NewPasswordForm } from "./NewPasswordForm";
 
 /** Landing page for the activation link in the invitation email (HIMS-IAM-003). */
 export function ActivatePage() {
   const navigate = useNavigate();
-  const [token] = useState(takeLinkTokenFromUrl);
+  const token = useLinkToken();
   const details = useInvitationDetails(token);
   const accept = useAcceptInvitation();
 

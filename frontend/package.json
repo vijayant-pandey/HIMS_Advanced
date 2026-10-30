@@ -12,7 +12,9 @@
     "dev:us": "vite --mode us",
     "build": "tsc -b && vite build",
     "size": "node scripts/check-bundle-size.mjs",
-    "typecheck": "tsc -b --noEmit",
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report",
+    "typecheck": "tsc -b --noEmit && tsc -p e2e --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
     "api:types": "openapi-typescript ../docs/api/openapi.yaml -o src/api/schema.d.ts"
@@ -31,7 +33,9 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@types/qrcode": "1.5.6",
