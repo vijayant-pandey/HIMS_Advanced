@@ -9,6 +9,8 @@ import json
 import logging
 from datetime import UTC, datetime
 
+from common.tracing import current_trace_ids
+
 _STANDARD_ATTRS = frozenset(vars(logging.makeLogRecord({})).keys()) | {"message", "asctime"}
 
 
@@ -20,6 +22,8 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
+        # Links the log line to its trace when tracing is on (HIMS-PLAT-016).
+        payload.update(current_trace_ids())
         for key, value in vars(record).items():
             if key not in _STANDARD_ATTRS and not key.startswith("_"):
                 payload[key] = value

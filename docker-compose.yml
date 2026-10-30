@@ -25,5 +25,16 @@ services:
       interval: 5s
       retries: 10
 
+  # Optional trace viewer (HIMS-PLAT-016). Starts only when asked for:
+  #   docker compose --profile tracing up -d jaeger
+  # then set HIMS_TRACING_EXPORTER=otlp and OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+  # in backend/.env and open http://localhost:16686 (see docs/workflows/tracing.md).
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    profiles: ["tracing"]
+    ports:
+      - "16686:16686" # web UI
+      - "4318:4318" # OTLP over HTTP
+
 volumes:
   postgres-data:

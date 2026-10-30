@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -23,6 +24,15 @@ if _env_file.exists():
 HIMS_ENVIRONMENT = env.str("HIMS_ENVIRONMENT")
 HIMS_DEPLOYMENT_ID = env.str("HIMS_DEPLOYMENT_ID")
 HIMS_RELEASE = env.str("HIMS_RELEASE", default="unversioned")
+# Tracing (spec 6, 18; HIMS-PLAT-016; common/tracing.py): none (default) | console | otlp.
+# For otlp, set the standard OTEL_EXPORTER_OTLP_ENDPOINT (and headers) for the collector.
+HIMS_TRACING_EXPORTER = env.str("HIMS_TRACING_EXPORTER", default="none").strip().lower()
+if HIMS_TRACING_EXPORTER not in ("none", "console", "otlp"):
+    raise ImproperlyConfigured("HIMS_TRACING_EXPORTER must be none, console or otlp.")
+# Share of requests traced (0.0 to 1.0). A request that arrives already traced keeps its choice.
+HIMS_TRACING_SAMPLE_RATIO = env.float("HIMS_TRACING_SAMPLE_RATIO", default=1.0)
+if not 0.0 <= HIMS_TRACING_SAMPLE_RATIO <= 1.0:
+    raise ImproperlyConfigured("HIMS_TRACING_SAMPLE_RATIO must be between 0.0 and 1.0.")
 
 SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)

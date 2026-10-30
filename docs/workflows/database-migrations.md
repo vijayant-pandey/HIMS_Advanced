@@ -19,6 +19,17 @@ separately**. Today that means two databases:
 
 ## The steps (CMD), always all three blocks
 
+If the merged change touched `backend/requirements/` or `frontend/package-lock.json`, first
+install the new libraries (see [dependencies.md](dependencies.md)):
+
+```cmd
+cd C:\Users\vpand\OneDrive\Desktop\HIMS\backend
+.venv\Scripts\activate.bat
+pip install --require-hashes -r requirements/dev.txt
+cd ..\frontend
+npm ci
+```
+
 ```cmd
 cd C:\Users\vpand\OneDrive\Desktop\HIMS\backend
 .venv\Scripts\activate.bat

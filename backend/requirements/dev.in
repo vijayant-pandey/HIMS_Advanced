@@ -1,0 +1,10 @@
+# Developer and CI tools. Same versions as base.txt for everything shared (-c), so tests run
+# against exactly what production installs. Regenerate dev.txt after changing this file.
+-c base.txt
+-r base.in
+pytest==9.1.1
+pytest-django==4.14.0
+ruff==0.17.2
+pip-audit==2.10.1
+# Regenerates the hash-locked files (docs/workflows/dependencies.md).
+uv==0.13.4

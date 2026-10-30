@@ -22,13 +22,14 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-PLAT-009 | Health endpoints (live/ready) | Done |
 | HIMS-PLAT-010 | OpenAPI contract generated and validated; frontend types generated from it | Done |
 | HIMS-PLAT-011 | Backend container image (non-root, single image for all roles) | Done |
-| HIMS-PLAT-012 | Hash-locked Python lockfile (pip-tools or uv) | To do |
+| HIMS-PLAT-012 | Hash-locked Python lockfile (uv, universal, `--require-hashes` in CI and image; [how-to](../workflows/dependencies.md)) | Done |
 | HIMS-PLAT-013 | Pin GitHub Actions to commit SHAs; least-privilege tokens per job | To do |
 | HIMS-PLAT-014 | Outbox and idempotency retention/archival jobs and runbook | Partial (idempotency purge done) |
-| HIMS-PLAT-015 | Route-level code splitting in the SPA (current bundle > 500 kB) | To do |
+| HIMS-PLAT-015 | Route-level code splitting in the SPA (first download 1,045 → 494 kB; CI bundle budget 500 kB; reload page after updates) | Done |
 | HIMS-UI-001 | Theme selector (white & blue/red/green, minimal black & white) across launcher, apps and admin | Done (extended to 10 themes in HIMS-UI-002) |
 | HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event); plus 6 more colour themes (10 total) and a compact modern design | Done (visit recorded as `access.none_assigned`; reference = audit request_id) |
-| HIMS-PLAT-016 | OpenTelemetry tracing for API, Celery and outbound HTTP | To do |
+| HIMS-PLAT-016 | OpenTelemetry tracing for API, database, Celery and outbound HTTP; off by default, PHI-safe ([ADR-021](../decisions/ADR-021-tracing.md)) | Done |
+| HIMS-PLAT-019 | Send traces to AWS (ADOT collector sidecar → X-Ray/CloudWatch), sampling and retention per environment (gap found in HIMS-PLAT-016) | To do (🔒 AWS) |
 | HIMS-PLAT-017 | Django admin operations console: RBAC-gated, audited, no deletion (ADR-016) | Done |
 | HIMS-PLAT-018 | Admin console coverage: every model manageable (test-enforced), password-reset action, full bed status, location drill-down | Done |
 | HIMS-SEC-015 | Console network restriction (IP allow-list/VPN) before enabling outside local | To do |

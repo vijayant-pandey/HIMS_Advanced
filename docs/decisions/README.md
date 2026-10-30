@@ -26,3 +26,4 @@ default, awaiting the named approver), **Superseded**.
 | [018](ADR-018-two-factor-sign-in.md) | Two-factor sign-in with authenticator apps (TOTP) | Proposed |
 | [019](ADR-019-feature-flags.md) | Feature settings per hospital, country and facility | Proposed |
 | [020](ADR-020-document-storage.md) | Storing staff documents; licence expiry alerts | Proposed |
+| [021](ADR-021-tracing.md) | OpenTelemetry tracing, off by default and PHI-safe | Proposed |

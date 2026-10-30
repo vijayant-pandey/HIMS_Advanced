@@ -1,5 +1,5 @@
-import { AppBar, Box, Button, Container, Stack, Toolbar, Typography } from "@mui/material";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { AppBar, Box, Button, Container, LinearProgress, Stack, Toolbar, Typography } from "@mui/material";
+import { NavLink, Outlet, useNavigate, useNavigation } from "react-router-dom";
 
 import { ThemePicker } from "../components/ThemePicker";
 import { useCurrentUser, useLogout } from "../features/auth/api";
@@ -9,6 +9,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const { data: user } = useCurrentUser();
   const logout = useLogout();
+  const navigation = useNavigation();
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
@@ -56,6 +57,8 @@ export function AppShell() {
           </Button>
         </Toolbar>
       </AppBar>
+      {/* A screen opened for the first time is being downloaded (code splitting, HIMS-PLAT-015). */}
+      <Box sx={{ height: 4 }}>{navigation.state === "loading" && <LinearProgress aria-label="Loading" />}</Box>
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Outlet />
       </Container>
