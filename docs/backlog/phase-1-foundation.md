@@ -53,7 +53,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-ORG-004 | Feature flags per organization/country/facility | Done |
 | HIMS-ORG-005 | Hospital settings screen (name, legal name, default time zone) | Done |
 | HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done |
-| HIMS-FAC-007 | Department head, services offered and operating hours | To do |
+| HIMS-FAC-007 | Department head, services offered and operating hours | Done |
 
 ## EPIC HIMS-IAM — Identity and access
 
@@ -73,6 +73,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-012 | Periodic access-review report | To do |
 | HIMS-IAM-013 | Role and access-management UI | Done |
 | HIMS-IAM-015 | Accounts screen incl. people who are not staff; last-administrator protection | Done |
+| HIMS-IAM-016 | "My sign-ins": see own open sessions and sign out other devices on the Security page | To do |
 | HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | To do |
 
 ## EPIC HIMS-STAFF — Staff and credentials
@@ -86,6 +87,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-005 | Credential document upload (local storage, type/size checks, audited downloads; ADR-020) | Done (S3 → HIMS-OPS-015, scanning → HIMS-SEC-013) |
 | HIMS-STAFF-006 | Credential expiry alerts (scheduled job + notifications) + Licence expiry page | Done |
 | HIMS-STAFF-007 | Staff detail/onboarding UI | Done |
+| HIMS-STAFF-010 | Catalog screens: designations, specialties, qualification types (add/edit/deactivate in the app) | Done |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility | To do |
 | HIMS-STAFF-009 | Designation catalog (IN/US, junior→senior), extended specialty/qualification catalogs, administrative system roles, RBAC document | Done |
 

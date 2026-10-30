@@ -98,6 +98,17 @@ class HimsInline(_OrganizationField, _ConsolePermissions, admin.TabularInline):
     show_change_link = True
 
 
+class HimsSettingsInline(HimsInline):
+    """For pure settings rows (e.g. a department's weekly opening sessions) that may be removed.
+
+    The only exception to "no deletion": these rows are configuration, not records of fact, and
+    the parent admin must audit the before/after state in ``save_formset``.
+    """
+
+    def has_delete_permission(self, request, obj=None):
+        return can_use_console(request.user)
+
+
 class ReadOnlyModelAdmin(_ConsolePermissions, admin.ModelAdmin):
     """View-only registration for records the console must never edit."""
 

@@ -169,24 +169,40 @@ class StaffCredentialAdmin(HimsModelAdmin):
         self._verify(request, queryset, verified=False)
 
 
+class _CatalogAdmin(HimsModelAdmin):
+    """Job titles, specialties, qualification types (HIMS-STAFF-010): codes never change once
+    created (records point to them); entries added here are marked as the hospital's own."""
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = [*super().get_readonly_fields(request, obj), "is_custom"]
+        if obj is not None:
+            readonly.append("code")
+        return readonly
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.is_custom = True
+        super().save_model(request, obj, form, change)
+
+
 @admin.register(Designation)
-class DesignationAdmin(HimsModelAdmin):
-    list_display = ("name", "category", "country", "seniority", "is_active")
+class DesignationAdmin(_CatalogAdmin):
+    list_display = ("name", "category", "country", "seniority", "is_custom", "is_active")
     list_filter = ("category", "country", "is_active")
     search_fields = ("code", "name")
     ordering = ("category", "seniority", "name")
 
 
 @admin.register(Specialty)
-class SpecialtyAdmin(HimsModelAdmin):
-    list_display = ("code", "name", "is_active")
+class SpecialtyAdmin(_CatalogAdmin):
+    list_display = ("code", "name", "is_custom", "is_active")
     list_filter = ("is_active",)
     search_fields = ("code", "name")
 
 
 @admin.register(QualificationType)
-class QualificationTypeAdmin(HimsModelAdmin):
-    list_display = ("code", "name", "category", "country", "is_active")
+class QualificationTypeAdmin(_CatalogAdmin):
+    list_display = ("code", "name", "category", "country", "is_custom", "is_active")
     list_filter = ("category", "country", "is_active")
     search_fields = ("code", "name")
 

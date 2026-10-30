@@ -28,6 +28,7 @@ class P:
     ROLE_ASSIGNMENTS_MANAGE = "access.assignments.manage"
     AUDIT_VIEW = "audit.view"
     ACCOUNTS_MANAGE = "accounts.manage"
+    CATALOGS_MANAGE = "catalogs.manage"
     ADMIN_CONSOLE = "platform.admin_console"
 
 
@@ -53,6 +54,7 @@ PERMISSIONS: dict[str, str] = {
     P.ROLES_MANAGE: "Create roles and change role permissions",
     P.ROLE_ASSIGNMENTS_MANAGE: "Grant and revoke role assignments",
     P.AUDIT_VIEW: "Search the audit log",
+    P.CATALOGS_MANAGE: "Add and change job titles, specialties and qualification types",
     P.ACCOUNTS_MANAGE: (
         "Add sign-in accounts for people who are not staff, switch accounts off or on, "
         "reset their two-factor and sign them out"
@@ -121,6 +123,7 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.STAFF_CREDENTIALS_VERIFY,
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
+            P.CATALOGS_MANAGE,
         ],
     },
     "department-head": {

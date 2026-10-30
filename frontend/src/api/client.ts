@@ -52,7 +52,7 @@ export function readCookie(name: string): string | null {
   return null;
 }
 
-type Method = "GET" | "POST" | "PATCH";
+type Method = "GET" | "POST" | "PATCH" | "PUT";
 
 export interface RequestOptions {
   body?: unknown;
@@ -126,6 +126,8 @@ export const api = {
     apiRequest<T>("POST", path, { ...options, body }),
   patch: <T>(path: string, body: unknown, options?: Omit<RequestOptions, "body">) =>
     apiRequest<T>("PATCH", path, { ...options, body }),
+  put: <T>(path: string, body: unknown, options?: Omit<RequestOptions, "body">) =>
+    apiRequest<T>("PUT", path, { ...options, body }),
 };
 
 export function isUnauthenticated(error: unknown): boolean {

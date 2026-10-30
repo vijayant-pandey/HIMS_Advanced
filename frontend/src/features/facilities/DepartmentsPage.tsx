@@ -95,6 +95,7 @@ export function DepartmentsPage() {
           <TableHead>
             <TableRow>
               <TableCell>Department</TableCell>
+              <TableCell>Head</TableCell>
               <TableCell>Type</TableCell>
               <TableCell>Facility</TableCell>
               <TableCell align="right">Staff</TableCell>
@@ -107,11 +108,15 @@ export function DepartmentsPage() {
             {data?.results.map((d) => (
               <TableRow key={d.id} sx={{ opacity: d.status === "active" ? 1 : 0.6 }}>
                 <TableCell>
-                  {d.name}
+                  <Link component={RouterLink} to={`/departments/${d.id}`} sx={{ fontWeight: 600 }}>
+                    {d.name}
+                  </Link>
                   <Typography variant="caption" component="p">
                     {d.code}
+                    {d.open_24_hours && " · open 24 hours"}
                   </Typography>
                 </TableCell>
+                <TableCell>{d.head_name ?? "—"}</TableCell>
                 <TableCell>{d.department_type_label}</TableCell>
                 <TableCell>{d.facility_name}</TableCell>
                 <TableCell align="right">
@@ -142,7 +147,7 @@ export function DepartmentsPage() {
             ))}
             {data?.results.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7}>
+                <TableCell colSpan={8}>
                   {status === "inactive" ? "No inactive departments." : "No departments yet."}
                 </TableCell>
               </TableRow>

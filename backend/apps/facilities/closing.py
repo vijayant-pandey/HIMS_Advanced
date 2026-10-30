@@ -87,3 +87,45 @@ def facility_blockers(facility) -> list[str]:
 
 def explain(blockers: list[str]) -> str:
     return "It cannot be deactivated yet: " + "; ".join(blockers) + "."
+
+
+# --- Department head (HIMS-FAC-007) ------------------------------------------------------------
+
+
+def head_problem(department, staff) -> str | None:
+    """Why this person cannot lead the department, or None when they can."""
+    from apps.staff.models import StaffDepartmentAssignment, StaffMember
+
+    working = (StaffMember.EmploymentStatus.ACTIVE, StaffMember.EmploymentStatus.ON_LEAVE)
+    if staff.employment_status not in working:
+        return "The head must be a working staff member (not suspended or terminated)."
+    today = timezone.localdate()
+    posted = StaffDepartmentAssignment.objects.filter(
+        current_postings_q(), staff=staff, department=department, valid_from__lte=today
+    ).exists()
+    if not posted:
+        return "The head must currently be posted in this department (add a posting first)."
+    return None
+
+
+def clear_head_if_invalid(department, *, reason: str, actor=None, request=None) -> bool:
+    """Remove a head who no longer qualifies (posting ended, employment ended). Audited."""
+    from apps.audit.services import AuditAction, record_audit_event
+
+    if department.head_id is None or head_problem(department, department.head) is None:
+        return False
+    previous = department.head_id
+    department.head = None
+    department.version += 1
+    department.save(update_fields=["head", "version", "updated_at"])
+    record_audit_event(
+        action=AuditAction.DEPARTMENT_UPDATED,
+        resource_type="department",
+        resource_id=department.pk,
+        facility_id=department.facility_id,
+        actor=actor,
+        request=request,
+        reason=reason,
+        changes={"before": {"head": str(previous)}, "after": {"head": None}},
+    )
+    return True

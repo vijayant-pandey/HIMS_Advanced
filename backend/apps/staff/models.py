@@ -23,12 +23,15 @@ class VerificationStatus(models.TextChoices):
     REJECTED = "rejected", "Rejected"
 
 
-class Specialty(UUIDPrimaryKeyModel, TimeStampedModel):
+class Specialty(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
     """Controlled specialty catalog. Owned by clinical informatics."""
 
     code = models.SlugField(max_length=64, unique=True)
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
+    is_custom = models.BooleanField(
+        default=False, help_text="Added by this hospital (standard entries come with HIMS)."
+    )
 
     class Meta:
         db_table = "specialties"
@@ -39,7 +42,7 @@ class Specialty(UUIDPrimaryKeyModel, TimeStampedModel):
         return self.name
 
 
-class QualificationType(UUIDPrimaryKeyModel, TimeStampedModel):
+class QualificationType(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
     """Controlled qualification catalog (MBBS, MD, DNB, RN...). Country-specific where needed."""
 
     class Category(models.TextChoices):
@@ -53,6 +56,9 @@ class QualificationType(UUIDPrimaryKeyModel, TimeStampedModel):
     category = models.CharField(max_length=32, choices=Category.choices)
     country = models.CharField(max_length=2, blank=True, help_text="Blank when not country-bound")
     is_active = models.BooleanField(default=True)
+    is_custom = models.BooleanField(
+        default=False, help_text="Added by this hospital (standard entries come with HIMS)."
+    )
 
     class Meta:
         db_table = "qualification_types"
@@ -62,7 +68,7 @@ class QualificationType(UUIDPrimaryKeyModel, TimeStampedModel):
         return self.name
 
 
-class Designation(UUIDPrimaryKeyModel, TimeStampedModel):
+class Designation(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
     """Controlled designation catalog: job titles on a junior-to-senior ladder (HIMS-STAFF-009).
 
     A designation is a job title, not a permission: what someone may do comes from role
@@ -86,6 +92,9 @@ class Designation(UUIDPrimaryKeyModel, TimeStampedModel):
     seniority = models.PositiveSmallIntegerField(help_text="1 = entry level ... 10 = leadership")
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    is_custom = models.BooleanField(
+        default=False, help_text="Added by this hospital (standard entries come with HIMS)."
+    )
 
     class Meta:
         db_table = "designations"

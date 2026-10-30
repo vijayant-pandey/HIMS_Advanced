@@ -590,6 +590,23 @@ export interface paths {
         patch: operations["buildings_partial_update"];
         trace?: never;
     };
+    "/api/v1/department-services/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Change or switch off one department service (never deleted). */
+        patch: operations["department_services_partial_update"];
+        trace?: never;
+    };
     "/api/v1/departments/": {
         parameters: {
             query?: never;
@@ -622,6 +639,56 @@ export interface paths {
         patch: operations["departments_partial_update"];
         trace?: never;
     };
+    "/api/v1/departments/{id}/head-candidates/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Working staff currently posted in this department: the people who can be its head. */
+        get: operations["departments_head_candidates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/departments/{id}/hours/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Replace the weekly opening hours (and the open-24-hours switch) in one go. */
+        put: operations["departments_hours_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/departments/{id}/services/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["departments_services_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/designations/": {
         parameters: {
             query?: never;
@@ -632,11 +699,29 @@ export interface paths {
         /** @description Job-title catalog (junior to senior). Filter with ?country=IN|US and ?category=. */
         get: operations["designations_list"];
         put?: never;
-        post?: never;
+        /** @description Job-title catalog (junior to senior). Filter with ?country=IN|US and ?category=. */
+        post: operations["designations_create"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/designations/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Job-title catalog (junior to senior). Filter with ?country=IN|US and ?category=. */
+        patch: operations["designations_partial_update"];
         trace?: never;
     };
     "/api/v1/facilities/": {
@@ -965,13 +1050,41 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+         *     with ?include_inactive=true, everything for the catalog screen; add and change entries.
+         */
         get: operations["qualification_types_list"];
+        put?: never;
+        /**
+         * @description A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+         *     with ?include_inactive=true, everything for the catalog screen; add and change entries.
+         */
+        post: operations["qualification_types_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/qualification-types/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * @description A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+         *     with ?include_inactive=true, everything for the catalog screen; add and change entries.
+         */
+        patch: operations["qualification_types_partial_update"];
         trace?: never;
     };
     "/api/v1/role-assignments/": {
@@ -1137,13 +1250,41 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+         *     with ?include_inactive=true, everything for the catalog screen; add and change entries.
+         */
         get: operations["specialties_list"];
+        put?: never;
+        /**
+         * @description A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+         *     with ?include_inactive=true, everything for the catalog screen; add and change entries.
+         */
+        post: operations["specialties_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/specialties/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * @description A hospital-maintained catalog (HIMS-STAFF-010): list for drop-downs (active entries) or,
+         *     with ?include_inactive=true, everything for the catalog screen; add and change entries.
+         */
+        patch: operations["specialties_partial_update"];
         trace?: never;
     };
     "/api/v1/staff/": {
@@ -1684,6 +1825,14 @@ export interface components {
             /** @description Staff posted here now or later. */
             readonly current_staff: number;
             readonly active_wards: number;
+            /**
+             * Format: uuid
+             * @description Must be a working staff member currently posted in this department.
+             */
+            readonly head: string | null;
+            readonly head_name: string | null;
+            /** @description e.g. Emergency, ICU. Weekly hours are ignored when set. */
+            readonly open_24_hours: boolean;
             readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -1696,6 +1845,63 @@ export interface components {
             code: string;
             name: string;
             department_type: components["schemas"]["DepartmentTypeEnum"];
+        };
+        DepartmentDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly facility: string;
+            readonly facility_name: string;
+            readonly code: string;
+            readonly name: string;
+            readonly department_type: components["schemas"]["DepartmentTypeEnum"];
+            readonly department_type_label: string;
+            readonly status: components["schemas"]["ActiveStatusEnum"];
+            /** @description Staff posted here now or later. */
+            readonly current_staff: number;
+            readonly active_wards: number;
+            /**
+             * Format: uuid
+             * @description Must be a working staff member currently posted in this department.
+             */
+            readonly head: string | null;
+            readonly head_name: string | null;
+            /** @description e.g. Emergency, ICU. Weekly hours are ignored when set. */
+            readonly open_24_hours: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly timezone: string;
+            readonly services: components["schemas"]["DepartmentService"][];
+            readonly hours: components["schemas"]["HoursSession"][];
+        };
+        /**
+         * @description The whole weekly timetable (in the facility's time zone). A day with no sessions is
+         *     closed; open_24_hours overrides the sessions.
+         */
+        DepartmentHoursRequest: {
+            version: number;
+            open_24_hours: boolean;
+            sessions: components["schemas"]["HoursSessionRequest"][];
+        };
+        DepartmentService: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly department: string;
+            readonly name: string;
+            readonly description: string;
+            readonly is_active: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        DepartmentServiceCreateRequest: {
+            name: string;
+            /** @default  */
+            description: string;
         };
         /**
          * @description * `clinical` - Clinical
@@ -1716,6 +1922,11 @@ export interface components {
             readonly country: string;
             /** @description 1 = entry level ... 10 = leadership */
             readonly seniority: number;
+            readonly description: string;
+            readonly is_active: boolean;
+            /** @description Added by this hospital (standard entries come with HIMS). */
+            readonly is_custom: boolean;
+            readonly version: number;
         };
         /**
          * @description * `medical` - Medical (doctors)
@@ -1728,6 +1939,15 @@ export interface components {
          * @enum {string}
          */
         DesignationCategoryEnum: "medical" | "nursing" | "pharmacy" | "allied_health" | "administration" | "support" | "other";
+        DesignationCreateRequest: {
+            name: string;
+            category: components["schemas"]["DesignationCategoryEnum"];
+            /** @description IN, US, or blank for both countries */
+            country?: string;
+            seniority: number;
+            /** @default  */
+            description: string;
+        };
         /**
          * @description * `mrn` - Patient record number (MRN)
          *     * `encounter` - Encounter / visit number
@@ -1921,6 +2141,48 @@ export interface components {
             facility_id: string | null;
             /** Format: uuid */
             department_id: string | null;
+        };
+        HeadCandidate: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            designation: string | null;
+        };
+        HoursSession: {
+            /**
+             * @description 0 = Monday
+             *
+             *     * `0` - Monday
+             *     * `1` - Tuesday
+             *     * `2` - Wednesday
+             *     * `3` - Thursday
+             *     * `4` - Friday
+             *     * `5` - Saturday
+             *     * `6` - Sunday
+             */
+            weekday: components["schemas"]["WeekdayEnum"];
+            /** Format: time */
+            opens_at: string;
+            /** Format: time */
+            closes_at: string;
+        };
+        HoursSessionRequest: {
+            /**
+             * @description 0 = Monday
+             *
+             *     * `0` - Monday
+             *     * `1` - Tuesday
+             *     * `2` - Wednesday
+             *     * `3` - Thursday
+             *     * `4` - Friday
+             *     * `5` - Saturday
+             *     * `6` - Sunday
+             */
+            weekday: components["schemas"]["WeekdayEnum"];
+            /** Format: time */
+            opens_at: string;
+            /** Format: time */
+            closes_at: string;
         };
         InvitationAcceptRequest: {
             token: string;
@@ -2348,11 +2610,32 @@ export interface components {
             name?: string;
             is_active?: boolean;
         };
+        PatchedDepartmentServiceUpdateRequest: {
+            version?: number;
+            name?: string;
+            description?: string;
+            is_active?: boolean;
+        };
         PatchedDepartmentUpdateRequest: {
             version?: number;
             name?: string;
             department_type?: components["schemas"]["DepartmentTypeEnum"];
             status?: components["schemas"]["ActiveStatusEnum"];
+            /**
+             * Format: uuid
+             * @description A working staff member currently posted here; null removes the head.
+             */
+            head?: string | null;
+        };
+        PatchedDesignationUpdateRequest: {
+            version?: number;
+            name?: string;
+            category?: components["schemas"]["DesignationCategoryEnum"];
+            /** @description IN, US, or blank for both countries */
+            country?: string;
+            seniority?: number;
+            description?: string;
+            is_active?: boolean;
         };
         PatchedFacilityUpdateRequest: {
             version?: number;
@@ -2391,6 +2674,14 @@ export interface components {
             display_name?: string;
             default_timezone?: string;
         };
+        PatchedQualificationTypeUpdateRequest: {
+            version?: number;
+            name?: string;
+            category?: components["schemas"]["QualificationTypeCategoryEnum"];
+            /** @description IN, US, or blank for both countries */
+            country?: string;
+            is_active?: boolean;
+        };
         PatchedRoleUpdateRequest: {
             version?: number;
             name?: string;
@@ -2402,6 +2693,11 @@ export interface components {
             name?: string;
             room_type?: components["schemas"]["RoomTypeEnum"];
             is_isolation_capable?: boolean;
+            is_active?: boolean;
+        };
+        PatchedSpecialtyUpdateRequest: {
+            version?: number;
+            name?: string;
             is_active?: boolean;
         };
         PatchedStaffMemberUpdateRequest: {
@@ -2442,6 +2738,7 @@ export interface components {
          *     * `accounts.manage` - accounts.manage
          *     * `audit.view` - audit.view
          *     * `beds.status.manage` - beds.status.manage
+         *     * `catalogs.manage` - catalogs.manage
          *     * `departments.manage` - departments.manage
          *     * `departments.view` - departments.view
          *     * `facilities.manage` - facilities.manage
@@ -2460,7 +2757,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
         QualificationType: {
             /** Format: uuid */
             readonly id: string;
@@ -2469,6 +2766,10 @@ export interface components {
             readonly category: components["schemas"]["QualificationTypeCategoryEnum"];
             /** @description Blank when not country-bound */
             readonly country: string;
+            readonly is_active: boolean;
+            /** @description Added by this hospital (standard entries come with HIMS). */
+            readonly is_custom: boolean;
+            readonly version: number;
         };
         /**
          * @description * `degree` - Degree
@@ -2478,6 +2779,12 @@ export interface components {
          * @enum {string}
          */
         QualificationTypeCategoryEnum: "degree" | "diploma" | "fellowship" | "certification";
+        QualificationTypeCreateRequest: {
+            name: string;
+            category: components["schemas"]["QualificationTypeCategoryEnum"];
+            /** @description IN, US, or blank for both countries */
+            country?: string;
+        };
         ReasonRequest: {
             reason: string;
         };
@@ -2629,6 +2936,13 @@ export interface components {
             readonly id: string;
             readonly code: string;
             readonly name: string;
+            readonly is_active: boolean;
+            /** @description Added by this hospital (standard entries come with HIMS). */
+            readonly is_custom: boolean;
+            readonly version: number;
+        };
+        SpecialtyCreateRequest: {
+            name: string;
         };
         /** @description The person's sign-in account, so HR can see whether they can log in yet. */
         StaffAccount: {
@@ -2961,6 +3275,17 @@ export interface components {
          * @enum {string}
          */
         WardTypeEnum: "general" | "private" | "icu" | "hdu" | "nicu" | "picu" | "emergency" | "maternity" | "isolation" | "day_care" | "operating_theatre" | "recovery";
+        /**
+         * @description * `0` - Monday
+         *     * `1` - Tuesday
+         *     * `2` - Wednesday
+         *     * `3` - Thursday
+         *     * `4` - Friday
+         *     * `5` - Saturday
+         *     * `6` - Sunday
+         * @enum {integer}
+         */
+        WeekdayEnum: 0 | 1 | 2 | 3 | 4 | 5 | 6;
         /**
          * @description * `full` - Full (2026, 2026-27)
          *     * `short` - Short (26, 26-27)
@@ -3875,6 +4200,32 @@ export interface operations {
             };
         };
     };
+    department_services_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this department service. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedDepartmentServiceUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentService"];
+                };
+            };
+        };
+    };
     departments_list: {
         parameters: {
             query?: {
@@ -3943,7 +4294,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Department"];
+                    "application/json": components["schemas"]["DepartmentDetail"];
                 };
             };
         };
@@ -3974,12 +4325,88 @@ export interface operations {
             };
         };
     };
+    departments_head_candidates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this department. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HeadCandidate"][];
+                };
+            };
+        };
+    };
+    departments_hours_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this department. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentHoursRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentDetail"];
+                };
+            };
+        };
+    };
+    departments_services_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this department. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentServiceCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentService"];
+                };
+            };
+        };
+    };
     designations_list: {
         parameters: {
             query?: {
                 category?: string;
                 /** @description IN or US (shared titles included) */
                 country?: string;
+                /** @description 'true' = also switched-off entries */
+                include_inactive?: string;
             };
             header?: never;
             path?: never;
@@ -3993,6 +4420,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Designation"][];
+                };
+            };
+        };
+    };
+    designations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DesignationCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Designation"];
+                };
+            };
+        };
+    };
+    designations_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this designation. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedDesignationUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Designation"];
                 };
             };
         };
@@ -4513,7 +4989,10 @@ export interface operations {
     };
     qualification_types_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 'true' = also switched-off entries */
+                include_inactive?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4526,6 +5005,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QualificationType"][];
+                };
+            };
+        };
+    };
+    qualification_types_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QualificationTypeCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualificationType"];
+                };
+            };
+        };
+    };
+    qualification_types_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this qualification type. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedQualificationTypeUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QualificationType"];
                 };
             };
         };
@@ -4826,7 +5354,10 @@ export interface operations {
     };
     specialties_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 'true' = also switched-off entries */
+                include_inactive?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4839,6 +5370,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Specialty"][];
+                };
+            };
+        };
+    };
+    specialties_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpecialtyCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Specialty"];
+                };
+            };
+        };
+    };
+    specialties_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this specialty. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSpecialtyUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Specialty"];
                 };
             };
         };

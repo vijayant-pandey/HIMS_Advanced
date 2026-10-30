@@ -1,8 +1,20 @@
+from itertools import pairwise
+
+from django import forms
 from django.contrib import admin
 
-from common.admin.options import HimsInline, HimsModelAdmin
+from common.admin.options import HimsInline, HimsModelAdmin, HimsSettingsInline
 
-from .models import Building, Department, Facility, Floor, Room, Ward
+from .models import (
+    Building,
+    Department,
+    DepartmentHours,
+    DepartmentService,
+    Facility,
+    Floor,
+    Room,
+    Ward,
+)
 
 
 class DepartmentInline(HimsInline):
@@ -42,9 +54,45 @@ class FacilityAdmin(HimsModelAdmin):
     inlines = [DepartmentInline, BuildingInline]
 
 
+class DepartmentServiceInline(HimsInline):
+    model = DepartmentService
+    fields = ("name", "description", "is_active")
+
+
+class DepartmentHoursFormSet(forms.BaseInlineFormSet):
+    """Same rules as the app: closing after opening, no overlapping sessions on a day."""
+
+    def clean(self):
+        super().clean()
+        by_day: dict[int, list] = {}
+        for form in self.forms:
+            data = getattr(form, "cleaned_data", None) or {}
+            if not data or data.get("DELETE"):
+                continue
+            if data.get("weekday") is None or not data.get("opens_at") or not data.get("closes_at"):
+                continue
+            by_day.setdefault(data["weekday"], []).append((data["opens_at"], data["closes_at"]))
+        for weekday, sessions in by_day.items():
+            ordered = sorted(sessions)
+            for (_o1, close1), (open2, _c2) in pairwise(ordered):
+                if open2 < close1:
+                    raise forms.ValidationError(
+                        f"{DepartmentHours.Weekday(weekday).label}: sessions overlap."
+                    )
+
+
+class DepartmentHoursInline(HimsSettingsInline):
+    """Opening sessions are timetable settings, not records: they can be removed here, and
+    every change is audited with the whole timetable before and after."""
+
+    model = DepartmentHours
+    formset = DepartmentHoursFormSet
+    fields = ("weekday", "opens_at", "closes_at")
+
+
 @admin.register(Department)
 class DepartmentAdmin(HimsModelAdmin):
-    list_display = ("code", "name", "facility", "department_type", "status")
+    list_display = ("code", "name", "facility", "department_type", "head", "status")
     list_filter = ("status", "department_type", "facility")
     search_fields = ("code", "name")
     fields = (
@@ -54,10 +102,39 @@ class DepartmentAdmin(HimsModelAdmin):
         "name",
         "department_type",
         "status",
+        "head",
+        "open_24_hours",
         "version",
         "created_at",
         "updated_at",
     )
+    inlines = [DepartmentServiceInline, DepartmentHoursInline]
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if obj is not None:
+            readonly += ["facility", "code"]  # never moved or re-coded (records point to it)
+        return readonly
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model is not DepartmentHours:
+            return super().save_formset(request, form, formset, change)
+        department = form.instance
+        before = [str(h) for h in department.hours.all()]
+        formset.save()
+        after = [str(h) for h in department.hours.all()]
+        if before != after:
+            from apps.audit.services import AuditAction, record_audit_event
+
+            record_audit_event(
+                action=AuditAction.DEPARTMENT_HOURS_CHANGED,
+                resource_type="department",
+                resource_id=department.pk,
+                facility_id=department.facility_id,
+                request=request,
+                changes={"before": {"hours": before}, "after": {"hours": after}},
+                metadata={"via": "admin-console"},
+            )
 
 
 # --- Locations (HIMS-FAC-004). Organization/facility are derived from the parent; parents ------

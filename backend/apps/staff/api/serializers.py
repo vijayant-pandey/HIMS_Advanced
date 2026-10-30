@@ -17,26 +17,106 @@ from ..models import (
     StaffQualification,
 )
 
+CATALOG_FIELDS = ["is_active", "is_custom", "version"]
+
 
 class SpecialtySerializer(serializers.ModelSerializer):
     class Meta:
         model = Specialty
-        fields = ["id", "code", "name"]
+        fields = ["id", "code", "name", *CATALOG_FIELDS]
         read_only_fields = fields
 
 
 class QualificationTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = QualificationType
-        fields = ["id", "code", "name", "category", "country"]
+        fields = ["id", "code", "name", "category", "country", *CATALOG_FIELDS]
         read_only_fields = fields
 
 
 class DesignationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Designation
-        fields = ["id", "code", "name", "category", "country", "seniority"]
+        fields = [
+            "id",
+            "code",
+            "name",
+            "category",
+            "country",
+            "seniority",
+            "description",
+            *CATALOG_FIELDS,
+        ]
         read_only_fields = fields
+
+
+# Add / change catalog entries (HIMS-STAFF-010). Codes are created automatically and never change.
+
+
+class SpecialtyCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+
+
+class SpecialtyUpdateSerializer(serializers.Serializer):
+    version = serializers.IntegerField(min_value=1)
+    name = serializers.CharField(max_length=255, required=False)
+    is_active = serializers.BooleanField(required=False)
+
+
+class QualificationTypeCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    category = serializers.ChoiceField(QualificationType.Category.choices)
+    country = serializers.RegexField(
+        r"^(IN|US)?$",
+        max_length=2,
+        required=False,
+        allow_blank=True,
+        help_text="IN, US, or blank for both countries",
+    )
+
+
+class QualificationTypeUpdateSerializer(serializers.Serializer):
+    version = serializers.IntegerField(min_value=1)
+    name = serializers.CharField(max_length=255, required=False)
+    category = serializers.ChoiceField(QualificationType.Category.choices, required=False)
+    country = serializers.RegexField(
+        r"^(IN|US)?$",
+        max_length=2,
+        required=False,
+        allow_blank=True,
+        help_text="IN, US, or blank for both countries",
+    )
+    is_active = serializers.BooleanField(required=False)
+
+
+class DesignationCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    category = serializers.ChoiceField(Designation.Category.choices)
+    country = serializers.RegexField(
+        r"^(IN|US)?$",
+        max_length=2,
+        required=False,
+        allow_blank=True,
+        help_text="IN, US, or blank for both countries",
+    )
+    seniority = serializers.IntegerField(min_value=1, max_value=10)
+    description = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class DesignationUpdateSerializer(serializers.Serializer):
+    version = serializers.IntegerField(min_value=1)
+    name = serializers.CharField(max_length=255, required=False)
+    category = serializers.ChoiceField(Designation.Category.choices, required=False)
+    country = serializers.RegexField(
+        r"^(IN|US)?$",
+        max_length=2,
+        required=False,
+        allow_blank=True,
+        help_text="IN, US, or blank for both countries",
+    )
+    seniority = serializers.IntegerField(min_value=1, max_value=10, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    is_active = serializers.BooleanField(required=False)
 
 
 class StaffDepartmentAssignmentSerializer(serializers.ModelSerializer):

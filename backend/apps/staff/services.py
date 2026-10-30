@@ -83,6 +83,11 @@ def apply_employment_status_change(staff: StaffMember) -> None:
 
             ensure_not_last_administrator(user)  # the hospital must never be locked out
         user.save(update_fields=["is_active"])
+    if staff.employment_status == StaffMember.EmploymentStatus.TERMINATED:
+        from apps.facilities.closing import clear_head_if_invalid
+
+        for department in staff.departments_headed.all():
+            clear_head_if_invalid(department, reason="The head's employment ended")
     publish_event(
         event_type="staff.member.employment_status_changed",
         aggregate_type="staff_member",
@@ -244,6 +249,15 @@ def end_department_assignment(
     assignment.is_primary = False
     assignment.full_clean()
     assignment.save(update_fields=["valid_until", "is_primary", "updated_at"])
+    # A head whose posting has ended stops being head (no-op while it still runs today).
+    from apps.facilities.closing import clear_head_if_invalid
+
+    clear_head_if_invalid(
+        assignment.department,
+        reason="The head's posting in this department ended",
+        actor=actor,
+        request=request,
+    )
     record_audit_event(
         action=AuditAction.STAFF_DEPARTMENT_ASSIGNMENT_ENDED,
         resource_type="staff_department_assignment",

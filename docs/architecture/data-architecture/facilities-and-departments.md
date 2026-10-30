@@ -47,3 +47,21 @@ page)."*
   `current_staff`, `active_wards`.
 - `GET /facilities/`; rows include `facility_type_label` and `active_departments`.
 - `GET /staff/?department=`: people posted there now or later.
+
+## 5. Update 2026-10-30: head, services and opening hours (HIMS-FAC-007)
+
+| Table / field | Rules |
+|---|---|
+| `departments.head` (→ staff member) | Must be a working staff member (active or on leave) **currently posted** in that department. Cleared automatically, with an audit event, when their posting there ends or their employment is terminated. Being head is not a permission: access comes from roles (e.g. "Head of department"). |
+| `departments.open_24_hours` | When set, the weekly sessions are ignored (e.g. Emergency, ICU). |
+| `department_services` | Name (unique per department, any letter case), description, on/off, `version`. Never deleted. Prices come with billing (Phase 5). |
+| `department_hours` | One row per opening session: weekday (0 = Monday), opens, closes, in the **facility's time zone**. Closing must be after opening (database check); sessions on the same day must not overlap; at most 4 per day; a day without sessions is closed. |
+
+The whole week is saved at once (`PUT /departments/{id}/hours/` with the department's `version`).
+The old timetable is replaced, and the audit log keeps the full before/after timetable. Timetable
+rows are settings, not records of fact, so this is the one place rows are replaced instead of
+deactivated. The admin console section does the same (`HimsSettingsInline`, audited).
+
+API: `GET /departments/{id}/` (with services, hours, time zone),
+`GET /departments/{id}/head-candidates/`, `PATCH /departments/{id}/` (`head`),
+`PUT /departments/{id}/hours/`, `POST /departments/{id}/services/`, `PATCH /department-services/{id}/`.
