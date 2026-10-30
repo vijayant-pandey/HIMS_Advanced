@@ -82,7 +82,9 @@ export async function apiRequest<T>(
     Accept: "application/json",
     "X-Request-ID": crypto.randomUUID(),
   };
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  // FormData (file uploads) sets its own multipart Content-Type with the boundary.
+  const isForm = options.body instanceof FormData;
+  if (options.body !== undefined && !isForm) headers["Content-Type"] = "application/json";
   if (method !== "GET") {
     const token = readCookie(CSRF_COOKIE);
     if (token) headers["X-CSRFToken"] = token;
@@ -92,7 +94,12 @@ export async function apiRequest<T>(
   const response = await fetch(buildUrl(path, options.query), {
     method,
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body:
+      options.body === undefined
+        ? undefined
+        : isForm
+          ? (options.body as FormData)
+          : JSON.stringify(options.body),
     credentials: "same-origin",
     signal: options.signal,
   });

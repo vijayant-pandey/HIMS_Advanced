@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -16,13 +17,13 @@ import {
   Typography,
 } from "@mui/material";
 import { useDeferredValue, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useSearchParams } from "react-router-dom";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { useCurrentUser } from "../auth/api";
 import { useDepartmentList } from "../facilities/api";
 import { hasOrganizationWidePermission } from "../auth/grants";
-import { useStaff } from "./api";
+import { useExpiringCredentials, useStaff } from "./api";
 import { EMPLOYMENT_STATUSES, STATUS_COLOR, options } from "./labels";
 import { AddStaffDialog } from "./StaffDialogs";
 
@@ -39,6 +40,11 @@ export function StaffPage() {
   const departmentName = departments.data?.results.find((d) => d.id === department)?.name;
   const { data, isFetching, error } = useStaff(deferredSearch, status, 1, department);
   const [adding, setAdding] = useState(false);
+  const expiring = useExpiringCredentials(60, true);
+  // A banner is a convenience: an unexpected answer must never break the Staff page.
+  const expiringRows = Array.isArray(expiring.data) ? expiring.data : [];
+  const expiredCount = expiringRows.filter((c) => c.days_left < 0).length;
+  const soonCount = expiringRows.length - expiredCount;
   // Hint only: the API checks staff.manage (staff records are hospital-wide).
   const canAdd = hasOrganizationWidePermission(user, "staff.manage");
 
@@ -76,6 +82,19 @@ export function StaffPage() {
           ))}
         </TextField>
       </Stack>
+      {(expiredCount > 0 || soonCount > 0) && (
+        <Alert
+          severity={expiredCount > 0 ? "error" : "warning"}
+          action={
+            <Button component={RouterLink} to="/licence-expiry" size="small">
+              View
+            </Button>
+          }
+        >
+          {expiredCount > 0 && `${expiredCount} licence(s) expired. `}
+          {soonCount > 0 && `${soonCount} expire within 60 days.`}
+        </Alert>
+      )}
       {department && (
         <Box>
           <Chip

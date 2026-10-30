@@ -34,6 +34,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-SEC-015 | Console network restriction (IP allow-list/VPN) before enabling outside local | To do |
 | HIMS-OPS-010 | Static files for admin/API docs in managed environments (WhiteNoise or S3/CloudFront) | To do |
 | HIMS-OPS-012 | Runbook: updating every hospital database after a merge (docs/workflows/database-migrations.md) | Done |
+| HIMS-OPS-015 | S3-compatible document storage (KMS encryption, block public access, versioning) for hosted environments | To do (🔒 AWS / hosting) |
+| HIMS-OPS-016 | Phase 1 manual test guide for the product owner (browser, India + US, expected results) | To do |
 | HIMS-OPS-011 | Real email provider per hosted environment (e.g. Amazon SES / Render-compatible SMTP); console email locally | To do |
 
 ## EPIC HIMS-ORG — Organization and facilities
@@ -81,8 +83,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-002 | Controlled specialty/qualification catalogs (starter set — clinical informatics to own) | Done |
 | HIMS-STAFF-003 | Credential verification with segregation of duties | Done |
 | HIMS-STAFF-004 | Termination/suspension disables login | Done |
-| HIMS-STAFF-005 | Credential document upload (S3, scanning, signed URLs) | To do |
-| HIMS-STAFF-006 | Credential expiry alerts (scheduled job + notifications) | To do |
+| HIMS-STAFF-005 | Credential document upload (local storage, type/size checks, audited downloads; ADR-020) | Done (S3 → HIMS-OPS-015, scanning → HIMS-SEC-013) |
+| HIMS-STAFF-006 | Credential expiry alerts (scheduled job + notifications) + Licence expiry page | Done |
 | HIMS-STAFF-007 | Staff detail/onboarding UI | Done |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility | To do |
 | HIMS-STAFF-009 | Designation catalog (IN/US, junior→senior), extended specialty/qualification catalogs, administrative system roles, RBAC document | Done |

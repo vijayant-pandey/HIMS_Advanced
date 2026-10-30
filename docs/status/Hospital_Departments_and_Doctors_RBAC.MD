@@ -418,3 +418,10 @@ list (external auditors, IT support), switch accounts off or on, reset two-facto
 out. Organization administrators have it; two-factor sign-in is required. The **Accounts** page
 lists everyone who can sign in. The hospital's **last** active administrator can never be
 switched off, so the hospital cannot lock itself out.
+
+## Update 2026-10-29: licence documents and expiry alerts (HIMS-STAFF-005/006)
+* `staff.view`: see the Licence expiry page and open or download staff documents (every
+  opening is in the audit log).
+* `staff.manage`: upload documents and archive them (with a reason; nothing is deleted).
+* Expiry emails go to HR (holders of `staff.credentials.verify` or `staff.manage`) and to the
+  person whose licence it is.

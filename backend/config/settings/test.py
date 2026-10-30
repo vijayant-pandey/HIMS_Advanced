@@ -42,6 +42,10 @@ REST_FRAMEWORK = {
 HIMS_OUTBOX_DISPATCH_INLINE = False
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 HIMS_APP_BASE_URL = "http://app.test"
+# Uploaded files go to a throw-away folder, never the real one.
+import tempfile  # noqa: E402
+
+MEDIA_ROOT = tempfile.mkdtemp(prefix="hims-test-media-")
 # Existing tests sign privileged users in directly; MFA tests switch enforcement on explicitly.
 HIMS_MFA_REQUIRED_FOR_PRIVILEGED = False
 

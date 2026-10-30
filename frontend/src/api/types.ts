@@ -94,3 +94,5 @@ export type PaginatedAccountList = Schemas["PaginatedAccountList"];
 export type AccountCreateRequest = Schemas["AccountCreateRequest"];
 export type Organization = Schemas["Organization"];
 export type OrganizationUpdateRequest = Schemas["PatchedOrganizationUpdateRequest"];
+export type StaffDocument = Schemas["StaffDocument"];
+export type ExpiringCredential = Schemas["ExpiringCredential"];

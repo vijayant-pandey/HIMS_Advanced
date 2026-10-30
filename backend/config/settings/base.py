@@ -161,6 +161,20 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# --- Uploaded documents (HIMS-STAFF-005, spec 4.22; ADR-020) -------------------------------
+# Never served from a public URL: files are downloaded only through the API, after a
+# permission check, and every download is audited. One folder per deployment keeps hospitals
+# that share a machine apart. Production must use S3-compatible storage (see ADR-020); local
+# disk on hosts like Render is not durable.
+MEDIA_ROOT = env.path("HIMS_MEDIA_ROOT", default=BASE_DIR / "media" / HIMS_DEPLOYMENT_ID)
+MEDIA_URL = "/media-not-served/"
+HIMS_UPLOAD_MAX_BYTES = env.int("HIMS_UPLOAD_MAX_BYTES", default=10 * 1024 * 1024)
+# Only for throw-away runs (CI image smoke test, short demos): accept that uploaded files on the
+# server's own disk are lost on the next deploy. Never set this for a real hospital.
+HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE = env.bool("HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE", default=False)
+# Days before expiry at which HR and the person are warned (and again once expired).
+HIMS_CREDENTIAL_ALERT_DAYS = env.list("HIMS_CREDENTIAL_ALERT_DAYS", cast=int, default=[60, 30, 7])
+
 # --- REST API (spec 16, 29) --------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["common.authentication.SessionAuthentication"],

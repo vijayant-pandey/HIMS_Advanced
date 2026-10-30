@@ -17,6 +17,7 @@ import { FeaturesPage } from "../features/featureFlags/FeaturesPage";
 import { NumberingPage } from "../features/numbering/NumberingPage";
 import { HospitalSettingsPage } from "../features/organization/HospitalSettingsPage";
 import { SecurityPage } from "../features/security/SecurityPage";
+import { LicenceExpiryPage } from "../features/staff/LicenceExpiryPage";
 import { StaffDetailPage } from "../features/staff/StaffDetailPage";
 import { StaffPage } from "../features/staff/StaffPage";
 import { AppShell } from "../layouts/AppShell";
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
           { path: "features", element: <FeaturesPage /> },
           { path: "staff", element: <StaffPage /> },
           { path: "staff/:id", element: <StaffDetailPage /> },
+          { path: "licence-expiry", element: <LicenceExpiryPage /> },
           { path: "access", element: <AccessPage /> },
           { path: "accounts", element: <AccountsPage /> },
           { path: "accounts/:id", element: <AccountDetailPage /> },

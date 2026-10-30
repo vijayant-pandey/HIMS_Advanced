@@ -5,6 +5,7 @@ privilege are separate concepts and are modelled separately.
 """
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
 
@@ -202,6 +203,9 @@ class StaffQualification(OrganizationOwnedModel):
             )
         ]
 
+    def __str__(self) -> str:
+        return f"{self.qualification_type} ({self.year_awarded})"
+
 
 class StaffCredential(OrganizationOwnedModel):
     """Professional registration/licence. Verification and expiry are independent of whether
@@ -251,3 +255,102 @@ class StaffCredential(OrganizationOwnedModel):
             ),
         ]
         indexes = [models.Index(fields=["expires_at"], name="staff_credential_expiry_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.get_credential_type_display()} {self.registration_number}"
+
+
+def _document_path(instance, filename):
+    from .uploads import stored_name
+
+    return stored_name(instance, filename)
+
+
+class StaffDocument(OrganizationOwnedModel):
+    """A scanned certificate for a licence or qualification (HIMS-STAFF-005).
+
+    Never deleted: a wrong or replaced file is archived with a reason. The file has no public
+    URL; it is downloaded only through the API after a permission check, and downloads are
+    audited.
+    """
+
+    staff = models.ForeignKey(StaffMember, on_delete=models.PROTECT, related_name="documents")
+    credential = models.ForeignKey(
+        StaffCredential,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="documents",
+    )
+    qualification = models.ForeignKey(
+        StaffQualification,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="documents",
+    )
+    file = models.FileField(upload_to=_document_path, max_length=255)
+    original_name = models.CharField(max_length=200)
+    content_type = models.CharField(max_length=50)
+    size_bytes = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archived_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    archive_reason = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = "staff_documents"
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(Q(credential__isnull=False) & Q(qualification__isnull=True))
+                | (Q(credential__isnull=True) & Q(qualification__isnull=False)),
+                name="staff_document_belongs_to_one",
+                violation_error_message="Attach the file to one licence or one qualification.",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return self.original_name
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        owner = self.credential if self.credential_id else self.qualification
+        if owner is not None and self.staff_id and owner.staff_id != self.staff_id:
+            errors["staff"] = "The licence or qualification belongs to another person."
+        if errors:
+            raise ValidationError(errors)
+
+
+class CredentialExpiryAlert(models.Model):
+    """One alert sent for one licence at one stage (60/30/7 days before, or expired).
+
+    The unique key makes the daily job safe to run twice (spec 14.3)."""
+
+    credential = models.ForeignKey(
+        StaffCredential, on_delete=models.PROTECT, related_name="expiry_alerts"
+    )
+    days_before = models.PositiveSmallIntegerField(help_text="0 = sent after it expired")
+    expires_at = models.DateField(help_text="Expiry date the alert was about")
+    sent_at = models.DateTimeField(auto_now_add=True)
+    recipients = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "staff_credential_expiry_alerts"
+        ordering = ["-sent_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["credential", "expires_at", "days_before"],
+                name="credential_alert_once",
+            )
+        ]
+
+    def __str__(self) -> str:
+        stage = "expired" if self.days_before == 0 else f"{self.days_before} days before"
+        return f"{self.credential} ({stage})"

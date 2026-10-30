@@ -2224,6 +2224,94 @@ paths:
               schema:
                 $ref: '#/components/schemas/StaffCredential'
           description: ''
+  /api/v1/staff-credentials/expiring/:
+    get:
+      operationId: staff_credentials_expiring_list
+      description: Licences of working staff that are expired or expire soon, soonest
+        first.
+      parameters:
+      - in: query
+        name: include_expired
+        schema:
+          type: string
+        description: '''false'' hides expired'
+      - in: query
+        name: within
+        schema:
+          type: integer
+        description: Days ahead to include (default 60)
+      tags:
+      - staff-credentials
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExpiringCredential'
+          description: ''
+  /api/v1/staff-documents/{id}/archive/:
+    post:
+      operationId: staff_documents_archive_create
+      description: A wrong or outdated file is archived with a reason, never deleted.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff document.
+        required: true
+      tags:
+      - staff-documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArchiveRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffDocument'
+          description: ''
+  /api/v1/staff-documents/{id}/download/:
+    get:
+      operationId: staff_documents_download_retrieve
+      description: Open/download or archive one document. Files have no public URL
+        (ADR-020).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff document.
+        required: true
+      - in: query
+        name: inline
+        schema:
+          type: string
+        description: '''true'' = open in the browser'
+      tags:
+      - staff-documents
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
   /api/v1/staff/{id}/:
     get:
       operationId: staff_retrieve
@@ -2363,6 +2451,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StaffDepartmentAssignment'
+          description: ''
+  /api/v1/staff/{id}/documents/:
+    get:
+      operationId: staff_documents_list
+      description: This person's licence and qualification documents (archived ones
+        included).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff member.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - staff
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStaffDocumentList'
+          description: ''
+    post:
+      operationId: staff_documents_create
+      description: Attach a PDF/JPG/PNG to one of this person's licences or qualifications.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff member.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffDocumentUploadRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffDocument'
           description: ''
   /api/v1/staff/{id}/invitation/:
     post:
@@ -2704,6 +2856,15 @@ components:
         * `adult` - Adults
         * `pediatric` - Children
         * `neonatal` - Newborns
+    ArchiveRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - reason
     AuditAction:
       type: object
       properties:
@@ -3344,6 +3505,109 @@ components:
           maxLength: 2000
       required:
       - reason
+    ExpiringCredential:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        credential_type:
+          allOf:
+          - $ref: '#/components/schemas/CredentialTypeEnum'
+          readOnly: true
+        registration_number:
+          type: string
+          readOnly: true
+        issuing_authority:
+          type: string
+          readOnly: true
+        jurisdiction:
+          type: string
+          readOnly: true
+          description: ISO 3166-2, e.g. IN-KA or US-CA
+        valid_from:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        expires_at:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        verification_status:
+          allOf:
+          - $ref: '#/components/schemas/VerificationStatusEnum'
+          readOnly: true
+        verified_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        verified_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        credential_type_label:
+          type: string
+          readOnly: true
+        expiry_state:
+          type: string
+          readOnly: true
+          description: no_expiry, valid, expiring_soon (within 60 days) or expired
+        staff_member_id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff_name:
+          type: string
+          readOnly: true
+        employee_number:
+          type: string
+          readOnly: true
+        staff_type_label:
+          type: string
+          readOnly: true
+        days_left:
+          type: integer
+          readOnly: true
+          description: Negative = days since it expired
+        last_alert:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 'Last alert sent: ''expired'', ''N days before'' or null'
+        last_alert_at:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - credential_type
+      - credential_type_label
+      - days_left
+      - employee_number
+      - expires_at
+      - expiry_state
+      - id
+      - issuing_authority
+      - jurisdiction
+      - last_alert
+      - last_alert_at
+      - registration_number
+      - staff_member_id
+      - staff_name
+      - staff_type_label
+      - valid_from
+      - verification_status
+      - verified_at
+      - verified_by
+      - verified_by_name
     Facility:
       type: object
       properties:
@@ -4434,6 +4698,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Room'
+    PaginatedStaffDocumentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffDocument'
     PaginatedStaffMemberList:
       type: object
       required:
@@ -5460,6 +5747,85 @@ components:
       - department
       - designation
       - valid_from
+    StaffDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff:
+          type: string
+          format: uuid
+          readOnly: true
+        credential:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        qualification:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        original_name:
+          type: string
+          readOnly: true
+        content_type:
+          type: string
+          readOnly: true
+        size_bytes:
+          type: integer
+          readOnly: true
+        uploaded_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_archived:
+          type: boolean
+          readOnly: true
+        archived_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        archive_reason:
+          type: string
+          readOnly: true
+      required:
+      - archive_reason
+      - archived_at
+      - content_type
+      - created_at
+      - credential
+      - id
+      - is_archived
+      - original_name
+      - qualification
+      - size_bytes
+      - staff
+      - uploaded_by_name
+    StaffDocumentUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+          description: PDF, JPG or PNG, up to 10 MB
+        credential:
+          type: string
+          format: uuid
+          nullable: true
+        qualification:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - file
     StaffMember:
       type: object
       properties:
@@ -5647,11 +6013,19 @@ components:
           items:
             $ref: '#/components/schemas/StaffCredential'
           readOnly: true
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffDocument'
+          readOnly: true
+          description: Licence and qualification documents, newest first (archived
+            ones included).
       required:
       - account
       - created_at
       - credentials
       - department_assignments
+      - documents
       - email
       - employee_number
       - employment_status

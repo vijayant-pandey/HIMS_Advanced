@@ -72,6 +72,10 @@ LABELS: dict[str, str] = {
     A.STAFF_QUALIFICATION_VERIFIED: "Qualification verified or rejected",
     A.STAFF_CREDENTIAL_ADDED: "Licence added",
     A.STAFF_CREDENTIAL_VERIFIED: "Licence verified or rejected",
+    A.STAFF_DOCUMENT_UPLOADED: "Document uploaded (licence or qualification)",
+    A.STAFF_DOCUMENT_DOWNLOADED: "Document opened or downloaded",
+    A.STAFF_DOCUMENT_ARCHIVED: "Document archived",
+    A.CREDENTIAL_EXPIRY_ALERT_SENT: "Licence expiry alert sent",
     A.AUDIT_SEARCHED: "Audit log searched",
     A.AUDIT_EXPORTED: "Audit log exported",
 }

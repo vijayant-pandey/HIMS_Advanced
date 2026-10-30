@@ -1,8 +1,10 @@
-from django.db.models import Q
-from django.http import Http404
+from django.db.models import Prefetch, Q
+from django.http import FileResponse, Http404
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
 from apps.access_control.catalog import P
@@ -11,17 +13,29 @@ from apps.identity.invitations import issue_invitation
 from common.exceptions import ConflictError
 from common.idempotency.decorators import idempotent
 
-from .. import services
-from ..models import Designation, QualificationType, Specialty, StaffCredential, StaffMember
+from .. import documents, expiry, services
+from ..models import (
+    CredentialExpiryAlert,
+    Designation,
+    QualificationType,
+    Specialty,
+    StaffCredential,
+    StaffDocument,
+    StaffMember,
+)
 from .serializers import (
+    ArchiveSerializer,
     CredentialVerificationSerializer,
     DesignationSerializer,
     EndAssignmentSerializer,
+    ExpiringCredentialSerializer,
     InvitationSentSerializer,
     QualificationTypeSerializer,
     SpecialtySerializer,
     StaffCredentialSerializer,
     StaffDepartmentAssignmentSerializer,
+    StaffDocumentSerializer,
+    StaffDocumentUploadSerializer,
     StaffMemberCreateSerializer,
     StaffMemberDetailSerializer,
     StaffMemberSerializer,
@@ -83,11 +97,23 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         "send_invitation": P.STAFF_MANAGE,
         "end_department_assignment": P.STAFF_MANAGE,
         "verify_qualification": P.STAFF_CREDENTIALS_VERIFY,
+        "documents": P.STAFF_VIEW,
+        "upload_document": P.STAFF_MANAGE,
     }
     http_method_names = ["get", "post", "patch", "head"]
 
     def get_serializer_class(self):
         return StaffMemberDetailSerializer if self.action == "retrieve" else StaffMemberSerializer
+
+    def get_parsers(self):
+        # File uploads arrive as multipart form data; everything else stays JSON-only.
+        if getattr(self, "action", None) == "upload_document" or (
+            self.request is not None
+            and self.request.method == "POST"
+            and self.request.path.rstrip("/").endswith("/documents")
+        ):
+            return [MultiPartParser(), FormParser()]
+        return super().get_parsers()
 
     def get_queryset(self):
         queryset = StaffMember.objects.select_related("user")
@@ -100,6 +126,7 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
                 "qualifications__specialty",
                 "qualifications__verified_by",
                 "credentials__verified_by",
+                Prefetch("documents", StaffDocument.objects.select_related("uploaded_by")),
             )
         search = self.request.query_params.get("search", "").strip()
         if search:
@@ -247,6 +274,44 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         )
         return Response(StaffQualificationSerializer(qualification).data)
 
+    @extend_schema(responses=StaffDocumentSerializer(many=True))
+    @action(detail=True, methods=["get"])
+    def documents(self, request, pk=None):
+        """This person's licence and qualification documents (archived ones included)."""
+        staff = self.get_object()
+        rows = staff.documents.select_related("uploaded_by")
+        return Response(StaffDocumentSerializer(rows, many=True).data)
+
+    @extend_schema(
+        request={"multipart/form-data": StaffDocumentUploadSerializer},
+        responses={201: StaffDocumentSerializer},
+    )
+    @documents.mapping.post
+    def upload_document(self, request, pk=None):
+        """Attach a PDF/JPG/PNG to one of this person's licences or qualifications."""
+        staff = self.get_object()
+        serializer = StaffDocumentUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        credential = qualification = None
+        if data.get("credential"):
+            credential = staff.credentials.filter(pk=data["credential"]).first()
+            if credential is None:
+                raise Http404
+        else:
+            qualification = staff.qualifications.filter(pk=data["qualification"]).first()
+            if qualification is None:
+                raise Http404
+        document = documents.upload_document(
+            actor=request.user,
+            staff=staff,
+            upload=data["file"],
+            credential=credential,
+            qualification=qualification,
+            request=request,
+        )
+        return Response(StaffDocumentSerializer(document).data, status=status.HTTP_201_CREATED)
+
     @extend_schema(request=None, responses={202: InvitationSentSerializer})
     @action(detail=True, methods=["post"], url_path="invitation")
     def send_invitation(self, request, pk=None):
@@ -275,7 +340,32 @@ def _existing(related_manager, item_id):
 class StaffCredentialViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = StaffCredentialSerializer
     queryset = StaffCredential.objects.all()
-    required_permissions = {"retrieve": P.STAFF_VIEW, "verify": P.STAFF_CREDENTIALS_VERIFY}
+    required_permissions = {
+        "retrieve": P.STAFF_VIEW,
+        "verify": P.STAFF_CREDENTIALS_VERIFY,
+        "expiring": P.STAFF_VIEW,
+    }
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("within", int, description="Days ahead to include (default 60)"),
+            OpenApiParameter("include_expired", str, description="'false' hides expired"),
+        ],
+        responses=ExpiringCredentialSerializer(many=True),
+    )
+    @action(detail=False, methods=["get"], pagination_class=None)
+    def expiring(self, request):
+        """Licences of working staff that are expired or expire soon, soonest first."""
+        try:
+            within = max(0, min(int(request.query_params.get("within", 60)), 365))
+        except ValueError:
+            within = 60
+        rows = expiry.watched_credentials(within_days=within).prefetch_related(
+            Prefetch("expiry_alerts", CredentialExpiryAlert.objects.all())
+        )
+        if request.query_params.get("include_expired") == "false":
+            rows = rows.filter(expires_at__gte=timezone.localdate())
+        return Response(ExpiringCredentialSerializer(rows[:500], many=True).data)
 
     @extend_schema(request=CredentialVerificationSerializer, responses=StaffCredentialSerializer)
     @action(detail=True, methods=["post"])
@@ -290,3 +380,46 @@ class StaffCredentialViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet)
             **serializer.validated_data,
         )
         return Response(StaffCredentialSerializer(credential).data)
+
+
+class StaffDocumentViewSet(viewsets.GenericViewSet):
+    """Open/download or archive one document. Files have no public URL (ADR-020)."""
+
+    queryset = StaffDocument.objects.select_related("staff")
+    serializer_class = StaffDocumentSerializer
+    required_permissions = {"download": P.STAFF_VIEW, "archive": P.STAFF_MANAGE}
+
+    @extend_schema(
+        parameters=[OpenApiParameter("inline", str, description="'true' = open in the browser")],
+        responses={(200, "application/octet-stream"): bytes},
+    )
+    @action(detail=True, methods=["get"])
+    def download(self, request, pk=None):
+        document = self.get_object()
+        documents.record_download(actor=request.user, document=document, request=request)
+        response = FileResponse(
+            document.file.open("rb"),
+            content_type=document.content_type,
+            as_attachment=request.query_params.get("inline") != "true",
+            filename=document.original_name,
+        )
+        # The file is shown as-is: no scripts, no caching of personal documents.
+        response["Content-Security-Policy"] = "default-src 'none'; img-src 'self'; sandbox"
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    @extend_schema(request=ArchiveSerializer, responses=StaffDocumentSerializer)
+    @action(detail=True, methods=["post"])
+    def archive(self, request, pk=None):
+        """A wrong or outdated file is archived with a reason, never deleted."""
+        document = self.get_object()
+        serializer = ArchiveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        document = documents.archive_document(
+            actor=request.user,
+            document_id=document.pk,
+            reason=serializer.validated_data["reason"],
+            request=request,
+        )
+        return Response(StaffDocumentSerializer(document).data)
