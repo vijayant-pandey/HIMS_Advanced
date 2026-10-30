@@ -174,6 +174,9 @@ HIMS_UPLOAD_MAX_BYTES = env.int("HIMS_UPLOAD_MAX_BYTES", default=10 * 1024 * 102
 HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE = env.bool("HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE", default=False)
 # Days before expiry at which HR and the person are warned (and again once expired).
 HIMS_CREDENTIAL_ALERT_DAYS = env.list("HIMS_CREDENTIAL_ALERT_DAYS", cast=int, default=[60, 30, 7])
+# Periodic access review (HIMS-IAM-012): how often a full review is due, and how long one runs.
+HIMS_ACCESS_REVIEW_INTERVAL_DAYS = env.int("HIMS_ACCESS_REVIEW_INTERVAL_DAYS", default=90)
+HIMS_ACCESS_REVIEW_DEFAULT_DAYS_TO_FINISH = 14
 
 # --- REST API (spec 16, 29) --------------------------------------------------------------
 REST_FRAMEWORK = {

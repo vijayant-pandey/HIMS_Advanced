@@ -4,6 +4,241 @@ info:
   version: 1.0.0
   description: Hospital Information Management System REST API (v1).
 paths:
+  /api/v1/access-reviews/:
+    get:
+      operationId: access_reviews_list
+      description: |-
+        Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+        reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+      tags:
+      - access-reviews
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccessReview'
+          description: ''
+    post:
+      operationId: access_reviews_create
+      description: |-
+        Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+        reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+      tags:
+      - access-reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessReviewStartRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessReview'
+          description: ''
+  /api/v1/access-reviews/{id}/:
+    get:
+      operationId: access_reviews_retrieve
+      description: |-
+        Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+        reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this access review.
+        required: true
+      tags:
+      - access-reviews
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessReview'
+          description: ''
+  /api/v1/access-reviews/{id}/cancel/:
+    post:
+      operationId: access_reviews_cancel_create
+      description: |-
+        Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+        reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this access review.
+        required: true
+      tags:
+      - access-reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessReviewCancelRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessReview'
+          description: ''
+  /api/v1/access-reviews/{id}/complete/:
+    post:
+      operationId: access_reviews_complete_create
+      description: |-
+        Periodic access reviews (HIMS-IAM-012). Auditors can read and download them;
+        reviewers (``access.reviews.manage``) run them. Nobody decides on their own access.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this access review.
+        required: true
+      tags:
+      - access-reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessReviewCompleteRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessReview'
+          description: ''
+  /api/v1/access-reviews/{id}/decide/:
+    post:
+      operationId: access_reviews_decide_create
+      description: Keep or remove access for one or more people. Removing ends the
+        access at once.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this access review.
+        required: true
+      tags:
+      - access-reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessReviewDecideRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccessReviewItem'
+          description: ''
+  /api/v1/access-reviews/{id}/export/:
+    get:
+      operationId: access_reviews_export_retrieve
+      description: Download the review with every decision as CSV (evidence for auditors).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this access review.
+        required: true
+      tags:
+      - access-reviews
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+          description: CSV file
+  /api/v1/access-reviews/{id}/items/:
+    get:
+      operationId: access_reviews_items_list
+      description: Everyone's access in this review (all rows; filter with decision
+        / search).
+      parameters:
+      - in: query
+        name: decision
+        schema:
+          type: string
+        description: pending, keep, remove or ended
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this access review.
+        required: true
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Name, email, role or place
+      tags:
+      - access-reviews
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccessReviewItem'
+          description: ''
+  /api/v1/access-reviews/schedule/:
+    get:
+      operationId: access_reviews_schedule_retrieve
+      description: When the next review is due, and whether the one in progress is
+        overdue.
+      tags:
+      - access-reviews
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessReviewSchedule'
+          description: ''
   /api/v1/accounts/:
     get:
       operationId: accounts_list
@@ -707,6 +942,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PasswordResetRequested'
+          description: ''
+  /api/v1/auth/sessions/:
+    get:
+      operationId: auth_sessions_list
+      description: '"My sign-ins" (HIMS-IAM-016): the person''s own open sessions,
+        newest first.'
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MySession'
+          description: ''
+  /api/v1/auth/sessions/{session_id}/sign-out/:
+    post:
+      operationId: auth_sessions_sign_out_create
+      description: Sign out one of the person's other devices.
+      parameters:
+      - in: path
+        name: session_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/sessions/sign-out-others/:
+    post:
+      operationId: auth_sessions_sign_out_others_create
+      description: Sign out every device except this one (e.g. after a lost phone).
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionsEnded'
           description: ''
   /api/v1/beds/:
     get:
@@ -3034,6 +3320,268 @@ paths:
           description: ''
 components:
   schemas:
+    AccessReview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AccessReviewStatusEnum'
+          readOnly: true
+        due_on:
+          type: string
+          format: date
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        started_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        completed_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        notes:
+          type: string
+          readOnly: true
+          description: Summary or reason for cancelling.
+        summary:
+          allOf:
+          - $ref: '#/components/schemas/AccessReviewSummary'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - completed_at
+      - completed_by_name
+      - created_at
+      - due_on
+      - id
+      - notes
+      - started_by_name
+      - status
+      - summary
+      - title
+      - version
+    AccessReviewCancelRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - reason
+      - version
+    AccessReviewCompleteRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        notes:
+          type: string
+          default: ''
+          maxLength: 4000
+      required:
+      - version
+    AccessReviewDecideDecisionEnum:
+      enum:
+      - keep
+      - remove
+      type: string
+      description: |-
+        * `keep` - keep
+        * `remove` - remove
+    AccessReviewDecideRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 500
+          minItems: 1
+        decision:
+          $ref: '#/components/schemas/AccessReviewDecideDecisionEnum'
+        comment:
+          type: string
+          default: ''
+          maxLength: 2000
+      required:
+      - decision
+      - items
+    AccessReviewItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        person_name:
+          type: string
+          readOnly: true
+        person_email:
+          type: string
+          format: email
+          readOnly: true
+        account_active:
+          type: boolean
+          readOnly: true
+          description: Could the person sign in when it started?
+        last_signed_in_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        role_name:
+          type: string
+          readOnly: true
+        scope:
+          type: string
+          readOnly: true
+          description: Where, e.g. "Whole hospital".
+        granted_at:
+          type: string
+          format: date-time
+          readOnly: true
+        access_ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        decision:
+          allOf:
+          - $ref: '#/components/schemas/AccessReviewItemDecisionEnum'
+          readOnly: true
+        decided_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        comment:
+          type: string
+          readOnly: true
+        is_own:
+          type: boolean
+          readOnly: true
+          description: 'Your own access: someone else must decide it.'
+      required:
+      - access_ends_at
+      - account_active
+      - comment
+      - decided_at
+      - decided_by_name
+      - decision
+      - granted_at
+      - id
+      - is_own
+      - last_signed_in_at
+      - person_email
+      - person_name
+      - role_name
+      - scope
+    AccessReviewItemDecisionEnum:
+      enum:
+      - pending
+      - keep
+      - remove
+      - ended
+      type: string
+      description: |-
+        * `pending` - Not reviewed yet
+        * `keep` - Keep
+        * `remove` - Removed
+        * `ended` - Already ended elsewhere
+    AccessReviewSchedule:
+      type: object
+      properties:
+        interval_days:
+          type: integer
+        last_completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        next_due_on:
+          type: string
+          format: date
+        review_due:
+          type: boolean
+          description: No review in progress and one is due.
+        open_review_id:
+          type: string
+          format: uuid
+          nullable: true
+        open_review_overdue:
+          type: boolean
+      required:
+      - interval_days
+      - last_completed_at
+      - next_due_on
+      - open_review_id
+      - open_review_overdue
+      - review_due
+    AccessReviewStartRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        due_on:
+          type: string
+          format: date
+          nullable: true
+          description: Finish by (default 14 days).
+      required:
+      - title
+    AccessReviewStatusEnum:
+      enum:
+      - open
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `open` - In progress
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    AccessReviewSummary:
+      type: object
+      properties:
+        pending:
+          type: integer
+        keep:
+          type: integer
+        remove:
+          type: integer
+        ended:
+          type: integer
+      required:
+      - ended
+      - keep
+      - pending
+      - remove
     Account:
       type: object
       properties:
@@ -4728,6 +5276,32 @@ components:
       - recovery_codes_remaining
       - required
       - verified
+    MySession:
+      type: object
+      description: One of the person's own sign-ins (HIMS-IAM-016). The session key
+        is never sent.
+      properties:
+        id:
+          type: string
+          format: uuid
+        device:
+          type: string
+          description: Readable device, e.g. "Chrome on Windows".
+        ip_address:
+          type: string
+          nullable: true
+        signed_in_at:
+          type: string
+          format: date-time
+        is_current:
+          type: boolean
+          description: The device making this request.
+      required:
+      - device
+      - id
+      - ip_address
+      - is_current
+      - signed_in_at
     NoAccessReference:
       type: object
       properties:
@@ -5731,6 +6305,8 @@ components:
     PermissionsEnum:
       enum:
       - access.assignments.manage
+      - access.reviews.manage
+      - access.reviews.view
       - access.roles.manage
       - access.roles.view
       - accounts.manage
@@ -5756,6 +6332,8 @@ components:
       type: string
       description: |-
         * `access.assignments.manage` - access.assignments.manage
+        * `access.reviews.manage` - access.reviews.manage
+        * `access.reviews.view` - access.reviews.view
         * `access.roles.manage` - access.roles.manage
         * `access.roles.view` - access.roles.view
         * `accounts.manage` - accounts.manage
@@ -6203,6 +6781,13 @@ components:
         * `-` - Dash (-)
         * `/` - Slash (/)
         * `` - None
+    SessionsEnded:
+      type: object
+      properties:
+        sessions_ended:
+          type: integer
+      required:
+      - sessions_ended
     SetNextNumberRequest:
       type: object
       properties:

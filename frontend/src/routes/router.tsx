@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { AccessPage } from "../features/accessControl/AccessPage";
+import { AccessReviewDetailPage, AccessReviewsPage } from "../features/accessControl/AccessReviewsPage";
 import { AccountDetailPage } from "../features/accounts/AccountDetailPage";
 import { AccountsPage } from "../features/accounts/AccountsPage";
 import { AuditLogPage } from "../features/audit/AuditLogPage";
@@ -47,6 +48,8 @@ export const router = createBrowserRouter([
           { path: "licence-expiry", element: <LicenceExpiryPage /> },
           { path: "catalogs", element: <CatalogsPage /> },
           { path: "access", element: <AccessPage /> },
+          { path: "access-reviews", element: <AccessReviewsPage /> },
+          { path: "access-reviews/:id", element: <AccessReviewDetailPage /> },
           { path: "accounts", element: <AccountsPage /> },
           { path: "accounts/:id", element: <AccountDetailPage /> },
           { path: "settings", element: <HospitalSettingsPage /> },

@@ -26,6 +26,8 @@ class P:
     ROLES_VIEW = "access.roles.view"
     ROLES_MANAGE = "access.roles.manage"
     ROLE_ASSIGNMENTS_MANAGE = "access.assignments.manage"
+    ACCESS_REVIEWS_VIEW = "access.reviews.view"
+    ACCESS_REVIEWS_MANAGE = "access.reviews.manage"
     AUDIT_VIEW = "audit.view"
     ACCOUNTS_MANAGE = "accounts.manage"
     CATALOGS_MANAGE = "catalogs.manage"
@@ -53,6 +55,10 @@ PERMISSIONS: dict[str, str] = {
     P.ROLES_VIEW: "View roles and role assignments",
     P.ROLES_MANAGE: "Create roles and change role permissions",
     P.ROLE_ASSIGNMENTS_MANAGE: "Grant and revoke role assignments",
+    P.ACCESS_REVIEWS_VIEW: "See periodic access reviews and their decisions (evidence)",
+    P.ACCESS_REVIEWS_MANAGE: (
+        "Run periodic access reviews: start one, keep or remove each person's access, complete it"
+    ),
     P.AUDIT_VIEW: "Search the audit log",
     P.CATALOGS_MANAGE: "Add and change job titles, specialties and qualification types",
     P.ACCOUNTS_MANAGE: (
@@ -76,6 +82,7 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.STAFF_CREDENTIALS_VERIFY,
         P.ROLES_MANAGE,
         P.ROLE_ASSIGNMENTS_MANAGE,
+        P.ACCESS_REVIEWS_MANAGE,
         P.ACCOUNTS_MANAGE,
         P.AUDIT_VIEW,
     }
@@ -92,8 +99,8 @@ SYSTEM_ROLES: dict[str, dict] = {
     },
     "auditor": {
         "name": "Auditor / compliance officer",
-        "description": "Read access to the audit log.",
-        "permissions": [P.AUDIT_VIEW],
+        "description": "Read access to the audit log and to access review evidence.",
+        "permissions": [P.AUDIT_VIEW, P.ACCESS_REVIEWS_VIEW],
     },
     # Administrative roles usable today (see docs/status/Hospital_Departments_and_Doctors_RBAC.MD).
     "facility-administrator": {

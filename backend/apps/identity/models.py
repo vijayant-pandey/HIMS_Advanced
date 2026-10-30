@@ -166,6 +166,7 @@ class UserSession(UUIDPrimaryKeyModel):
         ACCOUNT_DEACTIVATED = "account_deactivated", "Account deactivated (suspended/terminated)"
         PASSWORD_CHANGED = "password_changed", "Password changed"
         SIGNED_OUT_BY_ADMIN = "signed_out_by_admin", "Signed out by an administrator"
+        SIGNED_OUT_BY_USER = "signed_out_by_user", "Signed out by the person from another device"
         EXPIRED = "expired", "Expired"
 
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="sessions")

@@ -20,6 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/catalogs", label: "Job titles & catalogs", permission: "staff.view" },
   { to: "/access", label: "Access", permission: "access.roles.view" },
   { to: "/accounts", label: "Accounts", permission: "access.roles.view" },
+  { to: "/access-reviews", label: "Access reviews", permission: "access.reviews.view" },
   { to: "/audit", label: "Audit log", permission: "audit.view" },
 ];
 

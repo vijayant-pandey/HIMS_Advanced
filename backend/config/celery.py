@@ -59,6 +59,10 @@ def _configure_queues_and_schedule(sender, **kwargs):
             "task": "notifications.credential_expiry_alerts",
             "schedule": timedelta(hours=24),
         },
+        "access-review-reminders": {
+            "task": "notifications.access_review_reminders",
+            "schedule": timedelta(hours=24),
+        },
     }
 
 

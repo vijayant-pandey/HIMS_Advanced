@@ -12,7 +12,9 @@ import type {
   MfaChallenge,
   MfaRecoveryCodes,
   MfaSetup,
+  MySession,
   NoAccessReference,
+  SessionsEnded,
 } from "../../api/types";
 
 export const currentUserKey = ["auth", "me"] as const;
@@ -180,5 +182,31 @@ export function useDisableMfa() {
   return useMutation<void, ApiError, { code: string }>({
     mutationFn: (body) => api.post<void>("/auth/mfa/disable/", body),
     onSuccess: () => refresh(),
+  });
+}
+
+const mySessionsKey = ["auth", "sessions"] as const;
+
+/** "My sign-ins" (HIMS-IAM-016): this person's open sessions. */
+export function useMySessions() {
+  return useQuery<MySession[], ApiError>({
+    queryKey: mySessionsKey,
+    queryFn: ({ signal }) => api.get<MySession[]>("/auth/sessions/", { signal }),
+  });
+}
+
+export function useSignOutDevice() {
+  const queryClient = useQueryClient();
+  return useMutation<void, ApiError, string>({
+    mutationFn: (id) => api.post<void>(`/auth/sessions/${id}/sign-out/`),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: mySessionsKey }),
+  });
+}
+
+export function useSignOutOtherDevices() {
+  const queryClient = useQueryClient();
+  return useMutation<SessionsEnded, ApiError, void>({
+    mutationFn: () => api.post<SessionsEnded>("/auth/sessions/sign-out-others/"),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: mySessionsKey }),
   });
 }

@@ -17,7 +17,8 @@ from apps.features.services import require_enabled
 from apps.organizations.models import Organization
 from common.exceptions import DomainError
 
-from .. import invitations, mfa, password_reset
+from .. import invitations, mfa, password_reset, sessions
+from ..models import UserSession
 from .serializers import (
     CurrentUserSerializer,
     InvitationAcceptSerializer,
@@ -29,6 +30,7 @@ from .serializers import (
     MfaRecoveryCodesSerializer,
     MfaSetupSerializer,
     MfaStatusSerializer,
+    MySessionSerializer,
     NoAccessReferenceSerializer,
     NoAccessReportSerializer,
     PasswordResetConfirmSerializer,
@@ -36,6 +38,7 @@ from .serializers import (
     PasswordResetRequestedSerializer,
     PasswordResetRequestSerializer,
     PasswordResetTokenSerializer,
+    SessionsEndedSerializer,
 )
 
 
@@ -360,3 +363,52 @@ class MfaDisableView(APIView):
         mfa.disable(user=request.user, code=serializer.validated_data["code"], request=request)
         mfa.mark_session_verified(request, False)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MySessionsView(APIView):
+    """ "My sign-ins" (HIMS-IAM-016): the person's own open sessions, newest first."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: MySessionSerializer(many=True)})
+    def get(self, request):
+        current = request.session.session_key
+        rows = [
+            {
+                "id": entry.pk,
+                "device": sessions.describe_device(entry.user_agent),
+                "ip_address": entry.ip_address,
+                "created_at": entry.created_at,
+                "is_current": entry.session_key == current,
+            }
+            for entry in sessions.open_sessions_for(request.user)
+        ]
+        return Response(MySessionSerializer(rows, many=True).data)
+
+
+class MySessionEndView(APIView):
+    """Sign out one of the person's other devices."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={204: None})
+    def post(self, request, session_id):
+        sessions.end_own_session(user=request.user, session_id=session_id, request=request)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MySessionsEndOthersView(APIView):
+    """Sign out every device except this one (e.g. after a lost phone)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={200: SessionsEndedSerializer})
+    def post(self, request):
+        ended = sessions.end_user_sessions(
+            request.user,
+            reason=UserSession.EndReason.SIGNED_OUT_BY_USER,
+            actor=request.user,
+            request=request,
+            keep_session_key=request.session.session_key,
+        )
+        return Response({"sessions_ended": ended})

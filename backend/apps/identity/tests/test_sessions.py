@@ -237,3 +237,114 @@ def test_session_key_is_never_shown_in_the_admin(admin_user, doctor):
     page = console.get(f"/admin/identity/usersession/{entry.pk}/change/")
     assert page.status_code == 200
     assert entry.session_key.encode() not in page.content
+
+
+# --- "My sign-ins" (HIMS-IAM-016) ------------------------------------------------------------
+
+
+def sign_in_with(agent: str) -> APIClient:
+    device = APIClient(REMOTE_ADDR="10.0.0.9", HTTP_USER_AGENT=agent)
+    response = device.post(
+        "/api/v1/auth/login/",
+        {"email": "dr.devices@synthetic.test", "password": PASSWORD},
+        format="json",
+    )
+    assert response.status_code == 200, response.content
+    return device
+
+
+CHROME_WINDOWS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0 Safari/537.36"
+SAFARI_IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Version/18.0 Safari/604.1"
+
+
+@pytest.mark.django_db
+def test_people_see_their_own_sign_ins_only(doctor, make_user):
+    laptop = sign_in_with(CHROME_WINDOWS)
+    sign_in_with(SAFARI_IPHONE)
+    other = make_user(password=PASSWORD)
+    UserSession.objects.create(user=other, session_key="someone-else-key")
+
+    rows = laptop.get("/api/v1/auth/sessions/").json()
+    assert sorted(r["device"] for r in rows) == ["Chrome on Windows", "Safari on iPhone"]
+    assert [r["is_current"] for r in rows if r["device"] == "Chrome on Windows"] == [True]
+    assert all("session_key" not in r for r in rows)
+    assert {r["ip_address"] for r in rows} == {"10.0.0.9"}
+
+
+@pytest.mark.django_db
+def test_sign_out_one_other_device(doctor):
+    laptop = sign_in_with(CHROME_WINDOWS)
+    phone = sign_in_with(SAFARI_IPHONE)
+    rows = laptop.get("/api/v1/auth/sessions/").json()
+    phone_row = next(r for r in rows if not r["is_current"])
+
+    response = laptop.post(f"/api/v1/auth/sessions/{phone_row['id']}/sign-out/")
+    assert response.status_code == 204
+    assert not signed_in(phone)
+    assert signed_in(laptop)
+    entry = UserSession.objects.get(pk=phone_row["id"])
+    assert entry.end_reason == UserSession.EndReason.SIGNED_OUT_BY_USER
+    event = AuditEvent.objects.filter(action=AuditAction.AUTH_SESSIONS_ENDED).latest("occurred_at")
+    assert event.metadata == {"reason": "signed_out_by_user", "sessions_ended": 1}
+    assert str(event.actor_id) == str(doctor.pk)
+
+    again = laptop.post(f"/api/v1/auth/sessions/{phone_row['id']}/sign-out/")
+    assert again.status_code == 409
+    assert again.json()["code"] == "SESSION_ALREADY_ENDED"
+
+
+@pytest.mark.django_db
+def test_cannot_end_this_device_or_someone_elses(doctor, make_user):
+    laptop = sign_in_with(CHROME_WINDOWS)
+    own = laptop.get("/api/v1/auth/sessions/").json()[0]
+    response = laptop.post(f"/api/v1/auth/sessions/{own['id']}/sign-out/")
+    assert response.status_code == 409
+    assert response.json()["code"] == "CURRENT_SESSION"
+
+    other = make_user(password=PASSWORD)
+    theirs = UserSession.objects.create(user=other, session_key="someone-else-key-2")
+    response = laptop.post(f"/api/v1/auth/sessions/{theirs.pk}/sign-out/")
+    assert response.status_code == 409  # looks the same as "already ended": nothing to learn
+    theirs.refresh_from_db()
+    assert theirs.ended_at is None
+
+
+@pytest.mark.django_db
+def test_sign_out_all_other_devices_keeps_this_one(doctor):
+    laptop = sign_in_with(CHROME_WINDOWS)
+    phone, tablet = sign_in_with(SAFARI_IPHONE), sign_in()
+    response = laptop.post("/api/v1/auth/sessions/sign-out-others/")
+    assert response.status_code == 200
+    assert response.json() == {"sessions_ended": 2}
+    assert signed_in(laptop)
+    assert not signed_in(phone) and not signed_in(tablet)
+    assert [r["is_current"] for r in laptop.get("/api/v1/auth/sessions/").json()] == [True]
+
+
+@pytest.mark.django_db
+def test_expired_sign_ins_are_not_listed(doctor):
+    laptop = sign_in_with(CHROME_WINDOWS)
+    sign_in_with(SAFARI_IPHONE)
+    phone_entry = UserSession.objects.get(user=doctor, user_agent=SAFARI_IPHONE)
+    Session.objects.filter(session_key=phone_entry.session_key).update(
+        expire_date=timezone.now() - timedelta(minutes=1)
+    )
+    devices = [r["device"] for r in laptop.get("/api/v1/auth/sessions/").json()]
+    assert devices == ["Chrome on Windows"]
+
+
+def test_device_names():
+    from apps.identity.sessions import describe_device
+
+    assert describe_device(CHROME_WINDOWS) == "Chrome on Windows"
+    assert describe_device(SAFARI_IPHONE) == "Safari on iPhone"
+    assert describe_device("Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Firefox/131.0") == (
+        "Firefox on Linux"
+    )
+    assert describe_device("") == "Unknown device"
+    assert describe_device("curl/8.4") == "curl/8.4"
+
+
+@pytest.mark.django_db
+def test_sign_ins_need_sign_in():
+    assert APIClient().get("/api/v1/auth/sessions/").status_code in (401, 403)
