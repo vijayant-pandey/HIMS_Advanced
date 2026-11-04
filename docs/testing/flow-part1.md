@@ -876,6 +876,12 @@ python manage.py send_access_review_reminders
 - [ ] **Expect (India):** a CERT-In deadline 6 hours after you reported. Tick **Personal or patient data affected** → **Save**, reopen: the Data Protection Board notices appear.
 - [ ] **Do:** set Status **Closed** with no summary → refused. Mark each notice **Mark done** or **Not required** (with a reason), add a summary, close it.
 
+### 17.3b Browser protection (needs the HIMS-SEC-012 PR)
+- [ ] **Window A (admin):** menu → **Compliance** → **Browser protection** tab.
+- [ ] **Expect:** a green "Blocking is on" message, "HIMS sees your address as" with an address (locally `127.0.0.1` or `::1`), and "Nothing has been blocked" (a browser add-on can cause an entry; that is normal).
+- [ ] **Do:** click around a few screens, then open the admin console and a list or two.
+- [ ] **Expect:** everything works as before.
+
 ### 17.3 Auditor in the admin console
 - [ ] **Window C:** http://localhost:8000/admin/ → sign in as auditor (with code).
 - [ ] **Expect:** only the **Audit** section is visible: **Audit events**, **Audit chain links** and

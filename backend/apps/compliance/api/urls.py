@@ -1,6 +1,11 @@
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 
+from .browser_views import (
+    BrowserReportReceiveView,
+    BrowserSecurityReportViewSet,
+    SecurityStatusView,
+)
 from .views import (
     ComplianceRequirementViewSet,
     ComplianceSummaryView,
@@ -14,8 +19,13 @@ router.register(
 )
 router.register("compliance-risks", RiskEntryViewSet, basename="compliance-risk")
 router.register("security-incidents", SecurityIncidentViewSet, basename="security-incident")
+router.register(
+    "browser-security-reports", BrowserSecurityReportViewSet, basename="browser-security-report"
+)
 
 urlpatterns = [
     path("compliance-summary/", ComplianceSummaryView.as_view(), name="compliance-summary"),
+    path("security/browser-reports/", BrowserReportReceiveView.as_view(), name="browser-report"),
+    path("security/status/", SecurityStatusView.as_view(), name="security-status"),
     *router.urls,
 ]

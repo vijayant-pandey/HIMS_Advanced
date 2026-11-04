@@ -13,6 +13,7 @@ from uuid import UUID
 from django.db import models
 from django.db.models.fields.files import FieldFile
 
+from common.client_ip import client_ip
 from common.request_context import get_request_id
 
 from .models import AuditEvent
@@ -99,6 +100,7 @@ class AuditAction:
     COMPLIANCE_INCIDENT_REPORTED = "compliance.incident.reported"
     COMPLIANCE_INCIDENT_UPDATED = "compliance.incident.updated"
     COMPLIANCE_NOTIFICATION_RECORDED = "compliance.incident.notification_recorded"
+    COMPLIANCE_BROWSER_REPORT_REVIEWED = "compliance.browser_report.reviewed"
     NOTIFICATION_RETRIED = "notification.retried"
     NOTIFICATION_TEST_SENT = "notification.test_sent"
     AUDIT_INTEGRITY_CHECKED = "audit.integrity.checked"
@@ -137,11 +139,6 @@ def model_changes(before: dict, after: dict) -> dict:
         "before": {key: before.get(key) for key in changed},
         "after": {key: after.get(key) for key in changed},
     }
-
-
-def _client_ip(request) -> str | None:
-    # TODO(HIMS-SEC-014): trust X-Forwarded-For only from the ALB once the network is defined.
-    return request.META.get("REMOTE_ADDR") or None
 
 
 def record_audit_event(
@@ -191,7 +188,7 @@ def record_audit_event(
         outcome=outcome,
         reason=reason,
         request_id=get_request_id() or "",
-        ip_address=_client_ip(request) if request is not None else None,
+        ip_address=client_ip(request) if request is not None else None,
         user_agent=(request.headers.get("User-Agent", "")[:512] if request is not None else ""),
         changes=changes or {},
         metadata=metadata or {},

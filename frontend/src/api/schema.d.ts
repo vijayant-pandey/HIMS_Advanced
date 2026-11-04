@@ -851,6 +851,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/browser-security-reports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["browser_security_reports_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/browser-security-reports/{id}/review/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["browser_security_reports_review_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/buildings/": {
         parameters: {
             query?: never;
@@ -1779,6 +1811,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/security/browser-reports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Where browsers send reports of what they blocked. The same empty answer whether a report is used or ignored. */
+        post: operations["security_browser_reports_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["security_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/specialties/": {
         parameters: {
             query?: never;
@@ -2506,6 +2571,33 @@ export interface components {
         BedTypeEnum: "general" | "semi_private" | "private" | "deluxe" | "icu" | "hdu" | "nicu" | "picu" | "isolation" | "day_care" | "labour" | "recovery" | "emergency_trolley";
         /** @enum {unknown} */
         BlankEnum: "";
+        BrowserReportReviewRequest: {
+            version: number;
+            note?: string;
+        };
+        BrowserSecurityReport: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date */
+            readonly day: string;
+            /** @description The rule that blocked it. */
+            readonly directive: string;
+            /** @description The site or kind of code blocked. */
+            readonly blocked: string;
+            /**
+             * @description Page, ids removed.
+             * @default
+             */
+            readonly page_path: string;
+            readonly occurrences: number;
+            /** Format: date-time */
+            readonly last_seen_at: string;
+            readonly reviewed_by_name: string | null;
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+            readonly review_note: string;
+            readonly version: number;
+        };
         Building: {
             /** Format: uuid */
             readonly id: string;
@@ -3824,6 +3916,12 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        /**
+         * @description * `enforcing` - enforcing
+         *     * `report_only` - report_only
+         * @enum {string}
+         */
+        PolicyModeEnum: "enforcing" | "report_only";
         QualificationType: {
             /** Format: uuid */
             readonly id: string;
@@ -4055,6 +4153,12 @@ export interface components {
             readonly reported_by_name: string | null;
             readonly notifications: components["schemas"]["IncidentNotification"][];
             readonly version: number;
+        };
+        SecurityStatus: {
+            policy_mode: components["schemas"]["PolicyModeEnum"];
+            proxies_configured: boolean;
+            your_address: string | null;
+            reports_to_review: number;
         };
         /**
          * @description * `-` - Dash (-)
@@ -5746,6 +5850,51 @@ export interface operations {
             };
         };
     };
+    browser_security_reports_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserSecurityReport"][];
+                };
+            };
+        };
+    };
+    browser_security_reports_review_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this browser security report. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserReportReviewRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserSecurityReport"];
+                };
+            };
+        };
+    };
     buildings_list: {
         parameters: {
             query?: {
@@ -7406,6 +7555,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SecurityIncident"];
+                };
+            };
+        };
+    };
+    security_browser_reports_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/csp-report": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    security_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityStatus"];
                 };
             };
         };

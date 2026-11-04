@@ -89,7 +89,7 @@ run([
   "--auditor-password-env=E2E_AUDITOR_PASSWORD",
 ]);
 
-const server = spawn(python(), ["manage.py", "runserver", `127.0.0.1:${E2E.apiPort}`, "--noreload"], {
+const server = spawn(python(), ["manage.py", "runserver", "--insecure", `127.0.0.1:${E2E.apiPort}`, "--noreload"], {
   cwd: backend,
   env,
   stdio: "inherit",

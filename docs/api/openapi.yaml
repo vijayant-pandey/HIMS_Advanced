@@ -1370,6 +1370,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedBedList'
           description: ''
+  /api/v1/browser-security-reports/:
+    get:
+      operationId: browser_security_reports_list
+      tags:
+      - browser-security-reports
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BrowserSecurityReport'
+          description: ''
+  /api/v1/browser-security-reports/{id}/review/:
+    post:
+      operationId: browser_security_reports_review_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this browser security report.
+        required: true
+      tags:
+      - browser-security-reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrowserReportReviewRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrowserSecurityReport'
+          description: ''
   /api/v1/buildings/:
     get:
       operationId: buildings_list
@@ -3239,6 +3283,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/SecurityIncident'
           description: ''
+  /api/v1/security/browser-reports/:
+    post:
+      operationId: security_browser_reports_create
+      description: Where browsers send reports of what they blocked. The same empty
+        answer whether a report is used or ignored.
+      tags:
+      - security
+      requestBody:
+        content:
+          application/csp-report:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/v1/security/status/:
+    get:
+      operationId: security_status_retrieve
+      tags:
+      - security
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityStatus'
+          description: ''
   /api/v1/specialties/:
     get:
       operationId: specialties_list
@@ -4977,6 +5053,75 @@ components:
     BlankEnum:
       enum:
       - ''
+    BrowserReportReviewRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        note:
+          type: string
+          maxLength: 2000
+      required:
+      - version
+    BrowserSecurityReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        day:
+          type: string
+          format: date
+          readOnly: true
+        directive:
+          type: string
+          readOnly: true
+          description: The rule that blocked it.
+        blocked:
+          type: string
+          readOnly: true
+          description: The site or kind of code blocked.
+        page_path:
+          type: string
+          readOnly: true
+          default: ''
+          description: Page, ids removed.
+        occurrences:
+          type: integer
+          readOnly: true
+        last_seen_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewed_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        review_note:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - blocked
+      - day
+      - directive
+      - id
+      - last_seen_at
+      - occurrences
+      - page_path
+      - review_note
+      - reviewed_at
+      - reviewed_by_name
+      - version
     Building:
       type: object
       properties:
@@ -8013,6 +8158,14 @@ components:
       - display_name
       - email
       - id
+    PolicyModeEnum:
+      enum:
+      - enforcing
+      - report_only
+      type: string
+      description: |-
+        * `enforcing` - enforcing
+        * `report_only` - report_only
     QualificationType:
       type: object
       properties:
@@ -8662,6 +8815,23 @@ components:
       - status_label
       - title
       - version
+    SecurityStatus:
+      type: object
+      properties:
+        policy_mode:
+          $ref: '#/components/schemas/PolicyModeEnum'
+        proxies_configured:
+          type: boolean
+        your_address:
+          type: string
+          nullable: true
+        reports_to_review:
+          type: integer
+      required:
+      - policy_mode
+      - proxies_configured
+      - reports_to_review
+      - your_address
     SeparatorEnum:
       enum:
       - '-'

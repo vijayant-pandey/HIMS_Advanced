@@ -6,6 +6,7 @@ secrets differ. HIMS_ENVIRONMENT selects which managed environment this process 
 
 from django.core.exceptions import ImproperlyConfigured
 
+from common.client_ip import validate_trusted_proxies
 from common.environment import validate_environment
 
 from .base import *  # noqa: F403
@@ -18,6 +19,7 @@ from .base import (
     HIMS_ENVIRONMENT,
     HIMS_FIELD_ENCRYPTION_KEYS,
     HIMS_MFA_REQUIRED_FOR_PRIVILEGED,
+    HIMS_TRUSTED_PROXIES,
     env,
 )
 
@@ -50,6 +52,16 @@ for _entry in HIMS_AUDIT_CHAIN_KEYS:
             "Each HIMS_AUDIT_CHAIN_KEYS entry must look like 'key-id:secret' "
             "(id up to 32 characters, secret at least 32 characters)."
         )
+
+if not HIMS_TRUSTED_PROXIES:
+    raise ImproperlyConfigured(
+        "HIMS_TRUSTED_PROXIES must list the load balancer's network: without it every audit "
+        "record and rate limit would see the load balancer's address, not the person's."
+    )
+try:
+    validate_trusted_proxies(HIMS_TRUSTED_PROXIES)
+except ValueError as exc:
+    raise ImproperlyConfigured(f"HIMS_TRUSTED_PROXIES has a bad entry: {exc}") from exc
 
 validate_environment(
     settings_profile="production",

@@ -51,6 +51,7 @@ erDiagram
     compliance_requirements
     compliance_risks
     security_incidents
+    browser_security_reports
     security_incident_notifications
     notifications
     outbox_events
@@ -146,6 +147,7 @@ erDiagram
     users |o--o{ compliance_requirements : "reviewed_by_id"
     users |o--o{ compliance_risks : "updated_by_id"
     users |o--o{ security_incidents : "reported_by_id"
+    users |o--o{ browser_security_reports : "reviewed_by_id"
     security_incidents ||--o{ security_incident_notifications : "incident_id"
     users |o--o{ security_incident_notifications : "done_by_id"
 ```
@@ -881,6 +883,21 @@ erDiagram
         timestamptz closed_at
         uuid reported_by_id FK
     }
+    browser_security_reports {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        date day
+        varchar directive
+        varchar blocked
+        varchar page_path
+        integer occurrences
+        timestamptz last_seen_at
+        uuid reviewed_by_id FK
+        timestamptz reviewed_at
+        text review_note
+    }
     security_incident_notifications {
         uuid id PK
         timestamptz created_at
@@ -900,6 +917,7 @@ erDiagram
     users |o--o{ compliance_requirements : "reviewed_by_id"
     users |o--o{ compliance_risks : "updated_by_id"
     users |o--o{ security_incidents : "reported_by_id"
+    users |o--o{ browser_security_reports : "reviewed_by_id"
     security_incidents ||--o{ security_incident_notifications : "incident_id"
     users |o--o{ security_incident_notifications : "done_by_id"
 ```

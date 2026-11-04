@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api } from "../../api/client";
 import type {
+  BrowserSecurityReport,
   ComplianceRequirement,
   ComplianceSummary,
   IncidentReceipt,
   IncidentReportRequest,
   RiskEntry,
   SecurityIncident,
+  SecurityStatus,
 } from "../../api/types";
 
 const key = ["compliance"] as const;
@@ -40,12 +42,32 @@ export function useIncidents() {
   });
 }
 
+export function useSecurityStatus() {
+  return useQuery<SecurityStatus, ApiError>({
+    queryKey: [...key, "security-status"],
+    queryFn: ({ signal }) => api.get<SecurityStatus>("/security/status/", { signal }),
+  });
+}
+
+export function useBrowserReports() {
+  return useQuery<BrowserSecurityReport[], ApiError>({
+    queryKey: [...key, "browser-reports"],
+    queryFn: ({ signal }) => api.get<BrowserSecurityReport[]>("/browser-security-reports/", { signal }),
+  });
+}
+
 function useChange<TResult, TBody>(request: (body: TBody) => Promise<TResult>) {
   const queryClient = useQueryClient();
   return useMutation<TResult, ApiError, TBody>({
     mutationFn: request,
     onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
   });
+}
+
+export function useReviewBrowserReport(id: string) {
+  return useChange((body: { version: number; note?: string }) =>
+    api.post<BrowserSecurityReport>(`/browser-security-reports/${id}/review/`, body),
+  );
 }
 
 export function useUpdateRequirement(id: string) {

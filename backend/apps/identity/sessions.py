@@ -21,6 +21,7 @@ from django.db.models.signals import post_save, pre_save
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
+from common.client_ip import client_ip
 from common.exceptions import ConflictError
 
 from .models import User, UserSession
@@ -42,7 +43,7 @@ def track_session(request, user) -> None:
         session_key=session_key,
         defaults={
             "user": user,
-            "ip_address": request.META.get("REMOTE_ADDR") or None,
+            "ip_address": client_ip(request),
             "user_agent": request.headers.get("User-Agent", "")[:512],
             "ended_at": None,
             "end_reason": "",

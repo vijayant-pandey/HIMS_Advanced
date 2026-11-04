@@ -153,6 +153,37 @@ class SecurityIncident(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
         return f"{self.title} ({self.get_status_display()})"
 
 
+class BrowserSecurityReport(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
+    """Something a browser blocked under the security headers, added up per day (spec 13;
+    HIMS-SEC-012). Browsers send these without signing in, so the content is not trustworthy
+    and holds no query strings or code samples."""
+
+    day = models.DateField()
+    directive = models.CharField(max_length=64, help_text="The rule that blocked it.")
+    blocked = models.CharField(max_length=200, help_text="The site or kind of code blocked.")
+    page_path = models.CharField(max_length=200, blank=True, help_text="Page, ids removed.")
+    occurrences = models.PositiveIntegerField(default=1)
+    last_seen_at = models.DateTimeField(default=timezone.now)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "browser_security_reports"
+        ordering = ["-day", "-occurrences"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["day", "directive", "blocked", "page_path"],
+                name="browser_report_unique_per_day",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.day}: {self.directive} blocked {self.blocked}"
+
+
 class IncidentNotification(UUIDPrimaryKeyModel, TimeStampedModel):
     """One notification the law requires for an incident, with its deadline (see incidents.py)."""
 

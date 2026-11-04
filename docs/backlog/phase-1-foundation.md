@@ -93,6 +93,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-007 | Staff detail/onboarding UI | Done |
 | HIMS-STAFF-010 | Catalog screens: designations, specialties, qualification types (add/edit/deactivate in the app) | Done |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility | To do |
+| HIMS-STAFF-011 | Decide "today" by the hospital's time zone, not UTC: a licence that expired yesterday shows as "expiring soon" until 5:30 am in India (gap found in HIMS-SEC-012) | To do |
 | HIMS-STAFF-009 | Designation catalog (IN/US, junior→senior), extended specialty/qualification catalogs, administrative system roles, RBAC document | Done |
 
 ## EPIC HIMS-SEC / HIMS-AUD — Security and audit
@@ -103,10 +104,11 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-AUD-002 | Access-denied events recorded outside rolled-back transactions | Done |
 | HIMS-AUD-003 | Audit log screen for auditors in the app + CSV export | Done |
 | HIMS-SEC-010 | Audit tamper evidence: keyed hash chain over every audit event, sealed every minute, daily + on-demand integrity check, alerts to auditors, Audit integrity screen and admin console ([design](../architecture/data-architecture/audit-integrity.md)) | Done |
-| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | To do |
-| HIMS-SEC-012 | Security headers/CSP for the SPA (CloudFront response headers) | To do |
+| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Drafted with HIMS-COMP-005 ([threat model](../compliance/threat-model.md)); security reviewer pending |
+| HIMS-SEC-012 | Security headers/CSP for the screens, admin console and API; reports of anything blocked ([how-to](../workflows/security-headers.md)) | Done (hosting must send the screens' headers: HIMS-SEC-018) |
 | HIMS-SEC-013 | Upload validation/malware scanning service | To do |
-| HIMS-SEC-014 | Trust `X-Forwarded-For` only from the ALB for audit IPs | To do |
+| HIMS-SEC-014 | Trust `X-Forwarded-For` only from our own proxies, for audit addresses, sign-in register, rate limits and the console lock-out | Done |
+| HIMS-SEC-018 | Send `frontend/security-headers.json` as response headers at hosting (CloudFront response headers policy) and check them from outside (gap found in HIMS-SEC-012) | To do (🔒 AWS) |
 | HIMS-SEC-016 | Copy each passed check's audit chain head to write-once storage (S3 Object Lock) as an independent anchor (gap found in HIMS-SEC-010) | To do (🔒 AWS) |
 | HIMS-SEC-017 | Run the on-demand audit integrity check as a background job with progress once the audit log nears ~1 million records (gap found in HIMS-SEC-010) | To do (when volume is near) |
 

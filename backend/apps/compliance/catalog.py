@@ -506,8 +506,8 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         "application",
         2,
         5,
-        "ORM queries, React escaping, CSRF protection. Planned: security "
-        "headers and content security policy (HIMS-SEC-012).",
+        "ORM queries, React escaping, CSRF protection, security headers and "
+        "content security policy with reports of anything blocked (HIMS-SEC-012).",
     ),
     (
         "R-006",
