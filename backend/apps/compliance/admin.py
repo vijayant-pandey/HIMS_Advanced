@@ -10,8 +10,14 @@ from apps.access_control.selectors import has_permission
 from common.admin.options import ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
-from . import incidents, services
-from .models import ComplianceRequirement, IncidentNotification, RiskEntry, SecurityIncident
+from . import browser_reports, incidents, services
+from .models import (
+    BrowserSecurityReport,
+    ComplianceRequirement,
+    IncidentNotification,
+    RiskEntry,
+    SecurityIncident,
+)
 
 
 class _ComplianceAdmin(ReadOnlyModelAdmin):
@@ -237,6 +243,34 @@ class SecurityIncidentAdmin(_ComplianceAdmin):
         except DomainError as exc:
             self.message_user(request, exc.detail, messages.ERROR)
             obj.refresh_from_db()
+
+
+@admin.register(BrowserSecurityReport)
+class BrowserSecurityReportAdmin(_ComplianceAdmin):
+    """What browsers blocked; marking one reviewed follows the same rules as the app."""
+
+    list_display = ("day", "directive", "blocked", "page_path", "occurrences", "reviewed_at")
+    list_filter = ("directive", "day")
+    search_fields = ("blocked", "page_path")
+    actions = ["mark_reviewed"]
+
+    @admin.action(description="Mark selected as reviewed")
+    def mark_reviewed(self, request, queryset):
+        if not self._can_manage(request):
+            self.message_user(request, "You may not change these.", messages.ERROR)
+            return
+        for row in queryset:
+            try:
+                browser_reports.review_report(
+                    actor=request.user,
+                    report_id=row.pk,
+                    version=row.version,
+                    note="Reviewed in the admin console",
+                    request=request,
+                )
+                self.message_user(request, f"{row}: reviewed.")
+            except DomainError as exc:
+                self.message_user(request, f"{row}: {exc.detail}", messages.ERROR)
 
 
 @admin.register(IncidentNotification)

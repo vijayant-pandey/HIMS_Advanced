@@ -75,6 +75,7 @@ HIMS_ENABLE_ADMIN = env.bool("HIMS_ENABLE_ADMIN", default=False)
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "common.security_headers.SecurityHeadersMiddleware",
     "common.request_context.RequestContextMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -199,6 +200,12 @@ HIMS_DELEGATION_MAX_DAYS = env.int("HIMS_DELEGATION_MAX_DAYS", default=30)
 # cannot rebuild the chain. Required in managed environments; developer machines and tests
 # fall back to a key derived from DJANGO_SECRET_KEY. See apps/audit/integrity.py.
 HIMS_AUDIT_CHAIN_KEYS = env.list("HIMS_AUDIT_CHAIN_KEYS", default=[])
+# Our own proxies (addresses or networks): X-Forwarded-For is believed only from these
+# (common/client_ip.py, HIMS-SEC-014). Empty means never believed.
+HIMS_TRUSTED_PROXIES = env.list("HIMS_TRUSTED_PROXIES", default=[])
+# True only tells browsers to report instead of block: a switch for rolling out or
+# backing out a policy change (HIMS-SEC-012).
+HIMS_CSP_REPORT_ONLY = env.bool("HIMS_CSP_REPORT_ONLY", default=False)
 # Sealing also picks up events written up to this long before its last run (a slow transaction
 # commits late). Older events that are not in the chain are reported by the integrity check.
 HIMS_AUDIT_SEAL_LOOKBACK_HOURS = env.int("HIMS_AUDIT_SEAL_LOOKBACK_HOURS", default=24)
@@ -213,8 +220,8 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "common.exceptions.handler.problem_details_exception_handler",
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "common.throttling.AnonThrottle",
+        "common.throttling.UserThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": env.str("HIMS_THROTTLE_ANON", default="60/min"),
@@ -222,6 +229,7 @@ REST_FRAMEWORK = {
         "login": env.str("HIMS_THROTTLE_LOGIN", default="10/min"),
         "invitation": env.str("HIMS_THROTTLE_INVITATION", default="20/min"),
         "password_reset": env.str("HIMS_THROTTLE_PASSWORD_RESET", default="5/min"),
+        "browser_report": env.str("HIMS_THROTTLE_BROWSER_REPORT", default="30/min"),
     },
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
 }

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import type { CurrentUser } from "../../api/types";
@@ -78,6 +78,20 @@ const INCIDENT = {
   ],
 };
 
+const BROWSER_REPORT = {
+  id: "b1",
+  day: "2026-11-04",
+  directive: "script-src-elem",
+  blocked: "https://blocked.example",
+  page_path: "/staff/{id}",
+  occurrences: 3,
+  last_seen_at: "2026-11-04T10:00:00Z",
+  reviewed_by_name: null,
+  reviewed_at: null,
+  review_note: "",
+  version: 2,
+};
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
@@ -102,6 +116,14 @@ function renderIt(ui: React.ReactElement, grants: string[], entry = "/compliance
     if (url.includes("/compliance-requirements/")) return json([REQUIREMENT]);
     if (url.includes("/compliance-risks/")) return json([RISK]);
     if (url.includes("/security-incidents/")) return json([INCIDENT]);
+    if (url.includes("/security/status/"))
+      return json({
+        policy_mode: "enforcing",
+        proxies_configured: false,
+        your_address: "203.0.113.9",
+        reports_to_review: 1,
+      });
+    if (url.includes("/browser-security-reports/")) return json([BROWSER_REPORT]);
     return json({});
   });
   const user: CurrentUser = {
@@ -178,5 +200,29 @@ describe("CompliancePage (HIMS-COMP)", () => {
     fireEvent.click(send);
     expect(await within(dialog).findByText(/Reference: new-ref/)).toBeInTheDocument();
     expect(sent(fetchMock, "POST", "/security-incidents/")![1]!.headers).toBeTruthy();
+  });
+});
+
+describe("Browser protection tab", () => {
+  it("lists what was blocked and sends the review with its version", async () => {
+    const fetchMock = renderIt(<CompliancePage />, ["compliance.view", "compliance.manage"]);
+    fireEvent.click(await screen.findByRole("tab", { name: "Browser protection" }));
+    const table = await screen.findByRole("table", { name: "What browsers blocked" });
+    expect(within(table).getByText("https://blocked.example")).toBeInTheDocument();
+    expect(await screen.findByText("203.0.113.9")).toBeInTheDocument();
+    expect(screen.getByText("Blocking is on for the admin console and server pages.")).toBeInTheDocument();
+    fireEvent.click(within(table).getByRole("button", { name: /^Mark reviewed/ }));
+    await waitFor(() => {
+      const review = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/b1/review/"));
+      expect(JSON.parse(String(review?.[1]?.body))).toEqual({ version: 2 });
+    });
+  });
+
+  it("does not offer the review without compliance.manage", async () => {
+    renderIt(<CompliancePage />, ["compliance.view"]);
+    fireEvent.click(await screen.findByRole("tab", { name: "Browser protection" }));
+    const table = await screen.findByRole("table", { name: "What browsers blocked" });
+    expect(within(table).getByText("Not reviewed")).toBeInTheDocument();
+    expect(within(table).queryByRole("button")).toBeNull();
   });
 });

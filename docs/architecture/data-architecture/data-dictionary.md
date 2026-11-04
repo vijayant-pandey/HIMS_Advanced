@@ -27,7 +27,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations)
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
-- **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`security_incident_notifications`](#security_incident_notifications)
+- **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`security_incident_notifications`](#security_incident_notifications)
 - **Notifications: emails and SMS**: [`notifications`](#notifications)
 - **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events)
 - **Platform: idempotency**: [`idempotency_records`](#idempotency_records)
@@ -1044,6 +1044,31 @@ A security incident or suspected breach (HIPAA 164.308(a)(6); DPDP Rule 7; CERT-
 | `closure_summary` | text | no | — | — | Person | Restricted: Incident record | Closure summary |
 | `closed_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Closed at |
 | `reported_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Reported by |
+
+<a id="browser_security_reports"></a>
+### `browser_security_reports`
+
+Something a browser blocked under the security headers, added up per day (spec 13; HIMS-SEC-012). Browsers send these without signing in, so the content is not trustworthy and holds no query strings or code samples.
+
+- **Model:** `compliance.BrowserSecurityReport`
+- **Lifecycle:** One row per day and kind of block, at most 500 a day. Purge comes with the retention job (HIMS-COMP-006).
+- **Rules:** `browser_report_unique_per_day`: Unique: day, directive, blocked, page_path
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `day` | date | no | — | — | Person | Internal: Business data | Day |
+| `directive` | varchar(64) | no | — | up to 64 characters | Person | Internal: Business data | The rule that blocked it. |
+| `blocked` | varchar(200) | no | — | up to 200 characters | Person | Internal: Business data | The site or kind of code blocked. |
+| `page_path` | varchar(200) | no | — | up to 200 characters | Person | Internal: Business data | Page, ids removed. |
+| `occurrences` | integer | no | `1` | 0 or more | Person | Internal: Business data | Occurrences |
+| `last_seen_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Last seen at |
+| `reviewed_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Reviewed by |
+| `reviewed_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Reviewed at |
+| `review_note` | text | no | — | — | Person | Restricted: Reviewer note (no patient details) | Review note |
 
 <a id="security_incident_notifications"></a>
 ### `security_incident_notifications`

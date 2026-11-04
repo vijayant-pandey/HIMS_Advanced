@@ -14,6 +14,8 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
+from common.client_ip import client_ip
+
 MAX_FAILED_LOGINS = 5
 LOCKOUT_SECONDS = 15 * 60
 
@@ -42,7 +44,7 @@ class HimsAdminAuthenticationForm(AdminAuthenticationForm):
     )
 
     def _lockout_key(self) -> str:
-        ip = self.request.META.get("REMOTE_ADDR", "unknown") if self.request else "unknown"
+        ip = (client_ip(self.request) if self.request else None) or "unknown"
         return f"admin-login-failures:{ip}"
 
     def clean(self):

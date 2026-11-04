@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.access_control.selectors import list_grants
@@ -16,6 +15,7 @@ from apps.features.catalog import F
 from apps.features.services import require_enabled
 from apps.organizations.models import Organization
 from common.exceptions import DomainError
+from common.throttling import ScopedThrottle
 
 from .. import invitations, mfa, password_reset, sessions
 from ..models import UserSession
@@ -98,7 +98,7 @@ class CsrfTokenView(APIView):
 class LoginView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [ScopedThrottle]
     throttle_scope = "login"
 
     @extend_schema(
@@ -141,7 +141,7 @@ class LoginVerifyView(APIView):
 
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [ScopedThrottle]
     throttle_scope = "login"
 
     @extend_schema(request=MfaCodeSerializer, responses={200: CurrentUserSerializer})
@@ -159,7 +159,7 @@ class _PublicInvitationView(APIView):
 
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [ScopedThrottle]
     throttle_scope = "invitation"
 
 
@@ -201,7 +201,7 @@ class InvitationAcceptView(_PublicInvitationView):
 class _PublicPasswordResetView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [ScopedThrottle]
     throttle_scope = "password_reset"
 
 

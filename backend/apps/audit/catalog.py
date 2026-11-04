@@ -97,6 +97,7 @@ LABELS: dict[str, str] = {
     A.COMPLIANCE_INCIDENT_REPORTED: "Security incident reported",
     A.COMPLIANCE_INCIDENT_UPDATED: "Security incident updated",
     A.COMPLIANCE_NOTIFICATION_RECORDED: "Incident notification recorded",
+    A.COMPLIANCE_BROWSER_REPORT_REVIEWED: "Browser block report reviewed",
     A.NOTIFICATION_RETRIED: "Email/SMS sent again",
     A.NOTIFICATION_TEST_SENT: "Test email/SMS sent",
     A.AUDIT_SEARCHED: "Audit log searched",

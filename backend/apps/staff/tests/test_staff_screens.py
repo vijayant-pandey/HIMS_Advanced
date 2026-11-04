@@ -1,6 +1,6 @@
 """What the Staff and Access screens need (HIMS-STAFF-007, HIMS-IAM-013). Synthetic data only."""
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
 from django.utils import timezone
@@ -288,7 +288,7 @@ def test_expired_credential_state(client_for, admin_user, nurse):
             "issuing_authority": "Karnataka Nursing Council",
             "jurisdiction": "IN-KA",
             "valid_from": "2020-01-01",
-            "expires_at": (date.today() - timedelta(days=1)).isoformat(),
+            "expires_at": (timezone.localdate() - timedelta(days=1)).isoformat(),
         },
         format="json",
     )

