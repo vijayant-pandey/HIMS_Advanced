@@ -48,6 +48,10 @@ erDiagram
     audit_events
     audit_chain_entries
     audit_integrity_checks
+    compliance_requirements
+    compliance_risks
+    security_incidents
+    security_incident_notifications
     notifications
     outbox_events
     outbox_processed_events
@@ -139,6 +143,11 @@ erDiagram
     users |o--o{ staff_documents : "archived_by_id"
     staff_credentials ||--o{ staff_credential_expiry_alerts : "credential_id"
     audit_events ||--o| audit_chain_entries : "event_id"
+    users |o--o{ compliance_requirements : "reviewed_by_id"
+    users |o--o{ compliance_risks : "updated_by_id"
+    users |o--o{ security_incidents : "reported_by_id"
+    security_incidents ||--o{ security_incident_notifications : "incident_id"
+    users |o--o{ security_incident_notifications : "done_by_id"
 ```
 
 ## Hospital (organization) (logical)
@@ -810,6 +819,92 @@ erDiagram
     }
     audit_events ||--o| audit_chain_entries : "event_id"
 ```
+
+## Compliance: requirements, risks, security incidents (logical)
+
+```mermaid
+erDiagram
+    compliance_requirements {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        varchar code UK
+        varchar jurisdiction
+        varchar regulation
+        varchar citation
+        varchar title
+        text summary
+        text hims_support
+        varchar status
+        varchar owner
+        text evidence
+        date next_review_on
+        uuid reviewed_by_id FK
+        timestamptz reviewed_at
+        boolean is_active
+    }
+    compliance_risks {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        varchar code UK
+        varchar title
+        text description
+        varchar category
+        smallint likelihood
+        smallint impact
+        varchar treatment
+        text mitigation
+        varchar status
+        varchar owner
+        date review_on
+        text acceptance_reason
+        uuid updated_by_id FK
+    }
+    security_incidents {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        varchar title
+        text description
+        varchar severity
+        varchar status
+        timestamptz detected_at
+        timestamptz occurred_at
+        boolean personal_data_affected
+        integer people_affected
+        text actions_taken
+        text closure_summary
+        timestamptz closed_at
+        uuid reported_by_id FK
+    }
+    security_incident_notifications {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        uuid incident_id FK
+        varchar kind
+        timestamptz due_at
+        varchar status
+        timestamptz done_at
+        uuid done_by_id FK
+        varchar reference
+        text note
+        timestamptz soon_alert_sent_at
+        timestamptz overdue_alert_sent_at
+    }
+    users
+    users |o--o{ compliance_requirements : "reviewed_by_id"
+    users |o--o{ compliance_risks : "updated_by_id"
+    users |o--o{ security_incidents : "reported_by_id"
+    security_incidents ||--o{ security_incident_notifications : "incident_id"
+    users |o--o{ security_incident_notifications : "done_by_id"
+```
+
+Tables from other domains are shown without columns: `users`.
 
 ## Notifications: emails and SMS (logical)
 

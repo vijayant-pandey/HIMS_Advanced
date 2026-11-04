@@ -31,6 +31,7 @@ import {
   useStartMfaSetup,
 } from "../auth/api";
 import { MyCoverSection } from "../accessControl/MyCoverSection";
+import { ReportIncidentDialog } from "../compliance/ReportIncidentDialog";
 import { RecoveryCodes } from "./RecoveryCodes";
 
 function QrCode({ value }: { value: string }) {
@@ -267,6 +268,7 @@ export function SecurityPage() {
   const navigate = useNavigate();
   // Backup codes from turning two-factor on: shown once, until the person confirms saving them.
   const [newCodes, setNewCodes] = useState<string[] | null>(null);
+  const [reporting, setReporting] = useState(false);
   if (!user) return null;
   const { mfa } = user;
 
@@ -323,6 +325,21 @@ export function SecurityPage() {
         </Stack>
       </Paper>
       <MySignIns />
+      <Paper sx={{ p: 3, mt: 3 }}>
+        <Stack spacing={1} sx={{ alignItems: "flex-start" }}>
+          <Typography variant="h6" component="h2">
+            Report a security problem
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            A lost laptop, a stolen password, a suspicious email, or the wrong person seeing a record? Tell the
+            compliance team at once.
+          </Typography>
+          <Button variant="outlined" onClick={() => setReporting(true)}>
+            Report a security incident
+          </Button>
+        </Stack>
+      </Paper>
+      {reporting && <ReportIncidentDialog onClose={() => setReporting(false)} />}
       <MyCoverSection />
     </Box>
   );

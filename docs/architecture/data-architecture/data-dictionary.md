@@ -27,6 +27,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations)
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
+- **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`security_incident_notifications`](#security_incident_notifications)
 - **Notifications: emails and SMS**: [`notifications`](#notifications)
 - **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events)
 - **Platform: idempotency**: [`idempotency_records`](#idempotency_records)
@@ -951,6 +952,124 @@ Result of one run of the audit integrity check (HIMS-SEC-010). Written once, nev
 | `problem_count` | integer | no | `0` | 0 or more | Person | Restricted: Security record | Problem count |
 | `problems` | jsonb | no | list() | — | Person | Restricted: Audit content | Problems |
 | `unsealed_overdue` | integer | no | `0` | 0 or more | Person | Restricted: Security record | Events older than the sealing window that are not in the chain (written outside the normal path, or with a back-dated time). |
+
+## Compliance: requirements, risks, security incidents
+
+**Owner (source of truth):** Compliance / security officer. **Design:** [README](../../compliance/README.md).
+
+<a id="compliance_requirements"></a>
+### `compliance_requirements`
+
+One legal or regulatory obligation and how far the hospital has met it (spec 13, 26.7; HIMS-COMP-001/002/003). Wording comes from catalog.py; status and evidence are the hospital's. Implemented in software does not mean compliant: "verified" needs written evidence.
+
+- **Model:** `compliance.ComplianceRequirement`
+- **Lifecycle:** Wording synced from code; removed items switched off, never deleted. Status changes audited.
+- **Extra indexes:** `compliance_req_status_idx`: jurisdiction, status
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `code` | varchar(40) | no | — | up to 40 characters; unique | Person | Internal: Business data | Code |
+| `jurisdiction` | varchar(3) | no | — | `ALL` (Both countries), `IN` (India), `US` (United States) | Person | Internal: Business data | Jurisdiction |
+| `regulation` | varchar(120) | no | — | up to 120 characters | Person | Internal: Business data | Regulation |
+| `citation` | varchar(120) | no | — | up to 120 characters | Person | Internal: Business data | Citation |
+| `title` | varchar(200) | no | — | up to 200 characters | Person | Internal: Business data | Title |
+| `summary` | text | no | — | — | Person | Internal: Business data | What the law asks, in plain words. |
+| `hims_support` | text | no | — | — | Person | Internal: Business data | What HIMS does for it today. |
+| `status` | varchar(16) | no | `ComplianceRequirement.Status.NOT_STARTED` | `not_started` (Not started), `in_progress` (In progress), `implemented` (Implemented, not verified), `verified` (Verified with evidence), `not_applicable` (Not applicable) | Person | Internal: Business data | Status |
+| `owner` | varchar(150) | no | — | up to 150 characters | Person | Internal: Business data | Who answers for it. |
+| `evidence` | text | no | — | — | Person | Internal: Business data | Where the proof is; required to verify. |
+| `next_review_on` | date | yes | — | — | Person | Internal: Business data | Next review on |
+| `reviewed_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Reviewed by |
+| `reviewed_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Reviewed at |
+| `is_active` | boolean | no | `True` | — | Person | Internal: Business data | Switched on (true) or off (false); rows are switched off, not deleted |
+
+<a id="compliance_risks"></a>
+### `compliance_risks`
+
+One line of the risk register (spec 23 "threat model and risk assessment"; HIPAA 164.308(a)(1); HIMS-COMP-005). Score = likelihood x impact, each 1 to 5.
+
+- **Model:** `compliance.RiskEntry`
+- **Lifecycle:** Never deleted; closed with a status. Changes audited.
+- **Rules:** `compliance_risk_scale_1_to_5`: Check: (impact ≥ 1 AND impact ≤ 5 AND likelihood ≥ 1 AND likelihood ≤ 5)
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `code` | varchar(20) | no | — | up to 20 characters; unique | Person | Internal: Business data | Code |
+| `title` | varchar(200) | no | — | up to 200 characters | Person | Internal: Business data | Title |
+| `description` | text | no | — | — | Person | Internal: Business data | Description |
+| `category` | varchar(40) | no | — | up to 40 characters | Person | Internal: Business data | e.g. access, data, availability. |
+| `likelihood` | smallint | no | `3` | — | Person | Internal: Business data | Likelihood |
+| `impact` | smallint | no | `3` | — | Person | Internal: Business data | Impact |
+| `treatment` | varchar(10) | no | `RiskEntry.Treatment.MITIGATE` | `mitigate` (Reduce it), `accept` (Accept it), `transfer` (Transfer it (e.g. insurance, vendor)), `avoid` (Avoid it) | Person | Internal: Business data | Treatment |
+| `mitigation` | text | no | — | — | Person | Internal: Business data | What reduces it, done and planned. |
+| `status` | varchar(10) | no | `RiskEntry.Status.OPEN` | `open` (Open), `treating` (Being treated), `accepted` (Accepted), `closed` (Closed) | Person | Internal: Business data | Status |
+| `owner` | varchar(150) | no | — | up to 150 characters | Person | Internal: Business data | Owner |
+| `review_on` | date | yes | — | — | Person | Internal: Business data | Review on |
+| `acceptance_reason` | text | no | — | — | Person | Internal: Business data | Required to accept a risk. |
+| `updated_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Updated by |
+
+<a id="security_incidents"></a>
+### `security_incidents`
+
+A security incident or suspected breach (HIPAA 164.308(a)(6); DPDP Rule 7; CERT-In directions; spec 13.4; HIMS-COMP-004). Never deleted. Must not hold clinical details.
+
+- **Model:** `compliance.SecurityIncident`
+- **Lifecycle:** Never deleted; closed with a summary. Keep at least 6 years (US HIPAA documentation rule); counsel sets the rest.
+- **Rules:** `security_incident_occurred_first`: Check: (occurred_at is empty OR occurred_at ≤ detected_at)
+- **Extra indexes:** `security_incident_open_idx`: status, detected_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `title` | varchar(200) | no | — | up to 200 characters | Person | Restricted: Incident record | Title |
+| `description` | text | no | — | — | Person | Restricted: Incident record (no patient details) | What happened. No patient details. |
+| `severity` | varchar(10) | no | `SecurityIncident.Severity.MEDIUM` | `low` (Low), `medium` (Medium), `high` (High), `critical` (Critical) | Person | Internal: Business data | Severity |
+| `status` | varchar(14) | no | `SecurityIncident.Status.REPORTED` | `reported` (Reported), `investigating` (Investigating), `contained` (Contained), `closed` (Closed) | Person | Internal: Business data | Status |
+| `detected_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | When it was noticed: legal deadlines count from here. |
+| `occurred_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Occurred at |
+| `personal_data_affected` | boolean | no | `False` | — | Person | Internal: Business data | Personal data affected |
+| `people_affected` | integer | yes | — | 0 or more | Person | Internal: Business data | People affected |
+| `actions_taken` | text | no | — | — | Person | Restricted: Incident record | Actions taken |
+| `closure_summary` | text | no | — | — | Person | Restricted: Incident record | Closure summary |
+| `closed_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Closed at |
+| `reported_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Reported by |
+
+<a id="security_incident_notifications"></a>
+### `security_incident_notifications`
+
+One notification the law requires for an incident, with its deadline (see incidents.py).
+
+- **Model:** `compliance.IncidentNotification`
+- **Lifecycle:** Never deleted; the evidence that each legal notice was made, with its reference.
+- **Rules:** `incident_notification_once`: Unique: incident, kind
+- **Extra indexes:** `incident_notif_due_idx`: status, due_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `incident_id` | uuid → security_incidents.id | no | — | on delete PROTECT | Person | Internal: Reference | Incident |
+| `kind` | varchar(24) | no | — | `cert_in` (India: CERT-In report), `dpdp_board_initial` (India: Data Protection Board, first notice), `dpdp_board_detailed` (India: Data Protection Board, detailed report), `dpdp_people` (India: tell the affected people), `hipaa_individuals` (US: tell the affected people), `hipaa_hhs` (US: tell HHS), `hipaa_media` (US: tell the media (over 500 people)) | Person | Internal: Business data | Kind |
+| `due_at` | timestamp with time zone | no | — | — | System | Internal: Business data | Due at |
+| `status` | varchar(14) | no | `IncidentNotification.Status.PENDING` | `pending` (To do), `done` (Done), `not_required` (Not required) | Person | Internal: Business data | Status |
+| `done_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Done at |
+| `done_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Done by |
+| `reference` | varchar(200) | no | — | up to 200 characters | Person | Restricted: Incident record | e.g. acknowledgement no. |
+| `note` | text | no | — | — | Person | Restricted: Incident record | Required when marked not required. |
+| `soon_alert_sent_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Soon alert sent at |
+| `overdue_alert_sent_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Overdue alert sent at |
 
 ## Notifications: emails and SMS
 

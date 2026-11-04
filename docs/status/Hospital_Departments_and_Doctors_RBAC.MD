@@ -463,3 +463,11 @@ switched off, so the hospital cannot lock itself out.
 - Not yet: clinical delegation (patients, orders, signing) needs clinical governance decisions
   (HIMS-IAM-018); emergency "break-glass" access stays 🔒 CLIN.
 - Design: [cover-arrangements.md](../architecture/data-architecture/cover-arrangements.md).
+
+## Update 2026-11-04: compliance (HIMS-COMP)
+
+- New role **Compliance / security officer**: keeps the compliance registers, manages security incidents and reads
+  the audit log (HIPAA security official, DPDP contact). Permissions `compliance.view`, `compliance.manage`,
+  both needing two-factor sign-in. Hospital administrators also hold them; auditors can read the registers.
+- **Anyone signed in** can report a security incident; only compliance staff read the log.
+- Documents: [compliance pack](../compliance/README.md).

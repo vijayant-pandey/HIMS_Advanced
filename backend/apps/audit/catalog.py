@@ -21,6 +21,7 @@ CATEGORIES: dict[str, str] = {
     "admin": "Admin console",
     "audit": "Audit log",
     "notification": "Emails and SMS",
+    "compliance": "Compliance",
 }
 
 LABELS: dict[str, str] = {
@@ -90,6 +91,12 @@ LABELS: dict[str, str] = {
     A.CREDENTIAL_EXPIRY_ALERT_SENT: "Licence expiry alert sent",
     A.ACCESS_DELEGATION_CREATED: "Cover arranged (access lent for a time)",
     A.ACCESS_DELEGATION_ENDED: "Cover ended early",
+    A.COMPLIANCE_REQUIREMENT_UPDATED: "Compliance requirement updated",
+    A.COMPLIANCE_RISK_CREATED: "Risk added",
+    A.COMPLIANCE_RISK_UPDATED: "Risk updated",
+    A.COMPLIANCE_INCIDENT_REPORTED: "Security incident reported",
+    A.COMPLIANCE_INCIDENT_UPDATED: "Security incident updated",
+    A.COMPLIANCE_NOTIFICATION_RECORDED: "Incident notification recorded",
     A.NOTIFICATION_RETRIED: "Email/SMS sent again",
     A.NOTIFICATION_TEST_SENT: "Test email/SMS sent",
     A.AUDIT_SEARCHED: "Audit log searched",
