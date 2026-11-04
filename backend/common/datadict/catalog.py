@@ -60,6 +60,11 @@ DOMAINS: dict[str, dict] = {
         "owner": "Audit domain (separate security boundary)",
         "docs": ["audit-integrity.md", "../../decisions/ADR-013-audit-log-storage.md"],
     },
+    "compliance": {
+        "name": "Compliance: requirements, risks, security incidents",
+        "owner": "Compliance / security officer",
+        "docs": ["../../compliance/README.md"],
+    },
     "notifications": {
         "name": "Notifications: emails and SMS",
         "owner": "Platform (each sending domain owns its wording)",
@@ -133,6 +138,13 @@ LIFECYCLE: dict[str, str] = {
     "audit_integrity_checks": "Append-only (database trigger); one row per check.",
     "outbox_events": "Kept after publishing; archival job pending (HIMS-PLAT-014).",
     "outbox_processed_events": "Kept for duplicate detection; archival with HIMS-PLAT-014.",
+    "compliance_requirements": "Wording synced from code; removed items switched off, never "
+    "deleted. Status changes audited.",
+    "compliance_risks": "Never deleted; closed with a status. Changes audited.",
+    "security_incidents": "Never deleted; closed with a summary. Keep at least 6 years (US "
+    "HIPAA documentation rule); counsel sets the rest.",
+    "security_incident_notifications": "Never deleted; the evidence that each legal notice was "
+    "made, with its reference.",
     "notifications": "Kept as the delivery log; the real (secret-bearing) text is erased once "
     "delivered. Retention period: decision pending with the other records (🔒 LEGAL).",
     "idempotency_records": "Purged hourly once expired (48 hours, "
@@ -172,6 +184,12 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "facilities.address_line2": (INTERNAL, "Facility address"),
     "facilities.postal_code": (INTERNAL, "Facility address"),
     "staff_documents.sha256": (INTERNAL, "Checksum"),
+    "security_incidents.title": (RESTRICTED, "Incident record"),
+    "security_incidents.description": (RESTRICTED, "Incident record (no patient details)"),
+    "security_incidents.actions_taken": (RESTRICTED, "Incident record"),
+    "security_incidents.closure_summary": (RESTRICTED, "Incident record"),
+    "security_incident_notifications.reference": (RESTRICTED, "Incident record"),
+    "security_incident_notifications.note": (RESTRICTED, "Incident record"),
     "notifications.recipients": (RESTRICTED, "Contact"),
     "notifications.subject": (RESTRICTED, "Message (secrets hidden)"),
     "notifications.body": (RESTRICTED, "Message (secrets hidden)"),

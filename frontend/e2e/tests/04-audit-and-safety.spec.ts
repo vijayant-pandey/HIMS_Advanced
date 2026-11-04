@@ -65,6 +65,7 @@ test.describe("administrator", () => {
       ["Licence expiry", /Licence/],
       ["Job titles & catalogs", /Job titles/],
       ["Messages", /Messages/],
+      ["Compliance", /Compliance/],
     ] as const) {
       await page.goto("/");
       await openMenu(page, menu);
@@ -74,6 +75,25 @@ test.describe("administrator", () => {
     await page.goto("/security");
     await expect(page.getByRole("heading", { name: "Security", level: 1 })).toBeVisible();
     await expectAccessible(page, "Security");
+  });
+
+  test("a security incident gets its legal deadline; the reference is shown", async ({ page }) => {
+    await page.goto("/security");
+    await page.getByRole("button", { name: "Report a security incident" }).click();
+    const report = page.getByRole("dialog");
+    await report.getByLabel(/What happened/).fill("Laptop left on a train");
+    await report.getByLabel(/Details/).fill("Encrypted laptop, no patient details");
+    await expectAccessible(page, "Report incident dialog");
+    await report.getByRole("button", { name: "Send report" }).click();
+    await expect(report.getByText(/Reference:/)).toBeVisible();
+    await report.getByRole("button", { name: "Close" }).click();
+
+    await page.goto("/compliance");
+    await page.getByRole("tab", { name: "Incidents" }).click();
+    const table = page.getByRole("table", { name: "Security incidents" });
+    await expect(table.getByText("Laptop left on a train")).toBeVisible();
+    await expect(table.getByText("India: CERT-In report")).toBeVisible();
+    await expectAccessible(page, "Compliance incidents");
   });
 
   test("keyboard only: the menu can be reached and used with Tab and Enter", async ({ page }) => {

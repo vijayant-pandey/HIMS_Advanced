@@ -63,6 +63,10 @@ def _configure_queues_and_schedule(sender, **kwargs):
             "task": "notifications.access_review_reminders",
             "schedule": timedelta(hours=24),
         },
+        "incident-deadline-alerts": {
+            "task": "notifications.incident_deadline_alerts",
+            "schedule": timedelta(hours=1),
+        },
         "notification-retries": {
             "task": "notifications.retry_failed",
             "schedule": timedelta(minutes=5),

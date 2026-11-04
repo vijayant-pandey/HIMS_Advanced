@@ -911,6 +911,89 @@ export interface paths {
         patch: operations["buildings_partial_update"];
         trace?: never;
     };
+    "/api/v1/compliance-requirements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The requirements that apply to this hospital's country. */
+        get: operations["compliance_requirements_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance-requirements/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The requirements that apply to this hospital's country. */
+        get: operations["compliance_requirements_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description The requirements that apply to this hospital's country. */
+        patch: operations["compliance_requirements_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/compliance-risks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["compliance_risks_list"];
+        put?: never;
+        post: operations["compliance_risks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance-risks/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["compliance_risks_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["compliance_risks_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/compliance-summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["compliance_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/department-services/{id}/": {
         parameters: {
             query?: never;
@@ -1646,6 +1729,54 @@ export interface paths {
          *     object's facility. Nothing is ever deleted (deactivate with ``is_active: false``).
          */
         patch: operations["rooms_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/security-incidents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["security_incidents_list"];
+        put?: never;
+        post: operations["security_incidents_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security-incidents/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["security_incidents_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["security_incidents_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/security-incidents/{id}/notifications/{notification_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["security_incidents_notifications_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/specialties/": {
@@ -2411,6 +2542,52 @@ export interface components {
          * @enum {string}
          */
         ChannelEnum: "email" | "sms";
+        ComplianceRequirement: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly jurisdiction: components["schemas"]["JurisdictionEnum"];
+            readonly regulation: string;
+            readonly citation: string;
+            readonly title: string;
+            /** @description What the law asks, in plain words. */
+            readonly summary: string;
+            /** @description What HIMS does for it today. */
+            readonly hims_support: string;
+            readonly status: components["schemas"]["ComplianceStatusEnum"];
+            readonly status_label: string;
+            /** @description Who answers for it. */
+            readonly owner: string;
+            /** @description Where the proof is; required to verify. */
+            readonly evidence: string;
+            /** Format: date */
+            readonly next_review_on: string | null;
+            readonly reviewed_by_name: string | null;
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+            readonly version: number;
+        };
+        /**
+         * @description * `not_started` - Not started
+         *     * `in_progress` - In progress
+         *     * `implemented` - Implemented, not verified
+         *     * `verified` - Verified with evidence
+         *     * `not_applicable` - Not applicable
+         * @enum {string}
+         */
+        ComplianceStatusEnum: "not_started" | "in_progress" | "implemented" | "verified" | "not_applicable";
+        ComplianceSummary: {
+            country: string;
+            requirements_total: number;
+            requirements_by_status: {
+                [key: string]: number;
+            };
+            risks_open: number;
+            /** @description Open risks scoring 15 or more. */
+            risks_high: number;
+            incidents_open: number;
+            notifications_overdue: number;
+        };
         /**
          * @description * `US` - United States
          *     * `IN` - India
@@ -2844,6 +3021,57 @@ export interface components {
             /** Format: time */
             closes_at: string;
         };
+        IncidentNotification: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["KindEnum"];
+            readonly kind_label: string;
+            /** Format: date-time */
+            readonly due_at: string;
+            readonly status: components["schemas"]["IncidentNotificationStatusEnum"];
+            readonly status_label: string;
+            readonly is_overdue: boolean;
+            /** Format: date-time */
+            readonly done_at: string | null;
+            readonly done_by_name: string | null;
+            /** @description e.g. acknowledgement no. */
+            readonly reference: string;
+            /** @description Required when marked not required. */
+            readonly note: string;
+        };
+        /**
+         * @description * `pending` - To do
+         *     * `done` - Done
+         *     * `not_required` - Not required
+         * @enum {string}
+         */
+        IncidentNotificationStatusEnum: "pending" | "done" | "not_required";
+        /** @description What the person reporting gets back (they may not be allowed to read the log). */
+        IncidentReceipt: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** Format: date-time */
+            detected_at: string;
+        };
+        IncidentReportRequest: {
+            title: string;
+            /** @description What happened. No patient details. */
+            description: string;
+            /** @default medium */
+            severity: components["schemas"]["SeverityEnum"];
+            /** @default false */
+            personal_data_affected: boolean;
+            people_affected?: number | null;
+        };
+        /**
+         * @description * `reported` - Reported
+         *     * `investigating` - Investigating
+         *     * `contained` - Contained
+         *     * `closed` - Closed
+         * @enum {string}
+         */
+        IncidentStatusEnum: "reported" | "investigating" | "contained" | "closed";
         /**
          * @description * `passed` - Passed: nothing was changed
          *     * `failed` - Problems found
@@ -2902,6 +3130,24 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `ALL` - Both countries
+         *     * `IN` - India
+         *     * `US` - United States
+         * @enum {string}
+         */
+        JurisdictionEnum: "ALL" | "IN" | "US";
+        /**
+         * @description * `cert_in` - India: CERT-In report
+         *     * `dpdp_board_initial` - India: Data Protection Board, first notice
+         *     * `dpdp_board_detailed` - India: Data Protection Board, detailed report
+         *     * `dpdp_people` - India: tell the affected people
+         *     * `hipaa_individuals` - US: tell the affected people
+         *     * `hipaa_hhs` - US: tell HHS
+         *     * `hipaa_media` - US: tell the media (over 500 people)
+         * @enum {string}
+         */
+        KindEnum: "cert_in" | "dpdp_board_initial" | "dpdp_board_detailed" | "dpdp_people" | "hipaa_individuals" | "hipaa_hhs" | "hipaa_media";
         /** @description One copy of the covered person's access lent to the covering person. */
         LentAccess: {
             /** Format: uuid */
@@ -2995,6 +3241,19 @@ export interface components {
             readonly skip_reason: string;
             readonly can_send_again: boolean;
         };
+        NotificationRecordRequest: {
+            status: components["schemas"]["NotificationRecordStatusEnum"];
+            /** @default  */
+            reference: string;
+            /** @default  */
+            note: string;
+        };
+        /**
+         * @description * `done` - done
+         *     * `not_required` - not_required
+         * @enum {string}
+         */
+        NotificationRecordStatusEnum: "done" | "not_required";
         /**
          * @description * `pending` - Waiting to be sent
          *     * `sent` - Sent
@@ -3414,6 +3673,19 @@ export interface components {
             level?: number;
             is_active?: boolean;
         };
+        PatchedIncidentUpdateRequest: {
+            version?: number;
+            severity?: components["schemas"]["SeverityEnum"];
+            status?: components["schemas"]["IncidentStatusEnum"];
+            /** Format: date-time */
+            detected_at?: string;
+            /** Format: date-time */
+            occurred_at?: string | null;
+            personal_data_affected?: boolean;
+            people_affected?: number | null;
+            actions_taken?: string;
+            closure_summary?: string;
+        };
         PatchedNumberingSchemeUpdateRequest: {
             version?: number;
             prefix?: string;
@@ -3439,6 +3711,29 @@ export interface components {
             /** @description IN, US, or blank for both countries */
             country?: string;
             is_active?: boolean;
+        };
+        PatchedRequirementUpdateRequest: {
+            version?: number;
+            status?: components["schemas"]["ComplianceStatusEnum"];
+            owner?: string;
+            evidence?: string;
+            /** Format: date */
+            next_review_on?: string | null;
+        };
+        PatchedRiskUpdateRequest: {
+            title?: string;
+            description?: string;
+            category?: string;
+            likelihood?: number;
+            impact?: number;
+            treatment?: components["schemas"]["TreatmentEnum"];
+            mitigation?: string;
+            status?: components["schemas"]["RiskStatusEnum"];
+            owner?: string;
+            /** Format: date */
+            review_on?: string | null;
+            acceptance_reason?: string;
+            version?: number;
         };
         PatchedRoleUpdateRequest: {
             version?: number;
@@ -3499,6 +3794,8 @@ export interface components {
          *     * `audit.view` - audit.view
          *     * `beds.status.manage` - beds.status.manage
          *     * `catalogs.manage` - catalogs.manage
+         *     * `compliance.manage` - compliance.manage
+         *     * `compliance.view` - compliance.view
          *     * `departments.manage` - departments.manage
          *     * `departments.view` - departments.view
          *     * `facilities.manage` - facilities.manage
@@ -3519,7 +3816,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
         Person: {
             /** Format: uuid */
             id: string;
@@ -3560,6 +3857,53 @@ export interface components {
         RevokeRequest: {
             reason: string;
         };
+        RiskCreateRequest: {
+            title: string;
+            description: string;
+            category: string;
+            likelihood?: number;
+            impact?: number;
+            treatment?: components["schemas"]["TreatmentEnum"];
+            mitigation?: string;
+            status?: components["schemas"]["RiskStatusEnum"];
+            owner?: string;
+            /** Format: date */
+            review_on?: string | null;
+            acceptance_reason?: string;
+        };
+        RiskEntry: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly title: string;
+            readonly description: string;
+            /** @description e.g. access, data, availability. */
+            readonly category: string;
+            readonly likelihood: number;
+            readonly impact: number;
+            /** @description Likelihood x impact, 1 to 25. */
+            readonly score: number;
+            readonly treatment: components["schemas"]["TreatmentEnum"];
+            readonly treatment_label: string;
+            /** @description What reduces it, done and planned. */
+            readonly mitigation: string;
+            readonly status: components["schemas"]["RiskStatusEnum"];
+            readonly status_label: string;
+            readonly owner: string;
+            /** Format: date */
+            readonly review_on: string | null;
+            /** @description Required to accept a risk. */
+            readonly acceptance_reason: string;
+            readonly version: number;
+        };
+        /**
+         * @description * `open` - Open
+         *     * `treating` - Being treated
+         *     * `accepted` - Accepted
+         *     * `closed` - Closed
+         * @enum {string}
+         */
+        RiskStatusEnum: "open" | "treating" | "accepted" | "closed";
         Role: {
             /** Format: uuid */
             readonly id: string;
@@ -3685,6 +4029,33 @@ export interface components {
          * @enum {string}
          */
         ScopeEnum: "organization" | "facility";
+        SecurityIncident: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly title: string;
+            /** @description What happened. No patient details. */
+            readonly description: string;
+            readonly severity: components["schemas"]["SeverityEnum"];
+            readonly severity_label: string;
+            readonly status: components["schemas"]["IncidentStatusEnum"];
+            readonly status_label: string;
+            /**
+             * Format: date-time
+             * @description When it was noticed: legal deadlines count from here.
+             */
+            readonly detected_at: string;
+            /** Format: date-time */
+            readonly occurred_at: string | null;
+            readonly personal_data_affected: boolean;
+            readonly people_affected: number | null;
+            readonly actions_taken: string;
+            readonly closure_summary: string;
+            /** Format: date-time */
+            readonly closed_at: string | null;
+            readonly reported_by_name: string | null;
+            readonly notifications: components["schemas"]["IncidentNotification"][];
+            readonly version: number;
+        };
         /**
          * @description * `-` - Dash (-)
          *     * `/` - Slash (/)
@@ -3707,6 +4078,14 @@ export interface components {
          * @enum {string}
          */
         SettingEnum: "default" | "on" | "off";
+        /**
+         * @description * `low` - Low
+         *     * `medium` - Medium
+         *     * `high` - High
+         *     * `critical` - Critical
+         * @enum {string}
+         */
+        SeverityEnum: "low" | "medium" | "high" | "critical";
         SkippedAccess: {
             role_name: string;
             scope: string;
@@ -3948,6 +4327,14 @@ export interface components {
             /** @description An email address, or a phone number like +919876543210. */
             to: string;
         };
+        /**
+         * @description * `mitigate` - Reduce it
+         *     * `accept` - Accept it
+         *     * `transfer` - Transfer it (e.g. insurance, vendor)
+         *     * `avoid` - Avoid it
+         * @enum {string}
+         */
+        TreatmentEnum: "mitigate" | "accept" | "transfer" | "avoid";
         TreeBed: {
             /** Format: uuid */
             id: string;
@@ -5457,6 +5844,186 @@ export interface operations {
             };
         };
     };
+    compliance_requirements_list: {
+        parameters: {
+            query?: {
+                /** @description Part of the code, title or law */
+                search?: string;
+                status?: "implemented" | "in_progress" | "not_applicable" | "not_started" | "verified";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceRequirement"][];
+                };
+            };
+        };
+    };
+    compliance_requirements_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this compliance requirement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceRequirement"];
+                };
+            };
+        };
+    };
+    compliance_requirements_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this compliance requirement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRequirementUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceRequirement"];
+                };
+            };
+        };
+    };
+    compliance_risks_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskEntry"][];
+                };
+            };
+        };
+    };
+    compliance_risks_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskEntry"];
+                };
+            };
+        };
+    };
+    compliance_risks_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this risk entry. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskEntry"];
+                };
+            };
+        };
+    };
+    compliance_risks_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this risk entry. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRiskUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskEntry"];
+                };
+            };
+        };
+    };
+    compliance_summary_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceSummary"];
+                };
+            };
+        };
+    };
     department_services_partial_update: {
         parameters: {
             query?: never;
@@ -6719,6 +7286,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Room"];
+                };
+            };
+        };
+    };
+    security_incidents_list: {
+        parameters: {
+            query?: {
+                /** @description 'true' = not closed yet */
+                open?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityIncident"][];
+                };
+            };
+        };
+    };
+    security_incidents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentReportRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncidentReceipt"];
+                };
+            };
+        };
+    };
+    security_incidents_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this security incident. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityIncident"];
+                };
+            };
+        };
+    };
+    security_incidents_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this security incident. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedIncidentUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityIncident"];
+                };
+            };
+        };
+    };
+    security_incidents_notifications_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this security incident. */
+                id: string;
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationRecordRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityIncident"];
                 };
             };
         };

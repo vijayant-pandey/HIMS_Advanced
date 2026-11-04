@@ -1497,6 +1497,186 @@ paths:
               schema:
                 $ref: '#/components/schemas/Building'
           description: ''
+  /api/v1/compliance-requirements/:
+    get:
+      operationId: compliance_requirements_list
+      description: The requirements that apply to this hospital's country.
+      parameters:
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Part of the code, title or law
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - implemented
+          - in_progress
+          - not_applicable
+          - not_started
+          - verified
+      tags:
+      - compliance-requirements
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComplianceRequirement'
+          description: ''
+  /api/v1/compliance-requirements/{id}/:
+    get:
+      operationId: compliance_requirements_retrieve
+      description: The requirements that apply to this hospital's country.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this compliance requirement.
+        required: true
+      tags:
+      - compliance-requirements
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceRequirement'
+          description: ''
+    patch:
+      operationId: compliance_requirements_partial_update
+      description: The requirements that apply to this hospital's country.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this compliance requirement.
+        required: true
+      tags:
+      - compliance-requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRequirementUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceRequirement'
+          description: ''
+  /api/v1/compliance-risks/:
+    get:
+      operationId: compliance_risks_list
+      tags:
+      - compliance-risks
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RiskEntry'
+          description: ''
+    post:
+      operationId: compliance_risks_create
+      tags:
+      - compliance-risks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskEntry'
+          description: ''
+  /api/v1/compliance-risks/{id}/:
+    get:
+      operationId: compliance_risks_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this risk entry.
+        required: true
+      tags:
+      - compliance-risks
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskEntry'
+          description: ''
+    patch:
+      operationId: compliance_risks_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this risk entry.
+        required: true
+      tags:
+      - compliance-risks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRiskUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskEntry'
+          description: ''
+  /api/v1/compliance-summary/:
+    get:
+      operationId: compliance_summary_retrieve
+      tags:
+      - compliance-summary
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceSummary'
+          description: ''
   /api/v1/department-services/{id}/:
     patch:
       operationId: department_services_partial_update
@@ -2935,6 +3115,129 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Room'
+          description: ''
+  /api/v1/security-incidents/:
+    get:
+      operationId: security_incidents_list
+      parameters:
+      - in: query
+        name: open
+        schema:
+          type: string
+        description: '''true'' = not closed yet'
+      tags:
+      - security-incidents
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SecurityIncident'
+          description: ''
+    post:
+      operationId: security_incidents_create
+      tags:
+      - security-incidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentReportRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentReceipt'
+          description: ''
+  /api/v1/security-incidents/{id}/:
+    get:
+      operationId: security_incidents_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this security incident.
+        required: true
+      tags:
+      - security-incidents
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityIncident'
+          description: ''
+    patch:
+      operationId: security_incidents_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this security incident.
+        required: true
+      tags:
+      - security-incidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedIncidentUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityIncident'
+          description: ''
+  /api/v1/security-incidents/{id}/notifications/{notification_id}/:
+    post:
+      operationId: security_incidents_notifications_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this security incident.
+        required: true
+      - in: path
+        name: notification_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - security-incidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRecordRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityIncident'
           description: ''
   /api/v1/specialties/:
     get:
@@ -4770,6 +5073,128 @@ components:
       description: |-
         * `email` - Email
         * `sms` - SMS
+    ComplianceRequirement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        jurisdiction:
+          allOf:
+          - $ref: '#/components/schemas/JurisdictionEnum'
+          readOnly: true
+        regulation:
+          type: string
+          readOnly: true
+        citation:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+          description: What the law asks, in plain words.
+        hims_support:
+          type: string
+          readOnly: true
+          description: What HIMS does for it today.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ComplianceStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        owner:
+          type: string
+          readOnly: true
+          description: Who answers for it.
+        evidence:
+          type: string
+          readOnly: true
+          description: Where the proof is; required to verify.
+        next_review_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        reviewed_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - citation
+      - code
+      - evidence
+      - hims_support
+      - id
+      - jurisdiction
+      - next_review_on
+      - owner
+      - regulation
+      - reviewed_at
+      - reviewed_by_name
+      - status
+      - status_label
+      - summary
+      - title
+      - version
+    ComplianceStatusEnum:
+      enum:
+      - not_started
+      - in_progress
+      - implemented
+      - verified
+      - not_applicable
+      type: string
+      description: |-
+        * `not_started` - Not started
+        * `in_progress` - In progress
+        * `implemented` - Implemented, not verified
+        * `verified` - Verified with evidence
+        * `not_applicable` - Not applicable
+    ComplianceSummary:
+      type: object
+      properties:
+        country:
+          type: string
+        requirements_total:
+          type: integer
+        requirements_by_status:
+          type: object
+          additionalProperties:
+            type: integer
+        risks_open:
+          type: integer
+        risks_high:
+          type: integer
+          description: Open risks scoring 15 or more.
+        incidents_open:
+          type: integer
+        notifications_overdue:
+          type: integer
+      required:
+      - country
+      - incidents_open
+      - notifications_overdue
+      - requirements_by_status
+      - requirements_total
+      - risks_high
+      - risks_open
     CountryEnum:
       enum:
       - US
@@ -5844,6 +6269,127 @@ components:
       - closes_at
       - opens_at
       - weekday
+    IncidentNotification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        due_at:
+          type: string
+          format: date-time
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/IncidentNotificationStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        is_overdue:
+          type: boolean
+          readOnly: true
+        done_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        done_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        reference:
+          type: string
+          readOnly: true
+          description: e.g. acknowledgement no.
+        note:
+          type: string
+          readOnly: true
+          description: Required when marked not required.
+      required:
+      - done_at
+      - done_by_name
+      - due_at
+      - id
+      - is_overdue
+      - kind
+      - kind_label
+      - note
+      - reference
+      - status
+      - status_label
+    IncidentNotificationStatusEnum:
+      enum:
+      - pending
+      - done
+      - not_required
+      type: string
+      description: |-
+        * `pending` - To do
+        * `done` - Done
+        * `not_required` - Not required
+    IncidentReceipt:
+      type: object
+      description: What the person reporting gets back (they may not be allowed to
+        read the log).
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        detected_at:
+          type: string
+          format: date-time
+      required:
+      - detected_at
+      - id
+      - title
+    IncidentReportRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          minLength: 1
+          description: What happened. No patient details.
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          default: medium
+        personal_data_affected:
+          type: boolean
+          default: false
+        people_affected:
+          type: integer
+          minimum: 0
+          nullable: true
+      required:
+      - description
+      - title
+    IncidentStatusEnum:
+      enum:
+      - reported
+      - investigating
+      - contained
+      - closed
+      type: string
+      description: |-
+        * `reported` - Reported
+        * `investigating` - Investigating
+        * `contained` - Contained
+        * `closed` - Closed
     IntegrityOutcomeEnum:
       enum:
       - passed
@@ -5988,6 +6534,34 @@ components:
       - reference
       - sequence
       - value
+    JurisdictionEnum:
+      enum:
+      - ALL
+      - IN
+      - US
+      type: string
+      description: |-
+        * `ALL` - Both countries
+        * `IN` - India
+        * `US` - United States
+    KindEnum:
+      enum:
+      - cert_in
+      - dpdp_board_initial
+      - dpdp_board_detailed
+      - dpdp_people
+      - hipaa_individuals
+      - hipaa_hhs
+      - hipaa_media
+      type: string
+      description: |-
+        * `cert_in` - India: CERT-In report
+        * `dpdp_board_initial` - India: Data Protection Board, first notice
+        * `dpdp_board_detailed` - India: Data Protection Board, detailed report
+        * `dpdp_people` - India: tell the affected people
+        * `hipaa_individuals` - US: tell the affected people
+        * `hipaa_hhs` - US: tell HHS
+        * `hipaa_media` - US: tell the media (over 500 people)
     LentAccess:
       type: object
       description: One copy of the covered person's access lent to the covering person.
@@ -6234,6 +6808,28 @@ components:
       - status_label
       - subject
       - template
+    NotificationRecordRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/NotificationRecordStatusEnum'
+        reference:
+          type: string
+          default: ''
+          maxLength: 200
+        note:
+          type: string
+          default: ''
+      required:
+      - status
+    NotificationRecordStatusEnum:
+      enum:
+      - done
+      - not_required
+      type: string
+      description: |-
+        * `done` - done
+        * `not_required` - not_required
     NotificationStatusEnum:
       enum:
       - pending
@@ -7072,6 +7668,33 @@ components:
           minimum: -5
         is_active:
           type: boolean
+    PatchedIncidentUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+        status:
+          $ref: '#/components/schemas/IncidentStatusEnum'
+        detected_at:
+          type: string
+          format: date-time
+        occurred_at:
+          type: string
+          format: date-time
+          nullable: true
+        personal_data_affected:
+          type: boolean
+        people_affected:
+          type: integer
+          minimum: 0
+          nullable: true
+        actions_taken:
+          type: string
+        closure_summary:
+          type: string
     PatchedNumberingSchemeUpdateRequest:
       type: object
       properties:
@@ -7144,6 +7767,63 @@ components:
             maxLength: 0
         is_active:
           type: boolean
+    PatchedRequirementUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/ComplianceStatusEnum'
+        owner:
+          type: string
+          maxLength: 150
+        evidence:
+          type: string
+        next_review_on:
+          type: string
+          format: date
+          nullable: true
+    PatchedRiskUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          minLength: 1
+          maxLength: 40
+        likelihood:
+          type: integer
+          maximum: 5
+          minimum: 1
+        impact:
+          type: integer
+          maximum: 5
+          minimum: 1
+        treatment:
+          $ref: '#/components/schemas/TreatmentEnum'
+        mitigation:
+          type: string
+        status:
+          $ref: '#/components/schemas/RiskStatusEnum'
+        owner:
+          type: string
+          maxLength: 150
+        review_on:
+          type: string
+          format: date
+          nullable: true
+        acceptance_reason:
+          type: string
+        version:
+          type: integer
+          minimum: 1
     PatchedRoleUpdateRequest:
       type: object
       properties:
@@ -7267,6 +7947,8 @@ components:
       - audit.view
       - beds.status.manage
       - catalogs.manage
+      - compliance.manage
+      - compliance.view
       - departments.manage
       - departments.view
       - facilities.manage
@@ -7296,6 +7978,8 @@ components:
         * `audit.view` - audit.view
         * `beds.status.manage` - beds.status.manage
         * `catalogs.manage` - catalogs.manage
+        * `compliance.manage` - compliance.manage
+        * `compliance.view` - compliance.view
         * `departments.manage` - departments.manage
         * `departments.view` - departments.view
         * `facilities.manage` - facilities.manage
@@ -7420,6 +8104,140 @@ components:
           maxLength: 2000
       required:
       - reason
+    RiskCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          minLength: 1
+          maxLength: 40
+        likelihood:
+          type: integer
+          maximum: 5
+          minimum: 1
+        impact:
+          type: integer
+          maximum: 5
+          minimum: 1
+        treatment:
+          $ref: '#/components/schemas/TreatmentEnum'
+        mitigation:
+          type: string
+        status:
+          $ref: '#/components/schemas/RiskStatusEnum'
+        owner:
+          type: string
+          maxLength: 150
+        review_on:
+          type: string
+          format: date
+          nullable: true
+        acceptance_reason:
+          type: string
+      required:
+      - category
+      - description
+      - title
+    RiskEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+          description: e.g. access, data, availability.
+        likelihood:
+          type: integer
+          readOnly: true
+        impact:
+          type: integer
+          readOnly: true
+        score:
+          type: integer
+          readOnly: true
+          description: Likelihood x impact, 1 to 25.
+        treatment:
+          allOf:
+          - $ref: '#/components/schemas/TreatmentEnum'
+          readOnly: true
+        treatment_label:
+          type: string
+          readOnly: true
+        mitigation:
+          type: string
+          readOnly: true
+          description: What reduces it, done and planned.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/RiskStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        owner:
+          type: string
+          readOnly: true
+        review_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        acceptance_reason:
+          type: string
+          readOnly: true
+          description: Required to accept a risk.
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - acceptance_reason
+      - category
+      - code
+      - description
+      - id
+      - impact
+      - likelihood
+      - mitigation
+      - owner
+      - review_on
+      - score
+      - status
+      - status_label
+      - title
+      - treatment
+      - treatment_label
+      - version
+    RiskStatusEnum:
+      enum:
+      - open
+      - treating
+      - accepted
+      - closed
+      type: string
+      description: |-
+        * `open` - Open
+        * `treating` - Being treated
+        * `accepted` - Accepted
+        * `closed` - Closed
     Role:
       type: object
       properties:
@@ -7758,6 +8576,92 @@ components:
       description: |-
         * `organization` - Whole hospital
         * `facility` - Per facility
+    SecurityIncident:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+          description: What happened. No patient details.
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          readOnly: true
+        severity_label:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/IncidentStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        detected_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 'When it was noticed: legal deadlines count from here.'
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        personal_data_affected:
+          type: boolean
+          readOnly: true
+        people_affected:
+          type: integer
+          readOnly: true
+          nullable: true
+        actions_taken:
+          type: string
+          readOnly: true
+        closure_summary:
+          type: string
+          readOnly: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reported_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentNotification'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - actions_taken
+      - closed_at
+      - closure_summary
+      - description
+      - detected_at
+      - id
+      - notifications
+      - occurred_at
+      - people_affected
+      - personal_data_affected
+      - reported_by_name
+      - severity
+      - severity_label
+      - status
+      - status_label
+      - title
+      - version
     SeparatorEnum:
       enum:
       - '-'
@@ -7797,6 +8701,18 @@ components:
         * `default` - Use the default
         * `on` - On
         * `off` - Off
+    SeverityEnum:
+      enum:
+      - low
+      - medium
+      - high
+      - critical
+      type: string
+      description: |-
+        * `low` - Low
+        * `medium` - Medium
+        * `high` - High
+        * `critical` - Critical
     SkippedAccess:
       type: object
       properties:
@@ -8460,6 +9376,18 @@ components:
       required:
       - channel
       - to
+    TreatmentEnum:
+      enum:
+      - mitigate
+      - accept
+      - transfer
+      - avoid
+      type: string
+      description: |-
+        * `mitigate` - Reduce it
+        * `accept` - Accept it
+        * `transfer` - Transfer it (e.g. insurance, vendor)
+        * `avoid` - Avoid it
     TreeBed:
       type: object
       properties:

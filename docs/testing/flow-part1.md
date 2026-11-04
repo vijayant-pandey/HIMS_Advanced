@@ -865,6 +865,17 @@ python manage.py send_access_review_reminders
 - [ ] **Expect:** your own searches and downloads now appear in the log too ("the auditor is
       audited").
 
+### 17.3a Compliance page and security incidents (needs the compliance PR)
+- [ ] **Window A (admin):** **Security** → **Report a security incident** → What happened `Test lost laptop`, Details `Testing only` → **Send report**.
+- [ ] **Expect:** a reference number. An email prints in the launcher window with no details in it.
+- [ ] **Do:** menu → **Compliance**.
+- [ ] **Expect:** a summary row, and **Requirements** for this hospital's country (India: CERT-In, DPDP; US: HIPAA).
+- [ ] **Do:** open a requirement → Status **Verified with evidence**, leave Evidence empty → **Save**.
+- [ ] **Expect:** refused: "Say where the proof is…".
+- [ ] **Do:** **Risks** tab → **Add a risk**; then **Incidents** tab → open `Test lost laptop`.
+- [ ] **Expect (India):** a CERT-In deadline 6 hours after you reported. Tick **Personal or patient data affected** → **Save**, reopen: the Data Protection Board notices appear.
+- [ ] **Do:** set Status **Closed** with no summary → refused. Mark each notice **Mark done** or **Not required** (with a reason), add a summary, close it.
+
 ### 17.3 Auditor in the admin console
 - [ ] **Window C:** http://localhost:8000/admin/ → sign in as auditor (with code).
 - [ ] **Expect:** only the **Audit** section is visible: **Audit events**, **Audit chain links** and
@@ -1084,7 +1095,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 14 | Features | | | |
 | 15 | Security, My sign-ins, forgot password | | | |
 | 16 | Access reviews | | | |
-| 17 | Audit log and audit integrity (auditor) | | | |
+| 17 | Audit log, audit integrity, compliance | | | |
 | 18 | Admin console tour | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |

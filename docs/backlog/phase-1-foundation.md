@@ -138,11 +138,12 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 
 | ID | Ticket | Status |
 |---|---|---|
-| HIMS-COMP-001 | US: HIPAA Security Rule risk analysis, policies and procedures, BAA list | To do |
-| HIMS-COMP-002 | India: DPDP Act 2023 / DPDP Rules 2025 assessment, privacy notice, consent and breach-notification procedure | To do |
-| HIMS-COMP-003 | India: ABDM Health Data Management Policy and IT Act security practices assessment | To do |
-| HIMS-COMP-004 | Both: data retention schedule, incident response runbook, access-control policy, vendor list | To do |
-| HIMS-COMP-005 | Threat model and risk register (spec 23) | To do |
+| HIMS-COMP-001 | US: HIPAA Security Rule risk analysis, policies and procedures, BAA list | Drafted + built; counsel/hospital review pending |
+| HIMS-COMP-002 | India: DPDP Act 2023 / DPDP Rules 2025 assessment, privacy notice, consent and breach-notification procedure | Drafted + built; counsel/hospital review pending |
+| HIMS-COMP-003 | India: ABDM Health Data Management Policy and IT Act security practices assessment | Drafted + built; counsel/hospital review pending |
+| HIMS-COMP-004 | Both: data retention schedule, incident response runbook, access-control policy, vendor list | Drafted + built; counsel/hospital review pending |
+| HIMS-COMP-005 | Threat model and risk register (spec 23) | Drafted + built; counsel/hospital review pending |
+| HIMS-COMP-006 | Retention purge job with legal hold, once periods are set | To do (🔒 LEGAL) |
 
 ## EPIC HIMS-OPS — Delivery and operations
 

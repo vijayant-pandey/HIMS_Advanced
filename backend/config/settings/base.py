@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     "apps.numbering",
     "apps.features",
     "apps.notifications",
+    "apps.compliance",
 ]
 
 # Django admin is the HIMS operations console (ADR-016): gated by HIMS RBAC rather than
@@ -240,6 +241,10 @@ SPECTACULAR_SETTINGS = {
         "OutcomeEnum": "apps.audit.models.AuditEvent.Outcome",
         "IntegrityOutcomeEnum": "apps.audit.models.AuditIntegrityCheck.Outcome",
         "DelegationStatusEnum": "apps.access_control.models.AccessDelegation.Status",
+        "ComplianceStatusEnum": "apps.compliance.models.ComplianceRequirement.Status",
+        "RiskStatusEnum": "apps.compliance.models.RiskEntry.Status",
+        "IncidentStatusEnum": "apps.compliance.models.SecurityIncident.Status",
+        "IncidentNotificationStatusEnum": "apps.compliance.models.IncidentNotification.Status",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)

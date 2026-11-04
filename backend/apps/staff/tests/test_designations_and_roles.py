@@ -15,6 +15,7 @@ EXPECTED_SYSTEM_ROLES = {
     "department-head",
     "basic-staff",
     "bed-manager",
+    "compliance-officer",
 }
 
 
