@@ -193,7 +193,8 @@ test.describe("administrator", () => {
     });
     const missing: string[] = [];
     page.on("response", (response) => {
-      if (response.url().includes("/static/") && !response.ok()) missing.push(response.url());
+      // 304 "not changed, use your saved copy" is fine; only real errors mean a file is missing.
+      if (response.url().includes("/static/") && response.status() >= 400) missing.push(response.url());
     });
     const console = `http://127.0.0.1:${E2E.apiPort}/admin/`;
     const first = await page.goto(console);
