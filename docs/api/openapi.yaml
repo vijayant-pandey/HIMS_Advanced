@@ -838,6 +838,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuditIntegrityStatus'
           description: ''
+  /api/v1/auth/confirm-identity/:
+    get:
+      operationId: auth_confirm_identity_retrieve
+      description: '"Confirm it''s you" before a sensitive action (HIMS-IAM-007).
+        Only tries are rate limited.'
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmIdentityStatus'
+          description: ''
+    post:
+      operationId: auth_confirm_identity_create
+      description: '"Confirm it''s you" before a sensitive action (HIMS-IAM-007).
+        Only tries are rate limited.'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmIdentityRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmIdentityStatus'
+          description: ''
+  /api/v1/auth/confirm-identity/end/:
+    post:
+      operationId: auth_confirm_identity_end_create
+      tags:
+      - auth
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmIdentityStatus'
+          description: ''
   /api/v1/auth/csrf/:
     get:
       operationId: auth_csrf_retrieve
@@ -5340,6 +5391,43 @@ components:
       - requirements_total
       - risks_high
       - risks_open
+    ConfirmIdentityRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+        code:
+          type: string
+          default: ''
+          description: Authenticator or backup code, if the person uses two-factor.
+          maxLength: 32
+      required:
+      - password
+    ConfirmIdentityStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Off if the hospital turned the feature off.
+        confirmed:
+          type: boolean
+          description: Sensitive actions will not ask right now.
+        confirmed_until:
+          type: string
+          format: date-time
+          nullable: true
+        window_minutes:
+          type: integer
+        needs_code:
+          type: boolean
+      required:
+      - confirmed
+      - confirmed_until
+      - enabled
+      - needs_code
+      - window_minutes
     CountryEnum:
       enum:
       - US

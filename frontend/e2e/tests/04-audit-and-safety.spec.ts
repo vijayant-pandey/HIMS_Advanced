@@ -3,7 +3,7 @@
 // administrator cannot read the audit log. The remaining screens are checked for accessibility.
 import { expect, test } from "@playwright/test";
 
-import { ADMIN, E2E } from "../config.mjs";
+import { ADMIN, AUDITOR, E2E } from "../config.mjs";
 import { expectAccessible, freshCode, openMenu, recall, storageFor } from "../helpers";
 
 test.describe("auditor", () => {
@@ -25,6 +25,22 @@ test.describe("auditor", () => {
     const details = page.getByRole("dialog");
     await expect(details.getByText(reference)).toBeVisible();
     await expectAccessible(page, "Audit event details");
+  });
+
+  test("downloading the audit log asks to confirm it's you first", async ({ page }) => {
+    await page.goto("/security");
+    await page.getByRole("button", { name: "End now" }).click();
+    await expect(page.getByText("Not confirmed.")).toBeVisible();
+    await page.goto("/audit");
+    await page.getByRole("button", { name: "Search" }).click();
+    await expect(page.getByRole("table", { name: "Audit events" })).toBeVisible();
+    await page.getByRole("link", { name: "Download CSV" }).click();
+    const confirm = page.getByRole("dialog", { name: "Confirm it's you" });
+    await confirm.getByLabel("Your password").fill(AUDITOR.password);
+    await confirm.getByLabel("Authenticator code").fill(await freshCode(recall("auditor-secret")));
+    const download = page.waitForEvent("download");
+    await confirm.getByRole("button", { name: "Confirm" }).click();
+    expect((await download).suggestedFilename()).toMatch(/\.csv$/);
   });
 
   test("checks that nobody changed the audit log", async ({ page }) => {
@@ -97,6 +113,45 @@ test.describe("administrator", () => {
     await expectAccessible(page, "Compliance incidents");
   });
 
+  test("a sensitive action asks to confirm it's you, then finishes by itself", async ({ page }) => {
+    await page.goto("/security");
+    await expectAccessible(page, "Security (sensitive actions)");
+    await expect(page.getByText(/^Confirmed until/)).toBeVisible();
+    await page.getByRole("button", { name: "End now" }).click();
+    await expect(page.getByText("Not confirmed.")).toBeVisible();
+
+    await page.goto("/");
+    await openMenu(page, "Features");
+    await page.getByRole("button", { name: "Change Forgot-password emails" }).click();
+    const change = page.getByRole("dialog", { name: /Forgot-password emails/ });
+    await change.getByRole("radio", { name: "Off", exact: true }).check();
+    await change.getByLabel(/Reason/).fill("Browser test");
+    await change.getByRole("button", { name: "Save" }).click();
+
+    const confirm = page.getByRole("dialog", { name: "Confirm it's you" });
+    await expect(confirm).toBeVisible();
+    await expectAccessible(page, "Confirm it's you");
+    await confirm.getByLabel("Your password").fill("Synthetic-Wrong-Passw0rd-1234");
+    await confirm.getByLabel("Authenticator code").fill("000000");
+    await confirm.getByRole("button", { name: "Confirm" }).click();
+    await expect(confirm.getByText(/was not accepted/)).toBeVisible();
+
+    await confirm.getByLabel("Your password").fill(ADMIN.password);
+    await confirm.getByLabel("Authenticator code").fill(await freshCode(recall("admin-secret")));
+    await confirm.getByRole("button", { name: "Confirm" }).click();
+    // Nothing more to click: the change that was waiting goes through.
+    await expect(confirm).toHaveCount(0);
+    await expect(change).toHaveCount(0);
+
+    // Confirmed now, so changing it back does not ask.
+    await page.getByRole("button", { name: "Change Forgot-password emails" }).click();
+    await change.getByRole("radio", { name: "On", exact: true }).check();
+    await change.getByLabel(/Reason/).fill("Browser test finished");
+    await change.getByRole("button", { name: "Save" }).click();
+    await expect(change).toHaveCount(0);
+    await expect(confirm).toHaveCount(0);
+  });
+
   test("browser protection: no screen so far was blocked, and injected code is", async ({ page }) => {
     const response = await page.goto("/compliance");
     const policy = response!.headers()["content-security-policy"];
@@ -138,7 +193,8 @@ test.describe("administrator", () => {
     });
     const missing: string[] = [];
     page.on("response", (response) => {
-      if (response.url().includes("/static/") && !response.ok()) missing.push(response.url());
+      // 304 "not changed, use your saved copy" is fine; only real errors mean a file is missing.
+      if (response.url().includes("/static/") && response.status() >= 400) missing.push(response.url());
     });
     const console = `http://127.0.0.1:${E2E.apiPort}/admin/`;
     const first = await page.goto(console);
@@ -154,6 +210,11 @@ test.describe("administrator", () => {
     }
     // The console's own scripts really ran: Django's script sets this up.
     expect(await page.evaluate(() => "jQuery" in ((window as unknown as { django?: object }).django ?? {}))).toBe(true);
+    await page.goto(`${console}confirm-identity/?next=/admin/`);
+    await page.getByLabel("Password").fill(ADMIN.password);
+    await page.getByLabel("Authenticator code").fill(await freshCode(recall("admin-secret")));
+    await page.getByRole("button", { name: "Confirm" }).click();
+    await expect(page).toHaveURL(/\/admin\/$/);
     expect(missing).toEqual([]);
     expect(blocked).toEqual([]);
     await context.close();

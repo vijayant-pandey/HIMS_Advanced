@@ -14,6 +14,7 @@ from .base import (
     DATABASES,
     DEBUG,
     HIMS_AUDIT_CHAIN_KEYS,
+    HIMS_CONFIRM_IDENTITY_MINUTES,
     HIMS_DATABASE_ENVIRONMENT,
     HIMS_DEPLOYMENT_ID,
     HIMS_ENVIRONMENT,
@@ -53,6 +54,8 @@ for _entry in HIMS_AUDIT_CHAIN_KEYS:
             "(id up to 32 characters, secret at least 32 characters)."
         )
 
+if not 1 <= HIMS_CONFIRM_IDENTITY_MINUTES <= 60:
+    raise ImproperlyConfigured("HIMS_CONFIRM_IDENTITY_MINUTES must be between 1 and 60.")
 if not HIMS_TRUSTED_PROXIES:
     raise ImproperlyConfigured(
         "HIMS_TRUSTED_PROXIES must list the load balancer's network: without it every audit "

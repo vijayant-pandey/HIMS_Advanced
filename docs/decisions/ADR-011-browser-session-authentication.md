@@ -39,3 +39,4 @@ or is reset, and on the admin "Sign out of all devices" action. Each case is aud
 Two-factor sign-in is implemented (ADR-018). Sessions now carry a "two-factor verified" flag;
 privileged users need it for every API call and for the admin console. Step-up
 re-authentication for individual sensitive actions (HIMS-IAM-007) remains open.
+(Update 2026-11-05: done, see [ADR-023](ADR-023-confirm-before-sensitive-actions.md).)

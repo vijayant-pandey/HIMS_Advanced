@@ -77,6 +77,17 @@ FEATURES: tuple[Feature, ...] = (
         default=False,
     ),
     Feature(
+        key="auth.confirm_sensitive_actions",
+        name="Confirm before sensitive actions",
+        description="Staff enter their password, and authenticator code if they use one, before "
+        "changing access, switching accounts on or off, suspending or terminating staff, changing "
+        "these settings or downloading audit records. Recommended on: it stops a stolen or "
+        "unattended session from doing these things.",
+        category=SECURITY,
+        scope=ORGANIZATION,
+        default=True,
+    ),
+    Feature(
         key="locations.module",
         name="Locations and beds",
         description="Buildings, floors, wards, rooms and beds, and bed status. When off for a "
@@ -183,4 +194,5 @@ class F:
 
     SELF_SERVICE_PASSWORD_RESET = BY_KEY["auth.self_service_password_reset"].key
     TWO_FACTOR_FOR_EVERYONE = BY_KEY["auth.two_factor_for_everyone"].key
+    CONFIRM_SENSITIVE_ACTIONS = BY_KEY["auth.confirm_sensitive_actions"].key
     LOCATIONS = BY_KEY["locations.module"].key

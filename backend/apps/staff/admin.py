@@ -2,7 +2,12 @@ from django import forms
 from django.contrib import admin, messages
 
 from apps.identity.admin import send_invitations
-from common.admin.options import HimsInline, HimsModelAdmin, ReadOnlyModelAdmin
+from common.admin.options import (
+    ConfirmIdentityAdminMixin,
+    HimsInline,
+    HimsModelAdmin,
+    ReadOnlyModelAdmin,
+)
 from common.exceptions import DomainError
 
 from .models import (
@@ -76,7 +81,7 @@ class StaffCredentialInline(HimsInline):
 
 
 @admin.register(StaffMember)
-class StaffMemberAdmin(HimsModelAdmin):
+class StaffMemberAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
     list_display = (
         "employee_number",
         "given_name",

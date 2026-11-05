@@ -165,6 +165,7 @@ class AuditEventViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """Audit search for auditors. Searching and exporting the audit log are themselves audited."""
 
     serializer_class = AuditEventSerializer
+    sensitive_actions = ("export",)
     required_permissions = {"list": P.AUDIT_VIEW, "export": P.AUDIT_VIEW, "actions": P.AUDIT_VIEW}
 
     def _search(self) -> AuditSearchSerializer:

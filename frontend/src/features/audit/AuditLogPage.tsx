@@ -22,6 +22,7 @@ import { Link as RouterLink, useSearchParams } from "react-router-dom";
 
 import type { AuditEvent } from "../../api/types";
 import { ErrorAlert } from "../../components/ErrorAlert";
+import { ConfirmedDownloadButton } from "../auth/ConfirmIdentity";
 import {
   type AuditFilters,
   EMPTY_FILTERS,
@@ -178,9 +179,9 @@ export function AuditLogPage() {
             <Button onClick={clear}>Clear</Button>
             <Box sx={{ flex: 1 }} />
             {applied && (
-              <Button component="a" href={exportUrl(applied)} variant="outlined">
+              <ConfirmedDownloadButton href={exportUrl(applied)} variant="outlined">
                 Download CSV
-              </Button>
+              </ConfirmedDownloadButton>
             )}
           </Stack>
         </Stack>

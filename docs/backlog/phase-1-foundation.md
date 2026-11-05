@@ -66,7 +66,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-004 | Password reset (non-enumerating, time-limited single-use tokens) | Done |
 | HIMS-IAM-005 | MFA (TOTP/WebAuthn) mandatory for privileged roles | Done (TOTP; ADR-018). WebAuthn/passkeys split out as HIMS-IAM-014 |
 | HIMS-IAM-006 | Invalidate all sessions on suspension/termination (password change: done via Django session hash) | Done (session register `user_sessions`; sessions deleted on deactivation, password change/reset and admin "Sign out of all devices"; audited as `auth.sessions.ended`) |
-| HIMS-IAM-007 | Step-up reauthentication for sensitive actions | To do |
+| HIMS-IAM-007 | Confirm before sensitive actions ([how-to](../workflows/sensitive-actions.md)) | Done |
+| HIMS-IAM-020 | Confirm-it's-you for clinical actions (signing, amending, exporting patient records, merging), designed with Phase 2 (gap found in HIMS-IAM-007) | To do (🔒 with Phase 2 P0 sign-off) |
 | HIMS-IAM-008 | Enterprise SSO (OIDC/SAML) — decision in spec 36 | To do |
 | HIMS-IAM-009 | Scoped RBAC: catalog, roles, facility/department assignments, default deny, escalation guard (ADR-015) | Done |
 | HIMS-IAM-010 | Patient-relationship scope (treating team / encounter) | To do (Phase 2) |

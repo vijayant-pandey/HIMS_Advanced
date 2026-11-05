@@ -1,8 +1,10 @@
 from django.urls import path
 
 from .views import (
+    ConfirmIdentityView,
     CsrfTokenView,
     CurrentUserView,
+    EndIdentityConfirmationView,
     InvitationAcceptView,
     InvitationInspectView,
     LoginVerifyView,
@@ -31,6 +33,12 @@ urlpatterns = [
     path("mfa/confirm/", MfaConfirmView.as_view(), name="auth-mfa-confirm"),
     path("mfa/recovery-codes/", MfaRecoveryCodesView.as_view(), name="auth-mfa-recovery-codes"),
     path("mfa/disable/", MfaDisableView.as_view(), name="auth-mfa-disable"),
+    path("confirm-identity/", ConfirmIdentityView.as_view(), name="auth-confirm-identity"),
+    path(
+        "confirm-identity/end/",
+        EndIdentityConfirmationView.as_view(),
+        name="auth-confirm-identity-end",
+    ),
     path("logout/", LogoutView.as_view(), name="auth-logout"),
     path("me/", CurrentUserView.as_view(), name="auth-me"),
     path("sessions/", MySessionsView.as_view(), name="auth-sessions"),

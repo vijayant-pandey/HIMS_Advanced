@@ -31,7 +31,7 @@ separate deployments, separate databases; (5) developers and hosting staff to pr
 
 | Type | Threat | Controls today | Gap (tracked) | Risk |
 |---|---|---|---|---|
-| **S**poofing | Stolen password or session | Two-factor for privileged roles, throttling keyed on the real address (HIMS-SEC-014), 12+ character passwords, secure cookies, sign-in register, idle sign-out | Two-factor for clinical roles; passkeys; step-up sign-in (HIMS-IAM-007/014) | R-001 |
+| **S**poofing | Stolen password or session | Two-factor for privileged roles, throttling keyed on the real address (HIMS-SEC-014), 12+ character passwords, secure cookies, sign-in register, confirm before sensitive actions so a stolen session cannot change access (HIMS-IAM-007), idle sign-out | Two-factor for clinical roles; passkeys; step-up sign-in (HIMS-IAM-007/014) | R-001 |
 | **S**poofing | Forged invitation or reset link | Signed single-use expiring tokens, kept out of server logs and the message log | — | R-001 |
 | **T**ampering | Altering audit records | Append-only triggers, keyed hash chain, daily check, alerts | External chain copy (HIMS-SEC-016); separate DB roles (HIMS-OPS-007) | R-007 |
 | **T**ampering | Injection, cross-site scripting, forged requests | ORM queries, React escaping, CSRF tokens, input validation | Content security policy (HIMS-SEC-012) | R-005 |

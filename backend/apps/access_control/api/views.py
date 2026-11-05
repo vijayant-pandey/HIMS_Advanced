@@ -43,6 +43,7 @@ class PermissionViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
 class RoleViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = RoleSerializer
+    sensitive_actions = ("create", "partial_update")
     required_permissions = {
         "list": P.ROLES_VIEW,
         "retrieve": P.ROLES_VIEW,
@@ -98,6 +99,7 @@ class RoleAssignmentViewSet(
     scope, so administrators cannot escalate privileges (services._require_grantable)."""
 
     serializer_class = RoleAssignmentSerializer
+    sensitive_actions = ("create", "revoke")
     required_permissions = {
         "list": P.ROLES_VIEW,
         "retrieve": P.ROLES_VIEW,
@@ -183,6 +185,7 @@ class AccessReviewViewSet(
 
     serializer_class = AccessReviewSerializer
     pagination_class = None
+    sensitive_actions = ("decide", "export")
     required_permissions = {
         "list": P.ACCESS_REVIEWS_VIEW,
         "retrieve": P.ACCESS_REVIEWS_VIEW,

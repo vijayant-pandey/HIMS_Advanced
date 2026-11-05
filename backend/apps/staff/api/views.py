@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from apps.access_control.catalog import P
 from apps.facilities.closing import current_postings_q
+from apps.identity import confirmation
 from apps.identity.invitations import issue_invitation
 from common.exceptions import ConflictError
 from common.idempotency.decorators import idempotent
@@ -187,6 +188,9 @@ class QualificationTypeViewSet(_CatalogViewSet):
         return super().partial_update(request, pk)
 
 
+_ENDS_ACCESS = (StaffMember.EmploymentStatus.SUSPENDED, StaffMember.EmploymentStatus.TERMINATED)
+
+
 class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     required_permissions = {
         "list": P.STAFF_VIEW,
@@ -280,6 +284,9 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         serializer = StaffMemberUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = dict(serializer.validated_data)
+        # These end the person's access; other edits are routine (HIMS-IAM-007).
+        if data.get("employment_status") in _ENDS_ACCESS:
+            confirmation.require(request)
         staff = services.update_staff_member(
             actor=request.user,
             staff_id=staff.pk,

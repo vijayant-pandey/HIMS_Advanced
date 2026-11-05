@@ -85,6 +85,25 @@ class MfaChallengeSerializer(serializers.Serializer):
     detail = serializers.CharField()
 
 
+class ConfirmIdentitySerializer(serializers.Serializer):
+    password = serializers.CharField(trim_whitespace=False, max_length=256)
+    code = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default="",
+        max_length=32,
+        help_text="Authenticator or backup code, if the person uses two-factor.",
+    )
+
+
+class ConfirmIdentityStatusSerializer(serializers.Serializer):
+    enabled = serializers.BooleanField(help_text="Off if the hospital turned the feature off.")
+    confirmed = serializers.BooleanField(help_text="Sensitive actions will not ask right now.")
+    confirmed_until = serializers.DateTimeField(allow_null=True)
+    window_minutes = serializers.IntegerField()
+    needs_code = serializers.BooleanField()
+
+
 class MfaCodeSerializer(serializers.Serializer):
     code = serializers.CharField(
         max_length=32, help_text="6-digit authenticator code, or a recovery code where allowed."
