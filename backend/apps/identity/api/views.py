@@ -17,9 +17,11 @@ from apps.organizations.models import Organization
 from common.exceptions import DomainError
 from common.throttling import ScopedThrottle
 
-from .. import invitations, mfa, password_reset, sessions
+from .. import confirmation, invitations, mfa, password_reset, sessions
 from ..models import UserSession
 from .serializers import (
+    ConfirmIdentitySerializer,
+    ConfirmIdentityStatusSerializer,
     CurrentUserSerializer,
     InvitationAcceptSerializer,
     InvitationDetailsSerializer,
@@ -305,6 +307,38 @@ class NoAccessReportView(APIView):
             },
         )
         return Response({"reference": event.request_id}, status=status.HTTP_201_CREATED)
+
+
+class ConfirmIdentityView(APIView):
+    """ "Confirm it's you" before a sensitive action (HIMS-IAM-007). Only tries are rate limited."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "confirm_identity"
+
+    def get_throttles(self):
+        return [ScopedThrottle()] if self.request.method == "POST" else super().get_throttles()
+
+    @extend_schema(responses={200: ConfirmIdentityStatusSerializer})
+    def get(self, request):
+        return Response(ConfirmIdentityStatusSerializer(confirmation.status(request)).data)
+
+    @extend_schema(
+        request=ConfirmIdentitySerializer, responses={200: ConfirmIdentityStatusSerializer}
+    )
+    def post(self, request):
+        serializer = ConfirmIdentitySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        confirmation.confirm(request, **serializer.validated_data)
+        return Response(ConfirmIdentityStatusSerializer(confirmation.status(request)).data)
+
+
+class EndIdentityConfirmationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={200: ConfirmIdentityStatusSerializer})
+    def post(self, request):
+        confirmation.end(request)
+        return Response(ConfirmIdentityStatusSerializer(confirmation.status(request)).data)
 
 
 class MfaStatusView(APIView):

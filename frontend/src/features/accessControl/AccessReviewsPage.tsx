@@ -25,6 +25,7 @@ import type { AccessReview, AccessReviewItem, AccessReviewItemDecision } from ".
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { FormDialog, fieldErrors } from "../../components/FormDialog";
 import { useCurrentUser } from "../auth/api";
+import { ConfirmedDownloadButton } from "../auth/ConfirmIdentity";
 import { hasOrganizationWidePermission } from "../auth/grants";
 import {
   reviewExportUrl,
@@ -348,9 +349,9 @@ export function AccessReviewDetailPage() {
         {review.notes && <Typography variant="body2">Note: {review.notes}</Typography>}
       </Box>
       <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
-        <Button component="a" href={reviewExportUrl(review.id)} variant="outlined" size="small">
+        <ConfirmedDownloadButton href={reviewExportUrl(review.id)} variant="outlined" size="small">
           Download (CSV)
-        </Button>
+        </ConfirmedDownloadButton>
         {canManage && open && (
           <>
             <Button

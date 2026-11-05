@@ -165,7 +165,10 @@ def clear_expired_sessions() -> int:
 
 
 def on_user_logged_in(sender, request, user, **kwargs) -> None:
+    from .confirmation import mark_confirmed
+
     track_session(request, user)
+    mark_confirmed(request)  # having just signed in counts (HIMS-IAM-007)
 
 
 def on_user_logged_out(sender, request, user, **kwargs) -> None:

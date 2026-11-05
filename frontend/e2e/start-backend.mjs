@@ -63,6 +63,8 @@ const env = {
   HIMS_THROTTLE_PASSWORD_RESET: "1000/min",
   HIMS_MFA_REQUIRED_FOR_PRIVILEGED: "true",
   HIMS_TRACING_EXPORTER: "none",
+  // A slow machine must not be asked in the middle of other tests; 04-audit-and-safety tests the asking.
+  HIMS_CONFIRM_IDENTITY_MINUTES: "60",
   E2E_ADMIN_PASSWORD: ADMIN.password,
   E2E_AUDITOR_PASSWORD: AUDITOR.password,
 };

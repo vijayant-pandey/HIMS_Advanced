@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% block title %}Confirm it's you | {{ site_title }}{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>Confirm it's you</h1>
+  <p>This is a sensitive action. Enter your password{% if needs_code %} and authenticator code{% endif %}, then repeat what you were doing. You won't be asked again for {{ window_minutes }} minutes.</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {{ form.non_field_errors }}
+    <fieldset class="module aligned">
+      <div class="form-row">
+        {{ form.password.errors }}
+        {{ form.password.label_tag }} {{ form.password }}
+      </div>
+      {% if needs_code %}
+      <div class="form-row">
+        {{ form.code.errors }}
+        {{ form.code.label_tag }} {{ form.code }}
+        <div class="help">{{ form.code.help_text }}</div>
+      </div>
+      {% endif %}
+    </fieldset>
+    <div class="submit-row"><input type="submit" value="Confirm" class="default"></div>
+  </form>
+</div>
+{% endblock %}

@@ -73,11 +73,31 @@ function buildUrl(path: string, query?: RequestOptions["query"]): string {
   return qs ? `${url}?${qs}` : url;
 }
 
+// Sensitive actions the server refuses until the person confirms it's them (HIMS-IAM-007).
+type IdentityConfirmer = () => Promise<boolean>;
+let identityConfirmer: IdentityConfirmer | null = null;
+
+export function setIdentityConfirmer(confirmer: IdentityConfirmer | null): void {
+  identityConfirmer = confirmer;
+}
+
 export async function apiRequest<T>(
   method: Method,
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
+  try {
+    return await sendRequest<T>(method, path, options);
+  } catch (error) {
+    if (error instanceof ApiError && error.code === "REAUTH_REQUIRED" && identityConfirmer) {
+      // Same body and same idempotency key: the refused request changed nothing.
+      if (await identityConfirmer()) return sendRequest<T>(method, path, options);
+    }
+    throw error;
+  }
+}
+
+async function sendRequest<T>(method: Method, path: string, options: RequestOptions): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "X-Request-ID": crypto.randomUUID(),

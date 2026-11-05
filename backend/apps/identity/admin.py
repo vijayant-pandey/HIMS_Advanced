@@ -8,7 +8,12 @@ from django.core.exceptions import ValidationError
 
 from apps.access_control.models import RoleAssignment
 from apps.audit.services import record_audit_event
-from common.admin.options import HimsInline, HimsModelAdmin, ReadOnlyModelAdmin
+from common.admin.options import (
+    ConfirmIdentityAdminMixin,
+    HimsInline,
+    HimsModelAdmin,
+    ReadOnlyModelAdmin,
+)
 from common.exceptions import DomainError
 
 from . import mfa
@@ -115,7 +120,7 @@ class RoleAssignmentInline(HimsInline):
 
 
 @admin.register(User)
-class UserAdmin(HimsModelAdmin, DjangoUserAdmin):
+class UserAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin, DjangoUserAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
     list_display = ("email", "display_name", "is_active", "last_login", "date_joined")
@@ -200,6 +205,8 @@ class UserAdmin(HimsModelAdmin, DjangoUserAdmin):
             )
 
     def user_change_password(self, request, id, form_url=""):
+        if refused := self._confirm_first(request):
+            return refused
         response = super().user_change_password(request, id, form_url)
         if request.method == "POST" and response.status_code == 302:
             record_audit_event(

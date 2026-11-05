@@ -3,7 +3,12 @@ from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 
 from apps.organizations.selectors import get_deployment_organization
-from common.admin.options import HimsInline, HimsModelAdmin, ReadOnlyModelAdmin
+from common.admin.options import (
+    ConfirmIdentityAdminMixin,
+    HimsInline,
+    HimsModelAdmin,
+    ReadOnlyModelAdmin,
+)
 from common.exceptions import DomainError
 
 from . import delegations, reviews
@@ -63,7 +68,7 @@ class RolePermissionInline(HimsInline):
 
 
 @admin.register(Role)
-class RoleAdmin(HimsModelAdmin):
+class RoleAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
     list_display = ("code", "name", "is_system")
     search_fields = ("code", "name")
     fields = ("organization", "code", "name", "description", "is_system", "created_at")
@@ -97,7 +102,7 @@ class RoleAssignmentForm(forms.ModelForm):
 
 
 @admin.register(RoleAssignment)
-class RoleAssignmentAdmin(HimsModelAdmin):
+class RoleAssignmentAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
     """Grants go through the same service as the API: scope rules, escalation guard, audit."""
 
     list_display = ("user", "role", "facility", "department", "valid_until", "revoked_at")
@@ -180,7 +185,7 @@ class RoleAssignmentAdmin(HimsModelAdmin):
 
 
 @admin.register(AccessReview)
-class AccessReviewAdmin(HimsModelAdmin):
+class AccessReviewAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
     list_display = ("title", "status", "due_on", "created_at", "started_by", "completed_at")
     list_filter = ("status",)
     search_fields = ("title",)
@@ -274,7 +279,7 @@ class AccessReviewAdmin(HimsModelAdmin):
 
 
 @admin.register(AccessReviewItem)
-class AccessReviewItemAdmin(ReadOnlyModelAdmin):
+class AccessReviewItemAdmin(ConfirmIdentityAdminMixin, ReadOnlyModelAdmin):
     """One row per person and role. Decide with the actions (same rules as the app)."""
 
     list_display = ("person_name", "role_name", "scope", "account_active", "decision", "review")
@@ -358,7 +363,7 @@ class AccessDelegationForm(forms.ModelForm):
 
 
 @admin.register(AccessDelegation)
-class AccessDelegationAdmin(HimsModelAdmin):
+class AccessDelegationAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
     """Cover arrangements. Adding one lends everything the covered person can lend; use the
     app to choose only some roles."""
 

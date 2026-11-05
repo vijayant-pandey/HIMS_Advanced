@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api, isUnauthenticated } from "../../api/client";
 import type {
+  ConfirmIdentityStatus,
   CurrentUser,
   InvitationAcceptRequest,
   InvitationDetails,
@@ -211,5 +212,24 @@ export function useSignOutOtherDevices() {
   return useMutation<SessionsEnded, ApiError, void>({
     mutationFn: () => api.post<SessionsEnded>("/auth/sessions/sign-out-others/"),
     onSettled: () => queryClient.invalidateQueries({ queryKey: mySessionsKey }),
+  });
+}
+
+export const confirmIdentityKey = ["auth", "confirm-identity"] as const;
+
+/** Whether sensitive actions will ask right now (HIMS-IAM-007). */
+export function useIdentityConfirmation() {
+  return useQuery<ConfirmIdentityStatus, ApiError>({
+    queryKey: confirmIdentityKey,
+    queryFn: ({ signal }) => api.get<ConfirmIdentityStatus>("/auth/confirm-identity/", { signal }),
+    refetchInterval: 60_000, // it runs out by itself
+  });
+}
+
+export function useEndIdentityConfirmation() {
+  const queryClient = useQueryClient();
+  return useMutation<ConfirmIdentityStatus, ApiError, void>({
+    mutationFn: () => api.post<ConfirmIdentityStatus>("/auth/confirm-identity/end/"),
+    onSuccess: (result) => queryClient.setQueryData(confirmIdentityKey, result),
   });
 }

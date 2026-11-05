@@ -206,6 +206,9 @@ HIMS_TRUSTED_PROXIES = env.list("HIMS_TRUSTED_PROXIES", default=[])
 # True only tells browsers to report instead of block: a switch for rolling out or
 # backing out a policy change (HIMS-SEC-012).
 HIMS_CSP_REPORT_ONLY = env.bool("HIMS_CSP_REPORT_ONLY", default=False)
+# How long a person stays confirmed before being asked again for a sensitive action
+# (apps/identity/confirmation.py, HIMS-IAM-007).
+HIMS_CONFIRM_IDENTITY_MINUTES = env.int("HIMS_CONFIRM_IDENTITY_MINUTES", default=15)
 # Sealing also picks up events written up to this long before its last run (a slow transaction
 # commits late). Older events that are not in the chain are reported by the integrity check.
 HIMS_AUDIT_SEAL_LOOKBACK_HOURS = env.int("HIMS_AUDIT_SEAL_LOOKBACK_HOURS", default=24)
@@ -230,6 +233,7 @@ REST_FRAMEWORK = {
         "invitation": env.str("HIMS_THROTTLE_INVITATION", default="20/min"),
         "password_reset": env.str("HIMS_THROTTLE_PASSWORD_RESET", default="5/min"),
         "browser_report": env.str("HIMS_THROTTLE_BROWSER_REPORT", default="30/min"),
+        "confirm_identity": env.str("HIMS_THROTTLE_CONFIRM_IDENTITY", default="10/min"),
     },
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
 }

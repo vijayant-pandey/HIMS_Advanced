@@ -6,7 +6,11 @@ deactivated, revoked or corrected instead (spec 28.2). Versioned records get the
 bumped so API clients holding a stale copy receive 409 instead of overwriting console edits.
 """
 
-from django.contrib import admin
+from urllib.parse import urlencode
+
+from django.contrib import admin, messages
+from django.shortcuts import redirect
+from django.urls import reverse
 
 from apps.audit.services import model_changes, record_audit_event, snapshot
 
@@ -107,6 +111,28 @@ class HimsSettingsInline(HimsInline):
 
     def has_delete_permission(self, request, obj=None):
         return can_use_console(request.user)
+
+
+class ConfirmIdentityAdminMixin:
+    """Saving or running an action here needs a recent "confirm it's you" (HIMS-IAM-007; the
+    same rule as the API). Looking does not. The person confirms and repeats what they did."""
+
+    def _confirm_first(self, request):
+        from apps.identity import confirmation
+
+        if request.method != "POST" or confirmation.is_confirmed(request):
+            return None
+        messages.warning(request, "Nothing was changed yet. Confirm it's you, then do it again.")
+        query = urlencode({"next": request.get_full_path()})
+        return redirect(f"{reverse('admin:confirm_identity')}?{query}")
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        return self._confirm_first(request) or super().changeform_view(
+            request, object_id, form_url, extra_context
+        )
+
+    def changelist_view(self, request, extra_context=None):
+        return self._confirm_first(request) or super().changelist_view(request, extra_context)
 
 
 class ReadOnlyModelAdmin(_ConsolePermissions, admin.ModelAdmin):

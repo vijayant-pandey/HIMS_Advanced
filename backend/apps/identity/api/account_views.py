@@ -67,6 +67,13 @@ class AccountViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.
     status; accounts of people who are not staff are switched off and on here."""
 
     serializer_class = AccountSerializer
+    sensitive_actions = (
+        "create",
+        "deactivate",
+        "reactivate",
+        "reset_two_factor",
+        "sign_out_everywhere",
+    )
     required_permissions = {
         "list": P.ROLES_VIEW,
         "retrieve": P.ROLES_VIEW,

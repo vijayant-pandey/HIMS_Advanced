@@ -31,6 +31,7 @@ import {
   useStartMfaSetup,
 } from "../auth/api";
 import { MyCoverSection } from "../accessControl/MyCoverSection";
+import { SensitiveActionsSection } from "./SensitiveActionsSection";
 import { ReportIncidentDialog } from "../compliance/ReportIncidentDialog";
 import { RecoveryCodes } from "./RecoveryCodes";
 
@@ -340,6 +341,7 @@ export function SecurityPage() {
         </Stack>
       </Paper>
       {reporting && <ReportIncidentDialog onClose={() => setReporting(false)} />}
+      <SensitiveActionsSection />
       <MyCoverSection />
     </Box>
   );

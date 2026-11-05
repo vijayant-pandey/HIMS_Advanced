@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router-dom";
 
 import { ApiError, isUnauthenticated } from "../api/client";
 import { currentUserKey } from "../features/auth/api";
+import { ConfirmIdentityProvider } from "../features/auth/ConfirmIdentity";
 import { router } from "../routes/router";
 import { ThemeSelectionProvider } from "./ThemeSelection";
 
@@ -27,7 +28,9 @@ export function App() {
   return (
     <ThemeSelectionProvider>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <ConfirmIdentityProvider>
+          <RouterProvider router={router} />
+        </ConfirmIdentityProvider>
       </QueryClientProvider>
     </ThemeSelectionProvider>
   );

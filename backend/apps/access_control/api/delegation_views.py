@@ -62,6 +62,7 @@ class AccessDelegationViewSet(
 ):
     serializer_class = AccessDelegationSerializer
     pagination_class = None
+    sensitive_actions = ("create",)
     required_permissions = {
         "list": P.ROLES_VIEW,
         "retrieve": P.ROLES_VIEW,

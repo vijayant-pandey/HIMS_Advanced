@@ -93,6 +93,7 @@ class FeatureChangeView(APIView):
     """Turn a feature on, off or back to the default, for the hospital or one facility."""
 
     permission_scope = FACILITY
+    sensitive_actions = ("post",)
     required_permissions = {"post": P.FEATURES_MANAGE}
 
     @extend_schema(

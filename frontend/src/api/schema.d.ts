@@ -460,6 +460,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/confirm-identity/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description "Confirm it's you" before a sensitive action (HIMS-IAM-007). Only tries are rate limited. */
+        get: operations["auth_confirm_identity_retrieve"];
+        put?: never;
+        /** @description "Confirm it's you" before a sensitive action (HIMS-IAM-007). Only tries are rate limited. */
+        post: operations["auth_confirm_identity_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/confirm-identity/end/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_confirm_identity_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf/": {
         parameters: {
             query?: never;
@@ -2679,6 +2713,24 @@ export interface components {
             risks_high: number;
             incidents_open: number;
             notifications_overdue: number;
+        };
+        ConfirmIdentityRequest: {
+            password: string;
+            /**
+             * @description Authenticator or backup code, if the person uses two-factor.
+             * @default
+             */
+            code: string;
+        };
+        ConfirmIdentityStatus: {
+            /** @description Off if the hospital turned the feature off. */
+            enabled: boolean;
+            /** @description Sensitive actions will not ask right now. */
+            confirmed: boolean;
+            /** Format: date-time */
+            confirmed_until: string | null;
+            window_minutes: number;
+            needs_code: boolean;
         };
         /**
          * @description * `US` - United States
@@ -5280,6 +5332,67 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditIntegrityStatus"];
+                };
+            };
+        };
+    };
+    auth_confirm_identity_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmIdentityStatus"];
+                };
+            };
+        };
+    };
+    auth_confirm_identity_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIdentityRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmIdentityStatus"];
+                };
+            };
+        };
+    };
+    auth_confirm_identity_end_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmIdentityStatus"];
                 };
             };
         };

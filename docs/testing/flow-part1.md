@@ -882,6 +882,24 @@ python manage.py send_access_review_reminders
 - [ ] **Do:** click around a few screens, then open the admin console and a list or two.
 - [ ] **Expect:** everything works as before.
 
+### 17.3c Confirm before sensitive actions (needs the HIMS-IAM-007 PR)
+- [ ] **Window A (admin):** your name → **Security** → **Sensitive actions**.
+- [ ] **Expect:** "Confirmed until" a time about 15 minutes from when you signed in. If it says "Not confirmed", go on to the next step anyway.
+- [ ] **Do:** if it shows **End now**, click it.
+- [ ] **Expect:** "Not confirmed".
+- [ ] **Do:** menu → **Features** → **Change** next to **Forgot-password emails** → choose **Off**, Reason `Testing` → **Save**.
+- [ ] **Expect:** a **Confirm it's you** box.
+- [ ] **Do:** type a wrong password and any code → **Confirm**.
+- [ ] **Expect:** refused, and the box stays open.
+- [ ] **Do:** enter your real password and the newest authenticator code → **Confirm**.
+- [ ] **Expect:** the box closes and the setting is changed without clicking Save again.
+- [ ] **Do:** change it back to **On** with a reason.
+- [ ] **Expect:** no box this time.
+- [ ] **Do (auditor):** **Audit log** → search → **Download CSV**. If it has been more than 15 minutes since signing in, a **Confirm it's you** box appears first.
+- [ ] **Expect:** the file downloads.
+- [ ] **Do (admin console):** leave the console open for more than 15 minutes, then save a user or a role.
+- [ ] **Expect:** a **Confirm it's you** page, then you repeat the save.
+
 ### 17.3 Auditor in the admin console
 - [ ] **Window C:** http://localhost:8000/admin/ → sign in as auditor (with code).
 - [ ] **Expect:** only the **Audit** section is visible: **Audit events**, **Audit chain links** and

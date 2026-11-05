@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 
-from common.admin.options import HimsModelAdmin
+from common.admin.options import ConfirmIdentityAdminMixin, HimsModelAdmin
 
 from . import catalog
 from .models import FeatureFlag
@@ -28,7 +28,7 @@ class FeatureFlagForm(forms.ModelForm):
 
 
 @admin.register(FeatureFlag)
-class FeatureFlagAdmin(HimsModelAdmin):
+class FeatureFlagAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
     """Every feature appears here: hospital-wide rows are created automatically ("use the
     default"); add a row with a facility to set a per-facility feature for one facility."""
 

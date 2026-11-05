@@ -28,3 +28,4 @@ default, awaiting the named approver), **Superseded**.
 | [020](ADR-020-document-storage.md) | Storing staff documents; licence expiry alerts | Proposed |
 | [021](ADR-021-tracing.md) | OpenTelemetry tracing, off by default and PHI-safe | Proposed |
 | [022](ADR-022-browser-protection-and-client-address.md) | Browser protection headers and real client addresses | Proposed |
+| [023](ADR-023-confirm-before-sensitive-actions.md) | Confirm before sensitive actions | Proposed |

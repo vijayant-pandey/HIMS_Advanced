@@ -44,6 +44,16 @@ def filter_by_facility_scope(view, queryset, *, facility_field: str = "facility_
     return queryset.filter(**{f"{facility_field}__in": visible})
 
 
+def _require_confirmation_if_sensitive(request, view) -> None:
+    """Views list actions needing a recent 'confirm it's you' (HIMS-IAM-007). Checked only
+    once the person is allowed to act, so nobody is asked for a password just to be refused."""
+    action = getattr(view, "action", None) or request.method.lower()
+    if action in getattr(view, "sensitive_actions", ()):
+        from apps.identity.confirmation import require
+
+        require(request)
+
+
 class ScopedPermission(BasePermission):
     def has_permission(self, request, view) -> bool:
         user = request.user
@@ -62,8 +72,12 @@ class ScopedPermission(BasePermission):
 
         scope = get_permission_scope(user, codename)
         if getattr(view, "permission_scope", ORGANIZATION) == FACILITY:
-            return not scope.is_empty
-        return scope.org_wide
+            allowed = not scope.is_empty
+        else:
+            allowed = scope.org_wide
+        if allowed:
+            _require_confirmation_if_sensitive(request, view)
+        return allowed
 
     def has_object_permission(self, request, view, obj) -> bool:
         if getattr(view, "permission_scope", ORGANIZATION) != FACILITY:

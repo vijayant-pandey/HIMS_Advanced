@@ -8,11 +8,15 @@
 """
 
 from django import forms
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin.forms import AdminAuthenticationForm
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.shortcuts import redirect, render
+from django.urls import path, reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from common.client_ip import client_ip
 
@@ -113,6 +117,19 @@ class HimsAdminAuthenticationForm(AdminAuthenticationForm):
         )
 
 
+class ConfirmIdentityForm(forms.Form):
+    password = forms.CharField(
+        strip=False, widget=forms.PasswordInput(attrs={"autocomplete": "current-password"})
+    )
+    code = forms.CharField(
+        label="Authenticator code",
+        required=False,
+        max_length=32,
+        help_text="A backup code also works.",
+        widget=forms.TextInput(attrs={"autocomplete": "one-time-code", "inputmode": "numeric"}),
+    )
+
+
 class HimsAdminSite(admin.AdminSite):
     site_header = "HIMS operations console"
     site_title = "HIMS console"
@@ -129,6 +146,41 @@ class HimsAdminSite(admin.AdminSite):
             and (can_use_console(user) or can_view_audit(user))
             and (mfa.session_verified(request) or not mfa.is_required(user))
         )
+
+    def get_urls(self):
+        return [
+            path(
+                "confirm-identity/", self.admin_view(self.confirm_identity), name="confirm_identity"
+            ),
+            *super().get_urls(),
+        ]
+
+    def confirm_identity(self, request):
+        """The console's "confirm it's you" page (HIMS-IAM-007), with the same rules as the app."""
+        from apps.identity import confirmation, mfa
+
+        target = request.POST.get("next") or request.GET.get("next") or ""
+        if not url_has_allowed_host_and_scheme(
+            target, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            target = reverse("admin:index")
+        form = ConfirmIdentityForm(request.POST if request.method == "POST" else None)
+        if request.method == "POST" and form.is_valid():
+            try:
+                confirmation.confirm(request, **form.cleaned_data)
+                return redirect(target)
+            except confirmation.IdentityNotConfirmed as exc:
+                form.add_error(None, str(exc.detail))
+            except confirmation.IdentityConfirmationLocked:
+                return redirect("admin:login")
+        context = {
+            **self.each_context(request),
+            "form": form,
+            "next": target,
+            "needs_code": mfa.confirmed_device(request.user) is not None,
+            "window_minutes": settings.HIMS_CONFIRM_IDENTITY_MINUTES,
+        }
+        return render(request, "admin/confirm_identity.html", context)
 
     def login(self, request, extra_context=None):
         response = super().login(request, extra_context)

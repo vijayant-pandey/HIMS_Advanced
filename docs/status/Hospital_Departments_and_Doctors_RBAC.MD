@@ -471,3 +471,10 @@ switched off, so the hospital cannot lock itself out.
   both needing two-factor sign-in. Hospital administrators also hold them; auditors can read the registers.
 - **Anyone signed in** can report a security incident; only compliance staff read the log.
 - Documents: [compliance pack](../compliance/README.md).
+
+## Update 2026-11-05: confirm before sensitive actions (HIMS-IAM-007)
+
+- No new roles or permissions. A person who already holds the permission is asked for their password,
+  and their authenticator code if they use one, before changing access, switching accounts on or off,
+  suspending or terminating staff, changing Features or downloading audit records.
+- Full list: [sensitive-actions.md](../workflows/sensitive-actions.md).

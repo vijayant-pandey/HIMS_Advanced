@@ -36,6 +36,7 @@ REST_FRAMEWORK = {
         "invitation": "10000/min",
         "password_reset": "10000/min",
         "browser_report": "10000/min",
+        "confirm_identity": "10000/min",
     },
 }
 
