@@ -45,6 +45,9 @@ erDiagram
     staff_credentials
     staff_documents
     staff_credential_expiry_alerts
+    shift_types
+    shifts
+    leave_requests
     audit_events
     audit_chain_entries
     audit_integrity_checks
@@ -143,6 +146,20 @@ erDiagram
     users |o--o{ staff_documents : "uploaded_by_id"
     users |o--o{ staff_documents : "archived_by_id"
     staff_credentials ||--o{ staff_credential_expiry_alerts : "credential_id"
+    organizations ||--o{ shifts : "organization_id"
+    staff_members ||--o{ shifts : "staff_id"
+    facilities ||--o{ shifts : "facility_id"
+    departments ||--o{ shifts : "department_id"
+    shift_types ||--o{ shifts : "shift_type_id"
+    users |o--o{ shifts : "created_by_id"
+    users |o--o{ shifts : "cancelled_by_id"
+    organizations ||--o{ leave_requests : "organization_id"
+    staff_members ||--o{ leave_requests : "staff_id"
+    facilities ||--o{ leave_requests : "facility_id"
+    departments ||--o{ leave_requests : "department_id"
+    users |o--o{ leave_requests : "requested_by_id"
+    users |o--o{ leave_requests : "decided_by_id"
+    users |o--o{ leave_requests : "cancelled_by_id"
     audit_events ||--o| audit_chain_entries : "event_id"
     users |o--o{ compliance_requirements : "reviewed_by_id"
     users |o--o{ compliance_risks : "updated_by_id"
@@ -772,6 +789,88 @@ erDiagram
 ```
 
 Tables from other domains are shown without columns: `departments`, `organizations`, `users`.
+
+## Rotas, on-call and leave (logical)
+
+```mermaid
+erDiagram
+    shift_types {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        varchar code UK
+        varchar name
+        varchar kind
+        time start_time
+        time end_time
+        boolean is_active
+        boolean is_custom
+    }
+    shifts {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid staff_id FK
+        uuid facility_id FK
+        uuid department_id FK
+        uuid shift_type_id FK
+        date on_date
+        timestamptz starts_at
+        timestamptz ends_at
+        varchar note
+        varchar status
+        uuid created_by_id FK
+        timestamptz cancelled_at
+        uuid cancelled_by_id FK
+        varchar cancel_reason
+    }
+    leave_requests {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid staff_id FK
+        uuid facility_id FK
+        uuid department_id FK
+        varchar leave_type
+        date start_date
+        date end_date
+        varchar reason
+        varchar status
+        uuid requested_by_id FK
+        timestamptz decided_at
+        uuid decided_by_id FK
+        varchar decision_note
+        timestamptz cancelled_at
+        uuid cancelled_by_id FK
+        varchar cancel_reason
+    }
+    departments
+    facilities
+    organizations
+    staff_members
+    users
+    organizations ||--o{ shifts : "organization_id"
+    staff_members ||--o{ shifts : "staff_id"
+    facilities ||--o{ shifts : "facility_id"
+    departments ||--o{ shifts : "department_id"
+    shift_types ||--o{ shifts : "shift_type_id"
+    users |o--o{ shifts : "created_by_id"
+    users |o--o{ shifts : "cancelled_by_id"
+    organizations ||--o{ leave_requests : "organization_id"
+    staff_members ||--o{ leave_requests : "staff_id"
+    facilities ||--o{ leave_requests : "facility_id"
+    departments ||--o{ leave_requests : "department_id"
+    users |o--o{ leave_requests : "requested_by_id"
+    users |o--o{ leave_requests : "decided_by_id"
+    users |o--o{ leave_requests : "cancelled_by_id"
+```
+
+Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `staff_members`, `users`.
 
 ## Audit log and tamper evidence (logical)
 

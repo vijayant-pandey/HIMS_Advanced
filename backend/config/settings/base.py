@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",  # range types and no-overlap constraints (rotas)
     "rest_framework",
     "drf_spectacular",
     # Shared platform services
@@ -66,6 +67,7 @@ INSTALLED_APPS = [
     "apps.features",
     "apps.notifications",
     "apps.compliance",
+    "apps.rosters",
 ]
 
 # Django admin is the HIMS operations console (ADR-016): gated by HIMS RBAC rather than
@@ -257,6 +259,9 @@ SPECTACULAR_SETTINGS = {
         "RiskStatusEnum": "apps.compliance.models.RiskEntry.Status",
         "IncidentStatusEnum": "apps.compliance.models.SecurityIncident.Status",
         "IncidentNotificationStatusEnum": "apps.compliance.models.IncidentNotification.Status",
+        "ShiftKindEnum": "apps.rosters.models.ShiftType.Kind",
+        "ShiftStatusEnum": "apps.rosters.models.Shift.Status",
+        "LeaveStatusEnum": "apps.rosters.models.LeaveRequest.Status",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)

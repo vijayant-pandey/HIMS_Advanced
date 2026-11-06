@@ -1383,6 +1383,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leave-requests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Leave for approvers (``leave.approve`` for the department). */
+        get: operations["leave_requests_list"];
+        put?: never;
+        /**
+         * @description Record leave for a staff member (e.g. sick leave phoned in). It still needs a
+         *     decision, by someone other than that person.
+         */
+        post: operations["leave_requests_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leave-requests/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Leave for approvers (``leave.approve`` for the department). */
+        get: operations["leave_requests_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leave-requests/{id}/approve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Leave for approvers (``leave.approve`` for the department). */
+        post: operations["leave_requests_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leave-requests/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Leave for approvers (``leave.approve`` for the department). */
+        post: operations["leave_requests_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leave-requests/{id}/reject/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Leave for approvers (``leave.approve`` for the department). */
+        post: operations["leave_requests_reject_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/my-delegations/": {
         parameters: {
             query?: never;
@@ -1395,6 +1484,57 @@ export interface paths {
          *     and those that ended in the last 90 days.
          */
         get: operations["my_delegations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/my-leave-requests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ask for your own leave; an approver for that department decides. */
+        post: operations["my_leave_requests_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/my-leave-requests/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Withdraw your own leave before it starts. */
+        post: operations["my_leave_requests_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/my-schedule/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Your own postings, shifts (last week to six weeks ahead) and leave. */
+        get: operations["my_schedule_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1797,6 +1937,40 @@ export interface paths {
         patch: operations["rooms_partial_update"];
         trace?: never;
     };
+    "/api/v1/rota/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One department's week: everyone posted there, their shifts and time away. */
+        get: operations["rota_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rota/now/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Who is on call and who is working right now, in the departments you may see. */
+        get: operations["rota_now_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security-incidents/": {
         parameters: {
             query?: never;
@@ -1872,6 +2046,104 @@ export interface paths {
         get: operations["security_status_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shift-types/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Kinds of shift the hospital uses. Anyone who sees a rota sees them; a hospital-wide
+         *     ``rota.manage`` grant adds and changes them (planned shifts keep their times).
+         */
+        get: operations["shift_types_list"];
+        put?: never;
+        /**
+         * @description Kinds of shift the hospital uses. Anyone who sees a rota sees them; a hospital-wide
+         *     ``rota.manage`` grant adds and changes them (planned shifts keep their times).
+         */
+        post: operations["shift_types_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shift-types/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Kinds of shift the hospital uses. Anyone who sees a rota sees them; a hospital-wide
+         *     ``rota.manage`` grant adds and changes them (planned shifts keep their times).
+         */
+        patch: operations["shift_types_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/shifts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Plan one shift type for one person on one day, or on several days at once. Days that
+         *     cannot be planned are listed in ``skipped`` with the reason.
+         */
+        post: operations["shifts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Plan, copy and cancel shifts and on-call (``rota.manage`` for the department). */
+        post: operations["shifts_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/copy-week/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Repeat one week's shifts in a later week; people who cannot work a day are skipped. */
+        post: operations["shifts_copy_week_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2435,6 +2707,29 @@ export interface components {
          * @enum {string}
          */
         ActorTypeEnum: "user" | "system" | "anonymous";
+        AddShiftsRequest: {
+            /** Format: uuid */
+            staff: string;
+            /** Format: uuid */
+            department: string;
+            /** Format: uuid */
+            shift_type: string;
+            /** Format: date */
+            from_date: string;
+            /**
+             * Format: date
+             * @description Default: the same day
+             */
+            to_date?: string;
+            /** @description Only these weekdays (0 = Monday … 6 = Sunday); default every day */
+            weekdays?: number[];
+            /** @default  */
+            note: string;
+        };
+        AddShiftsResult: {
+            created: components["schemas"]["Shift"][];
+            skipped: components["schemas"]["SkippedDay"][];
+        };
         /**
          * @description * `any` - Any age
          *     * `adult` - Adults
@@ -2662,6 +2957,10 @@ export interface components {
             count: number;
             bed_type: components["schemas"]["BedTypeEnum"];
         };
+        CancelRequest: {
+            version: number;
+            reason: string;
+        };
         /**
          * @description * `email` - Email
          *     * `sms` - SMS
@@ -2731,6 +3030,20 @@ export interface components {
             confirmed_until: string | null;
             window_minutes: number;
             needs_code: boolean;
+        };
+        CopyWeekRequest: {
+            /** Format: uuid */
+            department: string;
+            /**
+             * Format: date
+             * @description First day of the week to copy
+             */
+            from_start: string;
+            /**
+             * Format: date
+             * @description First day of the week to fill (a later week)
+             */
+            to_start: string;
         };
         /**
          * @description * `US` - United States
@@ -3168,7 +3481,7 @@ export interface components {
         IncidentNotification: {
             /** Format: uuid */
             readonly id: string;
-            readonly kind: components["schemas"]["KindEnum"];
+            readonly kind: components["schemas"]["IncidentNotificationKindEnum"];
             readonly kind_label: string;
             /** Format: date-time */
             readonly due_at: string;
@@ -3183,6 +3496,17 @@ export interface components {
             /** @description Required when marked not required. */
             readonly note: string;
         };
+        /**
+         * @description * `cert_in` - India: CERT-In report
+         *     * `dpdp_board_initial` - India: Data Protection Board, first notice
+         *     * `dpdp_board_detailed` - India: Data Protection Board, detailed report
+         *     * `dpdp_people` - India: tell the affected people
+         *     * `hipaa_individuals` - US: tell the affected people
+         *     * `hipaa_hhs` - US: tell HHS
+         *     * `hipaa_media` - US: tell the media (over 500 people)
+         * @enum {string}
+         */
+        IncidentNotificationKindEnum: "cert_in" | "dpdp_board_initial" | "dpdp_board_detailed" | "dpdp_people" | "hipaa_individuals" | "hipaa_hhs" | "hipaa_media";
         /**
          * @description * `pending` - To do
          *     * `done` - Done
@@ -3281,17 +3605,94 @@ export interface components {
          * @enum {string}
          */
         JurisdictionEnum: "ALL" | "IN" | "US";
+        LeaveCreateRequest: {
+            /**
+             * Format: uuid
+             * @description Approvers only: whose leave
+             */
+            staff?: string;
+            /** Format: uuid */
+            department: string;
+            leave_type: components["schemas"]["LeaveTypeEnum"];
+            /** Format: date */
+            start_date: string;
+            /** Format: date */
+            end_date: string;
+            /**
+             * @description Optional. No medical details: the kind of leave is enough
+             * @default
+             */
+            reason: string;
+        };
+        LeaveDecisionRequest: {
+            version: number;
+            /** @default  */
+            note: string;
+            /**
+             * @description Approve: also cancel shifts during the leave
+             * @default false
+             */
+            cancel_shifts: boolean;
+        };
+        LeaveRequest: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly staff_id: string;
+            readonly staff_name: string;
+            /** Format: uuid */
+            readonly department_id: string;
+            readonly department_name: string;
+            /** Format: uuid */
+            readonly facility_id: string;
+            readonly leave_type: components["schemas"]["LeaveTypeEnum"];
+            readonly leave_type_label: string;
+            /** Format: date */
+            readonly start_date: string;
+            /**
+             * Format: date
+             * @description Last day of leave (inclusive)
+             */
+            readonly end_date: string;
+            readonly days: number;
+            readonly reason: string;
+            readonly status: components["schemas"]["LeaveStatusEnum"];
+            readonly status_label: string;
+            readonly requested_by_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly decided_by_name: string | null;
+            /** Format: date-time */
+            readonly decided_at: string | null;
+            readonly decision_note: string;
+            /** Format: date-time */
+            readonly cancelled_at: string | null;
+            readonly cancel_reason: string;
+            /** @description Planned shifts the person would miss (only while waiting for a decision) */
+            readonly conflicting_shifts: components["schemas"]["Shift"][];
+            readonly version: number;
+        };
         /**
-         * @description * `cert_in` - India: CERT-In report
-         *     * `dpdp_board_initial` - India: Data Protection Board, first notice
-         *     * `dpdp_board_detailed` - India: Data Protection Board, detailed report
-         *     * `dpdp_people` - India: tell the affected people
-         *     * `hipaa_individuals` - US: tell the affected people
-         *     * `hipaa_hhs` - US: tell HHS
-         *     * `hipaa_media` - US: tell the media (over 500 people)
+         * @description * `requested` - Waiting for a decision
+         *     * `approved` - Approved
+         *     * `rejected` - Refused
+         *     * `cancelled` - Cancelled
          * @enum {string}
          */
-        KindEnum: "cert_in" | "dpdp_board_initial" | "dpdp_board_detailed" | "dpdp_people" | "hipaa_individuals" | "hipaa_hhs" | "hipaa_media";
+        LeaveStatusEnum: "requested" | "approved" | "rejected" | "cancelled";
+        /**
+         * @description * `annual` - Annual / earned leave
+         *     * `casual` - Casual leave
+         *     * `sick` - Sick leave
+         *     * `maternity` - Maternity leave
+         *     * `paternity` - Paternity leave
+         *     * `study` - Study or conference leave
+         *     * `compensatory` - Compensatory off
+         *     * `unpaid` - Unpaid leave
+         *     * `other` - Other
+         * @enum {string}
+         */
+        LeaveTypeEnum: "annual" | "casual" | "sick" | "maternity" | "paternity" | "study" | "compensatory" | "unpaid" | "other";
         /** @description One copy of the covered person's access lent to the covering person. */
         LentAccess: {
             /** Format: uuid */
@@ -3338,6 +3739,20 @@ export interface components {
             /** @description This session passed two-factor. */
             verified: boolean;
             recovery_codes_remaining: number;
+        };
+        MyPosting: {
+            /** Format: uuid */
+            department_id: string;
+            department_name: string;
+            facility_name: string;
+            is_primary: boolean;
+        };
+        MySchedule: {
+            has_staff_record: boolean;
+            name?: string;
+            postings: components["schemas"]["MyPosting"][];
+            shifts: components["schemas"]["Shift"][];
+            leave: components["schemas"]["LeaveRequest"][];
         };
         /** @description One of the person's own sign-ins (HIMS-IAM-016). The session key is never sent. */
         MySession: {
@@ -3892,6 +4307,16 @@ export interface components {
             is_isolation_capable?: boolean;
             is_active?: boolean;
         };
+        PatchedShiftTypeUpdateRequest: {
+            version?: number;
+            name?: string;
+            kind?: components["schemas"]["ShiftKindEnum"];
+            /** Format: time */
+            start_time?: string;
+            /** Format: time */
+            end_time?: string;
+            is_active?: boolean;
+        };
         PatchedSpecialtyUpdateRequest: {
             version?: number;
             name?: string;
@@ -3946,6 +4371,7 @@ export interface components {
          *     * `facilities.view` - facilities.view
          *     * `features.manage` - features.manage
          *     * `features.view` - features.view
+         *     * `leave.approve` - leave.approve
          *     * `locations.manage` - locations.manage
          *     * `locations.view` - locations.view
          *     * `notifications.manage` - notifications.manage
@@ -3955,12 +4381,14 @@ export interface components {
          *     * `organization.manage` - organization.manage
          *     * `organization.view` - organization.view
          *     * `platform.admin_console` - platform.admin_console
+         *     * `rota.manage` - rota.manage
+         *     * `rota.view` - rota.view
          *     * `staff.credentials.verify` - staff.credentials.verify
          *     * `staff.manage` - staff.manage
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.manage" | "staff.view";
         Person: {
             /** Format: uuid */
             id: string;
@@ -4173,6 +4601,46 @@ export interface components {
          * @enum {string}
          */
         RoomTypeEnum: "general" | "private" | "semi_private" | "icu_bay" | "isolation" | "operating_room" | "procedure" | "recovery" | "consultation";
+        RotaAway: {
+            /** Format: uuid */
+            leave_id: string;
+            /** Format: date */
+            start_date: string;
+            /** Format: date */
+            end_date: string;
+            status: components["schemas"]["LeaveStatusEnum"];
+            /** @description Only for people who decide leave */
+            leave_type: string | null;
+            leave_type_label: string | null;
+        };
+        RotaNow: {
+            /** Format: date-time */
+            at: string;
+            on_call: components["schemas"]["Shift"][];
+            working: components["schemas"]["Shift"][];
+        };
+        RotaPerson: {
+            /** Format: uuid */
+            staff_id: string;
+            name: string;
+            designation: string | null;
+            shifts: components["schemas"]["Shift"][];
+            away: components["schemas"]["RotaAway"][];
+        };
+        RotaWeek: {
+            /** Format: uuid */
+            department_id: string;
+            department_name: string;
+            /** Format: uuid */
+            facility_id: string;
+            facility_name: string;
+            /** Format: date */
+            start: string;
+            days: string[];
+            can_manage: boolean;
+            leave_details: boolean;
+            people: components["schemas"]["RotaPerson"][];
+        };
         /**
          * @description * `organization` - Whole hospital
          *     * `facility` - Per facility
@@ -4242,10 +4710,100 @@ export interface components {
          * @enum {string}
          */
         SeverityEnum: "low" | "medium" | "high" | "critical";
+        Shift: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly staff_id: string;
+            readonly staff_name: string;
+            /** Format: uuid */
+            readonly department_id: string;
+            readonly department_name: string;
+            /** Format: uuid */
+            readonly facility_id: string;
+            /** Format: uuid */
+            readonly shift_type_id: string;
+            readonly shift_type_name: string;
+            readonly kind: components["schemas"]["ShiftKindEnum"];
+            /**
+             * Format: date
+             * @description Day the shift starts, at the facility
+             */
+            readonly on_date: string;
+            /**
+             * Format: date-time
+             * @description Worked out from the day and the shift type
+             */
+            readonly starts_at: string;
+            /**
+             * Format: date-time
+             * @description Worked out from the day and the shift type
+             */
+            readonly ends_at: string;
+            /** @description e.g. 20:00-08:00, on the facility's clock */
+            readonly hours: string;
+            readonly note: string;
+            readonly status: components["schemas"]["ShiftStatusEnum"];
+            readonly cancel_reason: string;
+            readonly version: number;
+        };
+        /**
+         * @description * `shift` - Working shift
+         *     * `on_call` - On call
+         * @enum {string}
+         */
+        ShiftKindEnum: "shift" | "on_call";
+        /**
+         * @description * `scheduled` - Scheduled
+         *     * `cancelled` - Cancelled
+         * @enum {string}
+         */
+        ShiftStatusEnum: "scheduled" | "cancelled";
+        ShiftType: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly name: string;
+            readonly kind: components["schemas"]["ShiftKindEnum"];
+            readonly kind_label: string;
+            /**
+             * Format: time
+             * @description Start, on the facility's clock
+             */
+            readonly start_time: string;
+            /**
+             * Format: time
+             * @description End; at or before the start means it ends the next day
+             */
+            readonly end_time: string;
+            readonly minutes: number;
+            readonly is_active: boolean;
+            /** @description Added by this hospital (standard entries come with HIMS). */
+            readonly is_custom: boolean;
+            readonly version: number;
+        };
+        ShiftTypeCreateRequest: {
+            code: string;
+            name: string;
+            kind: components["schemas"]["ShiftKindEnum"];
+            /** Format: time */
+            start_time: string;
+            /**
+             * Format: time
+             * @description At or before the start = ends the next day
+             */
+            end_time: string;
+        };
         SkippedAccess: {
             role_name: string;
             scope: string;
             why: string;
+        };
+        SkippedDay: {
+            /** Format: date */
+            on_date: string;
+            person: string;
+            reason: string;
         };
         Specialty: {
             /** Format: uuid */
@@ -6871,6 +7429,154 @@ export interface operations {
             };
         };
     };
+    leave_requests_list: {
+        parameters: {
+            query?: {
+                department?: string;
+                /** @description Staff member id */
+                person?: string;
+                /** @description waiting (default) = to decide; upcoming = approved and not over; past = over, refused or cancelled */
+                status?: "all" | "past" | "upcoming" | "waiting";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"][];
+                };
+            };
+        };
+    };
+    leave_requests_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+        };
+    };
+    leave_requests_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this leave request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+        };
+    };
+    leave_requests_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this leave request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+        };
+    };
+    leave_requests_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this leave request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+        };
+    };
+    leave_requests_reject_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this leave request. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+        };
+    };
     my_delegations_list: {
         parameters: {
             query?: never;
@@ -6886,6 +7592,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccessDelegation"][];
+                };
+            };
+        };
+    };
+    my_leave_requests_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+        };
+    };
+    my_leave_requests_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+        };
+    };
+    my_schedule_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MySchedule"];
                 };
             };
         };
@@ -7552,6 +8325,50 @@ export interface operations {
             };
         };
     };
+    rota_retrieve: {
+        parameters: {
+            query: {
+                department: string;
+                /** @description First day (default: this Monday) */
+                start?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotaWeek"];
+                };
+            };
+        };
+    };
+    rota_now_retrieve: {
+        parameters: {
+            query?: {
+                facility?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RotaNow"];
+                };
+            };
+        };
+    };
     security_incidents_list: {
         parameters: {
             query?: {
@@ -7711,6 +8528,148 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SecurityStatus"];
+                };
+            };
+        };
+    };
+    shift_types_list: {
+        parameters: {
+            query?: {
+                active?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftType"][];
+                };
+            };
+        };
+    };
+    shift_types_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShiftTypeCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftType"];
+                };
+            };
+        };
+    };
+    shift_types_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this shift type. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedShiftTypeUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftType"];
+                };
+            };
+        };
+    };
+    shifts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddShiftsRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddShiftsResult"];
+                };
+            };
+        };
+    };
+    shifts_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Shift"];
+                };
+            };
+        };
+    };
+    shifts_copy_week_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyWeekRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddShiftsResult"];
                 };
             };
         };

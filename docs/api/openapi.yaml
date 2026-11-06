@@ -2440,6 +2440,176 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedIssuedNumberList'
           description: ''
+  /api/v1/leave-requests/:
+    get:
+      operationId: leave_requests_list
+      description: Leave for approvers (``leave.approve`` for the department).
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+      - in: query
+        name: person
+        schema:
+          type: string
+        description: Staff member id
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - all
+          - past
+          - upcoming
+          - waiting
+        description: waiting (default) = to decide; upcoming = approved and not over;
+          past = over, refused or cancelled
+      tags:
+      - leave-requests
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+    post:
+      operationId: leave_requests_create
+      description: |-
+        Record leave for a staff member (e.g. sick leave phoned in). It still needs a
+        decision, by someone other than that person.
+      tags:
+      - leave-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/v1/leave-requests/{id}/:
+    get:
+      operationId: leave_requests_retrieve
+      description: Leave for approvers (``leave.approve`` for the department).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this leave request.
+        required: true
+      tags:
+      - leave-requests
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/v1/leave-requests/{id}/approve/:
+    post:
+      operationId: leave_requests_approve_create
+      description: Leave for approvers (``leave.approve`` for the department).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this leave request.
+        required: true
+      tags:
+      - leave-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveDecisionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/v1/leave-requests/{id}/cancel/:
+    post:
+      operationId: leave_requests_cancel_create
+      description: Leave for approvers (``leave.approve`` for the department).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this leave request.
+        required: true
+      tags:
+      - leave-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/v1/leave-requests/{id}/reject/:
+    post:
+      operationId: leave_requests_reject_create
+      description: Leave for approvers (``leave.approve`` for the department).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this leave request.
+        required: true
+      tags:
+      - leave-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveDecisionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
   /api/v1/my-delegations/:
     get:
       operationId: my_delegations_list
@@ -2458,6 +2628,70 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/AccessDelegation'
+          description: ''
+  /api/v1/my-leave-requests/:
+    post:
+      operationId: my_leave_requests_create
+      description: Ask for your own leave; an approver for that department decides.
+      tags:
+      - my-leave-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/v1/my-leave-requests/{id}/cancel/:
+    post:
+      operationId: my_leave_requests_cancel_create
+      description: Withdraw your own leave before it starts.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - my-leave-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/v1/my-schedule/:
+    get:
+      operationId: my_schedule_retrieve
+      description: Your own postings, shifts (last week to six weeks ahead) and leave.
+      tags:
+      - my-schedule
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MySchedule'
           description: ''
   /api/v1/notifications/:
     get:
@@ -3211,6 +3445,54 @@ paths:
               schema:
                 $ref: '#/components/schemas/Room'
           description: ''
+  /api/v1/rota/:
+    get:
+      operationId: rota_retrieve
+      description: 'One department''s week: everyone posted there, their shifts and
+        time away.'
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: start
+        schema:
+          type: string
+        description: 'First day (default: this Monday)'
+      tags:
+      - rota
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RotaWeek'
+          description: ''
+  /api/v1/rota/now/:
+    get:
+      operationId: rota_now_retrieve
+      description: Who is on call and who is working right now, in the departments
+        you may see.
+      parameters:
+      - in: query
+        name: facility
+        schema:
+          type: string
+      tags:
+      - rota
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RotaNow'
+          description: ''
   /api/v1/security-incidents/:
     get:
       operationId: security_incidents_list
@@ -3365,6 +3647,157 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SecurityStatus'
+          description: ''
+  /api/v1/shift-types/:
+    get:
+      operationId: shift_types_list
+      description: |-
+        Kinds of shift the hospital uses. Anyone who sees a rota sees them; a hospital-wide
+        ``rota.manage`` grant adds and changes them (planned shifts keep their times).
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      tags:
+      - shift-types
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShiftType'
+          description: ''
+    post:
+      operationId: shift_types_create
+      description: |-
+        Kinds of shift the hospital uses. Anyone who sees a rota sees them; a hospital-wide
+        ``rota.manage`` grant adds and changes them (planned shifts keep their times).
+      tags:
+      - shift-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftTypeCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftType'
+          description: ''
+  /api/v1/shift-types/{id}/:
+    patch:
+      operationId: shift_types_partial_update
+      description: |-
+        Kinds of shift the hospital uses. Anyone who sees a rota sees them; a hospital-wide
+        ``rota.manage`` grant adds and changes them (planned shifts keep their times).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this shift type.
+        required: true
+      tags:
+      - shift-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedShiftTypeUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftType'
+          description: ''
+  /api/v1/shifts/:
+    post:
+      operationId: shifts_create
+      description: |-
+        Plan one shift type for one person on one day, or on several days at once. Days that
+        cannot be planned are listed in ``skipped`` with the reason.
+      tags:
+      - shifts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddShiftsRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddShiftsResult'
+          description: ''
+  /api/v1/shifts/{id}/cancel/:
+    post:
+      operationId: shifts_cancel_create
+      description: Plan, copy and cancel shifts and on-call (``rota.manage`` for the
+        department).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this shift.
+        required: true
+      tags:
+      - shifts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          description: ''
+  /api/v1/shifts/copy-week/:
+    post:
+      operationId: shifts_copy_week_create
+      description: Repeat one week's shifts in a later week; people who cannot work
+        a day are skipped.
+      tags:
+      - shifts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CopyWeekRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddShiftsResult'
           description: ''
   /api/v1/specialties/:
     get:
@@ -4648,6 +5081,56 @@ components:
         * `user` - User
         * `system` - System
         * `anonymous` - Anonymous
+    AddShiftsRequest:
+      type: object
+      properties:
+        staff:
+          type: string
+          format: uuid
+        department:
+          type: string
+          format: uuid
+        shift_type:
+          type: string
+          format: uuid
+        from_date:
+          type: string
+          format: date
+        to_date:
+          type: string
+          format: date
+          description: 'Default: the same day'
+        weekdays:
+          type: array
+          items:
+            type: integer
+            maximum: 6
+            minimum: 0
+          description: Only these weekdays (0 = Monday … 6 = Sunday); default every
+            day
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - department
+      - from_date
+      - shift_type
+      - staff
+    AddShiftsResult:
+      type: object
+      properties:
+        created:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shift'
+        skipped:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkippedDay'
+      required:
+      - created
+      - skipped
     AgeGroupEnum:
       enum:
       - any
@@ -5261,6 +5744,18 @@ components:
       - count
       - prefix
       - room
+    CancelRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - reason
+      - version
     ChannelEnum:
       enum:
       - email
@@ -5428,6 +5923,24 @@ components:
       - enabled
       - needs_code
       - window_minutes
+    CopyWeekRequest:
+      type: object
+      properties:
+        department:
+          type: string
+          format: uuid
+        from_start:
+          type: string
+          format: date
+          description: First day of the week to copy
+        to_start:
+          type: string
+          format: date
+          description: First day of the week to fill (a later week)
+      required:
+      - department
+      - from_start
+      - to_start
     CountryEnum:
       enum:
       - US
@@ -6511,7 +7024,7 @@ components:
           readOnly: true
         kind:
           allOf:
-          - $ref: '#/components/schemas/KindEnum'
+          - $ref: '#/components/schemas/IncidentNotificationKindEnum'
           readOnly: true
         kind_label:
           type: string
@@ -6559,6 +7072,24 @@ components:
       - reference
       - status
       - status_label
+    IncidentNotificationKindEnum:
+      enum:
+      - cert_in
+      - dpdp_board_initial
+      - dpdp_board_detailed
+      - dpdp_people
+      - hipaa_individuals
+      - hipaa_hhs
+      - hipaa_media
+      type: string
+      description: |-
+        * `cert_in` - India: CERT-In report
+        * `dpdp_board_initial` - India: Data Protection Board, first notice
+        * `dpdp_board_detailed` - India: Data Protection Board, detailed report
+        * `dpdp_people` - India: tell the affected people
+        * `hipaa_individuals` - US: tell the affected people
+        * `hipaa_hhs` - US: tell HHS
+        * `hipaa_media` - US: tell the media (over 500 people)
     IncidentNotificationStatusEnum:
       enum:
       - pending
@@ -6777,24 +7308,199 @@ components:
         * `ALL` - Both countries
         * `IN` - India
         * `US` - United States
-    KindEnum:
+    LeaveCreateRequest:
+      type: object
+      properties:
+        staff:
+          type: string
+          format: uuid
+          description: 'Approvers only: whose leave'
+        department:
+          type: string
+          format: uuid
+        leave_type:
+          $ref: '#/components/schemas/LeaveTypeEnum'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        reason:
+          type: string
+          default: ''
+          description: 'Optional. No medical details: the kind of leave is enough'
+          maxLength: 500
+      required:
+      - department
+      - end_date
+      - leave_type
+      - start_date
+    LeaveDecisionRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+        cancel_shifts:
+          type: boolean
+          default: false
+          description: 'Approve: also cancel shifts during the leave'
+      required:
+      - version
+    LeaveRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff_name:
+          type: string
+          readOnly: true
+        department_id:
+          type: string
+          format: uuid
+          readOnly: true
+        department_name:
+          type: string
+          readOnly: true
+        facility_id:
+          type: string
+          format: uuid
+          readOnly: true
+        leave_type:
+          allOf:
+          - $ref: '#/components/schemas/LeaveTypeEnum'
+          readOnly: true
+        leave_type_label:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+        end_date:
+          type: string
+          format: date
+          readOnly: true
+          description: Last day of leave (inclusive)
+        days:
+          type: integer
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/LeaveStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        requested_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        decided_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        decision_note:
+          type: string
+          readOnly: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        cancel_reason:
+          type: string
+          readOnly: true
+        conflicting_shifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shift'
+          readOnly: true
+          description: Planned shifts the person would miss (only while waiting for
+            a decision)
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - cancel_reason
+      - cancelled_at
+      - conflicting_shifts
+      - created_at
+      - days
+      - decided_at
+      - decided_by_name
+      - decision_note
+      - department_id
+      - department_name
+      - end_date
+      - facility_id
+      - id
+      - leave_type
+      - leave_type_label
+      - reason
+      - requested_by_name
+      - staff_id
+      - staff_name
+      - start_date
+      - status
+      - status_label
+      - version
+    LeaveStatusEnum:
       enum:
-      - cert_in
-      - dpdp_board_initial
-      - dpdp_board_detailed
-      - dpdp_people
-      - hipaa_individuals
-      - hipaa_hhs
-      - hipaa_media
+      - requested
+      - approved
+      - rejected
+      - cancelled
       type: string
       description: |-
-        * `cert_in` - India: CERT-In report
-        * `dpdp_board_initial` - India: Data Protection Board, first notice
-        * `dpdp_board_detailed` - India: Data Protection Board, detailed report
-        * `dpdp_people` - India: tell the affected people
-        * `hipaa_individuals` - US: tell the affected people
-        * `hipaa_hhs` - US: tell HHS
-        * `hipaa_media` - US: tell the media (over 500 people)
+        * `requested` - Waiting for a decision
+        * `approved` - Approved
+        * `rejected` - Refused
+        * `cancelled` - Cancelled
+    LeaveTypeEnum:
+      enum:
+      - annual
+      - casual
+      - sick
+      - maternity
+      - paternity
+      - study
+      - compensatory
+      - unpaid
+      - other
+      type: string
+      description: |-
+        * `annual` - Annual / earned leave
+        * `casual` - Casual leave
+        * `sick` - Sick leave
+        * `maternity` - Maternity leave
+        * `paternity` - Paternity leave
+        * `study` - Study or conference leave
+        * `compensatory` - Compensatory off
+        * `unpaid` - Unpaid leave
+        * `other` - Other
     LentAccess:
       type: object
       description: One copy of the covered person's access lent to the covering person.
@@ -6915,6 +7621,47 @@ components:
       - recovery_codes_remaining
       - required
       - verified
+    MyPosting:
+      type: object
+      properties:
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+        facility_name:
+          type: string
+        is_primary:
+          type: boolean
+      required:
+      - department_id
+      - department_name
+      - facility_name
+      - is_primary
+    MySchedule:
+      type: object
+      properties:
+        has_staff_record:
+          type: boolean
+        name:
+          type: string
+        postings:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyPosting'
+        shifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shift'
+        leave:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveRequest'
+      required:
+      - has_staff_record
+      - leave
+      - postings
+      - shifts
     MySession:
       type: object
       description: One of the person's own sign-ins (HIMS-IAM-016). The session key
@@ -8089,6 +8836,25 @@ components:
           type: boolean
         is_active:
           type: boolean
+    PatchedShiftTypeUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        kind:
+          $ref: '#/components/schemas/ShiftKindEnum'
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        is_active:
+          type: boolean
     PatchedSpecialtyUpdateRequest:
       type: object
       properties:
@@ -8188,6 +8954,7 @@ components:
       - facilities.view
       - features.manage
       - features.view
+      - leave.approve
       - locations.manage
       - locations.view
       - notifications.manage
@@ -8197,6 +8964,8 @@ components:
       - organization.manage
       - organization.view
       - platform.admin_console
+      - rota.manage
+      - rota.view
       - staff.credentials.verify
       - staff.manage
       - staff.view
@@ -8219,6 +8988,7 @@ components:
         * `facilities.view` - facilities.view
         * `features.manage` - features.manage
         * `features.view` - features.view
+        * `leave.approve` - leave.approve
         * `locations.manage` - locations.manage
         * `locations.view` - locations.view
         * `notifications.manage` - notifications.manage
@@ -8228,6 +8998,8 @@ components:
         * `organization.manage` - organization.manage
         * `organization.view` - organization.view
         * `platform.admin_console` - platform.admin_console
+        * `rota.manage` - rota.manage
+        * `rota.view` - rota.view
         * `staff.credentials.verify` - staff.credentials.verify
         * `staff.manage` - staff.manage
         * `staff.view` - staff.view
@@ -8809,6 +9581,116 @@ components:
         * `procedure` - Procedure room
         * `recovery` - Recovery bay
         * `consultation` - Consultation room
+    RotaAway:
+      type: object
+      properties:
+        leave_id:
+          type: string
+          format: uuid
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/LeaveStatusEnum'
+        leave_type:
+          type: string
+          nullable: true
+          description: Only for people who decide leave
+        leave_type_label:
+          type: string
+          nullable: true
+      required:
+      - end_date
+      - leave_id
+      - leave_type
+      - leave_type_label
+      - start_date
+      - status
+    RotaNow:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+        on_call:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shift'
+        working:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shift'
+      required:
+      - at
+      - on_call
+      - working
+    RotaPerson:
+      type: object
+      properties:
+        staff_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        designation:
+          type: string
+          nullable: true
+        shifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shift'
+        away:
+          type: array
+          items:
+            $ref: '#/components/schemas/RotaAway'
+      required:
+      - away
+      - designation
+      - name
+      - shifts
+      - staff_id
+    RotaWeek:
+      type: object
+      properties:
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+        facility_id:
+          type: string
+          format: uuid
+        facility_name:
+          type: string
+        start:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            type: string
+            format: date
+        can_manage:
+          type: boolean
+        leave_details:
+          type: boolean
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/RotaPerson'
+      required:
+      - can_manage
+      - days
+      - department_id
+      - department_name
+      - facility_id
+      - facility_name
+      - leave_details
+      - people
+      - start
     ScopeEnum:
       enum:
       - organization
@@ -8971,6 +9853,191 @@ components:
         * `medium` - Medium
         * `high` - High
         * `critical` - Critical
+    Shift:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff_name:
+          type: string
+          readOnly: true
+        department_id:
+          type: string
+          format: uuid
+          readOnly: true
+        department_name:
+          type: string
+          readOnly: true
+        facility_id:
+          type: string
+          format: uuid
+          readOnly: true
+        shift_type_id:
+          type: string
+          format: uuid
+          readOnly: true
+        shift_type_name:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ShiftKindEnum'
+          readOnly: true
+        on_date:
+          type: string
+          format: date
+          readOnly: true
+          description: Day the shift starts, at the facility
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Worked out from the day and the shift type
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Worked out from the day and the shift type
+        hours:
+          type: string
+          readOnly: true
+          description: e.g. 20:00-08:00, on the facility's clock
+        note:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ShiftStatusEnum'
+          readOnly: true
+        cancel_reason:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - cancel_reason
+      - department_id
+      - department_name
+      - ends_at
+      - facility_id
+      - hours
+      - id
+      - kind
+      - note
+      - on_date
+      - shift_type_id
+      - shift_type_name
+      - staff_id
+      - staff_name
+      - starts_at
+      - status
+      - version
+    ShiftKindEnum:
+      enum:
+      - shift
+      - on_call
+      type: string
+      description: |-
+        * `shift` - Working shift
+        * `on_call` - On call
+    ShiftStatusEnum:
+      enum:
+      - scheduled
+      - cancelled
+      type: string
+      description: |-
+        * `scheduled` - Scheduled
+        * `cancelled` - Cancelled
+    ShiftType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ShiftKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        start_time:
+          type: string
+          format: time
+          readOnly: true
+          description: Start, on the facility's clock
+        end_time:
+          type: string
+          format: time
+          readOnly: true
+          description: End; at or before the start means it ends the next day
+        minutes:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        is_custom:
+          type: boolean
+          readOnly: true
+          description: Added by this hospital (standard entries come with HIMS).
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - code
+      - end_time
+      - id
+      - is_active
+      - is_custom
+      - kind
+      - kind_label
+      - minutes
+      - name
+      - start_time
+      - version
+    ShiftTypeCreateRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        kind:
+          $ref: '#/components/schemas/ShiftKindEnum'
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+          description: At or before the start = ends the next day
+      required:
+      - code
+      - end_time
+      - kind
+      - name
+      - start_time
     SkippedAccess:
       type: object
       properties:
@@ -8984,6 +10051,20 @@ components:
       - role_name
       - scope
       - why
+    SkippedDay:
+      type: object
+      properties:
+        on_date:
+          type: string
+          format: date
+        person:
+          type: string
+        reason:
+          type: string
+      required:
+      - on_date
+      - person
+      - reason
     Specialty:
       type: object
       properties:

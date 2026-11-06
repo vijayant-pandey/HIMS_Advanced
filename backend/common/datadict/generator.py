@@ -43,6 +43,8 @@ SYSTEM_COLUMNS = {
     "user_sessions.session_key",
     "user_mfa_devices.secret_encrypted",
     "user_mfa_recovery_codes.code_hash",
+    "shifts.starts_at",
+    "shifts.ends_at",
 }
 # Plain meanings for columns most tables share.
 COMMON_MEANINGS = {
@@ -198,6 +200,10 @@ def keys_and_rules(model) -> list[str]:
                 text += " (empty values count as equal)"
         elif isinstance(constraint, models.CheckConstraint):
             text = f"Check: {format_q(constraint.condition)}"
+        elif type(constraint).__name__ == "ExclusionConstraint":
+            text = f"No overlap: {constraint.violation_error_message}"
+            if constraint.condition is not None:
+                text += f" (only rows where {format_q(constraint.condition)})"
         else:
             text = type(constraint).__name__
         rules.append(f"`{constraint.name}`: {text}")

@@ -26,6 +26,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Identity: accounts, sign-in, two-factor**: [`users`](#users), [`user_invitations`](#user_invitations), [`user_password_resets`](#user_password_resets), [`user_sessions`](#user_sessions), [`user_mfa_devices`](#user_mfa_devices), [`user_mfa_recovery_codes`](#user_mfa_recovery_codes)
 - **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations)
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts)
+- **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
 - **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`security_incident_notifications`](#security_incident_notifications)
 - **Notifications: emails and SMS**: [`notifications`](#notifications)
@@ -877,6 +878,96 @@ One alert sent for one licence at one stage (60/30/7 days before, or expired).
 | `expires_at` | date | no | — | — | System | Internal: Business data | Expiry date the alert was about |
 | `sent_at` | timestamp with time zone | no | now (on create) | — | System | Internal: Business data | Sent at |
 | `recipients` | smallint | no | `0` | — | Person | Internal: Business data | Recipients |
+
+## Rotas, on-call and leave
+
+**Owner (source of truth):** Staff/credential domain (heads of department plan; approvers decide leave). **Design:** [rotas-and-leave](rotas-and-leave.md).
+
+<a id="shift_types"></a>
+### `shift_types`
+
+A kind of shift the hospital uses, e.g. Morning 08:00-14:00 or On call 24 hours.
+
+- **Model:** `rosters.ShiftType`
+- **Lifecycle:** Catalog: never deleted; switched off (`is_active`). New times apply to shifts planned afterwards.
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `code` | varchar(32) | no | — | up to 32 characters; unique | Person | Internal: Business data | Code |
+| `name` | varchar(64) | no | — | up to 64 characters | Person | Internal: Business data | Name |
+| `kind` | varchar(16) | no | `ShiftType.Kind.SHIFT` | `shift` (Working shift), `on_call` (On call) | Person | Internal: Business data | Kind |
+| `start_time` | time | no | — | — | Person | Internal: Business data | Start, on the facility's clock |
+| `end_time` | time | no | — | — | Person | Internal: Business data | End; at or before the start means it ends the next day |
+| `is_active` | boolean | no | `True` | — | Person | Internal: Business data | Switched on (true) or off (false); rows are switched off, not deleted |
+| `is_custom` | boolean | no | `False` | — | Person | Internal: Business data | Added by this hospital (standard entries come with HIMS). |
+
+<a id="shifts"></a>
+### `shifts`
+
+One person on one shift, or on call, in one department, starting on one day.
+
+- **Model:** `rosters.Shift`
+- **Lifecycle:** Never deleted; cancelled with a reason. Past shifts cannot be changed.
+- **Rules:** `shift_ends_after_start`: Check: ends_at > starts_at; `shift_no_overlap_per_person`: No overlap: One person cannot have two shifts at the same time. (only rows where status = 'scheduled')
+- **Extra indexes:** `shift_department_day_idx`: department, on_date; `shift_staff_day_idx`: staff, on_date; `shift_time_idx`: starts_at, ends_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `staff_id` | uuid → staff_members.id | no | — | on delete PROTECT | Person | Internal: Reference | Staff |
+| `facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Facility |
+| `department_id` | uuid → departments.id | no | — | on delete PROTECT | Person | Internal: Reference | Department |
+| `shift_type_id` | uuid → shift_types.id | no | — | on delete PROTECT | Person | Internal: Reference | Shift type |
+| `on_date` | date | no | — | — | Person | Internal: Business data | Day the shift starts, at the facility |
+| `starts_at` | timestamp with time zone | no | — | — | System | Internal: Business data | Worked out from the day and the shift type |
+| `ends_at` | timestamp with time zone | no | — | — | System | Internal: Business data | Worked out from the day and the shift type |
+| `note` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Work note (no patient details) | Note |
+| `status` | varchar(16) | no | `Shift.Status.SCHEDULED` | `scheduled` (Scheduled), `cancelled` (Cancelled) | Person | Internal: Business data | Status |
+| `created_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Created by |
+| `cancelled_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Cancelled at |
+| `cancelled_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Cancelled by |
+| `cancel_reason` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Work note | Cancel reason |
+
+<a id="leave_requests"></a>
+### `leave_requests`
+
+Time away asked for by a staff member (or recorded for them), and its decision.
+
+- **Model:** `rosters.LeaveRequest`
+- **Lifecycle:** Never deleted; requested -> approved, refused or cancelled, each with who and when. Retention period: decision pending with the other HR records (🔒 LEGAL).
+- **Rules:** `leave_ends_after_start`: Check: end_date ≥ start_date; `leave_no_overlap_per_person`: No overlap: This person already has leave asked for or approved on some of these days. (only rows where status in ['requested', 'approved'])
+- **Extra indexes:** `leave_department_status_idx`: department, status; `leave_staff_start_idx`: staff, start_date
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `staff_id` | uuid → staff_members.id | no | — | on delete PROTECT | Person | Internal: Reference | Staff |
+| `facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Facility |
+| `department_id` | uuid → departments.id | no | — | on delete PROTECT | Person | Internal: Reference | Where the person is posted; its approvers decide |
+| `leave_type` | varchar(16) | no | — | `annual` (Annual / earned leave), `casual` (Casual leave), `sick` (Sick leave), `maternity` (Maternity leave), `paternity` (Paternity leave), `study` (Study or conference leave), `compensatory` (Compensatory off), `unpaid` (Unpaid leave), `other` (Other) | Person | Restricted: Personal (e.g. sick leave) | Leave type |
+| `start_date` | date | no | — | — | Person | Restricted: Personal (time away) | Start date |
+| `end_date` | date | no | — | — | Person | Restricted: Personal (time away) | Last day of leave (inclusive) |
+| `reason` | varchar(500) | no | — | up to 500 characters | Person | Restricted: Personal note (no medical details) | Reason |
+| `status` | varchar(16) | no | `LeaveRequest.Status.REQUESTED` | `requested` (Waiting for a decision), `approved` (Approved), `rejected` (Refused), `cancelled` (Cancelled) | Person | Internal: Business data | Status |
+| `requested_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Requested by |
+| `decided_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Decided at |
+| `decided_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Decided by |
+| `decision_note` | varchar(500) | no | — | up to 500 characters | Person | Restricted: Personal note | Decision note |
+| `cancelled_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Cancelled at |
+| `cancelled_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Cancelled by |
+| `cancel_reason` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Personal note | Cancel reason |
 
 ## Audit log and tamper evidence
 

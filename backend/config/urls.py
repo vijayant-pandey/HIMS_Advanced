@@ -13,6 +13,7 @@ api_v1 = [
     path("", include("apps.features.api.urls")),
     path("", include("apps.access_control.api.urls")),
     path("", include("apps.staff.api.urls")),
+    path("", include("apps.rosters.api.urls")),
     path("", include("apps.audit.api.urls")),
     path("", include("apps.notifications.api.urls")),
     path("", include("apps.compliance.api.urls")),

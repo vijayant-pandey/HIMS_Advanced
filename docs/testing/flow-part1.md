@@ -35,6 +35,7 @@
 20. [Part 16: access reviews](#part-16-access-reviews)
 21. [Part 17: audit log (as the auditor)](#part-17-audit-log-as-the-auditor)
 22. [Part 18: the admin console (Django admin) tour](#part-18-the-admin-console-django-admin-tour)
+22a. [Part 18a: rota, on-call and leave](#part-18a-rota-on-call-and-leave)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -979,6 +980,86 @@ Checks:
 
 ---
 
+## Part 18a: rota, on-call and leave
+
+Needs the HIMS-STAFF-012 PR. After it is merged, run the migrate steps (India, then US): this
+part adds three tables. **Window A** (administrator) + **Window B** (Asha).
+
+**Before you start:** Asha needs a posting in Cardiology (Part 8.3 did this for Ravi; do the same
+for Asha: **Staff** → Asha → **Add posting** → Cardiology → any job title → **Add**).
+
+### 18a.1 Plan the rota (Window A)
+
+- [ ] **Do:** **Rota**.
+- [ ] **Expect:** an **On call now** box ("Nobody is on call right now…"), a **Week** tab with a
+      grid: Cardiology, the 7 days of this week, and a row for each person posted there.
+- [ ] **Do:** **Plan shifts** → Person **Asha** → Shift **Night · 20:00–08:00** → First day =
+      tomorrow → **Plan**.
+- [ ] **Expect:** tomorrow's cell shows **Night 20:00-08:00** for Asha (use **Next week** if
+      tomorrow is a Monday).
+- [ ] **Do:** **Plan shifts** again → Asha → **Day (12 hours)** → the same day → **Plan**.
+- [ ] **Expect:** refused: "Asha … already has Night in Cardiology then" (no double booking).
+- [ ] **Do:** **Plan shifts** → Ravi → **Morning** → First day tomorrow, Last day 6 days later,
+      untick **Sat** and **Sun** → **Plan**.
+- [ ] **Expect:** Ravi has Morning on the weekdays only.
+- [ ] **Do:** **Next week** → **Copy previous week here**.
+- [ ] **Expect:** the shifts are planned again one week later; anything that cannot be copied is
+      listed with the reason.
+- [ ] **Do:** click one of Ravi's shifts → Why? `Swapped` → **Cancel shift**.
+- [ ] **Expect:** it disappears from the grid (kept on record as cancelled).
+- [ ] **Do:** **Shift types** tab.
+- [ ] **Expect:** 8 standard types (Morning, Evening, Night, Day 12 h, Night 12 h, General, On
+      call 24 h, On call night). **Add shift type** e.g. code `theatre-long`, `Theatre long day`,
+      07:30–20:30 → **Save**; it is marked "added by the hospital".
+
+### 18a.2 On call now (Window A)
+
+- [ ] **Do:** **Plan shifts** → Ravi → **On call (24 hours)** → First day = **today** → **Plan**.
+- [ ] **Expect:** if it is after 08:00, **On call now** shows "Cardiology: Ravi … until 08:00".
+      (Before 08:00 it starts later today.)
+
+### 18a.3 Ask for leave (Window B, Asha)
+
+- [ ] **Do:** sign in as Asha. The top bar now has **My schedule**: click it.
+- [ ] **Expect:** her coming shifts, including tomorrow's Night 20:00-08:00, and "My leave".
+- [ ] **Do:** **Ask for leave** → Annual / earned leave → First and Last day = tomorrow → **Send**.
+- [ ] **Expect:** "Waiting for a decision". In the launcher window an email **"Leave to decide:
+      Asha …"** is printed for the administrators and heads of department.
+- [ ] **Do:** ask again for the same day.
+- [ ] **Expect:** refused: she already has leave asked for on that day.
+
+### 18a.4 Decide (Window A)
+
+- [ ] **Do:** **Leave** (menu) → **To decide**.
+- [ ] **Expect:** Asha's leave, with "1 planned shift(s) during this leave".
+- [ ] **Do:** **Approve**.
+- [ ] **Expect:** the dialog lists the Night shift; **Approve leave** stays grey until you tick
+      **Cancel those shifts**. Tick it → **Approve leave**.
+- [ ] **Expect:** it moves to **Approved, coming up**. Asha is emailed "Leave approved". On the
+      **Rota**, tomorrow shows **On leave** for Asha and no Night shift.
+- [ ] **Do:** **Record leave** → Cardiology → Ravi → Sick leave → yesterday to today → **Save**.
+- [ ] **Expect:** it waits under **To decide** ("requested by" you). **Refuse** asks for a reason.
+
+### 18a.5 Privacy and limits
+
+- [ ] **Window B (Asha, basic access):** open **Rota** (she sees her department's rota).
+- [ ] **Expect:** she sees **On leave** for people away, but **not** the kind of leave (e.g. sick
+      leave). She has no **Plan shifts** button and no **Leave** menu.
+- [ ] **Window A:** **Features** → **Rotas, leave and on-call** → turn **off** for your facility
+      with a reason → open **Rota**.
+- [ ] **Expect:** "Rotas, leave and on-call is turned off for this facility". Turn it back **on**.
+
+### 18a.6 Admin console
+
+- [ ] **Do:** admin console → **Rotas and leave** → **Shifts** → **Add** → Asha, Cardiology,
+      **Day (12 hours)**, the day after tomorrow → **Save**. Then add another for the same day
+      with **Morning**.
+- [ ] **Expect:** the second is refused with the same message as the app.
+- [ ] **Do:** **Leave requests** → tick a waiting one → action **Refuse selected leave** → **Go**.
+- [ ] **Expect:** refused; the change appears in the audit log as "Leave refused".
+
+---
+
 ## Part 19: leaving staff (termination)
 
 **Window A** app + **Window B** (Asha signed in).
@@ -986,7 +1067,8 @@ Checks:
 - [ ] **Window B:** sign in as Asha and leave her on a page.
 - [ ] **Window A:** **Staff** → Asha → **Edit** → Employment status **Terminated**, Last working
       day = today → **Save**.
-- [ ] **Expect:** Asha's sign-in account is switched off. Her postings end.
+- [ ] **Expect:** Asha's sign-in account is switched off. Her postings end. Her future shifts
+      on the **Rota** are cancelled (needs HIMS-STAFF-012).
 - [ ] **Window B:** refresh.
 - [ ] **Expect:** Asha is signed out at once and cannot sign in any more.
 - [ ] **Do:** do the same test with **Ravi** if you like: after termination, **Departments** →

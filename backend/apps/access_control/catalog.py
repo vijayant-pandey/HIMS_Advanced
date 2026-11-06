@@ -35,6 +35,9 @@ class P:
     COMPLIANCE_VIEW = "compliance.view"
     COMPLIANCE_MANAGE = "compliance.manage"
     CATALOGS_MANAGE = "catalogs.manage"
+    ROTA_VIEW = "rota.view"
+    ROTA_MANAGE = "rota.manage"
+    LEAVE_APPROVE = "leave.approve"
     ADMIN_CONSOLE = "platform.admin_console"
 
 
@@ -65,6 +68,11 @@ PERMISSIONS: dict[str, str] = {
     ),
     P.AUDIT_VIEW: "Search the audit log",
     P.CATALOGS_MANAGE: "Add and change job titles, specialties and qualification types",
+    P.ROTA_VIEW: "See rotas: who works or is on call when, and who is away (not why)",
+    P.ROTA_MANAGE: (
+        "Plan and cancel shifts and on-call (keeping the shift types needs a hospital-wide grant)"
+    ),
+    P.LEAVE_APPROVE: "Approve or refuse leave, and record leave for staff",
     P.COMPLIANCE_VIEW: "See the compliance registers: requirements, risks and security incidents",
     P.COMPLIANCE_MANAGE: "Update compliance requirements and risks; manage security incidents",
     P.NOTIFICATIONS_VIEW: "See the emails and SMS HIMS has sent and whether they arrived",
@@ -154,18 +162,28 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
             P.CATALOGS_MANAGE,
+            P.ROTA_VIEW,
+            P.LEAVE_APPROVE,
         ],
     },
     "department-head": {
         "name": "Head of department (HOD)",
-        "description": "Sees their department. Clinical approvals are added with clinical "
-        "domains. Assign at department scope.",
-        "permissions": [P.FACILITIES_VIEW, P.DEPARTMENTS_VIEW, P.LOCATIONS_VIEW],
+        "description": "Sees their department, plans its rota and decides its leave. Clinical "
+        "approvals are added with clinical domains. Assign at department scope.",
+        "permissions": [
+            P.FACILITIES_VIEW,
+            P.DEPARTMENTS_VIEW,
+            P.LOCATIONS_VIEW,
+            P.ROTA_VIEW,
+            P.ROTA_MANAGE,
+            P.LEAVE_APPROVE,
+        ],
     },
     "basic-staff": {
         "name": "Basic staff access",
-        "description": "Minimum access for any employee: see their hospital and departments.",
-        "permissions": [P.FACILITIES_VIEW, P.DEPARTMENTS_VIEW, P.LOCATIONS_VIEW],
+        "description": "Minimum access for any employee: see their hospital and departments, "
+        "and their department's rota.",
+        "permissions": [P.FACILITIES_VIEW, P.DEPARTMENTS_VIEW, P.LOCATIONS_VIEW, P.ROTA_VIEW],
     },
     "bed-manager": {
         "name": "Bed manager / ward clerk",
