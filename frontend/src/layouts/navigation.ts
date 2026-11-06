@@ -22,6 +22,8 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/staff", label: "Staff", permission: "staff.view" },
   { to: "/licence-expiry", label: "Licence expiry", permission: "staff.view" },
   { to: "/catalogs", label: "Job titles & catalogs", permission: "staff.view" },
+  { to: "/rota", label: "Rota", permission: "rota.view" },
+  { to: "/leave", label: "Leave", permission: "leave.approve" },
   { to: "/access", label: "Access", permission: "access.roles.view" },
   { to: "/accounts", label: "Accounts", permission: "access.roles.view" },
   { to: "/access-reviews", label: "Access reviews", permission: "access.reviews.view" },

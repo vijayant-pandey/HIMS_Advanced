@@ -11,6 +11,8 @@ CATEGORIES: dict[str, str] = {
     "user": "Accounts",
     "access": "Access and roles",
     "staff": "Staff",
+    "rota": "Rotas and leave",
+    "leave": "Rotas and leave",
     "organization": "Hospital setup",
     "facility": "Hospital setup",
     "department": "Hospital setup",
@@ -25,6 +27,14 @@ CATEGORIES: dict[str, str] = {
 }
 
 LABELS: dict[str, str] = {
+    A.SHIFT_TYPE_CREATED: "Shift type added",
+    A.SHIFT_TYPE_UPDATED: "Shift type changed",
+    A.SHIFT_ADDED: "Shift or on-call planned",
+    A.SHIFT_CANCELLED: "Shift or on-call cancelled",
+    A.LEAVE_REQUESTED: "Leave asked for",
+    A.LEAVE_APPROVED: "Leave approved",
+    A.LEAVE_REJECTED: "Leave refused",
+    A.LEAVE_CANCELLED: "Leave cancelled",
     A.ORGANIZATION_PROVISIONED: "Hospital set up",
     A.ORGANIZATION_UPDATED: "Hospital details changed",
     A.FACILITY_CREATED: "Facility added",

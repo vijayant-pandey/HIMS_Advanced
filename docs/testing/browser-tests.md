@@ -6,14 +6,14 @@ invitation email, use two browsers at once (administrator and nurse), and check 
 with **axe**, the standard accessibility checker (WCAG 2.1 A and AA; serious or critical
 problems fail the test).
 
-## What they cover (28 tests, about 3 minutes)
+## What they cover (29 tests, about 3 to 4 minutes)
 
 | File | Flow |
 |---|---|
 | `auth.setup.ts` | First sign-in of the administrator and the auditor; two-factor set-up with backup codes |
 | `01-sign-in.spec.ts` | Wrong password and wrong code refused; menus differ by role; signed-out people sent to sign-in |
 | `02-hospital-setup.spec.ts` | Facility (duplicate code refused), department, building → floor → ward → room → beds, bed into maintenance (reason required); Numbering, Features, Hospital settings |
-| `03-staff-and-access.spec.ts` | Add a nurse (invitation sent automatically), resend (old link refused), activate in her own browser, "no access yet" page with reference, give access, cover arranged and ended early, cover for yourself refused, access review |
+| `03-staff-and-access.spec.ts` | Add a nurse (invitation sent automatically), resend (old link refused), activate in her own browser, "no access yet" page with reference, give access, cover arranged and ended early, cover for yourself refused, access review; rota and leave: the nurse is posted, gets a night shift, asks for that day off, the administrator approves and the shift is cancelled |
 | `04-audit-and-safety.spec.ts` | Auditor finds the nurse's visit by reference, audit integrity check, review read-only; administrator refused the audit log; remaining screens; security incident; no screen blocked by the browser protection rules and injected code is, with its report reviewed; a sensitive action asks, a wrong password is refused, and the action finishes by itself; audit download asks; admin console under its rules and its confirm page; keyboard-only menu use |
 
 Every test runs against a **throw-away database `hims_e2e`** and its own servers (API on port

@@ -4,7 +4,7 @@
 import { type Browser, type Page, expect, test } from "@playwright/test";
 
 import { localDate } from "../../src/components/dates";
-import { AUDITOR, NEW_STAFF_PASSWORD } from "../config.mjs";
+import { ADMIN, AUDITOR, NEW_STAFF_PASSWORD } from "../config.mjs";
 import {
   expectAccessible,
   newLinkFromEmail,
@@ -175,3 +175,72 @@ test("access review: start one and keep the nurse's access", async ({ browser })
   await expectAccessible(page, "Access review detail");
 });
 
+test("rota and leave: a night shift for the nurse, she asks for that day off, the administrator approves", async ({
+  browser,
+}) => {
+  // Spec 4.3 shift schedules and leave (HIMS-STAFF-012).
+  const admin = await asAdmin(browser);
+  await admin.goto(new URL(recall("nurse-staff-url")).pathname);
+  await admin.getByRole("button", { name: "Add posting" }).click();
+  const posting = admin.getByRole("dialog");
+  await posting.getByRole("combobox", { name: "Department" }).click();
+  await admin.getByRole("option", { name: /Cardiology/ }).click();
+  await expect(admin.locator(".MuiMenu-root")).toHaveCount(0);
+  await posting.getByRole("combobox", { name: /Designation/ }).click();
+  await admin.getByRole("option").first().click();
+  await expect(admin.locator(".MuiMenu-root")).toHaveCount(0);
+  await posting.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(posting).toBeHidden();
+
+  const tomorrow = localDate(new Date(Date.now() + 86_400_000));
+  await openMenu(admin, "Rota");
+  await expect(admin.getByRole("table", { name: "Rota for Cardiology" })).toBeVisible();
+  await expect(admin.getByRole("region", { name: "On call now" })).toBeVisible();
+  await expectAccessible(admin, "Rota");
+  await admin.getByRole("button", { name: "Plan shifts" }).click();
+  const plan = admin.getByRole("dialog");
+  await plan.getByRole("combobox", { name: "Person" }).click();
+  await admin.getByRole("option", { name: "Asha Nurse" }).click();
+  await expect(admin.locator(".MuiMenu-root")).toHaveCount(0);
+  await plan.getByRole("combobox", { name: "Shift" }).click();
+  await admin.getByRole("option", { name: /^Night ·/ }).click();
+  await expect(admin.locator(".MuiMenu-root")).toHaveCount(0);
+  await plan.getByLabel("First day").fill(tomorrow);
+  await expectAccessible(admin, "Plan shifts dialog");
+  await plan.getByRole("button", { name: "Plan" }).click();
+  await expect(plan).toBeHidden();
+  await admin.getByRole("tab", { name: "Shift types" }).click();
+  await expect(admin.getByRole("table", { name: "Shift types" })).toContainText("On call (24 hours)");
+
+  const nurse = await (await browser.newContext()).newPage();
+  await signIn(nurse, NURSE.email, NURSE_PASSWORD);
+  await nurse.getByRole("link", { name: "My schedule" }).click();
+  await expect(nurse.getByRole("table", { name: "My coming shifts" })).toContainText("20:00-08:00");
+  await expectAccessible(nurse, "My schedule");
+  await nurse.getByRole("button", { name: "Ask for leave" }).click();
+  const ask = nurse.getByRole("dialog");
+  await ask.getByLabel("First day").fill(tomorrow);
+  await ask.getByLabel("Last day").fill(tomorrow);
+  await expectAccessible(nurse, "Ask for leave dialog");
+  await ask.getByRole("button", { name: "Send" }).click();
+  await expect(ask).toBeHidden();
+  await expect(nurse.getByRole("table", { name: "My leave" })).toContainText("Waiting for a decision");
+  expect(subjectsFor(ADMIN.email).some((s) => s.startsWith("Leave to decide: Asha Nurse"))).toBe(true);
+
+  await openMenu(admin, "Leave");
+  await admin.getByRole("button", { name: "Approve leave for Asha Nurse" }).click();
+  const approve = admin.getByRole("dialog");
+  await expect(approve).toContainText("1 planned shift(s) during this leave");
+  await approve.getByRole("checkbox", { name: /Cancel those shifts/ }).check();
+  await expectAccessible(admin, "Approve leave dialog");
+  await approve.getByRole("button", { name: "Approve leave" }).click();
+  await expect(approve).toBeHidden();
+  await admin.getByRole("tab", { name: "Approved, coming up" }).click();
+  await expect(admin.getByRole("table", { name: "Leave" })).toContainText("Asha Nurse");
+  await expectAccessible(admin, "Leave");
+
+  await nurse.reload();
+  await expect(nurse.getByRole("table", { name: "My leave" })).toContainText("Approved");
+  await expect(nurse.getByRole("table", { name: "My coming shifts" })).toContainText("No shifts planned");
+  expect(subjectsFor(NURSE.email).some((s) => s.startsWith("Leave approved"))).toBe(true);
+});

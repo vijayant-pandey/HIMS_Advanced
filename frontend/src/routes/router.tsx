@@ -76,6 +76,12 @@ export const routes = [
                 path: "catalogs",
                 lazy: screen(() => import("../features/staff/CatalogsPage"), (m) => m.CatalogsPage),
               },
+              { path: "rota", lazy: screen(() => import("../features/rosters/RotaPage"), (m) => m.RotaPage) },
+              { path: "leave", lazy: screen(() => import("../features/rosters/LeavePage"), (m) => m.LeavePage) },
+              {
+                path: "my-schedule",
+                lazy: screen(() => import("../features/rosters/MySchedulePage"), (m) => m.MySchedulePage),
+              },
               { path: "access", lazy: screen(access, (m) => m.AccessPage) },
               { path: "access-reviews", lazy: screen(reviews, (m) => m.AccessReviewsPage) },
               { path: "access-reviews/:id", lazy: screen(reviews, (m) => m.AccessReviewDetailPage) },

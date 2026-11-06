@@ -89,6 +89,9 @@ def apply_employment_status_change(staff: StaffMember) -> None:
 
         for department in staff.departments_headed.all():
             clear_head_if_invalid(department, reason="The head's employment ended")
+    from apps.rosters.services import on_employment_status_changed
+
+    on_employment_status_changed(staff)  # future shifts cancelled (HIMS-STAFF-012)
     publish_event(
         event_type="staff.member.employment_status_changed",
         aggregate_type="staff_member",

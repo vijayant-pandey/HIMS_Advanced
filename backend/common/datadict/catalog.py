@@ -55,6 +55,11 @@ DOMAINS: dict[str, dict] = {
         "owner": "Staff/credential domain (verification and expiry are separate from sign-in)",
         "docs": ["../../decisions/ADR-020-document-storage.md"],
     },
+    "rosters": {
+        "name": "Rotas, on-call and leave",
+        "owner": "Staff/credential domain (heads of department plan; approvers decide leave)",
+        "docs": ["rotas-and-leave.md"],
+    },
     "audit": {
         "name": "Audit log and tamper evidence",
         "owner": "Audit domain (separate security boundary)",
@@ -132,6 +137,11 @@ LIFECYCLE: dict[str, str] = {
     "staff_credentials": "Never deleted; verification recorded; renewal is a new credential.",
     "staff_documents": "Never deleted; archived with a reason; the file is kept (ADR-020).",
     "staff_credential_expiry_alerts": "One per credential, stage and expiry date (sent once).",
+    "shift_types": "Catalog: never deleted; switched off (`is_active`). New times apply to shifts "
+    "planned afterwards.",
+    "shifts": "Never deleted; cancelled with a reason. Past shifts cannot be changed.",
+    "leave_requests": "Never deleted; requested -> approved, refused or cancelled, each with who "
+    "and when. Retention period: decision pending with the other HR records (🔒 LEGAL).",
     "audit_events": "Append-only: a database trigger refuses changes and deletes. Retention and "
     "legal hold: decision pending (🔒 LEGAL).",
     "audit_chain_entries": "Append-only (database trigger); one link per sealed audit event.",
@@ -201,6 +211,14 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "staff_documents.original_name": (RESTRICTED, "Document (file name)"),
     "access_review_items.account_active": (RESTRICTED, "Access evidence"),
     "access_review_items.last_signed_in_at": (RESTRICTED, "Access evidence"),
+    "leave_requests.leave_type": (RESTRICTED, "Personal (e.g. sick leave)"),
+    "leave_requests.reason": (RESTRICTED, "Personal note (no medical details)"),
+    "leave_requests.decision_note": (RESTRICTED, "Personal note"),
+    "leave_requests.cancel_reason": (RESTRICTED, "Personal note"),
+    "leave_requests.start_date": (RESTRICTED, "Personal (time away)"),
+    "leave_requests.end_date": (RESTRICTED, "Personal (time away)"),
+    "shifts.note": (RESTRICTED, "Work note (no patient details)"),
+    "shifts.cancel_reason": (RESTRICTED, "Work note"),
 }
 # Column names, checked next: name -> (level, category).
 NAME_RULES: dict[str, tuple[str, str]] = {

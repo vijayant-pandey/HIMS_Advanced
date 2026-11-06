@@ -53,6 +53,11 @@ export function AppShell() {
             ))}
           </Stack>
           <ThemePicker color="inherit" />
+          {user?.staff_member_id && (
+            <Button color="inherit" component={NavLink} to="/my-schedule" sx={MENU_ITEM}>
+              My schedule
+            </Button>
+          )}
           <Button
             color="inherit"
             component={NavLink}

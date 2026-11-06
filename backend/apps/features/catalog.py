@@ -96,6 +96,16 @@ FEATURES: tuple[Feature, ...] = (
         scope=FACILITY,
         default=True,
     ),
+    Feature(
+        key="staff.rotas",
+        name="Rotas, leave and on-call",
+        description="Plan shifts and on-call per department, ask for and approve leave, see who "
+        "is on call now. When off for a facility, its rotas cannot be changed or seen in the "
+        "app (leave already approved stays recorded; the admin console still shows them).",
+        category=SETUP,
+        scope=FACILITY,
+        default=True,
+    ),
     # --- Planned (spec 20): visible so hospitals can plan, not switchable until built -------------
     _planned(
         "patients.registration",
@@ -196,3 +206,4 @@ class F:
     TWO_FACTOR_FOR_EVERYONE = BY_KEY["auth.two_factor_for_everyone"].key
     CONFIRM_SENSITIVE_ACTIONS = BY_KEY["auth.confirm_sensitive_actions"].key
     LOCATIONS = BY_KEY["locations.module"].key
+    ROTAS = BY_KEY["staff.rotas"].key

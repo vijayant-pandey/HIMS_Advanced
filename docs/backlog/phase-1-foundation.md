@@ -53,8 +53,11 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | Done |
 | HIMS-ORG-004 | Feature flags per organization/country/facility | Done |
 | HIMS-ORG-005 | Hospital settings screen (name, legal name, default time zone) | Done |
+| HIMS-ORG-006 | Hospital logo and letterhead for printouts and emails (spec 4.1) | To do |
 | HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done |
 | HIMS-FAC-007 | Department head, services offered and operating hours | Done |
+| HIMS-FAC-008 | Bed board: every ward's beds and their status on one screen, no patients yet (spec 4.10) | To do |
+| HIMS-FAC-009 | Equipment register: item, location, status, service dates (spec 4.12; workflows wait for PO) | To do |
 
 ## EPIC HIMS-IAM — Identity and access
 
@@ -94,7 +97,10 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-007 | Staff detail/onboarding UI | Done |
 | HIMS-STAFF-010 | Catalog screens: designations, specialties, qualification types (add/edit/deactivate in the app) | Done |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility | To do |
-| HIMS-STAFF-012 | Shift schedules, leave and on-call rotations (spec 4.3) | To do |
+| HIMS-STAFF-012 | Shift schedules, leave and on-call rotations (spec 4.3): Rota, Leave and My schedule pages, admin console, no double booking enforced by the database ([design](../architecture/data-architecture/rotas-and-leave.md), [ADR-024](../decisions/ADR-024-rotas-no-overlap-in-the-database.md)) | Done |
+| HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) (gap found in HIMS-STAFF-012) | To do (🔒 PO: HR leave policy) |
+| HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head (gap found in HIMS-STAFF-012) | To do (when hospitals ask) |
+| HIMS-STAFF-015 | Minimum staffing per shift and alerts for gaps (gap found in HIMS-STAFF-012) | To do (🔒 CLIN: staffing ratios) |
 | HIMS-STAFF-011 | Decide "today" by the hospital's time zone, not UTC: a licence that expired yesterday showed as "expiring soon" until 5:30 am in India (gap found in HIMS-SEC-012); also reviews, audit day search, postings, emails ([how-to](../workflows/dates-and-time-zones.md)) | Done |
 | HIMS-STAFF-009 | Designation catalog (IN/US, junior→senior), extended specialty/qualification catalogs, administrative system roles, RBAC document | Done |
 
@@ -112,6 +118,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-SEC-014 | Trust `X-Forwarded-For` only from our own proxies, for audit addresses, sign-in register, rate limits and the console lock-out | Done |
 | HIMS-SEC-018 | Send `frontend/security-headers.json` as response headers at hosting (CloudFront response headers policy) and check them from outside (gap found in HIMS-SEC-012) | To do (🔒 AWS) |
 | HIMS-SEC-016 | Copy each passed check's audit chain head to write-once storage (S3 Object Lock) as an independent anchor (gap found in HIMS-SEC-010) | To do (🔒 AWS) |
+| HIMS-SEC-019 | Secret-in-logs test: no password, token, code or key ever reaches a log line (spec 13.5) | To do |
 | HIMS-SEC-017 | Run the on-demand audit integrity check as a background job with progress once the audit log nears ~1 million records (gap found in HIMS-SEC-010) | To do (when volume is near) |
 
 ## EPIC HIMS-DATA — Data architecture (Artifact A, spec 28)
@@ -162,6 +169,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-OPS-007 | Separate DB roles (runtime / migration / read-only / break-glass); runtime lacks TRUNCATE on audit | To do |
 | HIMS-OPS-008 | Customer provisioning automation in the control plane | To do |
 | HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | To do |
+| HIMS-OPS-017 | Response-time targets (SLOs) measured locally, before hosting (spec 18) | To do |
+| HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features (spec 25.3, 29) | To do |
 
 ## Later phases (epics only; P0 design required before build — spec 26)
 
