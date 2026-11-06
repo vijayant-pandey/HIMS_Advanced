@@ -23,6 +23,7 @@ class P:
     STAFF_VIEW = "staff.view"
     STAFF_MANAGE = "staff.manage"
     STAFF_CREDENTIALS_VERIFY = "staff.credentials.verify"
+    STAFF_DOCUMENTS_VIEW = "staff.documents.view"
     ROLES_VIEW = "access.roles.view"
     ROLES_MANAGE = "access.roles.manage"
     ROLE_ASSIGNMENTS_MANAGE = "access.assignments.manage"
@@ -56,7 +57,11 @@ PERMISSIONS: dict[str, str] = {
     P.NUMBERING_MANAGE: "Change numbering schemes and continue numbering from a previous system",
     P.FEATURES_VIEW: "See which features are on for the hospital and each facility",
     P.FEATURES_MANAGE: "Turn features on or off for the hospital or a facility",
-    P.STAFF_VIEW: "View the staff directory, qualifications and credentials",
+    P.STAFF_VIEW: (
+        "View the staff directory, qualifications and credentials (a facility or department grant "
+        "shows only the staff posted there)"
+    ),
+    P.STAFF_DOCUMENTS_VIEW: "Open staff licence and qualification documents (the uploaded files)",
     P.STAFF_MANAGE: "Onboard staff and maintain their qualifications and credentials",
     P.STAFF_CREDENTIALS_VERIFY: "Verify staff qualifications and professional credentials",
     P.ROLES_VIEW: "View roles and role assignments",
@@ -137,10 +142,12 @@ SYSTEM_ROLES: dict[str, dict] = {
     "facility-administrator": {
         "name": "Facility (branch) administrator",
         "description": "Runs one branch: its details, departments, locations, its own "
-        "numbering series and its feature settings. Assign at facility scope.",
+        "numbering series and its feature settings; sees the branch's staff. Assign at facility "
+        "scope.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.FACILITIES_MANAGE,
+            P.STAFF_VIEW,
             P.DEPARTMENTS_VIEW,
             P.DEPARTMENTS_MANAGE,
             P.LOCATIONS_VIEW,
@@ -159,6 +166,7 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.STAFF_VIEW,
             P.STAFF_MANAGE,
             P.STAFF_CREDENTIALS_VERIFY,
+            P.STAFF_DOCUMENTS_VIEW,
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
             P.CATALOGS_MANAGE,
@@ -168,12 +176,13 @@ SYSTEM_ROLES: dict[str, dict] = {
     },
     "department-head": {
         "name": "Head of department (HOD)",
-        "description": "Sees their department, plans its rota and decides its leave. Clinical "
-        "approvals are added with clinical domains. Assign at department scope.",
+        "description": "Sees their department and its staff, plans its rota and decides its leave. "
+        "Clinical approvals are added with clinical domains. Assign at department scope.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
             P.LOCATIONS_VIEW,
+            P.STAFF_VIEW,
             P.ROTA_VIEW,
             P.ROTA_MANAGE,
             P.LEAVE_APPROVE,

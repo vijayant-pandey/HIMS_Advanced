@@ -121,7 +121,8 @@ export function StaffDetailPage() {
   const close = () => setDialog(undefined);
   // Hints only: the API checks every permission.
   const canManage = hasOrganizationWidePermission(user, "staff.manage");
-  const canVerify = hasPermission(user, "staff.credentials.verify");
+  // Hints only (the API decides): verifying needs a hospital-wide grant (HIMS-STAFF-008).
+  const canVerify = hasOrganizationWidePermission(user, "staff.credentials.verify");
   const canSeeAccess = hasPermission(user, "access.roles.view");
   const isSelf = !!staff?.user && staff.user === user?.id;
 
@@ -163,6 +164,11 @@ export function StaffDetailPage() {
         )}
       </Box>
       <Account staff={staff} canManage={canManage} />
+      {!staff.documents_visible && (
+        <Alert severity="info">
+          Copies of licences and certificates are shown only to people allowed to open them, such as HR.
+        </Alert>
+      )}
 
       <Tabs value={tab} onChange={(_, value: number) => setTab(value)} aria-label="Staff sections">
         <Tab label={`Departments (${current.length})`} />
@@ -256,7 +262,7 @@ export function StaffDetailPage() {
                   <TableCell>Institution</TableCell>
                   <TableCell>Year</TableCell>
                   <TableCell>Verification</TableCell>
-                  <TableCell>Documents</TableCell>
+                  {staff.documents_visible && <TableCell>Documents</TableCell>}
                   <TableCell />
                 </TableRow>
               </TableHead>
@@ -283,15 +289,17 @@ export function StaffDetailPage() {
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <DocumentCell
-                          staffId={staff.id}
-                          documents={staff.documents.filter((d) => d.qualification === q.id)}
-                          target={{ qualification: q.id }}
-                          label={q.qualification_type_name}
-                          canManage={canManage}
-                        />
-                      </TableCell>
+                      {staff.documents_visible && (
+                        <TableCell>
+                          <DocumentCell
+                            staffId={staff.id}
+                            documents={staff.documents.filter((d) => d.qualification === q.id)}
+                            target={{ qualification: q.id }}
+                            label={q.qualification_type_name}
+                            canManage={canManage}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell align="right">
                         {canVerify && !isSelf && q.verification_status === "unverified" && (
                           <Button
@@ -343,7 +351,7 @@ export function StaffDetailPage() {
                   <TableCell>Issued by</TableCell>
                   <TableCell>Expires</TableCell>
                   <TableCell>Verification</TableCell>
-                  <TableCell>Documents</TableCell>
+                  {staff.documents_visible && <TableCell>Documents</TableCell>}
                   <TableCell />
                 </TableRow>
               </TableHead>
@@ -375,15 +383,17 @@ export function StaffDetailPage() {
                           </Typography>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <DocumentCell
-                          staffId={staff.id}
-                          documents={staff.documents.filter((d) => d.credential === c.id)}
-                          target={{ credential: c.id }}
-                          label={c.credential_type_label}
-                          canManage={canManage}
-                        />
-                      </TableCell>
+                      {staff.documents_visible && (
+                        <TableCell>
+                          <DocumentCell
+                            staffId={staff.id}
+                            documents={staff.documents.filter((d) => d.credential === c.id)}
+                            target={{ credential: c.id }}
+                            label={c.credential_type_label}
+                            canManage={canManage}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell align="right">
                         {canVerify && !isSelf && c.verification_status === "unverified" && (
                           <Button

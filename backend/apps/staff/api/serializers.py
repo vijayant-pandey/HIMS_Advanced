@@ -329,7 +329,11 @@ class StaffMemberDetailSerializer(StaffMemberSerializer):
     qualifications = StaffQualificationSerializer(many=True, read_only=True)
     credentials = StaffCredentialSerializer(many=True, read_only=True)
     documents = serializers.SerializerMethodField(
-        help_text="Licence and qualification documents, newest first (archived ones included)."
+        help_text="Licence and qualification documents, newest first (archived ones included). "
+        "Empty unless documents_visible."
+    )
+    documents_visible = serializers.SerializerMethodField(
+        help_text="Whether you may open this person's documents (staff.documents.view)"
     )
     account = serializers.SerializerMethodField()
 
@@ -341,11 +345,32 @@ class StaffMemberDetailSerializer(StaffMemberSerializer):
             "qualifications",
             "credentials",
             "documents",
+            "documents_visible",
         ]
         read_only_fields = fields
 
+    def get_documents_visible(self, staff) -> bool:
+        """HIMS-STAFF-008: seeing a person does not mean opening their files."""
+        request = self.context.get("request")
+        if request is None:
+            return True  # used inside HIMS, not shown to a person
+        from apps.access_control.catalog import P
+        from apps.access_control.selectors import get_permission_scope
+
+        from ..selectors import scope_context
+
+        scope = get_permission_scope(request.user, P.STAFF_DOCUMENTS_VIEW)
+        if scope.org_wide:
+            return True
+        if scope.is_empty:
+            return False
+        facility_id, _ = scope_context(request.user, P.STAFF_DOCUMENTS_VIEW, staff.pk)
+        return facility_id is not None
+
     @extend_schema_field(StaffDocumentSerializer(many=True))
     def get_documents(self, staff) -> list:
+        if not self.get_documents_visible(staff):
+            return []
         return StaffDocumentSerializer(staff.documents.all(), many=True).data
 
     @extend_schema_field(StaffAccountSerializer)
