@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from apps.access_control.services import assign_role
 from apps.facilities.models import Building, Department, Floor, Ward
+from apps.organizations.dates import hospital_today
 from apps.staff.models import Designation, StaffDepartmentAssignment, StaffMember
 
 API = "/api/v1"
@@ -56,7 +57,7 @@ def test_department_with_current_staff_cannot_be_closed(
     assert message["field"] == "status"
     assert "1 staff member is posted here" in message["message"]
 
-    posting.valid_until = timezone.localdate() - timedelta(days=1)  # posting ended yesterday
+    posting.valid_until = hospital_today() - timedelta(days=1)  # posting ended yesterday
     posting.save()
     assert deactivate(client, department_a).status_code == 200
 

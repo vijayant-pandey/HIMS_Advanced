@@ -8,10 +8,10 @@ from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import Client, override_settings
-from django.utils import timezone
 
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction
+from apps.organizations.dates import hospital_today
 from apps.staff import expiry
 from apps.staff.models import (
     CredentialExpiryAlert,
@@ -202,7 +202,7 @@ def test_alert_stages():
 @pytest.mark.django_db
 def test_daily_alerts_once_per_stage_to_hr_and_the_person(nurse, make_user, system_roles):
     hr = make_user(role=system_roles["hr-credentialing-officer"], email="hr@synthetic.test")
-    today = timezone.localdate()
+    today = hospital_today()
     licence = _licence(nurse, today + timedelta(days=25))
 
     assert expiry.send_credential_expiry_alerts(today) == 1
@@ -228,7 +228,7 @@ def test_daily_alerts_once_per_stage_to_hr_and_the_person(nurse, make_user, syst
 
 @pytest.mark.django_db
 def test_renewed_licence_starts_alerts_again(nurse):
-    today = timezone.localdate()
+    today = hospital_today()
     licence = _licence(nurse, today + timedelta(days=5))
     expiry.send_credential_expiry_alerts(today)
     licence.expires_at = today + timedelta(days=400)  # renewed
@@ -241,7 +241,7 @@ def test_renewed_licence_starts_alerts_again(nurse):
 
 @pytest.mark.django_db
 def test_no_alerts_for_staff_who_left_or_rejected_licences(nurse, organization):
-    today = timezone.localdate()
+    today = hospital_today()
     _licence(nurse, today + timedelta(days=3), verification_status="rejected")
     nurse.employment_status = "terminated"
     nurse.save()
@@ -251,7 +251,7 @@ def test_no_alerts_for_staff_who_left_or_rejected_licences(nurse, organization):
 
 @pytest.mark.django_db
 def test_management_command_sends_due_alerts(nurse):
-    _licence(nurse, timezone.localdate() - timedelta(days=2))
+    _licence(nurse, hospital_today() - timedelta(days=2))
     call_command("send_credential_expiry_alerts")
     assert CredentialExpiryAlert.objects.filter(days_before=0).count() == 1
 
@@ -261,7 +261,7 @@ def test_management_command_sends_due_alerts(nurse):
 
 @pytest.mark.django_db
 def test_expiring_list_soonest_first_with_alert_info(client_for, admin_user, nurse):
-    today = timezone.localdate()
+    today = hospital_today()
     _licence(nurse, today + timedelta(days=40), number="KNC-A")
     expired = _licence(nurse, today - timedelta(days=3), number="KNC-B")
     _licence(nurse, today + timedelta(days=200), number="KNC-C")  # outside the window

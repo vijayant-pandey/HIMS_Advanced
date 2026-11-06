@@ -3,6 +3,7 @@
 // administrator gives a role; cover is arranged. Uses two browsers like two real people.
 import { type Browser, type Page, expect, test } from "@playwright/test";
 
+import { localDate } from "../../src/components/dates";
 import { AUDITOR, NEW_STAFF_PASSWORD } from "../config.mjs";
 import {
   expectAccessible,
@@ -128,7 +129,7 @@ test("cover: the nurse's access is lent to a colleague for a week, then ended ea
   await pick("Person being covered", "Asha", /Asha Nurse/);
   await pick("Person covering", "E2E Aud", new RegExp(AUDITOR.name));
   await expect(dialog.getByRole("checkbox", { name: /Basic staff access/ })).toBeChecked();
-  const nextWeek = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+  const nextWeek = localDate(new Date(Date.now() + 7 * 86_400_000));
   await dialog.getByLabel(/Ends on/).fill(nextWeek);
   await dialog.getByRole("textbox", { name: "Reason" }).fill("Annual leave");
   await expectAccessible(page, "Arrange cover dialog");
@@ -154,7 +155,7 @@ test("you cannot arrange cover that gives yourself access", async ({ browser }) 
   await page.getByRole("option", { name: /Asha Nurse/ }).click();
   await dialog.getByRole("combobox", { name: "Person covering" }).fill("E2E Adm");
   await page.getByRole("option", { name: /E2E Admin/ }).click();
-  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  const tomorrow = localDate(new Date(Date.now() + 86_400_000));
   await dialog.getByLabel(/Ends on/).fill(tomorrow);
   await dialog.getByRole("textbox", { name: "Reason" }).fill("Trying to give myself access");
   await dialog.getByRole("button", { name: "Arrange cover" }).click();

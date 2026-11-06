@@ -17,6 +17,7 @@ from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
 from apps.notifications.services import send_email
+from apps.organizations.dates import hospital_date, hospital_time, hospital_today
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
@@ -44,7 +45,7 @@ def role_label(assignment: RoleAssignment) -> str:
     """Role name; access lent for cover says so, so reviewers can tell it apart (HIMS-IAM-017)."""
     name = assignment.role.name
     if assignment.delegation_id is not None:
-        until = timezone.localtime(assignment.delegation.ends_at).strftime("%d %b %Y")
+        until = hospital_time(assignment.delegation.ends_at).strftime("%d %b %Y")
         name = f"{name} (cover for {assignment.delegation.delegator.display_name} until {until})"
     return name[:128]
 
@@ -71,7 +72,7 @@ def ensure_can_start(*, due_on: date | None) -> date:
             "An access review is already in progress. Complete or cancel it first.",
             code="REVIEW_ALREADY_OPEN",
         )
-    today = timezone.localdate()
+    today = hospital_today()
     if due_on is not None and due_on < today:
         raise ConflictError("The finish-by date cannot be in the past.", code="DUE_DATE_PAST")
     return due_on or today + timedelta(days=settings.HIMS_ACCESS_REVIEW_DEFAULT_DAYS_TO_FINISH)
@@ -265,7 +266,7 @@ def schedule(today: date | None = None) -> dict:
     hospital was set up, if none was ever completed)."""
     from apps.organizations.models import Organization
 
-    today = today or timezone.localdate()
+    today = today or hospital_today()
     interval = settings.HIMS_ACCESS_REVIEW_INTERVAL_DAYS
     last = (
         AccessReview.objects.filter(status=AccessReview.Status.COMPLETED)
@@ -273,10 +274,10 @@ def schedule(today: date | None = None) -> dict:
         .first()
     )
     if last is not None:
-        base = timezone.localdate(last.completed_at)
+        base = hospital_date(last.completed_at)
     else:
         organization = Organization.objects.only("created_at").first()
-        base = timezone.localdate(organization.created_at) if organization else today
+        base = hospital_date(organization.created_at) if organization else today
     open_review = AccessReview.objects.filter(status=AccessReview.Status.OPEN).first()
     next_due_on = base + timedelta(days=interval)
     return {
@@ -310,7 +311,7 @@ def send_access_review_reminders(today: date | None = None) -> int:
     is sent once (safe to run any number of times). Returns how many were sent."""
     from apps.organizations.models import Organization
 
-    today = today or timezone.localdate()
+    today = today or hospital_today()
     organization = Organization.objects.first()
     if organization is None:
         return 0

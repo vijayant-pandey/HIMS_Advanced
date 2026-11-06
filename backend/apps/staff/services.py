@@ -4,6 +4,7 @@ from django.utils import timezone
 from apps.audit.services import AuditAction, model_changes, record_audit_event, snapshot
 from apps.facilities.models import Department
 from apps.identity.services import create_user
+from apps.organizations.dates import hospital_today
 from apps.organizations.selectors import get_deployment_organization
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
@@ -237,9 +238,10 @@ def end_department_assignment(
         .select_related("department")
         .get(pk=assignment_id, staff=staff)
     )
-    if assignment.valid_until is not None and assignment.valid_until < timezone.localdate():
+    today = hospital_today(assignment.department.facility)  # the posting's own facility
+    if assignment.valid_until is not None and assignment.valid_until < today:
         raise ConflictError("This posting has already ended.", code="ALREADY_ENDED")
-    ended_on = valid_until or timezone.localdate()
+    ended_on = valid_until or today
     if ended_on < assignment.valid_from:
         raise ConflictError(
             "The end date cannot be before the posting started.", code="INVALID_END_DATE"

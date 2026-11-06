@@ -231,6 +231,8 @@ Keep this tab open. You'll use it to compare the app with the admin console.
       (INR) and status. A note says country and currency cannot be changed here.
 - [ ] **Do:** click **Edit**. Change **Name shown in HIMS** to `My Hospital TEST`. Click **Save**.
 - [ ] **Expect:** the new name is shown on the page and in the top bar.
+- [ ] **Expect (needs HIMS-STAFF-011):** in the Edit window, under **Default time zone**, it says
+      it decides "today" for licence expiry and access reviews, and the times shown in emails.
 - [ ] **Check in the admin console:** admin tab → **Organizations** → **Organizations** → click
       the hospital.
 - [ ] **Expect:** the display name is `My Hospital TEST`.
@@ -661,6 +663,9 @@ Asha is the HR officer (Part 9.4). Pretend she goes on leave and **External Audi
 - [ ] **Do:** change **Expiring within** to a small number (e.g. 7 days).
 - [ ] **Expect:** Ravi's licence disappears (20 days is more than 7). Set it back to 60.
 - [ ] **Do:** tick **Include expired**.
+- [ ] **Expect (needs HIMS-STAFF-011):** the note at the top says days are counted by the
+      hospital's time zone. A licence that expired yesterday shows **Expired 1 day ago** at any
+      hour, also between midnight and 5:30 am.
 
 **Send the alert emails by hand.** On a real server this runs every day automatically.
 

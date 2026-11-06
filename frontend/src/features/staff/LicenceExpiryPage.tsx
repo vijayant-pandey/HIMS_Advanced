@@ -46,7 +46,8 @@ export function LicenceExpiryPage() {
         </Typography>
         <Typography variant="body2">
           Licences and registrations of working staff that have expired or expire soon. HR and the
-          person are emailed automatically 60, 30 and 7 days before, and again once expired.
+          person are emailed automatically 60, 30 and 7 days before, and again once expired. Days are
+          counted by the hospital's time zone (Hospital settings).
         </Typography>
       </Box>
       <Stack direction="row" spacing={2} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>

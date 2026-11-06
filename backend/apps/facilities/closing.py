@@ -9,6 +9,8 @@ apply them. Other apps are imported lazily: facilities sits below them.
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.organizations.dates import hospital_today
+
 
 def _plural(count: int, one: str, many: str) -> str:
     return f"{count} {one if count == 1 else many}"
@@ -23,9 +25,10 @@ def _active_grants(**scope):
     )
 
 
-def current_postings_q(prefix: str = "") -> Q:
-    """Postings that are current or start in the future (not yet ended)."""
-    today = timezone.localdate()
+def current_postings_q(prefix: str = "", facility=None) -> Q:
+    """Postings that are current or start in the future (not yet ended). "Today" is the
+    facility's when one is given, else the hospital's (lists that span facilities)."""
+    today = hospital_today(facility)
     return Q(**{f"{prefix}valid_until__isnull": True}) | Q(**{f"{prefix}valid_until__gte": today})
 
 
@@ -36,7 +39,7 @@ def department_blockers(department) -> list[str]:
 
     blockers = []
     postings = StaffDepartmentAssignment.objects.filter(
-        current_postings_q(), department=department
+        current_postings_q(facility=department.facility), department=department
     ).count()
     if postings:
         blockers.append(
@@ -99,9 +102,12 @@ def head_problem(department, staff) -> str | None:
     working = (StaffMember.EmploymentStatus.ACTIVE, StaffMember.EmploymentStatus.ON_LEAVE)
     if staff.employment_status not in working:
         return "The head must be a working staff member (not suspended or terminated)."
-    today = timezone.localdate()
+    today = hospital_today(department.facility)
     posted = StaffDepartmentAssignment.objects.filter(
-        current_postings_q(), staff=staff, department=department, valid_from__lte=today
+        current_postings_q(facility=department.facility),
+        staff=staff,
+        department=department,
+        valid_from__lte=today,
     ).exists()
     if not posted:
         return "The head must currently be posted in this department (add a posting first)."

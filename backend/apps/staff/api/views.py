@@ -1,6 +1,5 @@
 from django.db.models import Prefetch, Q
 from django.http import FileResponse, Http404
-from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -11,6 +10,7 @@ from apps.access_control.catalog import P
 from apps.facilities.closing import current_postings_q
 from apps.identity import confirmation
 from apps.identity.invitations import issue_invitation
+from apps.organizations.dates import hospital_today
 from common.exceptions import ConflictError
 from common.idempotency.decorators import idempotent
 
@@ -473,7 +473,7 @@ class StaffCredentialViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet)
             Prefetch("expiry_alerts", CredentialExpiryAlert.objects.all())
         )
         if request.query_params.get("include_expired") == "false":
-            rows = rows.filter(expires_at__gte=timezone.localdate())
+            rows = rows.filter(expires_at__gte=hospital_today())
         return Response(ExpiringCredentialSerializer(rows[:500], many=True).data)
 
     @extend_schema(request=CredentialVerificationSerializer, responses=StaffCredentialSerializer)

@@ -24,6 +24,7 @@ import {
 import { useState } from "react";
 
 import type { AccessDelegation, AccessDelegationCreated, Account } from "../../api/types";
+import { localDate } from "../../components/dates";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { FormDialog } from "../../components/FormDialog";
 import { useAccounts } from "../accounts/api";
@@ -52,11 +53,6 @@ export const COVER_STATUS: Record<
 
 /** Up to 30 days (HIMS_DELEGATION_MAX_DAYS on the server, which has the final say). */
 const MAX_DAYS = 30;
-
-function localDate(date: Date): string {
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
-}
 
 function PersonPicker({
   label,

@@ -17,6 +17,7 @@ from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
 from apps.notifications.services import send_email
+from apps.organizations.dates import hospital_time
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
@@ -109,7 +110,7 @@ def _link(incident: SecurityIncident) -> str:
 def _alert_reported(incident: SecurityIncident) -> None:
     """No incident details in the email: the link needs a sign-in (spec 13.3)."""
     deadlines = "\n".join(
-        f"- {row.get_kind_display()}: {timezone.localtime(row.due_at):%d %b %Y %H:%M %Z}"
+        f"- {row.get_kind_display()}: {hospital_time(row.due_at):%d %b %Y %H:%M %Z}"
         for row in incident.notifications.all()
     )
     send_email(
@@ -243,7 +244,7 @@ def _alert_deadline(row: IncidentNotification, state: str) -> None:
         subject=f"HIMS: {row.get_kind_display()} {state}",
         body=(
             f"{row.get_kind_display()} {state} "
-            f"(deadline {timezone.localtime(row.due_at):%d %b %Y %H:%M %Z}).\n\n"
+            f"(deadline {hospital_time(row.due_at):%d %b %Y %H:%M %Z}).\n\n"
             f"See the incident (sign-in needed): {_link(row.incident)}\n"
         ),
         category="compliance",

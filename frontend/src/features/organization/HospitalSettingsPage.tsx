@@ -81,7 +81,10 @@ function EditDialog({ organization, onClose }: { organization: Organization; onC
         value={values.default_timezone}
         onChange={(e) => setValues({ ...values, default_timezone: e.target.value })}
         error={!!errors.default_timezone}
-        helperText={errors.default_timezone ?? "Used where a facility has no time zone of its own"}
+        helperText={
+          errors.default_timezone ??
+          "Decides \"today\" for licence expiry and access reviews, and the times shown in emails"
+        }
       >
         {zones.map((zone) => (
           <MenuItem key={zone} value={zone}>

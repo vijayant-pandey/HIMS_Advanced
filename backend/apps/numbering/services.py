@@ -14,12 +14,11 @@ order, never twice, and a rolled-back record does not leave a gap.
 """
 
 from datetime import date
-from zoneinfo import ZoneInfo
 
 from django.db import IntegrityError, transaction
-from django.utils import timezone
 
 from apps.audit.services import AuditAction, model_changes, record_audit_event, snapshot
+from apps.organizations.dates import hospital_today
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError, DomainError
 
@@ -127,13 +126,7 @@ def ensure_default_schemes(organization) -> list[NumberingScheme]:
 
 def local_today(facility=None) -> date:
     """Today's date where the number is issued (facility time zone, else the hospital's)."""
-    if facility is not None:
-        zone = facility.timezone
-    else:
-        from apps.organizations.selectors import get_deployment_organization
-
-        zone = get_deployment_organization().default_timezone
-    return timezone.now().astimezone(ZoneInfo(zone)).date()
+    return hospital_today(facility)
 
 
 def resolve_scheme(document_type: str, facility=None) -> NumberingScheme:

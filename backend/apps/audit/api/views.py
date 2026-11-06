@@ -17,6 +17,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.access_control.catalog import P
+from apps.organizations.dates import hospital_timezone
 
 from .. import catalog
 from ..models import AuditEvent
@@ -81,7 +82,7 @@ class AuditSearchSerializer(serializers.Serializer):
             q &= Q(occurred_at__gte=data["occurred_after"])
         if data.get("occurred_before"):
             q &= Q(occurred_at__lt=data["occurred_before"])
-        zone = timezone.get_current_timezone()
+        zone = hospital_timezone()  # "6 Nov" means 6 Nov at the hospital (HIMS-STAFF-011)
         if data.get("date_from"):
             q &= Q(occurred_at__gte=datetime.combine(data["date_from"], time.min, zone))
         if data.get("date_to"):
