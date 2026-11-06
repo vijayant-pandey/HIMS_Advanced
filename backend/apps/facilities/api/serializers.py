@@ -1,7 +1,7 @@
 from django.db.models import Count, Q
-from django.utils import timezone
 from rest_framework import serializers
 
+from apps.organizations.dates import hospital_today
 from apps.staff.models import StaffMember
 from common.validators import validate_timezone
 
@@ -18,8 +18,8 @@ def facility_counts(queryset):
 
 
 def department_counts(queryset):
-    """Current staff postings and active wards per department."""
-    today = timezone.localdate()
+    """Current staff postings and active wards per department ("today" is the hospital's)."""
+    today = hospital_today()
     current = Q(staff_assignments__valid_until__isnull=True) | Q(
         staff_assignments__valid_until__gte=today
     )

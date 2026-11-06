@@ -1,10 +1,11 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.facilities.models import Department
+from apps.organizations.dates import hospital_today
 
 from ..models import (
     Designation,
@@ -18,6 +19,16 @@ from ..models import (
 )
 
 CATALOG_FIELDS = ["is_active", "is_custom", "version"]
+
+
+def _today(serializer, facility=None) -> date:
+    """The hospital's (or facility's) today, worked out once per reply so every row is judged
+    against the same day (HIMS-STAFF-011)."""
+    cache = serializer.root.__dict__.setdefault("_hims_today", {})
+    key = facility.pk if facility is not None else None
+    if key not in cache:
+        cache[key] = hospital_today(facility)
+    return cache[key]
 
 
 class SpecialtySerializer(serializers.ModelSerializer):
@@ -151,7 +162,7 @@ class StaffDepartmentAssignmentSerializer(serializers.ModelSerializer):
     is_current = serializers.SerializerMethodField()
 
     def get_is_current(self, assignment) -> bool:
-        today = timezone.localdate()
+        today = _today(self, assignment.department.facility)
         return assignment.valid_from <= today and (
             assignment.valid_until is None or assignment.valid_until >= today
         )
@@ -215,7 +226,7 @@ class StaffCredentialSerializer(serializers.ModelSerializer):
     def get_expiry_state(self, credential) -> str:
         if credential.expires_at is None:
             return "no_expiry"
-        today = timezone.localdate()
+        today = _today(self)
         if credential.expires_at < today:
             return "expired"
         if credential.expires_at <= today + timedelta(days=EXPIRY_WARNING_DAYS):
@@ -468,7 +479,7 @@ class ExpiringCredentialSerializer(StaffCredentialSerializer):
         return f"{credential.staff.given_name} {credential.staff.family_name}"
 
     def get_days_left(self, credential) -> int:
-        return (credential.expires_at - timezone.localdate()).days
+        return (credential.expires_at - _today(self)).days
 
     def _alert(self, credential):
         alerts = [

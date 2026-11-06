@@ -8,6 +8,7 @@ import type {
   StaffMemberDetail,
   StaffType,
 } from "../../api/types";
+import { localDate as today } from "../../components/dates";
 import { FormDialog, fieldErrors } from "../../components/FormDialog";
 import { useCurrentUser } from "../auth/api";
 import {
@@ -24,8 +25,6 @@ import {
   useVerify,
 } from "./api";
 import { CREDENTIAL_TYPES, EMPLOYMENT_STATUSES, STAFF_TYPES, options } from "./labels";
-
-const today = () => new Date().toISOString().slice(0, 10);
 
 /** A key per dialog session: a double-click or retry can never create the same thing twice. */
 function useIdempotencyKey() {

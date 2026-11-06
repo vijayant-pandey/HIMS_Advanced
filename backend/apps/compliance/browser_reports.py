@@ -15,6 +15,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
+from apps.organizations.dates import hospital_today
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
@@ -60,7 +61,7 @@ def record_report(payload: object) -> bool:
         return False
     if not _DIRECTIVE.match(directive):
         return False
-    today = timezone.localdate()
+    today = hospital_today()
     key = {"day": today, "directive": directive, "blocked": blocked, "page_path": page_path}
     if BrowserSecurityReport.objects.filter(**key).update(
         occurrences=F("occurrences") + 1, last_seen_at=timezone.now()

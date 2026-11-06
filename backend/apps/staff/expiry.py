@@ -15,6 +15,7 @@ from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
 from apps.notifications.services import send_email
+from apps.organizations.dates import hospital_today
 
 from .models import CredentialExpiryAlert, StaffCredential, StaffMember, VerificationStatus
 
@@ -29,7 +30,7 @@ def watched_credentials(today: date | None = None, within_days: int | None = Non
     """Licences of working staff that are expired or expire within the window, soonest first.
 
     Rejected licences are left out (they are already known to be invalid)."""
-    today = today or timezone.localdate()
+    today = today or hospital_today()
     window = within_days if within_days is not None else max(alert_days(), default=60)
     return (
         StaffCredential.objects.filter(
@@ -89,7 +90,7 @@ def _describe(credential: StaffCredential, stage: int) -> str:
 
 def send_credential_expiry_alerts(today: date | None = None) -> int:
     """Send every alert that is due. Returns how many licence alerts were sent."""
-    today = today or timezone.localdate()
+    today = today or hospital_today()
     hospital = _hospital_name()
     hr = hr_recipients()
     sent_lines: list[str] = []

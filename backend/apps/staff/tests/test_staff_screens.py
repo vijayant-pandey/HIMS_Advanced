@@ -3,12 +3,12 @@
 from datetime import timedelta
 
 import pytest
-from django.utils import timezone
 
 from apps.access_control.models import Role
 from apps.access_control.services import create_role
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction
+from apps.organizations.dates import hospital_today
 from apps.staff.models import Designation, QualificationType, StaffMember
 
 API = "/api/v1"
@@ -61,7 +61,7 @@ def test_detail_shows_names_account_and_expiry(client_for, admin_user, nurse, de
     client = client_for(admin_user)
     _assign(client, nurse, department_a)
     _qualify(client, nurse)
-    soon = (timezone.localdate() + timedelta(days=30)).isoformat()
+    soon = (hospital_today() + timedelta(days=30)).isoformat()
     client.post(
         f"{API}/staff/{nurse.pk}/credentials/",
         {
@@ -121,7 +121,7 @@ def test_end_posting_keeps_history_and_is_audited(client_for, admin_user, nurse,
     assert too_early.status_code == 409
     assert too_early.json()["code"] == "INVALID_END_DATE"
 
-    yesterday = (timezone.localdate() - timedelta(days=1)).isoformat()
+    yesterday = (hospital_today() - timedelta(days=1)).isoformat()
     ended = client.post(url, {"valid_until": yesterday, "reason": "Transferred"}, format="json")
     assert ended.status_code == 200
     assert ended.json()["is_current"] is False and ended.json()["is_primary"] is False
@@ -288,7 +288,7 @@ def test_expired_credential_state(client_for, admin_user, nurse):
             "issuing_authority": "Karnataka Nursing Council",
             "jurisdiction": "IN-KA",
             "valid_from": "2020-01-01",
-            "expires_at": (timezone.localdate() - timedelta(days=1)).isoformat(),
+            "expires_at": (hospital_today() - timedelta(days=1)).isoformat(),
         },
         format="json",
     )

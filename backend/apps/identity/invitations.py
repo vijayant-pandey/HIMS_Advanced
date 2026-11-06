@@ -24,6 +24,7 @@ from django.utils import timezone
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction, record_audit_event
 from apps.notifications.services import send_email
+from apps.organizations.dates import hospital_time
 from common.exceptions import ConflictError, DomainError
 from common.outbox.services import publish_event
 
@@ -105,7 +106,7 @@ def send_invitation_email(invitation: Invitation) -> None:
 
     organization = Organization.objects.only("display_name").first()
     hospital = organization.display_name if organization else "HIMS"
-    expires = timezone.localtime(invitation.expires_at).strftime("%d %b %Y, %H:%M %Z")
+    expires = hospital_time(invitation.expires_at).strftime("%d %b %Y, %H:%M %Z")
     body = (
         f"Hello {invitation.user.display_name},\n\n"
         f"You have been invited to use the {hospital} hospital system (HIMS).\n"

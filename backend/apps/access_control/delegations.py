@@ -32,6 +32,7 @@ from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
 from apps.notifications.services import send_email
+from apps.organizations.dates import hospital_time
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
@@ -359,9 +360,8 @@ def end_delegations_for_user(user) -> int:
 
 
 def _period(delegation: AccessDelegation) -> str:
-    zone = timezone.get_current_timezone()
-    start = timezone.localtime(delegation.starts_at, zone).strftime("%d %b %Y %H:%M")
-    end = timezone.localtime(delegation.ends_at, zone).strftime("%d %b %Y %H:%M")
+    start = hospital_time(delegation.starts_at).strftime("%d %b %Y %H:%M")
+    end = hospital_time(delegation.ends_at).strftime("%d %b %Y %H:%M %Z")
     return f"from {start} to {end}"
 
 

@@ -7,7 +7,6 @@ from datetime import timedelta
 import pytest
 from django.core import mail
 from django.test import Client, override_settings
-from django.utils import timezone
 
 from apps.access_control.models import (
     AccessReview,
@@ -20,6 +19,7 @@ from apps.access_control.selectors import has_permission
 from apps.access_control.services import revoke_role_assignment
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction
+from apps.organizations.dates import hospital_date, hospital_today
 
 URL = "/api/v1/access-reviews/"
 
@@ -63,7 +63,7 @@ def test_start_takes_a_snapshot_of_everyones_current_access(
     assert response.status_code == 201, response.content
     review = response.json()
     assert review["status"] == "open"
-    assert review["due_on"] == (timezone.localdate() + timedelta(days=14)).isoformat()
+    assert review["due_on"] == (hospital_today() + timedelta(days=14)).isoformat()
     assert (
         review["summary"]["pending"]
         == RoleAssignment.objects.filter(revoked_at__isnull=True).count()
@@ -85,7 +85,7 @@ def test_start_takes_a_snapshot_of_everyones_current_access(
 @pytest.mark.django_db
 def test_only_one_review_at_a_time_and_due_date_not_in_the_past(client_for, admin_user):
     client = client_for(admin_user)
-    yesterday = (timezone.localdate() - timedelta(days=1)).isoformat()
+    yesterday = (hospital_today() - timedelta(days=1)).isoformat()
     assert start(client, due_on=yesterday).json()["code"] == "DUE_DATE_PAST"
     assert start(client).status_code == 201
     second = start(client, title="Another")
@@ -268,9 +268,9 @@ def test_people_without_review_permissions_see_nothing(client_for, people):
 @pytest.mark.django_db
 @override_settings(HIMS_ACCESS_REVIEW_INTERVAL_DAYS=90)
 def test_reminders_are_sent_once_when_due_and_when_overdue(admin_user, people, organization):
-    today = timezone.localdate()
+    today = hospital_today()
     plan = schedule(today)
-    assert plan["next_due_on"] == timezone.localdate(organization.created_at) + timedelta(days=90)
+    assert plan["next_due_on"] == hospital_date(organization.created_at) + timedelta(days=90)
     assert send_access_review_reminders(today) == 0  # not due yet
 
     later = today + timedelta(days=91)
@@ -298,7 +298,7 @@ def test_admin_console_starts_and_decides_with_the_same_rules(admin_user, people
     console.force_login(admin_user)
     response = console.post(
         "/admin/access_control/accessreview/add/",
-        {"title": "Console review", "due_on": (timezone.localdate() + timedelta(days=7))},
+        {"title": "Console review", "due_on": (hospital_today() + timedelta(days=7))},
     )
     assert response.status_code == 302, response.content[:2000]
     review = AccessReview.objects.get()
@@ -306,7 +306,7 @@ def test_admin_console_starts_and_decides_with_the_same_rules(admin_user, people
 
     again = console.post(
         "/admin/access_control/accessreview/add/",
-        {"title": "Second", "due_on": (timezone.localdate() + timedelta(days=7))},
+        {"title": "Second", "due_on": (hospital_today() + timedelta(days=7))},
     )
     assert again.status_code == 200  # form shown again with the error
     assert b"already in progress" in again.content

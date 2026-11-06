@@ -9,6 +9,7 @@ from django.test import Client
 from apps.audit import catalog
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction, record_audit_event
+from apps.organizations.dates import hospital_date
 
 API = "/api/v1/audit-events"
 
@@ -64,7 +65,7 @@ def test_find_by_reference_person_category_and_day(client_for, auditor_user, mak
     assert {r["action"] for r in by_person} == {"access.denied"}
     by_category = client.get(API + "/", {"category": "access", "outcome": "denied"}).json()
     assert by_category["count"] == 1
-    today = event.occurred_at.date().isoformat()
+    today = hospital_date(event.occurred_at).isoformat()
     assert (
         client.get(API + "/", {"date_from": today, "date_to": today, "person": "rekha"}).json()[
             "count"

@@ -94,7 +94,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-007 | Staff detail/onboarding UI | Done |
 | HIMS-STAFF-010 | Catalog screens: designations, specialties, qualification types (add/edit/deactivate in the app) | Done |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility | To do |
-| HIMS-STAFF-011 | Decide "today" by the hospital's time zone, not UTC: a licence that expired yesterday shows as "expiring soon" until 5:30 am in India (gap found in HIMS-SEC-012) | To do |
+| HIMS-STAFF-012 | Shift schedules, leave and on-call rotations (spec 4.3) | To do |
+| HIMS-STAFF-011 | Decide "today" by the hospital's time zone, not UTC: a licence that expired yesterday showed as "expiring soon" until 5:30 am in India (gap found in HIMS-SEC-012); also reviews, audit day search, postings, emails ([how-to](../workflows/dates-and-time-zones.md)) | Done |
 | HIMS-STAFF-009 | Designation catalog (IN/US, junior→senior), extended specialty/qualification catalogs, administrative system roles, RBAC document | Done |
 
 ## EPIC HIMS-SEC / HIMS-AUD — Security and audit

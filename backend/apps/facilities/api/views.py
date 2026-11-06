@@ -1,4 +1,3 @@
-from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -6,6 +5,7 @@ from rest_framework.response import Response
 
 from apps.access_control.catalog import P
 from apps.access_control.selectors import check_permission
+from apps.organizations.dates import hospital_today
 from common.idempotency.decorators import idempotent
 from common.permissions import FACILITY, filter_by_facility_scope
 
@@ -93,6 +93,8 @@ class DepartmentViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewse
         return DepartmentDetailSerializer if self.action == "retrieve" else DepartmentSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # generating the API file: no database
+            return Department.objects.none()
         queryset = filter_by_facility_scope(
             self, Department.objects.select_related("facility", "head")
         )
@@ -154,10 +156,12 @@ class DepartmentViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewse
         from apps.staff.models import StaffDepartmentAssignment
 
         department = self.get_object()
-        today = timezone.localdate()
+        today = hospital_today(department.facility)
         postings = (
             StaffDepartmentAssignment.objects.filter(
-                current_postings_q(), department=department, valid_from__lte=today
+                current_postings_q(facility=department.facility),
+                department=department,
+                valid_from__lte=today,
             )
             .filter(staff__employment_status__in=["active", "on_leave"])
             .select_related("staff", "designation")

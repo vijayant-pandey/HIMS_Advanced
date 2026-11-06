@@ -5,11 +5,11 @@ from datetime import timedelta
 
 import pytest
 from django.test import Client
-from django.utils import timezone
 
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction
 from apps.facilities.models import DepartmentService
+from apps.organizations.dates import hospital_today
 from apps.staff.models import Designation, Specialty, StaffDepartmentAssignment, StaffMember
 
 API = "/api/v1"
@@ -74,7 +74,7 @@ def test_head_is_cleared_when_their_posting_ends(
     doctor = _staff(organization)
     posting = _post(doctor, department_a)
     _set_head(client, department_a, doctor)
-    yesterday = (timezone.localdate() - timedelta(days=1)).isoformat()
+    yesterday = (hospital_today() - timedelta(days=1)).isoformat()
     client.post(
         f"{API}/staff/{doctor.pk}/department-assignments/{posting.pk}/end/",
         {"valid_until": yesterday, "reason": "Moved"},
