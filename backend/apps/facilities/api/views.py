@@ -93,6 +93,8 @@ class DepartmentViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewse
         return DepartmentDetailSerializer if self.action == "retrieve" else DepartmentSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # generating the API file: no database
+            return Department.objects.none()
         queryset = filter_by_facility_scope(
             self, Department.objects.select_related("facility", "head")
         )
