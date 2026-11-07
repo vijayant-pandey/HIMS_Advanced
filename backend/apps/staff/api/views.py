@@ -13,6 +13,7 @@ from apps.identity.invitations import issue_invitation
 from apps.organizations.dates import hospital_today
 from common.exceptions import ConflictError
 from common.idempotency.decorators import idempotent
+from common.permissions import FACILITY, ORGANIZATION, required_permission
 
 from .. import catalogs, documents, expiry, services
 from ..models import (
@@ -24,6 +25,7 @@ from ..models import (
     StaffDocument,
     StaffMember,
 )
+from ..selectors import limit_to_visible, scope_context
 from .serializers import (
     ArchiveSerializer,
     CredentialVerificationSerializer,
@@ -66,6 +68,12 @@ class _CatalogViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         "partial_update": P.CATALOGS_MANAGE,
     }
     http_method_names = ["get", "post", "patch", "head"]
+
+    @property
+    def permission_scope(self):
+        # Catalogs are not personal data: anyone who may see some staff may read them (they
+        # fill the drop-downs). Changing them stays hospital-wide.
+        return FACILITY if getattr(self, "action", None) == "list" else ORGANIZATION
 
     def get_queryset(self):
         queryset = self.model.objects.all()
@@ -191,7 +199,35 @@ class QualificationTypeViewSet(_CatalogViewSet):
 _ENDS_ACCESS = (StaffMember.EmploymentStatus.SUSPENDED, StaffMember.EmploymentStatus.TERMINATED)
 
 
-class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+# Reading follows the grant's scope (HIMS-STAFF-008): a facility or department grant sees only the
+# staff posted there (apps/staff/selectors.py). Changes need a hospital-wide grant, as before,
+# because a staff record belongs to the whole hospital. (A comment, not a docstring: docstrings
+# become the API description of every endpoint that uses this.)
+class _StaffScopeMixin:
+    scoped_reads: frozenset = frozenset()
+    staff_field = "pk"
+
+    @property
+    def permission_scope(self):
+        return FACILITY if getattr(self, "action", None) in self.scoped_reads else ORGANIZATION
+
+    def visible(self, queryset):
+        if getattr(self, "swagger_fake_view", False):  # generating the API file: no database
+            return queryset.none()
+        codename = required_permission(self.request, self)
+        if codename is None:
+            return queryset.none()
+        return limit_to_visible(queryset, self.request.user, codename, staff_field=self.staff_field)
+
+    def get_permission_context(self, obj):
+        staff_id = obj.pk if self.staff_field == "pk" else getattr(obj, self.staff_field)
+        return scope_context(self.request.user, required_permission(self.request, self), staff_id)
+
+
+class StaffMemberViewSet(
+    _StaffScopeMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    scoped_reads = frozenset({"list", "retrieve", "documents"})
     required_permissions = {
         "list": P.STAFF_VIEW,
         "retrieve": P.STAFF_VIEW,
@@ -203,7 +239,7 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         "send_invitation": P.STAFF_MANAGE,
         "end_department_assignment": P.STAFF_MANAGE,
         "verify_qualification": P.STAFF_CREDENTIALS_VERIFY,
-        "documents": P.STAFF_VIEW,
+        "documents": P.STAFF_DOCUMENTS_VIEW,
         "upload_document": P.STAFF_MANAGE,
     }
     http_method_names = ["get", "post", "patch", "head"]
@@ -222,7 +258,7 @@ class StaffMemberViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         return super().get_parsers()
 
     def get_queryset(self):
-        queryset = StaffMember.objects.select_related("user")
+        queryset = self.visible(StaffMember.objects.select_related("user"))
         if self.action == "retrieve":
             queryset = queryset.prefetch_related(
                 "department_assignments__designation",
@@ -446,14 +482,18 @@ def _existing(related_manager, item_id):
     return item_id
 
 
-class StaffCredentialViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+class StaffCredentialViewSet(_StaffScopeMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = StaffCredentialSerializer
-    queryset = StaffCredential.objects.all()
+    scoped_reads = frozenset({"retrieve", "expiring"})
+    staff_field = "staff_id"
     required_permissions = {
         "retrieve": P.STAFF_VIEW,
         "verify": P.STAFF_CREDENTIALS_VERIFY,
         "expiring": P.STAFF_VIEW,
     }
+
+    def get_queryset(self):
+        return self.visible(StaffCredential.objects.all())
 
     @extend_schema(
         parameters=[
@@ -469,7 +509,7 @@ class StaffCredentialViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet)
             within = max(0, min(int(request.query_params.get("within", 60)), 365))
         except ValueError:
             within = 60
-        rows = expiry.watched_credentials(within_days=within).prefetch_related(
+        rows = self.visible(expiry.watched_credentials(within_days=within)).prefetch_related(
             Prefetch("expiry_alerts", CredentialExpiryAlert.objects.all())
         )
         if request.query_params.get("include_expired") == "false":
@@ -491,12 +531,17 @@ class StaffCredentialViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet)
         return Response(StaffCredentialSerializer(credential).data)
 
 
-class StaffDocumentViewSet(viewsets.GenericViewSet):
-    """Open/download or archive one document. Files have no public URL (ADR-020)."""
+class StaffDocumentViewSet(_StaffScopeMixin, viewsets.GenericViewSet):
+    """Open/download or archive one document. Files have no public URL (ADR-020). Opening needs
+    ``staff.documents.view`` for that person (HIMS-STAFF-008), not just ``staff.view``."""
 
-    queryset = StaffDocument.objects.select_related("staff")
     serializer_class = StaffDocumentSerializer
-    required_permissions = {"download": P.STAFF_VIEW, "archive": P.STAFF_MANAGE}
+    scoped_reads = frozenset({"download"})
+    staff_field = "staff_id"
+    required_permissions = {"download": P.STAFF_DOCUMENTS_VIEW, "archive": P.STAFF_MANAGE}
+
+    def get_queryset(self):
+        return self.visible(StaffDocument.objects.select_related("staff"))
 
     @extend_schema(
         parameters=[OpenApiParameter("inline", str, description="'true' = open in the browser")],

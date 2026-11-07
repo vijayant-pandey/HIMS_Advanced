@@ -63,14 +63,18 @@ data is **Restricted**.
 | **Internal** | hospital configuration, catalogs, references, system metadata | Shown to staff with the matching view permission. |
 | **Clinical (PHI)** | none yet: patient data from Phase 2 | Stricter rules (minimum necessary, read auditing, break-glass) decided with the P0 documents. |
 
-**Who can read what (system roles; custom roles combine these permissions):**
+**Who can read what (system roles; custom roles combine these permissions).** Staff are "in" a
+facility or department through a current posting ([staff visibility](../../workflows/staff-visibility.md)):
 
 | Data | Org admin | Facility admin | HR / credentialing | Head of department | Bed manager | Basic staff | Auditor |
 |---|---|---|---|---|---|---|---|
 | Hospital, facilities, departments | ✅ change | change, own facility | view | view, own department | view facilities | view | — |
 | Locations and beds | ✅ change | change, own facility | — | view, own department | view; change bed status | view | — |
 | Numbering, feature settings | ✅ change | change, own facility | — | — | — | — | — |
-| Staff, qualifications, licences, documents, catalogs (Restricted) | ✅ change | — | ✅ change and verify | — | — | — | — |
+| Staff, qualifications, licences, catalogs (Restricted) | ✅ change | view, staff posted at own facility | ✅ change and verify | view, staff posted in own department | — | — | — |
+| Staff documents: licence and certificate copies (Restricted) | ✅ open | — | ✅ open | — | — | — | — |
+| Rotas: shifts, on-call (Restricted: who is away, not why) | ✅ plan | — | view | plan, own department | — | view | — |
+| Leave requests incl. kind of leave (Restricted) | ✅ decide | — | ✅ decide and record | decide, own department (never their own) | — | own only | — |
 | Accounts, roles, access, cover (Restricted) | ✅ change | — | — | — | — | — | — |
 | Access reviews | ✅ decide | — | — | — | — | — | read and download |
 | Audit log and integrity (Restricted) | **no** (separation of duties) | — | — | — | — | — | ✅ read |

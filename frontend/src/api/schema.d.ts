@@ -2283,7 +2283,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Open/download or archive one document. Files have no public URL (ADR-020). */
+        /**
+         * @description Open/download or archive one document. Files have no public URL (ADR-020). Opening needs
+         *     ``staff.documents.view`` for that person (HIMS-STAFF-008), not just ``staff.view``.
+         */
         get: operations["staff_documents_download_retrieve"];
         put?: never;
         post?: never;
@@ -4384,11 +4387,12 @@ export interface components {
          *     * `rota.manage` - rota.manage
          *     * `rota.view` - rota.view
          *     * `staff.credentials.verify` - staff.credentials.verify
+         *     * `staff.documents.view` - staff.documents.view
          *     * `staff.manage` - staff.manage
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.view";
         Person: {
             /** Format: uuid */
             id: string;
@@ -4995,8 +4999,10 @@ export interface components {
             readonly department_assignments: components["schemas"]["StaffDepartmentAssignment"][];
             readonly qualifications: components["schemas"]["StaffQualification"][];
             readonly credentials: components["schemas"]["StaffCredential"][];
-            /** @description Licence and qualification documents, newest first (archived ones included). */
+            /** @description Licence and qualification documents, newest first (archived ones included). Empty unless documents_visible. */
             readonly documents: components["schemas"]["StaffDocument"][];
+            /** @description Whether you may open this person's documents (staff.documents.view) */
+            readonly documents_visible: boolean;
         };
         StaffQualification: {
             /** Format: uuid */

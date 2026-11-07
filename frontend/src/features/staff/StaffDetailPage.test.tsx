@@ -79,6 +79,7 @@ const STAFF: StaffMemberDetail = {
       expiry_state: "expiring_soon",
     },
   ],
+  documents_visible: true,
   documents: [
     {
       id: "doc1",
@@ -334,5 +335,60 @@ describe("Staff screens", () => {
     fireEvent.change(within(dialog).getByLabelText("Document file"), { target: { files: [big] } });
     expect(within(dialog).getByText(/larger than 10 MB/)).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Upload" })).toBeDisabled();
+  });
+});
+
+describe("Staff seen through a department grant (HIMS-STAFF-008)", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  function renderAsHead(path: string) {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/staff-credentials/expiring/")) return json([]);
+      if (url.includes("/staff/s1/")) return json({ ...STAFF, documents_visible: false, documents: [] });
+      if (url.includes("/staff/")) return json(page([STAFF]));
+      if (url.includes("/departments/"))
+        return json(page([{ id: "d1", name: "Cardiology", facility: "f1", facility_name: "Main Hospital", status: "active" }]));
+      return json(page([]));
+    });
+    const user: CurrentUser = {
+      id: "u-head",
+      email: "head@synthetic.test",
+      display_name: "Synthetic Head",
+      staff_member_id: null,
+      grants: [{ permission: "staff.view", facility_id: "f1", department_id: "d1" }],
+      organization: { display_name: "Synthetic Health", country: "IN" },
+      mfa: { enabled: false, required: false, verified: false, recovery_codes_remaining: 0 },
+    };
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(currentUserKey, user);
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/staff" element={<StaffPage />} />
+            <Route path="/staff/:id" element={<StaffDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+  }
+
+  it("the Staff page says whose staff you see", async () => {
+    renderAsHead("/staff");
+    expect(await screen.findByText(/You see the staff posted in Cardiology \(Main Hospital\)/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add staff member" })).not.toBeInTheDocument();
+  });
+
+  it("a person's page hides their documents and every change", async () => {
+    renderAsHead("/staff/s1");
+    expect(await screen.findByText(/Copies of licences and certificates are shown only/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: /Licences/ }));
+    const licences = await screen.findByRole("table", { name: "Licences" });
+    expect(licences).toHaveTextContent(STAFF.credentials[0]!.registration_number);
+    expect(within(licences).queryByText("Documents")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /\.pdf/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Verify/ })).not.toBeInTheDocument();
   });
 });

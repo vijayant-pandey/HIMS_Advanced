@@ -25,6 +25,7 @@ import { useDepartmentList } from "../facilities/api";
 import { hasOrganizationWidePermission } from "../auth/grants";
 import { useExpiringCredentials, useStaff } from "./api";
 import { EMPLOYMENT_STATUSES, STATUS_COLOR, options } from "./labels";
+import { staffScope } from "./scope";
 import { AddStaffDialog } from "./StaffDialogs";
 
 export function StaffPage() {
@@ -47,6 +48,7 @@ export function StaffPage() {
   const soonCount = expiringRows.length - expiredCount;
   // Hint only: the API checks staff.manage (staff records are hospital-wide).
   const canAdd = hasOrganizationWidePermission(user, "staff.manage");
+  const scope = staffScope(user, departments.data?.results ?? []);
 
   return (
     <Stack spacing={2}>
@@ -60,6 +62,11 @@ export function StaffPage() {
           </Button>
         )}
       </Box>
+      {scope && (
+        <Alert severity="info">
+          You see the staff posted in {scope}. People elsewhere in the hospital are not shown.
+        </Alert>
+      )}
       <Stack direction="row" spacing={2}>
         <TextField
           label="Search by name or employee number"
