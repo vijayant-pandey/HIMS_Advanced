@@ -204,7 +204,6 @@ _ENDS_ACCESS = (StaffMember.EmploymentStatus.SUSPENDED, StaffMember.EmploymentSt
 # because a staff record belongs to the whole hospital. (A comment, not a docstring: docstrings
 # become the API description of every endpoint that uses this.)
 class _StaffScopeMixin:
-
     scoped_reads: frozenset = frozenset()
     staff_field = "pk"
 
