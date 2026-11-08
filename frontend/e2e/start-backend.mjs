@@ -28,7 +28,10 @@ function python() {
 function databaseUrl() {
   if (process.env.E2E_DATABASE_URL) return process.env.E2E_DATABASE_URL;
   const file = join(backend, ".env");
-  const line = existsSync(file) && readFileSync(file, "utf8").match(/^DATABASE_URL=(.+)$/m);
+  // The owner's URL when the app has its own limited user (HIMS-OPS-007): creating the throw-away
+  // database needs the owner's rights.
+  const text = existsSync(file) ? readFileSync(file, "utf8") : "";
+  const line = text.match(/^HIMS_MIGRATION_DATABASE_URL=(.+)$/m) || text.match(/^DATABASE_URL=(.+)$/m);
   if (!line) throw new Error("Set E2E_DATABASE_URL, e.g. postgres://user:pass@localhost:5432/hims_e2e");
   const url = new URL(line[1].trim());
   url.pathname = "/hims_e2e";

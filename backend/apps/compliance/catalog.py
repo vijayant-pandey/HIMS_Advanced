@@ -526,8 +526,9 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         "data",
         2,
         5,
-        "Append-only triggers, keyed hash chain, daily check. Planned: external copy "
-        "of the chain head (HIMS-SEC-016), separate database roles (HIMS-OPS-007).",
+        "Append-only triggers, keyed hash chain, daily check; the app's own database user "
+        "cannot change, delete or empty the audit log or touch its triggers (HIMS-OPS-007). "
+        "Planned: external copy of the chain head (HIMS-SEC-016).",
     ),
     (
         "R-008",

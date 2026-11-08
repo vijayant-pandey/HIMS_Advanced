@@ -2126,6 +2126,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/security/database-access/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["security_database_access_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security/status/": {
         parameters: {
             query?: never;
@@ -3195,6 +3211,25 @@ export interface components {
             mfa: components["schemas"]["MfaStatus"];
             /** @description This hospital's name and country (IN/US), for display. */
             organization: components["schemas"]["OrganizationSummary"] | null;
+        };
+        DatabaseAccess: {
+            /** @description Every check passed. */
+            separated: boolean;
+            /** @description The app's own database user exists. */
+            set_up: boolean;
+            /** @description On a developer PC not setting it up is allowed; hosted, it must pass. */
+            developer_pc: boolean;
+            connected_as: string;
+            app_user: string;
+            readonly_user: string;
+            breakglass_user: string;
+            checks: components["schemas"]["DatabaseCheck"][];
+        };
+        DatabaseCheck: {
+            key: string;
+            label: string;
+            passed: boolean;
+            detail: string;
         };
         /**
          * @description * `USD` - US Dollar
@@ -8864,6 +8899,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    security_database_access_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatabaseAccess"];
+                };
             };
         };
     };

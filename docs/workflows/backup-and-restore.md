@@ -131,4 +131,5 @@ A failed drill also writes an error line (`restore_drill_failed`) for monitoring
   HIMS-OPS-015 for versioned document storage).
 - **Emptying the audit tables in one go (`TRUNCATE`)** is not blocked by the append-only triggers;
   the separate database users of HIMS-OPS-007 take that right away from the application.
+  **Closed 2026-11-08:** see [separate database users](database-users.md).
 - **RTO/RPO targets** are a decision (spec 36); the drills measure what is achieved today.

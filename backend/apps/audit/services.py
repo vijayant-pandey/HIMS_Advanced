@@ -118,6 +118,7 @@ class AuditAction:
     AUDIT_INTEGRITY_ALERT_SENT = "audit.integrity.alert_sent"
     BACKUP_CREATED = "recovery.backup.created"
     RESTORE_DRILL_COMPLETED = "recovery.restore_drill.completed"
+    DATABASE_USERS_SET_UP = "database.users_set_up"
 
 
 def _jsonable(value):

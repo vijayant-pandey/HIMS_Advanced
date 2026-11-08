@@ -4,7 +4,7 @@ Built from [HIMS_Architecture_Specification_v2.MD](../../HIMS_Architecture_Speci
 section 20 (phases), 4 (domains), 21 (vertical slice), 26–27 (P0/P1), 36 (decisions), and from the
 [tracker](spec-status.md) and backlogs ([Phase 1](../backlog/phase-1-foundation.md),
 [Phase 2](../backlog/phase-2-patients.md)). The tracker stays the detailed record; this page is the
-ordered plan. **Last updated:** 2026-11-08 (after PR #37, with HIMS-OPS-009 built).
+ordered plan. **Last updated:** 2026-11-08 (after PR #38, with HIMS-OPS-007 built).
 
 **Legend:** ✅ done · 🟡 partly done · ⬜ not started · 🔓 can be built now · 🔒 blocked (blocker
 named) · **PO** you · **CLIN** doctors/nurses/pharmacists · **LEGAL** legal/compliance · **AWS**
@@ -21,7 +21,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design drafted, waiting for sign-off) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 26 · ⬜ 7 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 8 started · ⬜ 17 not started |
-| Phase 1 tickets | 117: ✅ 77 done or drafted · 40 left: 19 🔓 can be built now (4 of them optional or later), 21 🔒 blocked (4 of those move with Phase 2) |
+| Phase 1 tickets | 118: ✅ 78 done or drafted · 40 left: 18 🔓 can be built now (4 of them optional or later), 22 🔒 blocked (4 of those move with Phase 2) |
 | Phase 2 tickets (already written) | 20: all ⬜, all 🔒 until P0 sign-off |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
@@ -32,7 +32,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 77 tickets (PR #1–#37, #30 and HIMS-OPS-009) | 15 buildable items (section 4a); cloud items | Cloud part: AWS (deferred) | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 78 tickets (PR #1–#38, #30 and HIMS-OPS-007) | 14 buildable items (section 4a); cloud items | Cloud part: AWS (deferred) | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design drafted | P0 design (PR #28) | Sign-off, then slices 2A–2D (20 tickets) | PO + doctor sign-off (D1–D26); LEGAL before real patient data | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -94,7 +94,7 @@ fit, so nothing is forgotten.
 | 2 | 4.3, 13.2 | HIMS-STAFF-008 | Department-scoped staff directory (see only your departments' staff) | ✅ done | Privacy: least access |
 | 3 | 13.5, 19.1 | HIMS-SEC-019 | Secret-in-logs test (no password, token or key ever reaches a log) | ✅ done | One of the 10 security tests in spec 13.5 |
 | 4 | 13.5, 23 | HIMS-OPS-009 | Backup and restore drill, local (with audit chain and relationship checks) | ✅ done | Spec 13.5 restore test; needed before any real data |
-| 5 | 13, 17.6 | HIMS-OPS-007 | Separate database users: app, migrations, read-only (the app cannot erase the audit log) | ⬜ | Defence in depth; can be set up locally |
+| 5 | 13.2, 17.2, 30.5 | HIMS-OPS-007 | Separate database users: app, migrations, read-only (the app cannot erase the audit log) | ✅ done | Defence in depth; can be set up locally |
 | 6 | 14.3 | HIMS-PLAT-014 | Outbox clean-up job and runbook (idempotency part done) | 🟡 | Keeps tables small |
 | 7 | 6.2, 17 | HIMS-OPS-010 | Serve admin and API-docs static files in hosted environments (WhiteNoise) | ⬜ | Needed for the first hosted environment |
 | 8 | 13.1 | HIMS-SEC-015 | Admin console address allow-list (setting; firewall later) | ⬜ | Before the console is reachable outside this computer |
@@ -119,6 +119,7 @@ fit, so nothing is forgotten.
 | Spec § | Ticket | Task | Blocked by |
 |---|---|---|---|
 | 17, 30 | HIMS-OPS-003 | Terraform modules (network, ECS, RDS, Redis, S3, KMS, secrets, monitoring) | AWS |
+| 17.2, 30.5 | HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | AWS |
 | 17, 18 | HIMS-OPS-004 | Alarms and runbooks (errors, latency, database, queues, outbox) | AWS |
 | 33 | HIMS-OPS-005 | Deploy pipeline with build once, promote to QA, Staging, Production | AWS / hosting |
 | 33 | HIMS-OPS-006 | Migration release job with a lock; schema version per hospital | AWS / hosting |
@@ -206,10 +207,10 @@ ADR-009 to ADR-023, and work through the 45-item readiness checklist (section 23
 
 ## 6. Done so far
 
-77 Phase 1 tickets, delivered in PR #1–#37 (and #30), and the HIMS-OPS-009 PR. The full list with what each PR did is in the
+78 Phase 1 tickets, delivered in PR #1–#38 (and #30), and the HIMS-OPS-007 PR. The full list with what each PR did is in the
 tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and
 [work queue](spec-status.md#next-work-queue-dependency-free-in-recommended-order).
 
 New tickets named here for the first time (HIMS-SEC-019, HIMS-FAC-008, HIMS-FAC-009,
-HIMS-ORG-006, HIMS-DOC-001, HIMS-OPS-017, and HIMS-SEC-020 and HIMS-OPS-018 added on 2026-11-08) are
-also in the Phase 1 backlog.
+HIMS-ORG-006, HIMS-DOC-001, HIMS-OPS-017, and HIMS-SEC-020, HIMS-OPS-018 and HIMS-OPS-019 added on
+2026-11-08) are also in the Phase 1 backlog.

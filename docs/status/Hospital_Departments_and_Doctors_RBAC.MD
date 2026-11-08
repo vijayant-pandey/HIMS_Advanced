@@ -497,3 +497,12 @@ switched off, so the hospital cannot lock itself out.
   drills. Only the administrator has it; it requires two-factor sign-in, and making a backup asks
   "Confirm it's you". Only on a developer PC; hosted environments use the cloud database service.
   Details: [backups and restore drills](../workflows/backup-and-restore.md).
+
+## Update 2026-11-08: separate database users (HIMS-OPS-007)
+* Below the app's roles, the database itself now has separate users per hospital: the **app**
+  (reads and writes rows, only adds to the audit log and other evidence, owns nothing), the
+  **owner** (only for `migrate`), a **read-only** user for reports (never credentials) and a
+  **break-glass** user that is switched off until an approved emergency. No app permission can
+  change these: they are set up by the owner's command. Everyone with `compliance.view` sees the
+  checks on Compliance → Database access. Details:
+  [separate database users](../workflows/database-users.md).

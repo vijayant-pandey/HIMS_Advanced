@@ -37,7 +37,7 @@ must run can be built and proven now.
 - Fingerprinting every row is linear in the data size: fine for drills; for very large hosted
   databases the drill may compare a sample per table (revisit with HIMS-DATA-002 volumes).
 - `TRUNCATE` of audit tables is not blocked by row triggers; HIMS-OPS-007 removes that right from the
-  application's database user.
+  application's database user. **Done 2026-11-08** ([ADR-026](ADR-026-separate-database-users.md)).
 
 ## Alternatives considered
 

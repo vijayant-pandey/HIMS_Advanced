@@ -167,7 +167,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-OPS-004 | Alarms + runbooks: API errors/latency, DB, queue age, outbox dead/lag | To do |
 | HIMS-OPS-005 | Deploy-to-Development workflow with OIDC; build-once promote-many to QA/Staging/Prod | To do |
 | HIMS-OPS-006 | Migration release job with lock; per-customer schema version tracking | To do |
-| HIMS-OPS-007 | Separate DB roles (runtime / migration / read-only / break-glass); runtime lacks TRUNCATE on audit | To do |
+| HIMS-OPS-007 | Separate DB roles (runtime / migration / read-only / break-glass); runtime lacks TRUNCATE on audit | Done ([how-to](../workflows/database-users.md): app user only adds to evidence, owner only for migrate, read-only without credentials, break-glass off; Compliance → Database access) |
+| HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | To do (🔒 AWS) |
 | HIMS-OPS-008 | Customer provisioning automation in the control plane | To do |
 | HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | Done ([how-to](../workflows/backup-and-restore.md): Backups page, admin console, commands; restore into a separate copy checked against the backup's inventory incl. audit chain and documents) |
 | HIMS-OPS-018 | Restore drill of a cloud database snapshot into a separate database, with the same checks as HIMS-OPS-009 (gap found in HIMS-OPS-009) | To do (🔒 AWS) |

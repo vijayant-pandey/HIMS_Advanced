@@ -55,3 +55,9 @@
   a record forged in the minute before sealing would be sealed as genuine; the on-demand check
   runs in the web request (HIMS-SEC-017 at ~1M records). Details:
   [audit-integrity.md](../architecture/data-architecture/audit-integrity.md).
+
+## Update 2026-11-08 (HIMS-OPS-007): TRUNCATE closed by separate database users
+- The app now connects as its own user (`hims_<deployment>_app`), which may only `SELECT` and
+  `INSERT` on the audit tables and owns nothing: no `TRUNCATE`, no disabling or dropping the
+  append-only triggers, no dropping tables. Only the owner (used by `migrate`) can. Details:
+  [ADR-026](ADR-026-separate-database-users.md), [database users](../workflows/database-users.md).

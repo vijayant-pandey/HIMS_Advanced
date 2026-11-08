@@ -3768,6 +3768,20 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/security/database-access/:
+    get:
+      operationId: security_database_access_retrieve
+      tags:
+      - security
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseAccess'
+          description: ''
   /api/v1/security/status/:
     get:
       operationId: security_status_retrieve
@@ -6211,6 +6225,56 @@ components:
       - mfa
       - organization
       - staff_member_id
+    DatabaseAccess:
+      type: object
+      properties:
+        separated:
+          type: boolean
+          description: Every check passed.
+        set_up:
+          type: boolean
+          description: The app's own database user exists.
+        developer_pc:
+          type: boolean
+          description: On a developer PC not setting it up is allowed; hosted, it
+            must pass.
+        connected_as:
+          type: string
+        app_user:
+          type: string
+        readonly_user:
+          type: string
+        breakglass_user:
+          type: string
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatabaseCheck'
+      required:
+      - app_user
+      - breakglass_user
+      - checks
+      - connected_as
+      - developer_pc
+      - readonly_user
+      - separated
+      - set_up
+    DatabaseCheck:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        passed:
+          type: boolean
+        detail:
+          type: string
+      required:
+      - detail
+      - key
+      - label
+      - passed
     DefaultCurrencyEnum:
       enum:
       - USD

@@ -33,7 +33,7 @@ separate deployments, separate databases; (5) developers and hosting staff to pr
 |---|---|---|---|---|
 | **S**poofing | Stolen password or session | Two-factor for privileged roles, throttling keyed on the real address (HIMS-SEC-014), 12+ character passwords, secure cookies, sign-in register, confirm before sensitive actions so a stolen session cannot change access (HIMS-IAM-007), idle sign-out | Two-factor for clinical roles; passkeys; step-up sign-in (HIMS-IAM-007/014) | R-001 |
 | **S**poofing | Forged invitation or reset link | Signed single-use expiring tokens, kept out of server logs and the message log | — | R-001 |
-| **T**ampering | Altering audit records | Append-only triggers, keyed hash chain, daily check, alerts | External chain copy (HIMS-SEC-016); separate DB roles (HIMS-OPS-007) | R-007 |
+| **T**ampering | Altering audit records | Append-only triggers, keyed hash chain, daily check, alerts | External chain copy (HIMS-SEC-016); separate DB roles (HIMS-OPS-007, **done 2026-11-08**: the app's database user cannot TRUNCATE the audit log or touch its triggers) | R-007 |
 | **T**ampering | Injection, cross-site scripting, forged requests | ORM queries, React escaping, CSRF tokens, input validation | Content security policy (HIMS-SEC-012) | R-005 |
 | **T**ampering | Malicious upload | Type/size checks from file content, no public links, sandboxed responses | Malware scan (HIMS-SEC-013) | R-006 |
 | **R**epudiation | "I didn't do that" | Every change audited with who, when, before/after, reference number, real client address believed only from our own proxies (HIMS-SEC-014) | Set `HIMS_TRUSTED_PROXIES` correctly at hosting and check it on the Compliance page | R-007 |
