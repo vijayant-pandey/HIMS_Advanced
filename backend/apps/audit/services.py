@@ -116,6 +116,8 @@ class AuditAction:
     NOTIFICATION_TEST_SENT = "notification.test_sent"
     AUDIT_INTEGRITY_CHECKED = "audit.integrity.checked"
     AUDIT_INTEGRITY_ALERT_SENT = "audit.integrity.alert_sent"
+    BACKUP_CREATED = "recovery.backup.created"
+    RESTORE_DRILL_COMPLETED = "recovery.restore_drill.completed"
 
 
 def _jsonable(value):

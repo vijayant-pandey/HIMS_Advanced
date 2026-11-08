@@ -78,6 +78,7 @@ facility or department through a current posting ([staff visibility](../../workf
 | Accounts, roles, access, cover (Restricted) | ✅ change | — | — | — | — | — | — |
 | Access reviews | ✅ decide | — | — | — | — | — | read and download |
 | Audit log and integrity (Restricted) | **no** (separation of duties) | — | — | — | — | — | ✅ read |
+| Backups and restore drill evidence (counts and fingerprints, no record contents) | ✅ make backups, run drills | — | — | — | — | — | ✅ read |
 | Secret columns | nobody | nobody | nobody | nobody | nobody | nobody | nobody |
 
 The exact permissions per role are in `backend/apps/access_control/catalog.py` and

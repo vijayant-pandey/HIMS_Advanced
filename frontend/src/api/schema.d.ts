@@ -821,6 +821,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backups/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Backups made on this computer, newest first, and "Make a backup now". */
+        get: operations["backups_list"];
+        put?: never;
+        /** @description Back up the database and the documents now. Takes a few seconds on a developer PC. */
+        post: operations["backups_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backups/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Backups made on this computer, newest first, and "Make a backup now". */
+        get: operations["backups_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backups/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The latest backup and restore drill, and whether a drill is overdue. */
+        get: operations["backups_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/beds/": {
         parameters: {
             query?: never;
@@ -1779,6 +1831,44 @@ export interface paths {
          *     with ?include_inactive=true, everything for the catalog screen; add and change entries.
          */
         patch: operations["qualification_types_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/restore-drills/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Results of restore drills, newest first, and "Run a restore drill". */
+        get: operations["restore_drills_list"];
+        put?: never;
+        /**
+         * @description Restore a backup into a separate copy, check everything, then remove the copy.
+         *     The live database and documents are not touched.
+         */
+        post: operations["restore_drills_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/restore-drills/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Results of restore drills, newest first, and "Run a restore drill". */
+        get: operations["restore_drills_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/role-assignments/": {
@@ -2829,6 +2919,28 @@ export interface components {
             check_interval_hours: number;
             last_check: components["schemas"]["AuditIntegrityCheck"] | null;
         };
+        Backup: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly created_by_name: string | null;
+            /** @description Folder name inside the backup folder. */
+            readonly name: string;
+            readonly environment: string;
+            readonly release: string;
+            readonly dump_bytes: number;
+            readonly tables: number;
+            readonly rows: number;
+            readonly documents: number;
+            readonly documents_bytes: number;
+            /**
+             * Format: double
+             * @description How long the backup took.
+             */
+            readonly seconds: number;
+            readonly last_drill_outcome: string | null;
+        };
         Bed: {
             /** Format: uuid */
             readonly id: string;
@@ -3253,6 +3365,12 @@ export interface components {
          * @enum {string}
          */
         DocumentTypeEnum: "mrn" | "encounter" | "invoice" | "claim";
+        DrillCheck: {
+            key: string;
+            label: string;
+            passed: boolean;
+            detail: string;
+        };
         EffectiveFeatures: {
             hospital: {
                 [key: string]: boolean;
@@ -4384,6 +4502,8 @@ export interface components {
          *     * `organization.manage` - organization.manage
          *     * `organization.view` - organization.view
          *     * `platform.admin_console` - platform.admin_console
+         *     * `recovery.manage` - recovery.manage
+         *     * `recovery.view` - recovery.view
          *     * `rota.manage` - rota.manage
          *     * `rota.view` - rota.view
          *     * `staff.credentials.verify` - staff.credentials.verify
@@ -4392,7 +4512,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.view";
         Person: {
             /** Format: uuid */
             id: string;
@@ -4436,6 +4556,84 @@ export interface components {
         ReasonRequest: {
             reason: string;
         };
+        RecoveryStatus: {
+            /** @description False in hosted environments: there the cloud database service backs up. */
+            can_run_here: boolean;
+            backup_folder: string;
+            /** @description Where pg_dump/pg_restore were found ('' if not). */
+            tools: string;
+            tools_problem: string;
+            drill_interval_days: number;
+            /** @description No passed drill yet, or the last one is older than the interval. */
+            drill_overdue: boolean;
+            last_backup: components["schemas"]["Backup"] | null;
+            last_drill: components["schemas"]["RestoreDrill"] | null;
+            last_passed_drill: components["schemas"]["RestoreDrill"] | null;
+        };
+        RestoreDrill: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly started_at: string;
+            /** Format: date-time */
+            readonly finished_at: string;
+            readonly trigger: components["schemas"]["RestoreDrillTriggerEnum"];
+            readonly trigger_label: string;
+            readonly requested_by_name: string | null;
+            readonly outcome: components["schemas"]["RestoreDrillOutcomeEnum"];
+            /** Format: uuid */
+            readonly backup: string;
+            readonly backup_name: string;
+            /** Format: date-time */
+            readonly backup_created_at: string;
+            /**
+             * Format: double
+             * @description Time to restore the database and documents (evidence for the RTO).
+             */
+            readonly restore_seconds: number;
+            /** @description How old the backup was when restored (what would be lost: evidence for the RPO). */
+            readonly backup_age_minutes: number;
+            readonly problem_count: number;
+        };
+        RestoreDrillDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly started_at: string;
+            /** Format: date-time */
+            readonly finished_at: string;
+            readonly trigger: components["schemas"]["RestoreDrillTriggerEnum"];
+            readonly trigger_label: string;
+            readonly requested_by_name: string | null;
+            readonly outcome: components["schemas"]["RestoreDrillOutcomeEnum"];
+            /** Format: uuid */
+            readonly backup: string;
+            readonly backup_name: string;
+            /** Format: date-time */
+            readonly backup_created_at: string;
+            /**
+             * Format: double
+             * @description Time to restore the database and documents (evidence for the RTO).
+             */
+            readonly restore_seconds: number;
+            /** @description How old the backup was when restored (what would be lost: evidence for the RPO). */
+            readonly backup_age_minutes: number;
+            readonly problem_count: number;
+            readonly restored_database: string;
+            readonly checks: components["schemas"]["DrillCheck"][];
+        };
+        /**
+         * @description * `passed` - Passed: everything came back
+         *     * `failed` - Failed: see the checks
+         * @enum {string}
+         */
+        RestoreDrillOutcomeEnum: "passed" | "failed";
+        /**
+         * @description * `on_demand` - Started by a person
+         *     * `command` - Started from the server command line
+         * @enum {string}
+         */
+        RestoreDrillTriggerEnum: "on_demand" | "command";
         RevokeRequest: {
             reason: string;
         };
@@ -5042,6 +5240,13 @@ export interface components {
          * @enum {string}
          */
         StaffTypeEnum: "doctor" | "nurse" | "pharmacist" | "lab_technician" | "radiologist" | "dietitian" | "administrator" | "support";
+        StartDrillRequest: {
+            /**
+             * Format: uuid
+             * @description The backup to restore and check.
+             */
+            backup: string;
+        };
         TestMessageRequest: {
             channel: components["schemas"]["ChannelEnum"];
             /** @description An email address, or a phone number like +919876543210. */
@@ -6367,6 +6572,85 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionsEnded"];
+                };
+            };
+        };
+    };
+    backups_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Backup"][];
+                };
+            };
+        };
+    };
+    backups_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Backup"];
+                };
+            };
+        };
+    };
+    backups_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this backup. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Backup"];
+                };
+            };
+        };
+    };
+    backups_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryStatus"];
                 };
             };
         };
@@ -8033,6 +8317,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QualificationType"];
+                };
+            };
+        };
+    };
+    restore_drills_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreDrill"][];
+                };
+            };
+        };
+    };
+    restore_drills_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartDrillRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreDrillDetail"];
+                };
+            };
+        };
+    };
+    restore_drills_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this restore drill. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreDrillDetail"];
                 };
             };
         };

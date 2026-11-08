@@ -30,3 +30,4 @@ default, awaiting the named approver), **Superseded**.
 | [022](ADR-022-browser-protection-and-client-address.md) | Browser protection headers and real client addresses | Proposed |
 | [023](ADR-023-confirm-before-sensitive-actions.md) | Confirm before sensitive actions | Proposed |
 | [024](ADR-024-rotas-no-overlap-in-the-database.md) | Rotas and leave: shifts as instants, overlaps refused by the database | Proposed |
+| [025](ADR-025-backups-and-restore-drills.md) | Backups and restore drills checked against an inventory taken in the same snapshot | Proposed |

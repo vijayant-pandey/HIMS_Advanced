@@ -29,7 +29,7 @@ from functools import lru_cache
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import connection, transaction
+from django.db import DEFAULT_DB_ALIAS, connection, transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -254,15 +254,19 @@ def _event_details(row: dict | None) -> dict:
     return {"action": row["action"], "occurred_at": _plain(row["occurred_at"])}
 
 
-def _walk_chain(keys: ChainKeys, findings: _Findings) -> tuple[int, int, str]:
-    """Recompute every link up to the current end. Returns (checked, last sequence, head)."""
-    end = AuditChainEntry.objects.order_by("-sequence").values_list("sequence", flat=True).first()
+def _walk_chain(
+    keys: ChainKeys, findings: _Findings, using: str = DEFAULT_DB_ALIAS
+) -> tuple[int, int, str]:
+    """Recompute every link up to the current end. Returns (checked, last sequence, head).
+    ``using`` another database checks a restored copy (restore drills, HIMS-OPS-009)."""
+    links = AuditChainEntry.objects.using(using)
+    end = links.order_by("-sequence").values_list("sequence", flat=True).first()
     if end is None:
         return 0, 0, ""
     expected, previous, checked, after = 1, GENESIS, 0, 0
     while True:
         chunk = list(
-            AuditChainEntry.objects.filter(sequence__gt=after, sequence__lte=end)
+            links.filter(sequence__gt=after, sequence__lte=end)
             .order_by("sequence")
             .values("sequence", "event_id", "event_hash", "previous_hash", "entry_hash", "key_id")[
                 :VERIFY_CHUNK
@@ -272,9 +276,9 @@ def _walk_chain(keys: ChainKeys, findings: _Findings) -> tuple[int, int, str]:
             break
         events = {
             row["id"]: row
-            for row in AuditEvent.objects.filter(
-                pk__in=[link["event_id"] for link in chunk]
-            ).values(*HASHED_FIELDS)
+            for row in AuditEvent.objects.using(using)
+            .filter(pk__in=[link["event_id"] for link in chunk])
+            .values(*HASHED_FIELDS)
         }
         for link in chunk:
             sequence = link["sequence"]
@@ -308,6 +312,20 @@ def _walk_chain(keys: ChainKeys, findings: _Findings) -> tuple[int, int, str]:
             previous, expected, checked = link["entry_hash"], sequence + 1, checked + 1
         after = chunk[-1]["sequence"]
     return checked, end, previous
+
+
+def check_chain_of_copy(using: str) -> dict:
+    """Walk the chain of another database, e.g. a restored backup (HIMS-OPS-009), with this
+    deployment's keys. Nothing is sealed or stored there."""
+    findings = _Findings(problems=[])
+    checked, last_sequence, head = _walk_chain(chain_keys(), findings, using=using)
+    return {
+        "checked": checked,
+        "last_sequence": last_sequence,
+        "chain_head": head,
+        "problem_count": findings.count,
+        "problems": findings.problems,
+    }
 
 
 def _compare_with_previous_check(last_sequence: int, findings: _Findings) -> None:

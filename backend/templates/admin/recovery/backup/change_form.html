@@ -1,0 +1,13 @@
+{% extends "admin/change_form.html" %}
+{# "Run a restore drill" on this backup, for holders of recovery.manage (HIMS-OPS-009). #}
+{% block object-tools-items %}
+  {% if can_manage and original %}
+  <li>
+    <form method="post" action="{% url 'admin:recovery_backup_run_drill' original.pk %}" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="button" style="padding:6px 12px">Run a restore drill on this backup</button>
+    </form>
+  </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

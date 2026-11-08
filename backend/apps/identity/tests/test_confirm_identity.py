@@ -22,6 +22,7 @@ from apps.features.services import set_feature
 from apps.identity import confirmation, mfa
 from apps.identity.api.account_views import AccountViewSet
 from apps.identity.models import MfaDevice
+from apps.recovery.api.views import BackupViewSet
 from apps.staff.models import StaffMember
 from common.crypto import encrypt
 
@@ -93,6 +94,7 @@ def test_every_sensitive_action_stays_declared():
     }
     assert set(FeatureChangeView.sensitive_actions) == {"post"}
     assert set(AuditEventViewSet.sensitive_actions) == {"export"}
+    assert set(BackupViewSet.sensitive_actions) == {"create"}  # a copy of every record
 
 
 @pytest.mark.django_db

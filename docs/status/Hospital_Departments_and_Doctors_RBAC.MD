@@ -489,3 +489,11 @@ switched off, so the hospital cannot lock itself out.
   had `staff.view` before this change got it automatically, so nobody lost access.
 * Head of department and facility administrator now include `staff.view` at their own scope.
   Details: [staff visibility](../workflows/staff-visibility.md).
+
+## Update 2026-11-08: backups and restore drills (HIMS-OPS-009)
+* New `recovery.view`: see backups and the results of restore drills (evidence). The
+  administrator and the **auditor** have it, so an auditor can check that restores are proven.
+* New `recovery.manage`: make a backup (a full copy of every record and document) and run restore
+  drills. Only the administrator has it; it requires two-factor sign-in, and making a backup asks
+  "Confirm it's you". Only on a developer PC; hosted environments use the cloud database service.
+  Details: [backups and restore drills](../workflows/backup-and-restore.md).

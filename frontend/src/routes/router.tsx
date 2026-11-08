@@ -21,6 +21,7 @@ const auth = () => import("../features/auth/authPages");
 const access = () => import("../features/accessControl/AccessPage");
 const reviews = () => import("../features/accessControl/AccessReviewsPage");
 const audit = () => import("../features/audit/AuditIntegrityPage");
+const recovery = () => import("../features/recovery/RecoveryPage");
 const staff = () => import("../features/staff/StaffDetailPage");
 
 export const routes = [
@@ -110,6 +111,8 @@ export const routes = [
               },
               { path: "audit/integrity", lazy: screen(audit, (m) => m.AuditIntegrityPage) },
               { path: "audit/integrity/:id", lazy: screen(audit, (m) => m.AuditIntegrityDetailPage) },
+              { path: "recovery", lazy: screen(recovery, (m) => m.RecoveryPage) },
+              { path: "recovery/drills/:id", lazy: screen(recovery, (m) => m.RestoreDrillPage) },
               {
                 path: "compliance",
                 lazy: screen(() => import("../features/compliance/CompliancePage"), (m) => m.CompliancePage),
