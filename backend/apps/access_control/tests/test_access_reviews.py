@@ -332,7 +332,8 @@ def test_admin_console_starts_and_decides_with_the_same_rules(admin_user, people
 @pytest.mark.django_db
 def test_auditor_role_includes_review_evidence(system_roles):
     codes = set(system_roles["auditor"].permissions.values_list("codename", flat=True))
-    assert codes == {"audit.view", "access.reviews.view", "compliance.view"}
+    # recovery.view: auditors check that restores are proven (HIMS-OPS-009)
+    assert codes == {"audit.view", "access.reviews.view", "compliance.view", "recovery.view"}
     admin_codes = set(
         system_roles["organization-administrator"].permissions.values_list("codename", flat=True)
     )
