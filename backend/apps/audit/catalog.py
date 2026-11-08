@@ -26,6 +26,7 @@ CATEGORIES: dict[str, str] = {
     "compliance": "Compliance",
     "recovery": "Backups and restore drills",
     "database": "Database access",
+    "outbox": "Background jobs",
 }
 
 LABELS: dict[str, str] = {
@@ -122,6 +123,9 @@ LABELS: dict[str, str] = {
     A.BACKUP_CREATED: "Backup made",
     A.RESTORE_DRILL_COMPLETED: "Restore drill run",
     A.DATABASE_USERS_SET_UP: "Separate database users set up or their rights re-applied",
+    A.OUTBOX_CLEANED_UP: "Old background events cleaned up",
+    A.OUTBOX_EVENT_SENT_AGAIN: "Failed background event sent again",
+    A.OUTBOX_EVENT_DISMISSED: "Failed background event dismissed",
 }
 
 

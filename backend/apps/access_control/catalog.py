@@ -41,6 +41,8 @@ class P:
     LEAVE_APPROVE = "leave.approve"
     RECOVERY_VIEW = "recovery.view"
     RECOVERY_MANAGE = "recovery.manage"
+    JOBS_VIEW = "platform.jobs.view"
+    JOBS_MANAGE = "platform.jobs.manage"
     ADMIN_CONSOLE = "platform.admin_console"
 
 
@@ -88,6 +90,8 @@ PERMISSIONS: dict[str, str] = {
     P.RECOVERY_MANAGE: (
         "Make a backup (a full copy of all records and documents) and run restore drills"
     ),
+    P.JOBS_VIEW: "See background jobs: waiting, retried and failed events",
+    P.JOBS_MANAGE: "Send a failed background event again, or dismiss it, with a reason",
     P.ACCOUNTS_MANAGE: (
         "Add sign-in accounts for people who are not staff, switch accounts off or on, "
         "reset their two-factor and sign them out"
@@ -117,6 +121,7 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.COMPLIANCE_VIEW,
         P.COMPLIANCE_MANAGE,
         P.RECOVERY_MANAGE,
+        P.JOBS_MANAGE,
     }
 )
 

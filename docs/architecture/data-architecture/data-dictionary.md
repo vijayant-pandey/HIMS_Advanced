@@ -1286,8 +1286,8 @@ One restore drill: a backup restored into a new, separate database and folder, e
 A domain event committed atomically with the change that caused it (spec 14.2, 29.7).
 
 - **Model:** `outbox.OutboxEvent`
-- **Lifecycle:** Kept after publishing; archival job pending (HIMS-PLAT-014).
-- **Extra indexes:** `outbox_pending_idx`: available_at, occurred_at where status = 'pending'; `outbox_aggregate_idx`: aggregate_type, aggregate_id
+- **Lifecycle:** Published and dismissed rows deleted by the daily clean-up after `HIMS_OUTBOX_RETENTION_DAYS` (30); waiting and failed rows never automatically (a person sends them again or dismisses them, with a reason; HIMS-PLAT-014).
+- **Extra indexes:** `outbox_published_idx`: published_at where status = 'published'; `outbox_pending_idx`: available_at, occurred_at where status = 'pending'; `outbox_aggregate_idx`: aggregate_type, aggregate_id
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
 |---|---|---|---|---|---|---|---|
@@ -1302,11 +1302,14 @@ A domain event committed atomically with the change that caused it (spec 14.2, 2
 | `correlation_id` | varchar(64) | no | — | up to 64 characters | Person | Internal: Business data | Correlation id |
 | `causation_id` | varchar(64) | no | — | up to 64 characters | Person | Internal: Business data | Causation id |
 | `payload` | jsonb | no | dict() | — | Person | Restricted: Event content (may hold personal data) | Payload |
-| `status` | varchar(16) | no | `OutboxEvent.Status.PENDING` | `pending` (Pending), `published` (Published), `dead` (Dead (retries exhausted)) | Person | Internal: Business data | Status |
+| `status` | varchar(16) | no | `OutboxEvent.Status.PENDING` | `pending` (Pending), `published` (Published), `dead` (Dead (retries exhausted)), `dismissed` (Dismissed by a person (never retried)) | Person | Internal: Business data | Status |
 | `attempts` | integer | no | `0` | 0 or more | Person | Internal: Business data | Attempts |
 | `available_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Available at |
 | `published_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Published at |
 | `last_error` | varchar(500) | no | — | up to 500 characters | Person | Internal: System diagnostics | Last error |
+| `resolved_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Resolved at |
+| `resolved_by_id` | uuid | yes | — | — | Person | Internal: Business data | Resolved by id |
+| `resolution_note` | varchar(300) | no | — | up to 300 characters | Person | Restricted: Decision note (no patient details) | Resolution note |
 
 <a id="outbox_processed_events"></a>
 ### `outbox_processed_events`
@@ -1314,8 +1317,9 @@ A domain event committed atomically with the change that caused it (spec 14.2, 2
 Consumer-side deduplication: one row per (handler, event) processed (spec 29.7).
 
 - **Model:** `outbox.ProcessedEvent`
-- **Lifecycle:** Kept for duplicate detection; archival with HIMS-PLAT-014.
+- **Lifecycle:** Kept for duplicate detection; deleted by the daily clean-up after the retention period, unless the event can still run again (HIMS-PLAT-014).
 - **Rules:** `processed_event_unique`: Unique: handler, event_id
+- **Extra indexes:** `outbox_processed_at_idx`: processed_at
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
 |---|---|---|---|---|---|---|---|

@@ -151,8 +151,11 @@ LIFECYCLE: dict[str, str] = {
     "legal hold: decision pending (🔒 LEGAL).",
     "audit_chain_entries": "Append-only (database trigger); one link per sealed audit event.",
     "audit_integrity_checks": "Append-only (database trigger); one row per check.",
-    "outbox_events": "Kept after publishing; archival job pending (HIMS-PLAT-014).",
-    "outbox_processed_events": "Kept for duplicate detection; archival with HIMS-PLAT-014.",
+    "outbox_events": "Published and dismissed rows deleted by the daily clean-up after "
+    "`HIMS_OUTBOX_RETENTION_DAYS` (30); waiting and failed rows never automatically (a person "
+    "sends them again or dismisses them, with a reason; HIMS-PLAT-014).",
+    "outbox_processed_events": "Kept for duplicate detection; deleted by the daily clean-up "
+    "after the retention period, unless the event can still run again (HIMS-PLAT-014).",
     "compliance_requirements": "Wording synced from code; removed items switched off, never "
     "deleted. Status changes audited.",
     "compliance_risks": "Never deleted; closed with a status. Changes audited.",
@@ -196,6 +199,7 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "idempotency_records.request_fingerprint": (INTERNAL, "Checksum"),
     "outbox_events.payload": (RESTRICTED, "Event content (may hold personal data)"),
     "outbox_events.last_error": (INTERNAL, "System diagnostics"),
+    "outbox_events.resolution_note": (RESTRICTED, "Decision note (no patient details)"),
     "audit_events.changes": (RESTRICTED, "Audit content (before/after values)"),
     "audit_events.metadata": (RESTRICTED, "Audit content"),
     "audit_events.reason": (RESTRICTED, "Audit content"),

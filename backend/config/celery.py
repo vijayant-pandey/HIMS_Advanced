@@ -50,6 +50,15 @@ def _configure_queues_and_schedule(sender, **kwargs):
             "schedule": timedelta(seconds=5),
             "options": {"expires": 5},
         },
+        "outbox-cleanup": {
+            "task": "platform.outbox_cleanup",
+            "schedule": timedelta(hours=24),
+        },
+        "outbox-health-check": {
+            "task": "platform.outbox_health_check",
+            "schedule": timedelta(minutes=15),
+            "options": {"expires": 900},
+        },
         "idempotency-purge": {
             "task": "platform.purge_expired_idempotency_records",
             "schedule": timedelta(hours=1),

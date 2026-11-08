@@ -821,6 +821,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/background-jobs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Events that need a look, the outbox's health, and decisions on failed events. */
+        get: operations["background_jobs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/background-jobs/{id}/dismiss/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Close a failed event that can never succeed; it is never retried. */
+        post: operations["background_jobs_dismiss_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/background-jobs/{id}/send-again/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Put a failed (or stuck) event back in the queue with a fresh set of retries. */
+        post: operations["background_jobs_send_again_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/background-jobs/health/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description How many events wait, are retried or failed; the last clean-up. */
+        get: operations["background_jobs_health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backups/": {
         parameters: {
             query?: never;
@@ -3231,6 +3299,10 @@ export interface components {
             passed: boolean;
             detail: string;
         };
+        DecisionRequest: {
+            /** @description Why (kept in the audit log). */
+            reason: string;
+        };
         /**
          * @description * `USD` - US Dollar
          *     * `INR` - Indian Rupee
@@ -3761,6 +3833,12 @@ export interface components {
          * @enum {string}
          */
         JurisdictionEnum: "ALL" | "IN" | "US";
+        LastCleanup: {
+            /** Format: date-time */
+            at: string;
+            events_deleted: number;
+            markers_deleted: number;
+        };
         LeaveCreateRequest: {
             /**
              * Format: uuid
@@ -4079,6 +4157,48 @@ export interface components {
         OrganizationSummary: {
             display_name: string;
             country: string;
+        };
+        OutboxEvent: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly event_type: string;
+            readonly event_label: string;
+            /** Format: date-time */
+            readonly occurred_at: string;
+            readonly status: components["schemas"]["OutboxEventStatusEnum"];
+            readonly status_label: string;
+            readonly attempts: number;
+            /** Format: date-time */
+            readonly available_at: string;
+            readonly last_error: string;
+            readonly aggregate_type: string;
+            readonly aggregate_id: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly resolved_by_name: string | null;
+            readonly resolution_note: string;
+        };
+        /**
+         * @description * `pending` - Pending
+         *     * `published` - Published
+         *     * `dead` - Dead (retries exhausted)
+         *     * `dismissed` - Dismissed by a person (never retried)
+         * @enum {string}
+         */
+        OutboxEventStatusEnum: "pending" | "published" | "dead" | "dismissed";
+        OutboxHealth: {
+            waiting: number;
+            oldest_waiting_minutes: number;
+            retrying: number;
+            stuck: number;
+            failed: number;
+            dismissed: number;
+            published_last_24h: number;
+            stuck_after_minutes: number;
+            retention_days: number;
+            max_attempts: number;
+            last_cleanup: components["schemas"]["LastCleanup"] | null;
+            attention: string[];
         };
         /**
          * @description * `success` - Success
@@ -4537,6 +4657,8 @@ export interface components {
          *     * `organization.manage` - organization.manage
          *     * `organization.view` - organization.view
          *     * `platform.admin_console` - platform.admin_console
+         *     * `platform.jobs.manage` - platform.jobs.manage
+         *     * `platform.jobs.view` - platform.jobs.view
          *     * `recovery.manage` - recovery.manage
          *     * `recovery.view` - recovery.view
          *     * `rota.manage` - rota.manage
@@ -4547,7 +4669,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.view";
         Person: {
             /** Format: uuid */
             id: string;
@@ -6607,6 +6729,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionsEnded"];
+                };
+            };
+        };
+    };
+    background_jobs_list: {
+        parameters: {
+            query?: {
+                /** @description Which events (default: attention). */
+                show?: "attention" | "dismissed" | "failed" | "waiting";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutboxEvent"][];
+                };
+            };
+        };
+    };
+    background_jobs_dismiss_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this outbox event. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutboxEvent"];
+                };
+            };
+        };
+    };
+    background_jobs_send_again_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this outbox event. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutboxEvent"];
+                };
+            };
+        };
+    };
+    background_jobs_health_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutboxHealth"];
                 };
             };
         };

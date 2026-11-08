@@ -33,6 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/audit", label: "Audit log", permission: "audit.view" },
   { to: "/audit/integrity", label: "Audit integrity", permission: "audit.view" },
   { to: "/recovery", label: "Backups", permission: "recovery.view" },
+  { to: "/background-jobs", label: "Background jobs", permission: "platform.jobs.view" },
 ];
 
 /** True when another item lives under this one (e.g. /audit and /audit/integrity), so only the exact page is highlighted. */
