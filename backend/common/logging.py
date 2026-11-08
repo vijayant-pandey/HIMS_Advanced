@@ -2,13 +2,15 @@
 
 Log messages must not contain PHI, credentials or raw provider payloads (spec 13.4). Pass
 identifiers and sanitized outcomes through ``extra=`` rather than formatting record contents
-into the message.
+into the message. As a safety net every message, extra field and traceback is passed through
+``common.log_safety`` before it is written (HIMS-SEC-019).
 """
 
 import json
 import logging
 from datetime import UTC, datetime
 
+from common.log_safety import scrub, scrub_value
 from common.tracing import current_trace_ids
 
 _STANDARD_ATTRS = frozenset(vars(logging.makeLogRecord({})).keys()) | {"message", "asctime"}
@@ -20,13 +22,15 @@ class JsonFormatter(logging.Formatter):
             "timestamp": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
-            "message": record.getMessage(),
+            "message": scrub(record.getMessage()),
         }
         # Links the log line to its trace when tracing is on (HIMS-PLAT-016).
         payload.update(current_trace_ids())
         for key, value in vars(record).items():
             if key not in _STANDARD_ATTRS and not key.startswith("_"):
-                payload[key] = value
+                payload[key] = scrub_value(key, value)
         if record.exc_info:
-            payload["exception"] = self.formatException(record.exc_info)
+            payload["exception"] = scrub(self.formatException(record.exc_info))
+        if record.stack_info:
+            payload["stack"] = scrub(self.formatStack(record.stack_info))
         return json.dumps(payload, default=str)

@@ -81,7 +81,13 @@ function MessageDialog({ message, canManage, onClose }: { message: Notification;
             <Chip size="small" color={STATUS[shown.status].color} label={STATUS[shown.status].label} /> · attempts{" "}
             {shown.attempts}
           </Typography>
-          {shown.last_error && <Alert severity="warning">Last error: {shown.last_error}</Alert>}
+          {shown.last_error && (
+            <Alert severity="warning">
+              Last error: {shown.last_error}
+              {shown.last_error.includes("[hidden]") &&
+                " (sign-in links, codes and personal details the provider repeated in its reply are shown as [hidden])"}
+            </Alert>
+          )}
           {shown.skip_reason && <Alert severity="info">{shown.skip_reason}</Alert>}
           <Typography variant="caption" color="text.secondary">
             Sign-in links and other secrets are hidden in this copy; the person received the real message.

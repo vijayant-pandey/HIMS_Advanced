@@ -30,12 +30,12 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
-function renderPage(grants: string[]) {
+function renderPage(grants: string[], message = FAILED) {
   const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
     if (init?.method === "POST" && url.endsWith("/send-again/")) return json({ ...FAILED, status: "sent", attempts: 2, can_send_again: false });
     if (init?.method === "POST") return json({ ...FAILED, id: "n2", status: "sent", subject: "test", last_error: "" }, 201);
-    return json({ count: 1, next: null, previous: null, results: [FAILED] });
+    return json({ count: 1, next: null, previous: null, results: [message] });
   });
   const user: CurrentUser = {
     id: "u1",
@@ -89,6 +89,15 @@ describe("NotificationsPage (HIMS-NOTIF-001)", () => {
       channel: "sms",
       to: "+919876543210",
     });
+  });
+
+  it("explains when the provider's error had secrets hidden (HIMS-SEC-019)", async () => {
+    renderPage(["notifications.view"], { ...FAILED, last_error: "SMTPDataError: (554, 'refused: Open http://app.test/activate#token=[hidden]')" });
+    const table = await screen.findByRole("table", { name: "Messages" });
+    fireEvent.click(await within(table).findByRole("button", { name: "Activate your account" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("SMTPDataError");
+    expect(dialog).toHaveTextContent("personal details the provider repeated in its reply are shown as [hidden]");
   });
 
   it("view-only people cannot send", async () => {
