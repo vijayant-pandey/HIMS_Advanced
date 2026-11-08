@@ -12,3 +12,9 @@ e79ed91997de674e50a87ecd57b6162fab67ed6a:backend/apps/identity/tests/test_mfa.py
 #  - line 109: synthetic test password "Synthetic-Nurse-Passw0rd-21" (ended in 2 digits, so the
 #    .gitleaks.toml allow-list for Synthetic-*-Passw0rd-NNNN did not match); not a real secret
 cc3d1fb974b034161c5bec34203588447dc2dcb8:backend/apps/features/tests/test_features.py:generic-api-key:109
+#
+# HIMS-SEC-019, commit 39245cb (PR #37), fixed in the following commit:
+#  - lines 104 and 142: synthetic test password "Synthetic-Passw0rd" (no word and 4 digits, so the
+#    .gitleaks.toml allow-list for Synthetic-*-Passw0rd-NNNN did not match); not a real secret
+39245cb75e47d1d85a8bea1222e9508a9cb8fbf9:backend/common/tests/test_log_safety.py:generic-api-key:104
+39245cb75e47d1d85a8bea1222e9508a9cb8fbf9:backend/common/tests/test_log_safety.py:generic-api-key:142

@@ -101,7 +101,7 @@ def test_fields_named_like_secrets_or_payloads_are_hidden_others_kept():
     cleaned = scrub_value(
         None,
         {
-            "password": "Synthetic-Passw0rd",
+            "password": "Synthetic-Log-Passw0rd-2004",
             "nested": {"recovery_codes": ["a1b2"], "api_key": "k"},
             "args": ["patient-id"],
             "request": request,
@@ -139,7 +139,7 @@ def test_the_json_formatter_hides_secrets_in_message_fields_and_traceback():
                 "msg": "call failed: %s",
                 "args": ("https://sms.test/send?to=+919800019051",),
                 "exc_info": (type(exc), exc, exc.__traceback__),
-                "password": "Synthetic-Passw0rd",
+                "password": "Synthetic-Log-Passw0rd-2004",
                 "status_code": 502,
             }
         )
