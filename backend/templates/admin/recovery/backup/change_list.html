@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+{# "Make a backup now" for holders of recovery.manage (HIMS-OPS-009). Posts to BackupAdmin.make_backup_view. #}
+{% block object-tools-items %}
+  {% if can_manage %}
+  <li>
+    <form method="post" action="{% url 'admin:recovery_backup_make' %}" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="button" style="padding:6px 12px">Make a backup now</button>
+    </form>
+  </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

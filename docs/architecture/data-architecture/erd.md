@@ -57,6 +57,8 @@ erDiagram
     browser_security_reports
     security_incident_notifications
     notifications
+    recovery_backups
+    recovery_restore_drills
     outbox_events
     outbox_processed_events
     idempotency_records
@@ -167,6 +169,7 @@ erDiagram
     users |o--o{ browser_security_reports : "reviewed_by_id"
     security_incidents ||--o{ security_incident_notifications : "incident_id"
     users |o--o{ security_incident_notifications : "done_by_id"
+    recovery_backups ||--o{ recovery_restore_drills : "backup_id"
 ```
 
 ## Hospital (organization) (logical)
@@ -1047,6 +1050,44 @@ erDiagram
         varchar related_id
         uuid requested_by_id
     }
+```
+
+## Backups and restore drills (logical)
+
+```mermaid
+erDiagram
+    recovery_backups {
+        uuid id PK
+        timestamptz created_at
+        uuid created_by_id
+        varchar name UK
+        varchar database_name
+        varchar environment
+        varchar release
+        bigint dump_bytes
+        varchar dump_sha256
+        integer tables
+        bigint rows
+        integer documents
+        bigint documents_bytes
+        double seconds
+        jsonb manifest
+    }
+    recovery_restore_drills {
+        uuid id PK
+        uuid backup_id FK
+        timestamptz started_at
+        timestamptz finished_at
+        varchar trigger
+        uuid requested_by_id
+        varchar outcome
+        double restore_seconds
+        integer backup_age_minutes
+        varchar restored_database
+        jsonb checks
+        integer problem_count
+    }
+    recovery_backups ||--o{ recovery_restore_drills : "backup_id"
 ```
 
 ## Platform: transactional outbox (logical)

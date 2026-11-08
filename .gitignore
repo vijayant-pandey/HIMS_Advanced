@@ -44,6 +44,8 @@ frontend/playwright-report/
 frontend/test-results/
 backend/staticfiles/
 backend/media/
+# Backups made on a developer PC hold every record (HIMS-OPS-009)
+backend/backups/
 
 # Personal local notes with dev passwords (see login.md)
 login.md

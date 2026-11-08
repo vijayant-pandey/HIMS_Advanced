@@ -36,6 +36,7 @@
 21. [Part 17: audit log (as the auditor)](#part-17-audit-log-as-the-auditor)
 22. [Part 18: the admin console (Django admin) tour](#part-18-the-admin-console-django-admin-tour)
 22a. [Part 18a: rota, on-call and leave](#part-18a-rota-on-call-and-leave)
+22b. [Part 18b: backups and restore drills](#part-18b-backups-and-restore-drills)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -96,6 +97,7 @@ says "open the link from the email", look in the launcher window for lines that 
 | Staff | Staff list, postings to departments, qualifications, licences, documents, verification, licence expiry alerts, job titles catalog |
 | Access | Roles, giving and removing access, custom roles, accounts (including people who are not staff), access reviews, cover arrangements (lend someone's access to a colleague for a limited time) |
 | Audit | Audit log for auditors: search, details, CSV download; **Audit integrity**: proof that no audit record was changed or removed (tamper check) |
+| Backups | Make a backup and prove it can be restored: a restore drill checks every record, the audit log and every document in a separate copy |
 | Admin console | Every item above can also be managed in the Django admin console, and every change is audited |
 
 **Not built yet (do not look for it):** patients, appointments, doctors' notes, pharmacy, lab,
@@ -1080,6 +1082,29 @@ for Asha: **Staff** → Asha → **Add posting** → Cardiology → any job titl
 
 ---
 
+## Part 18b: backups and restore drills
+
+Needs the HIMS-OPS-009 PR. After it is merged, run the migrate steps (India, then US): this part
+adds two tables. **Window A** (administrator). Do it after Part 8, so there is at least one staff
+document to back up. Full guide: [backups and restore drills](../workflows/backup-and-restore.md).
+
+| # | Do | Expect |
+|---|---|---|
+| 18b.1 | Menu → **Backups** | "Where things stand" with **Restore drill due** (no drill yet), the backup folder, empty tables |
+| 18b.2 | **Make a backup now** (enter your password and code if "Confirm it's you" opens) | After a few seconds: "Backup … made. Now run a restore drill on it." A row appears with tables, records, documents and size, and **Not restored yet** |
+| 18b.3 | **Run restore drill** on that row | After a few seconds: "Restore drill passed: everything came back in … s". The row now shows **Passed**, and the status chip says **Restore proven** |
+| 18b.4 | **Restore drills** table → click the date | Every check is **OK**, including "Audit log chain verified with this hospital's keys", "Audit records still linked…" and "Every stored document came back unchanged" |
+| 18b.5 | Open the backup folder shown on the page in File Explorer | One folder per backup with `database.dump`, `documents` and `manifest.json`. Do not share this folder: it holds every record |
+| 18b.6 | Sign in as the **auditor** (Window B) → **Backups** | Sees the backups and drills, but no buttons |
+| 18b.7 | Admin console → **Backups and restore drills** → **Backups** | Same list (read only) with **Make a backup now**; open a backup → **Run a restore drill on this backup** |
+| 18b.8 | **Audit log** (as auditor) → area **Backups and restore drills** | "Backup made" and "Restore drill run" with who and when |
+| 18b.9 | Command window: `cd backend`, `.venv\Scripts\activate.bat`, `python manage.py restore_drill` | Every check printed, ends with `PASSED: everything came back` |
+
+If **Make a backup now** is greyed out with a message about pg_dump: install PostgreSQL's command
+line tools or set `HIMS_PG_BIN_DIR` (see the guide), then restart HIMS.
+
+---
+
 ## Part 19: leaving staff (termination)
 
 **Window A** app + **Window B** (Asha signed in).
@@ -1229,6 +1254,8 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 16 | Access reviews | | | |
 | 17 | Audit log, audit integrity, compliance | | | |
 | 18 | Admin console tour | | | |
+| 18a | Rota, on-call and leave | | | |
+| 18b | Backups and restore drills | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 

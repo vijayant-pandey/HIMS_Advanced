@@ -27,14 +27,15 @@ one**, before a sensitive action.
 | Decide an access review item (it can remove access) | Access reviews | `access-reviews`: decide |
 | Download an access review | Access reviews | `access-reviews`: export |
 | Download the audit log | Audit log | `audit-events`: export |
+| Make a backup (a full copy of every record and document; HIMS-OPS-009) | Backups | `backups`: create |
 | Add an account; switch one off or on | Accounts | `accounts`: create, deactivate, reactivate |
 | Reset someone's two-factor; sign them out everywhere | Accounts | `accounts`: reset-two-factor, sign-out-everywhere |
 | Suspend or terminate staff (ends their access) | Staff | `staff`: update, only for those two statuses |
 | Change a Feature setting | Features | `features`: change |
 
 **In the admin console** the same areas ask before saving or running an action: users (including
-setting a password), roles, role assignments, access reviews and their items, cover, staff and
-feature settings. Looking does not ask. Nothing is changed until the person has confirmed, and they
+setting a password), roles, role assignments, access reviews and their items, cover, staff,
+feature settings and "Make a backup now". Looking does not ask. Nothing is changed until the person has confirmed, and they
 then repeat what they were doing.
 
 **Why these:** each one changes who can do what, ends someone's access, weakens a security setting

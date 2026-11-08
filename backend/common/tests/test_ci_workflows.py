@@ -67,3 +67,12 @@ def test_jobs_have_time_limits():
     for path in WORKFLOWS:
         for name, job in _load(path)["jobs"].items():
             assert job.get("timeout-minutes"), f"{path.name}:{name} needs timeout-minutes"
+
+
+def test_backend_tests_run_the_real_restore_drill():
+    """The restore drill tests (HIMS-OPS-009) skip without PostgreSQL's tools on a developer PC;
+    in CI they must run, with the tools of the database container (same version)."""
+    workflow = _load(ROOT / ".github" / "workflows" / "pull-request-ci.yml")
+    step = next(s for s in workflow["jobs"]["backend"]["steps"] if s.get("run") == "pytest -q")
+    container = step.get("env", {}).get("HIMS_PG_DOCKER_CONTAINER")
+    assert container == "${{ job.services.postgres.id }}"

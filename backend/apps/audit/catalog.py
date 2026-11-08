@@ -24,6 +24,7 @@ CATEGORIES: dict[str, str] = {
     "audit": "Audit log",
     "notification": "Emails and SMS",
     "compliance": "Compliance",
+    "recovery": "Backups and restore drills",
 }
 
 LABELS: dict[str, str] = {
@@ -117,6 +118,8 @@ LABELS: dict[str, str] = {
     A.AUDIT_EXPORTED: "Audit log exported",
     A.AUDIT_INTEGRITY_CHECKED: "Audit log integrity checked",
     A.AUDIT_INTEGRITY_ALERT_SENT: "Audit integrity problem: auditors alerted",
+    A.BACKUP_CREATED: "Backup made",
+    A.RESTORE_DRILL_COMPLETED: "Restore drill run",
 }
 
 

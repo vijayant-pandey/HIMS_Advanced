@@ -1241,6 +1241,78 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionsEnded'
           description: ''
+  /api/v1/backups/:
+    get:
+      operationId: backups_list
+      description: Backups made on this computer, newest first, and "Make a backup
+        now".
+      tags:
+      - backups
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Backup'
+          description: ''
+    post:
+      operationId: backups_create
+      description: Back up the database and the documents now. Takes a few seconds
+        on a developer PC.
+      tags:
+      - backups
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backup'
+          description: ''
+  /api/v1/backups/{id}/:
+    get:
+      operationId: backups_retrieve
+      description: Backups made on this computer, newest first, and "Make a backup
+        now".
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this backup.
+        required: true
+      tags:
+      - backups
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backup'
+          description: ''
+  /api/v1/backups/status/:
+    get:
+      operationId: backups_status_retrieve
+      description: The latest backup and restore drill, and whether a drill is overdue.
+      tags:
+      - backups
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryStatus'
+          description: ''
   /api/v1/beds/:
     get:
       operationId: beds_list
@@ -3094,6 +3166,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QualificationType'
+          description: ''
+  /api/v1/restore-drills/:
+    get:
+      operationId: restore_drills_list
+      description: Results of restore drills, newest first, and "Run a restore drill".
+      tags:
+      - restore-drills
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RestoreDrill'
+          description: ''
+    post:
+      operationId: restore_drills_create
+      description: |-
+        Restore a backup into a separate copy, check everything, then remove the copy.
+        The live database and documents are not touched.
+      tags:
+      - restore-drills
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartDrillRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreDrillDetail'
+          description: ''
+  /api/v1/restore-drills/{id}/:
+    get:
+      operationId: restore_drills_retrieve
+      description: Results of restore drills, newest first, and "Run a restore drill".
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this restore drill.
+        required: true
+      tags:
+      - restore-drills
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestoreDrillDetail'
           description: ''
   /api/v1/role-assignments/:
     get:
@@ -5425,6 +5559,69 @@ components:
       - last_sealed_at
       - sealed_events
       - waiting_to_be_sealed
+    Backup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        name:
+          type: string
+          readOnly: true
+          description: Folder name inside the backup folder.
+        environment:
+          type: string
+          readOnly: true
+        release:
+          type: string
+          readOnly: true
+        dump_bytes:
+          type: integer
+          readOnly: true
+        tables:
+          type: integer
+          readOnly: true
+        rows:
+          type: integer
+          readOnly: true
+        documents:
+          type: integer
+          readOnly: true
+        documents_bytes:
+          type: integer
+          readOnly: true
+        seconds:
+          type: number
+          format: double
+          readOnly: true
+          description: How long the backup took.
+        last_drill_outcome:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - created_by_name
+      - documents
+      - documents_bytes
+      - dump_bytes
+      - environment
+      - id
+      - last_drill_outcome
+      - name
+      - release
+      - rows
+      - seconds
+      - tables
     Bed:
       type: object
       properties:
@@ -6449,6 +6646,22 @@ components:
         * `encounter` - Encounter / visit number
         * `invoice` - Invoice number
         * `claim` - Insurance claim number
+    DrillCheck:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        passed:
+          type: boolean
+        detail:
+          type: string
+      required:
+      - detail
+      - key
+      - label
+      - passed
     EffectiveFeatures:
       type: object
       properties:
@@ -8965,6 +9178,8 @@ components:
       - organization.manage
       - organization.view
       - platform.admin_console
+      - recovery.manage
+      - recovery.view
       - rota.manage
       - rota.view
       - staff.credentials.verify
@@ -9000,6 +9215,8 @@ components:
         * `organization.manage` - organization.manage
         * `organization.view` - organization.view
         * `platform.admin_console` - platform.admin_console
+        * `recovery.manage` - recovery.manage
+        * `recovery.view` - recovery.view
         * `rota.manage` - rota.manage
         * `rota.view` - rota.view
         * `staff.credentials.verify` - staff.credentials.verify
@@ -9111,6 +9328,211 @@ components:
           maxLength: 2000
       required:
       - reason
+    RecoveryStatus:
+      type: object
+      properties:
+        can_run_here:
+          type: boolean
+          description: 'False in hosted environments: there the cloud database service
+            backs up.'
+        backup_folder:
+          type: string
+        tools:
+          type: string
+          description: Where pg_dump/pg_restore were found ('' if not).
+        tools_problem:
+          type: string
+        drill_interval_days:
+          type: integer
+        drill_overdue:
+          type: boolean
+          description: No passed drill yet, or the last one is older than the interval.
+        last_backup:
+          allOf:
+          - $ref: '#/components/schemas/Backup'
+          nullable: true
+        last_drill:
+          allOf:
+          - $ref: '#/components/schemas/RestoreDrill'
+          nullable: true
+        last_passed_drill:
+          allOf:
+          - $ref: '#/components/schemas/RestoreDrill'
+          nullable: true
+      required:
+      - backup_folder
+      - can_run_here
+      - drill_interval_days
+      - drill_overdue
+      - last_backup
+      - last_drill
+      - last_passed_drill
+      - tools
+      - tools_problem
+    RestoreDrill:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/RestoreDrillTriggerEnum'
+          readOnly: true
+        trigger_label:
+          type: string
+          readOnly: true
+        requested_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/RestoreDrillOutcomeEnum'
+          readOnly: true
+        backup:
+          type: string
+          format: uuid
+          readOnly: true
+        backup_name:
+          type: string
+          readOnly: true
+        backup_created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        restore_seconds:
+          type: number
+          format: double
+          readOnly: true
+          description: Time to restore the database and documents (evidence for the
+            RTO).
+        backup_age_minutes:
+          type: integer
+          readOnly: true
+          description: 'How old the backup was when restored (what would be lost:
+            evidence for the RPO).'
+        problem_count:
+          type: integer
+          readOnly: true
+      required:
+      - backup
+      - backup_age_minutes
+      - backup_created_at
+      - backup_name
+      - finished_at
+      - id
+      - outcome
+      - problem_count
+      - requested_by_name
+      - restore_seconds
+      - started_at
+      - trigger
+      - trigger_label
+    RestoreDrillDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/RestoreDrillTriggerEnum'
+          readOnly: true
+        trigger_label:
+          type: string
+          readOnly: true
+        requested_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/RestoreDrillOutcomeEnum'
+          readOnly: true
+        backup:
+          type: string
+          format: uuid
+          readOnly: true
+        backup_name:
+          type: string
+          readOnly: true
+        backup_created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        restore_seconds:
+          type: number
+          format: double
+          readOnly: true
+          description: Time to restore the database and documents (evidence for the
+            RTO).
+        backup_age_minutes:
+          type: integer
+          readOnly: true
+          description: 'How old the backup was when restored (what would be lost:
+            evidence for the RPO).'
+        problem_count:
+          type: integer
+          readOnly: true
+        restored_database:
+          type: string
+          readOnly: true
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DrillCheck'
+          readOnly: true
+      required:
+      - backup
+      - backup_age_minutes
+      - backup_created_at
+      - backup_name
+      - checks
+      - finished_at
+      - id
+      - outcome
+      - problem_count
+      - requested_by_name
+      - restore_seconds
+      - restored_database
+      - started_at
+      - trigger
+      - trigger_label
+    RestoreDrillOutcomeEnum:
+      enum:
+      - passed
+      - failed
+      type: string
+      description: |-
+        * `passed` - Passed: everything came back
+        * `failed` - Failed: see the checks
+    RestoreDrillTriggerEnum:
+      enum:
+      - on_demand
+      - command
+      type: string
+      description: |-
+        * `on_demand` - Started by a person
+        * `command` - Started from the server command line
     RevokeRequest:
       type: object
       properties:
@@ -10710,6 +11132,15 @@ components:
         * `dietitian` - Dietitian
         * `administrator` - Administrator
         * `support` - Support staff
+    StartDrillRequest:
+      type: object
+      properties:
+        backup:
+          type: string
+          format: uuid
+          description: The backup to restore and check.
+      required:
+      - backup
     TestMessageRequest:
       type: object
       properties:

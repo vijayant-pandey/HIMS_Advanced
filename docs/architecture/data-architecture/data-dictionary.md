@@ -30,6 +30,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
 - **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`security_incident_notifications`](#security_incident_notifications)
 - **Notifications: emails and SMS**: [`notifications`](#notifications)
+- **Backups and restore drills**: [`recovery_backups`](#recovery_backups), [`recovery_restore_drills`](#recovery_restore_drills)
 - **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events)
 - **Platform: idempotency**: [`idempotency_records`](#idempotency_records)
 
@@ -1220,6 +1221,60 @@ One email or SMS sent by HIMS (spec 4.23; HIMS-NOTIF-001), with its delivery out
 | `related_type` | varchar(40) | no | — | up to 40 characters | Person | Internal: Business data | Related type |
 | `related_id` | varchar(64) | no | — | up to 64 characters | Person | Internal: Business data | Related id |
 | `requested_by_id` | uuid | yes | — | — | Person | Internal: Business data | Requested by id |
+
+## Backups and restore drills
+
+**Owner (source of truth):** Platform / operations (evidence for auditors). **Design:** [backup-and-restore](../../workflows/backup-and-restore.md).
+
+<a id="recovery_backups"></a>
+### `recovery_backups`
+
+One backup: the database (PostgreSQL custom-format dump) and the stored documents, taken from the same moment, with a manifest describing what they contain.
+
+- **Model:** `recovery.Backup`
+- **Lifecycle:** Append-only (database trigger); one row per backup made on a developer PC. The backup files live outside the database (`HIMS_BACKUP_DIR`).
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now() | — | System | Internal: System metadata | When the row was created (UTC) |
+| `created_by_id` | uuid | yes | — | — | Person | Internal: Business data | Created by id |
+| `name` | varchar(80) | no | — | up to 80 characters; unique | Person | Internal: Business data | Folder name inside the backup folder. |
+| `database_name` | varchar(63) | no | — | up to 63 characters | Person | Internal: Business data | Database name |
+| `environment` | varchar(20) | no | — | up to 20 characters | Person | Internal: Business data | Environment |
+| `release` | varchar(64) | no | — | up to 64 characters | Person | Internal: Business data | Release |
+| `dump_bytes` | bigint | no | — | 0 or more | Person | Internal: Business data | Dump bytes |
+| `dump_sha256` | varchar(64) | no | — | up to 64 characters | Person | Internal: Checksum | Dump sha256 |
+| `tables` | integer | no | — | 0 or more | Person | Internal: Business data | Tables |
+| `rows` | bigint | no | — | 0 or more | Person | Internal: Business data | Rows |
+| `documents` | integer | no | — | 0 or more | Person | Internal: Business data | Documents |
+| `documents_bytes` | bigint | no | — | 0 or more | Person | Internal: Business data | Documents bytes |
+| `seconds` | double precision | no | — | — | Person | Internal: Business data | How long the backup took. |
+| `manifest` | jsonb | no | — | — | Person | Internal: Inventory: counts and fingerprints, no contents | Row counts and fingerprints per table, migrations, constraints, triggers, audit chain head and document fingerprints. No record contents. |
+
+<a id="recovery_restore_drills"></a>
+### `recovery_restore_drills`
+
+One restore drill: a backup restored into a new, separate database and folder, every check run against the copy, then the copy removed.
+
+- **Model:** `recovery.RestoreDrill`
+- **Lifecycle:** Append-only (database trigger); one row per restore drill, the evidence that backups can be restored (spec 27.1).
+- **Extra indexes:** `restore_drill_finished_idx`: finished_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `backup_id` | uuid → recovery_backups.id | no | — | on delete PROTECT | Person | Internal: Reference | Backup |
+| `started_at` | timestamp with time zone | no | — | — | System | Internal: Business data | Started at |
+| `finished_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Finished at |
+| `trigger` | varchar(16) | no | — | `on_demand` (Started by a person), `command` (Started from the server command line) | Person | Internal: Business data | Trigger |
+| `requested_by_id` | uuid | yes | — | — | Person | Internal: Business data | Requested by id |
+| `outcome` | varchar(16) | no | — | `passed` (Passed: everything came back), `failed` (Failed: see the checks) | Person | Internal: Business data | Outcome |
+| `restore_seconds` | double precision | no | — | — | Person | Internal: Business data | Time to restore the database and documents (evidence for the RTO). |
+| `backup_age_minutes` | integer | no | — | 0 or more | Person | Internal: Business data | How old the backup was when restored (what would be lost: evidence for the RPO). |
+| `restored_database` | varchar(63) | no | — | up to 63 characters | Person | Internal: Business data | Restored database |
+| `checks` | jsonb | no | list() | — | Person | Internal: Check results (table names, no contents) | Checks |
+| `problem_count` | integer | no | `0` | 0 or more | Person | Internal: Business data | Problem count |
 
 ## Platform: transactional outbox
 

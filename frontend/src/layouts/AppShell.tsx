@@ -38,7 +38,15 @@ export function AppShell() {
           >
             HIMS
           </Typography>
-          <Stack direction="row" spacing={0.5} component="nav" sx={{ flexGrow: 1 }}>
+          {/* Long menus (an administrator sees 20+ items) wrap onto a second line inside the bar
+              instead of running past it, where white text would be unreadable. */}
+          <Stack
+            direction="row"
+            spacing={0.5}
+            useFlexGap
+            component="nav"
+            sx={{ flexGrow: 1, flexWrap: "wrap", rowGap: 0.25, py: 0.5 }}
+          >
             {visibleNavItems(user).map((item) => (
               <Button
                 key={item.to}

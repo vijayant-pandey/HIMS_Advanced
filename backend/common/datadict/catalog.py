@@ -75,6 +75,11 @@ DOMAINS: dict[str, dict] = {
         "owner": "Platform (each sending domain owns its wording)",
         "docs": ["../../workflows/notifications.md"],
     },
+    "recovery": {
+        "name": "Backups and restore drills",
+        "owner": "Platform / operations (evidence for auditors)",
+        "docs": ["../../workflows/backup-and-restore.md"],
+    },
     "outbox": {
         "name": "Platform: transactional outbox",
         "owner": "Platform",
@@ -159,6 +164,10 @@ LIFECYCLE: dict[str, str] = {
     "made, with its reference.",
     "notifications": "Kept as the delivery log; the real (secret-bearing) text is erased once "
     "delivered. Retention period: decision pending with the other records (🔒 LEGAL).",
+    "recovery_backups": "Append-only (database trigger); one row per backup made on a developer "
+    "PC. The backup files live outside the database (`HIMS_BACKUP_DIR`).",
+    "recovery_restore_drills": "Append-only (database trigger); one row per restore drill, the "
+    "evidence that backups can be restored (spec 27.1).",
     "idempotency_records": "Purged hourly once expired (48 hours, "
     "`HIMS_IDEMPOTENCY_RETENTION_HOURS`).",
 }
@@ -208,6 +217,9 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "notifications.body": (RESTRICTED, "Message (secrets hidden)"),
     "notifications.body_encrypted": (SECRET, "Message until delivered (encrypted)"),
     "notifications.last_error": (INTERNAL, "System diagnostics"),
+    "recovery_backups.manifest": (INTERNAL, "Inventory: counts and fingerprints, no contents"),
+    "recovery_backups.dump_sha256": (INTERNAL, "Checksum"),
+    "recovery_restore_drills.checks": (INTERNAL, "Check results (table names, no contents)"),
     "staff_documents.original_name": (RESTRICTED, "Document (file name)"),
     "access_review_items.account_active": (RESTRICTED, "Access evidence"),
     "access_review_items.last_signed_in_at": (RESTRICTED, "Access evidence"),

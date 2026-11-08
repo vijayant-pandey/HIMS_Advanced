@@ -49,6 +49,7 @@ HIMS_APP_BASE_URL = "http://app.test"
 import tempfile  # noqa: E402
 
 MEDIA_ROOT = tempfile.mkdtemp(prefix="hims-test-media-")
+HIMS_BACKUP_DIR = tempfile.mkdtemp(prefix="hims-test-backups-")
 # Existing tests sign privileged users in directly; MFA tests switch enforcement on explicitly.
 HIMS_MFA_REQUIRED_FOR_PRIVILEGED = False
 

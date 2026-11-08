@@ -62,6 +62,10 @@ jobs:
         run: python manage.py makemigrations --check --dry-run
       - name: Tests (PostgreSQL)
         run: pytest -q
+        env:
+          # Restore drills (HIMS-OPS-009) run pg_dump/pg_restore inside the database container,
+          # which has the same PostgreSQL version as the server.
+          HIMS_PG_DOCKER_CONTAINER: ${{ job.services.postgres.id }}
       - name: OpenAPI contract is up to date
         run: |
           python manage.py spectacular --file ../docs/api/openapi.yaml --validate --fail-on-warn

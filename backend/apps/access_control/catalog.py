@@ -39,6 +39,8 @@ class P:
     ROTA_VIEW = "rota.view"
     ROTA_MANAGE = "rota.manage"
     LEAVE_APPROVE = "leave.approve"
+    RECOVERY_VIEW = "recovery.view"
+    RECOVERY_MANAGE = "recovery.manage"
     ADMIN_CONSOLE = "platform.admin_console"
 
 
@@ -82,6 +84,10 @@ PERMISSIONS: dict[str, str] = {
     P.COMPLIANCE_MANAGE: "Update compliance requirements and risks; manage security incidents",
     P.NOTIFICATIONS_VIEW: "See the emails and SMS HIMS has sent and whether they arrived",
     P.NOTIFICATIONS_MANAGE: "Send failed emails and SMS again; send a test message",
+    P.RECOVERY_VIEW: "See backups and the results of restore drills (evidence)",
+    P.RECOVERY_MANAGE: (
+        "Make a backup (a full copy of all records and documents) and run restore drills"
+    ),
     P.ACCOUNTS_MANAGE: (
         "Add sign-in accounts for people who are not staff, switch accounts off or on, "
         "reset their two-factor and sign them out"
@@ -110,6 +116,7 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.NOTIFICATIONS_MANAGE,
         P.COMPLIANCE_VIEW,
         P.COMPLIANCE_MANAGE,
+        P.RECOVERY_MANAGE,
     }
 )
 
@@ -125,7 +132,7 @@ SYSTEM_ROLES: dict[str, dict] = {
     "auditor": {
         "name": "Auditor / compliance officer",
         "description": "Read access to the audit log and to access review evidence.",
-        "permissions": [P.AUDIT_VIEW, P.ACCESS_REVIEWS_VIEW, P.COMPLIANCE_VIEW],
+        "permissions": [P.AUDIT_VIEW, P.ACCESS_REVIEWS_VIEW, P.COMPLIANCE_VIEW, P.RECOVERY_VIEW],
     },
     "compliance-officer": {
         "name": "Compliance / security officer",

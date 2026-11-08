@@ -17,6 +17,7 @@ api_v1 = [
     path("", include("apps.audit.api.urls")),
     path("", include("apps.notifications.api.urls")),
     path("", include("apps.compliance.api.urls")),
+    path("", include("apps.recovery.api.urls")),
 ]
 
 urlpatterns = [

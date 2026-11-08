@@ -169,7 +169,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-OPS-006 | Migration release job with lock; per-customer schema version tracking | To do |
 | HIMS-OPS-007 | Separate DB roles (runtime / migration / read-only / break-glass); runtime lacks TRUNCATE on audit | To do |
 | HIMS-OPS-008 | Customer provisioning automation in the control plane | To do |
-| HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | To do |
+| HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | Done ([how-to](../workflows/backup-and-restore.md): Backups page, admin console, commands; restore into a separate copy checked against the backup's inventory incl. audit chain and documents) |
+| HIMS-OPS-018 | Restore drill of a cloud database snapshot into a separate database, with the same checks as HIMS-OPS-009 (gap found in HIMS-OPS-009) | To do (🔒 AWS) |
 | HIMS-OPS-017 | Response-time targets (SLOs) measured locally, before hosting (spec 18) | To do |
 | HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features (spec 25.3, 29) | To do |
 

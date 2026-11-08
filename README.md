@@ -93,6 +93,14 @@ personal details, and a security test runs the real flows to prove nothing leaks
 Log identifiers and outcomes, never contents: see
 [docs/workflows/log-safety.md](docs/workflows/log-safety.md).
 
+## Backups and restore drills
+
+On a developer PC, `python manage.py backup_database` backs up the database and documents, and
+`python manage.py restore_drill` restores the newest backup into a separate copy and checks every
+record, the audit chain and every document (also on the **Backups** page). Needs PostgreSQL's
+`pg_dump`/`pg_restore`; backups hold every record, so keep `backend/backups/` private (HIMS-OPS-009):
+see [docs/workflows/backup-and-restore.md](docs/workflows/backup-and-restore.md).
+
 ## Updating the databases after a merge
 
 When a change includes database migrations, **every hospital database must be updated**. Follow

@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.compliance",
     "apps.rosters",
+    "apps.recovery",
 ]
 
 # Django admin is the HIMS operations console (ADR-016): gated by HIMS RBAC rather than
@@ -254,6 +255,7 @@ SPECTACULAR_SETTINGS = {
         "QualificationTypeCategoryEnum": "apps.staff.models.QualificationType.Category",
         "OutcomeEnum": "apps.audit.models.AuditEvent.Outcome",
         "IntegrityOutcomeEnum": "apps.audit.models.AuditIntegrityCheck.Outcome",
+        "TriggerEnum": "apps.audit.models.AuditIntegrityCheck.Trigger",
         "DelegationStatusEnum": "apps.access_control.models.AccessDelegation.Status",
         "ComplianceStatusEnum": "apps.compliance.models.ComplianceRequirement.Status",
         "RiskStatusEnum": "apps.compliance.models.RiskEntry.Status",
@@ -262,6 +264,8 @@ SPECTACULAR_SETTINGS = {
         "ShiftKindEnum": "apps.rosters.models.ShiftType.Kind",
         "ShiftStatusEnum": "apps.rosters.models.Shift.Status",
         "LeaveStatusEnum": "apps.rosters.models.LeaveRequest.Status",
+        "RestoreDrillOutcomeEnum": "apps.recovery.models.RestoreDrill.Outcome",
+        "RestoreDrillTriggerEnum": "apps.recovery.models.RestoreDrill.Trigger",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)
@@ -322,6 +326,17 @@ HIMS_MFA_REQUIRED_FOR_ALL = env.bool("HIMS_MFA_REQUIRED_FOR_ALL", default=False)
 # Fernet keys (newest first) encrypting authenticator secrets; see common/crypto.py.
 HIMS_FIELD_ENCRYPTION_KEYS = env.list("HIMS_FIELD_ENCRYPTION_KEYS", default=[])
 HIMS_IDEMPOTENCY_RETENTION_HOURS = env.int("HIMS_IDEMPOTENCY_RETENTION_HOURS", default=48)
+
+# --- Backups and restore drills (HIMS-OPS-009; spec 13.5, 17.3, 27.1) ----------------------
+# Only on a developer PC: hosted environments use the cloud database service's backups.
+# Backups hold every record (incl. password hashes): keep the folder private and out of git.
+HIMS_BACKUP_DIR = env.path("HIMS_BACKUP_DIR", default=BASE_DIR / "backups" / HIMS_DEPLOYMENT_ID)
+# Where pg_dump/pg_restore are (see apps/recovery/pg_tools.py); found automatically if empty.
+HIMS_PG_BIN_DIR = env.str("HIMS_PG_BIN_DIR", default="")
+# Run the tools inside this database container instead (docker-compose, CI).
+HIMS_PG_DOCKER_CONTAINER = env.str("HIMS_PG_DOCKER_CONTAINER", default="")
+# A passed restore drill older than this is shown as overdue.
+HIMS_RESTORE_DRILL_INTERVAL_DAYS = env.int("HIMS_RESTORE_DRILL_INTERVAL_DAYS", default=90)
 
 # --- Logging: structured, PHI-minimised (spec 13.4, 27.2) --------------------------------
 LOGGING = {
