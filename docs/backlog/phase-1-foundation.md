@@ -96,7 +96,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-006 | Credential expiry alerts (scheduled job + notifications) + Licence expiry page | Done |
 | HIMS-STAFF-007 | Staff detail/onboarding UI | Done |
 | HIMS-STAFF-010 | Catalog screens: designations, specialties, qualification types (add/edit/deactivate in the app) | Done |
-| HIMS-STAFF-008 | Department-scoped staff directory visibility | To do |
+| HIMS-STAFF-008 | Department-scoped staff directory visibility; staff documents a separate permission ([how-to](../workflows/staff-visibility.md)) | Done |
 | HIMS-STAFF-012 | Shift schedules, leave and on-call rotations (spec 4.3): Rota, Leave and My schedule pages, admin console, no double booking enforced by the database ([design](../architecture/data-architecture/rotas-and-leave.md), [ADR-024](../decisions/ADR-024-rotas-no-overlap-in-the-database.md)) | Done |
 | HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) (gap found in HIMS-STAFF-012) | To do (🔒 PO: HR leave policy) |
 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head (gap found in HIMS-STAFF-012) | To do (when hospitals ask) |

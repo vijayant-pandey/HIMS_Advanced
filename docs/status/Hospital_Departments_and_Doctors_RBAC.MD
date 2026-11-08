@@ -282,9 +282,9 @@ exist now. Assign them in the admin console under **Role assignments**.
 |---|---|---|---|---|
 | **Organization administrator** | Organization | Everything except `audit.view` (organization, facilities, departments, staff, roles, role assignments, admin console) | Sets up the hospital, branches, departments, staff and access | Hospital Administrator, COO, CEO, IT admin |
 | **Auditor / compliance officer** | Organization | `audit.view` | Reviews who did what; investigates incidents | Quality officer, compliance officer |
-| **Facility (branch) administrator** | One facility | facilities view + manage, departments view + manage, locations view + manage, bed status, numbering view + manage (own facility's series only), features view + manage (own facility's per-facility features only) | Runs one branch: its details, departments, buildings, wards, rooms and beds, its own visit/invoice/claim number series, and which modules are on at the branch | Facility Manager, Medical Superintendent |
-| **HR / credentialing officer** | Organization | staff view + manage, credentials verify, facilities + departments view, rota view, leave approve | Onboards staff, records qualifications, verifies licences, sends invitations; decides and records leave | HR Executive, Credentialing Officer |
-| **Head of department (HOD)** | One department | facilities view, departments view, locations view, rota view + manage, leave approve | Sees their department, plans its rota (shifts, on-call) and decides its leave (never their own). Clinical approvals are added with clinical features | HOD, Section Chief, Department Chair |
+| **Facility (branch) administrator** | One facility | facilities view + manage, departments view + manage, locations view + manage, bed status, staff view (staff posted at the facility; no documents), numbering view + manage (own facility's series only), features view + manage (own facility's per-facility features only) | Runs one branch: its details, departments, buildings, wards, rooms and beds, its own visit/invoice/claim number series, and which modules are on at the branch | Facility Manager, Medical Superintendent |
+| **HR / credentialing officer** | Organization | staff view + manage, credentials verify, staff documents view, facilities + departments view, rota view, leave approve | Onboards staff, records qualifications, verifies licences, sends invitations; decides and records leave | HR Executive, Credentialing Officer |
+| **Head of department (HOD)** | One department | facilities view, departments view, locations view, staff view (own department; no documents), rota view + manage, leave approve | Sees their department and its staff, plans its rota (shifts, on-call) and decides its leave (never their own). Clinical approvals are added with clinical features | HOD, Section Chief, Department Chair |
 | **Basic staff access** | Organization or facility | facilities view, departments view, locations view, rota view | Minimum access for any employee, so new staff don't see "Permission denied"; sees the rota and who is on call (not why someone is away) | Everyone |
 | **Bed manager / ward clerk** | One facility | facilities view, locations view, bed status | Marks beds available, under maintenance, blocked or out of service (with a reason). Cannot change the building/ward structure. Reserved/occupied/cleaning come from admissions later (Phase 3) | Ward clerk, bed manager, nursing supervisor, admission desk lead |
 
@@ -478,3 +478,14 @@ switched off, so the hospital cannot lock itself out.
   and their authenticator code if they use one, before changing access, switching accounts on or off,
   suspending or terminating staff, changing Features or downloading audit records.
 - Full list: [sensitive-actions.md](../workflows/sensitive-actions.md).
+
+## Update 2026-11-06: staff list limited to your own departments (HIMS-STAFF-008)
+* `staff.view` now follows the scope of the role: a **department** grant (head of department)
+  sees the staff posted in that department, a **facility** grant (facility administrator) the
+  staff posted at that facility, a **hospital-wide** grant (HR, administrator) everyone. People
+  outside your view are "not found". Changing staff still needs a hospital-wide grant.
+* New `staff.documents.view`: opening the copies of licences and certificates. HR and the
+  administrator have it; head of department and facility administrator do not. Every role that
+  had `staff.view` before this change got it automatically, so nobody lost access.
+* Head of department and facility administrator now include `staff.view` at their own scope.
+  Details: [staff visibility](../workflows/staff-visibility.md).

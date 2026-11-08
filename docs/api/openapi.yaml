@@ -4051,8 +4051,9 @@ paths:
   /api/v1/staff-documents/{id}/download/:
     get:
       operationId: staff_documents_download_retrieve
-      description: Open/download or archive one document. Files have no public URL
-        (ADR-020).
+      description: |-
+        Open/download or archive one document. Files have no public URL (ADR-020). Opening needs
+        ``staff.documents.view`` for that person (HIMS-STAFF-008), not just ``staff.view``.
       parameters:
       - in: path
         name: id
@@ -8967,6 +8968,7 @@ components:
       - rota.manage
       - rota.view
       - staff.credentials.verify
+      - staff.documents.view
       - staff.manage
       - staff.view
       type: string
@@ -9001,6 +9003,7 @@ components:
         * `rota.manage` - rota.manage
         * `rota.view` - rota.view
         * `staff.credentials.verify` - staff.credentials.verify
+        * `staff.documents.view` - staff.documents.view
         * `staff.manage` - staff.manage
         * `staff.view` - staff.view
     Person:
@@ -10581,13 +10584,18 @@ components:
             $ref: '#/components/schemas/StaffDocument'
           readOnly: true
           description: Licence and qualification documents, newest first (archived
-            ones included).
+            ones included). Empty unless documents_visible.
+        documents_visible:
+          type: boolean
+          description: Whether you may open this person's documents (staff.documents.view)
+          readOnly: true
       required:
       - account
       - created_at
       - credentials
       - department_assignments
       - documents
+      - documents_visible
       - email
       - employee_number
       - employment_status

@@ -572,6 +572,26 @@ Now you need **Window A** (you, admin) and **Window B** (Chrome Incognito, `Ctrl
 - [ ] **Expect:** "You cannot change your own access; ask another administrator." No Give or
       Remove buttons.
 
+### 11.5 A head of department sees only their department's staff (needs HIMS-STAFF-008)
+**Window A** (administrator) + **Window B** (Asha).
+- [ ] **Window A:** **Staff** → **Asha Nurse** → **Access** → **Give access**: Role **Head of
+      department (HOD)**, **One department** → Test Branch One → **Cardiology**, Reason
+      `Test HOD view` → **Give access**.
+- [ ] **Window B:** sign in as Asha (or refresh).
+- [ ] **Expect:** the menu now has **Staff**, **Licence expiry**, **Rota** and **Leave**, but no
+      **Add staff member** button on Staff.
+- [ ] **Expect:** Staff says "You see the staff posted in Cardiology (Test Branch One). People
+      elsewhere in the hospital are not shown." Only people posted in Cardiology are listed (Ravi;
+      Asha too if she has a Cardiology posting).
+- [ ] **Do:** open **Ravi** → **Licences**.
+- [ ] **Expect:** his licence number and expiry are shown, but **no Documents column**, and a note:
+      "Copies of licences and certificates are shown only to people allowed to open them, such as
+      HR". No **Edit**, **Verify** or **Upload** buttons.
+- [ ] **Do (Window A):** copy the address of a staff member who is **not** in Cardiology (e.g. the
+      doctor from 8.1); paste it in Window B.
+- [ ] **Expect:** Window B shows that the person is not found.
+- [ ] **Window A:** remove Asha's Head of department access again (Reason `Test finished`).
+
 ---
 
 ## Part 12: accounts (including people who are not staff)

@@ -64,9 +64,11 @@ def test_before_the_hospital_is_set_up_utc_is_used(evening_utc):
 
 @pytest.mark.django_db
 def test_licence_that_ended_yesterday_in_india_is_expired_not_expiring(
-    client_for, admin_user, nurse, evening_utc
+    client_for, make_user, system_roles, nurse, evening_utc
 ):
     """The bug: until 5:30 am in India this licence showed as "expiring soon", 0 days left."""
+    # Access is granted on the frozen clock: a grant made on the real clock would start "later".
+    admin_user = make_user(role=system_roles["organization-administrator"])
     StaffCredential.objects.create(
         organization_id=nurse.organization_id,
         staff=nurse,
@@ -106,7 +108,10 @@ def test_ending_a_posting_uses_the_day_at_its_facility(
 
 
 @pytest.mark.django_db
-def test_audit_search_by_day_means_the_hospitals_day(client_for, auditor_user, evening_utc):
+def test_audit_search_by_day_means_the_hospitals_day(
+    client_for, make_user, system_roles, evening_utc
+):
+    auditor_user = make_user(role=system_roles["auditor"])  # granted on the frozen clock
     AuditEvent.objects.create(
         action=AuditAction.ACCESS_DENIED,
         resource_type="api",

@@ -3,7 +3,10 @@
 Multi-hospital HIMS for the United States and India. The architecture is defined in
 [HIMS_Architecture_Specification_v2.MD](HIMS_Architecture_Specification_v2.MD). Decisions are
 recorded in [docs/decisions](docs/decisions/README.md) and current work in
-[docs/backlog](docs/backlog/phase-1-foundation.md).
+[docs/backlog](docs/backlog/phase-1-foundation.md). Progress against the specification is in the
+[tracker](docs/status/spec-status.md), and the ordered plan for every phase (done, left, blocked)
+in the [roadmap](docs/status/roadmap.md). The product owner's step-by-step browser test is
+[docs/testing/flow-part1.md](docs/testing/flow-part1.md).
 
 | Path | Contents |
 |---|---|

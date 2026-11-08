@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Chip,
   FormControlLabel,
@@ -21,8 +22,11 @@ import { useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
+import { useCurrentUser } from "../auth/api";
+import { useDepartmentList } from "../facilities/api";
 import { useExpiringCredentials } from "./api";
 import { EXPIRY, VERIFICATION } from "./labels";
+import { staffScope } from "./scope";
 
 export function daysText(days: number): string {
   if (days < 0) return `Expired ${-days} day${days === -1 ? "" : "s"} ago`;
@@ -35,6 +39,9 @@ export function LicenceExpiryPage() {
   const [within, setWithin] = useState(60);
   const [includeExpired, setIncludeExpired] = useState(true);
   const { data, isPending, error } = useExpiringCredentials(within, includeExpired);
+  const { data: user } = useCurrentUser();
+  const departments = useDepartmentList();
+  const scope = staffScope(user, departments.data?.results ?? []);
   const expired = data?.filter((c) => c.days_left < 0).length ?? 0;
   const soon = (data?.length ?? 0) - expired;
 
@@ -50,6 +57,7 @@ export function LicenceExpiryPage() {
           counted by the hospital's time zone (Hospital settings).
         </Typography>
       </Box>
+      {scope && <Alert severity="info">Only the staff posted in {scope} are listed.</Alert>}
       <Stack direction="row" spacing={2} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
         <TextField
           select
