@@ -6,6 +6,7 @@ from .browser_views import (
     BrowserSecurityReportViewSet,
     SecurityStatusView,
 )
+from .database_views import DatabaseAccessView
 from .views import (
     ComplianceRequirementViewSet,
     ComplianceSummaryView,
@@ -27,5 +28,6 @@ urlpatterns = [
     path("compliance-summary/", ComplianceSummaryView.as_view(), name="compliance-summary"),
     path("security/browser-reports/", BrowserReportReceiveView.as_view(), name="browser-report"),
     path("security/status/", SecurityStatusView.as_view(), name="security-status"),
+    path("security/database-access/", DatabaseAccessView.as_view(), name="database-access"),
     *router.urls,
 ]

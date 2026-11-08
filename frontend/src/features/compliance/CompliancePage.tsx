@@ -40,6 +40,7 @@ import {
   useUpdateRisk,
 } from "./api";
 import { BrowserProtectionTab } from "./BrowserProtectionTab";
+import { DatabaseAccessTab } from "./DatabaseAccessTab";
 import { ReportIncidentDialog, SEVERITIES } from "./ReportIncidentDialog";
 
 const when = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -568,11 +569,13 @@ export function CompliancePage() {
         <Tab value="risks" label="Risks" />
         <Tab value="incidents" label="Incidents" />
         <Tab value="browser" label="Browser protection" />
+        <Tab value="database" label="Database access" />
       </Tabs>
       {tab === "requirements" && <RequirementsTab canManage={canManage} />}
       {tab === "risks" && <RisksTab canManage={canManage} />}
       {tab === "incidents" && <IncidentsTab canManage={canManage} />}
       {tab === "browser" && <BrowserProtectionTab canManage={canManage} />}
+      {tab === "database" && <DatabaseAccessTab />}
     </Stack>
   );
 }

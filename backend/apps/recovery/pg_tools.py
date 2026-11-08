@@ -93,7 +93,13 @@ def tools_version(tools: Tools) -> str:
 
 
 def database_settings(alias: str = "default") -> dict:
-    return dict(connections.databases[alias])
+    """Connection settings for backups and drills: the owner's user when separate database users
+    are set up (HIMS-OPS-007), because a drill creates a database and the app's user may not."""
+    database = dict(connections.databases[alias])
+    owner = settings.HIMS_OWNER_DATABASE
+    if alias == "default" and owner:
+        database.update(USER=owner.get("USER", ""), PASSWORD=owner.get("PASSWORD", ""))
+    return database
 
 
 def connect(database: dict, *, name: str | None = None, autocommit: bool = True):

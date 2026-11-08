@@ -101,6 +101,14 @@ record, the audit chain and every document (also on the **Backups** page). Needs
 `pg_dump`/`pg_restore`; backups hold every record, so keep `backend/backups/` private (HIMS-OPS-009):
 see [docs/workflows/backup-and-restore.md](docs/workflows/backup-and-restore.md).
 
+## Separate database users
+
+The app connects with its own limited database user: it can never change, delete or empty the audit
+log, and only `migrate` uses the owner (HIMS-OPS-007). Set it up once per hospital with
+`python manage.py setup_database_roles --write-env` and check with
+`python manage.py check_database_roles`: see
+[docs/workflows/database-users.md](docs/workflows/database-users.md).
+
 ## Updating the databases after a merge
 
 When a change includes database migrations, **every hospital database must be updated**. Follow
@@ -113,6 +121,10 @@ India, then US, and clears `HIMS_ENV_FILE` so no database is skipped.
 cd backend  && ruff check . && ruff format --check . && python manage.py makemigrations --check --dry-run && pytest
 cd frontend && npm run typecheck && npm run lint && npm test && npm run build
 ```
+
+The full list GitHub runs (also the API description, data dictionary, compliance documents, bundle
+size, secret scan and browser tests), how to run each one locally, and why earlier PRs failed:
+[docs/workflows/before-you-push.md](docs/workflows/before-you-push.md).
 
 When the API changes, regenerate the contract and the frontend types:
 

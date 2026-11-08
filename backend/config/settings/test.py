@@ -17,8 +17,19 @@ from .base import (
     HIMS_DATABASE_ENVIRONMENT,
     HIMS_DEPLOYMENT_ID,
     HIMS_ENVIRONMENT,
+    HIMS_MIGRATION_DATABASE_URL,
     REST_FRAMEWORK,
+    env,
 )
+
+# Tests create, empty and drop a throw-away database: they need the owner's rights, not the
+# app's limited user (HIMS-OPS-007).
+if HIMS_MIGRATION_DATABASE_URL:
+    DATABASES["default"] = {
+        **DATABASES["default"],
+        **env.db_url("HIMS_MIGRATION_DATABASE_URL"),
+        "OPTIONS": DATABASES["default"]["OPTIONS"],
+    }
 
 DEBUG = False
 HIMS_ENABLE_ADMIN = True

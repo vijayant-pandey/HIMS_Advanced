@@ -5,6 +5,7 @@ import type {
   BrowserSecurityReport,
   ComplianceRequirement,
   ComplianceSummary,
+  DatabaseAccess,
   IncidentReceipt,
   IncidentReportRequest,
   RiskEntry,
@@ -39,6 +40,14 @@ export function useIncidents() {
   return useQuery<SecurityIncident[], ApiError>({
     queryKey: [...key, "incidents"],
     queryFn: ({ signal }) => api.get<SecurityIncident[]>("/security-incidents/", { signal }),
+  });
+}
+
+/** How the app's database user is limited (HIMS-OPS-007); read from the database itself. */
+export function useDatabaseAccess() {
+  return useQuery<DatabaseAccess, ApiError>({
+    queryKey: [...key, "database-access"],
+    queryFn: ({ signal }) => api.get<DatabaseAccess>("/security/database-access/", { signal }),
   });
 }
 

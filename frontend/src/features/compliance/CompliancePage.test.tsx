@@ -96,6 +96,21 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
+const DATABASE_CHECKS = [
+  { key: "separate_users", label: "The app connects as its own user, not as the owner", passed: true, detail: "app connects as hims_local_dev_app" },
+  { key: "evidence_protected", label: "The app cannot change, delete or empty the audit log and other evidence", passed: true, detail: "add-only: audit_events" },
+];
+let databaseAccess: unknown = {
+  separated: true,
+  set_up: true,
+  developer_pc: true,
+  connected_as: "hims_local_dev_app",
+  app_user: "hims_local_dev_app",
+  readonly_user: "hims_local_dev_readonly",
+  breakglass_user: "hims_local_dev_breakglass",
+  checks: DATABASE_CHECKS,
+};
+
 function renderIt(ui: React.ReactElement, grants: string[], entry = "/compliance") {
   const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
@@ -116,6 +131,7 @@ function renderIt(ui: React.ReactElement, grants: string[], entry = "/compliance
     if (url.includes("/compliance-requirements/")) return json([REQUIREMENT]);
     if (url.includes("/compliance-risks/")) return json([RISK]);
     if (url.includes("/security-incidents/")) return json([INCIDENT]);
+    if (url.includes("/security/database-access/")) return json(databaseAccess);
     if (url.includes("/security/status/"))
       return json({
         policy_mode: "enforcing",
@@ -224,5 +240,35 @@ describe("Browser protection tab", () => {
     const table = await screen.findByRole("table", { name: "What browsers blocked" });
     expect(within(table).getByText("Not reviewed")).toBeInTheDocument();
     expect(within(table).queryByRole("button")).toBeNull();
+  });
+});
+
+describe("Database access tab (HIMS-OPS-007)", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("shows that the app runs with its own limited database user", async () => {
+    renderIt(<CompliancePage />, ["compliance.view"]);
+    fireEvent.click(await screen.findByRole("tab", { name: "Database access" }));
+    expect(await screen.findByText("Database access is separated: every check passed.")).toBeInTheDocument();
+    const checks = screen.getByRole("list", { name: "Database access checks" });
+    expect(checks).toHaveTextContent("cannot change, delete or empty the audit log");
+    expect(screen.getByText(/hims_local_dev_breakglass \(break-glass/)).toBeInTheDocument();
+  });
+
+  it("on a developer PC not yet set up, explains how to set it up", async () => {
+    databaseAccess = {
+      separated: false,
+      set_up: false,
+      developer_pc: true,
+      connected_as: "postgres",
+      app_user: "hims_local_dev_app",
+      readonly_user: "hims_local_dev_readonly",
+      breakglass_user: "hims_local_dev_breakglass",
+      checks: [{ ...DATABASE_CHECKS[0], passed: false, detail: "the app's own database user has not been set up yet" }],
+    };
+    renderIt(<CompliancePage />, ["compliance.view"]);
+    fireEvent.click(await screen.findByRole("tab", { name: "Database access" }));
+    expect(await screen.findByText(/Not set up on this computer yet/)).toBeInTheDocument();
+    expect(screen.getByText("python manage.py setup_database_roles --write-env")).toBeInTheDocument();
   });
 });

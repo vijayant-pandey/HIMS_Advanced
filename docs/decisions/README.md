@@ -31,3 +31,4 @@ default, awaiting the named approver), **Superseded**.
 | [023](ADR-023-confirm-before-sensitive-actions.md) | Confirm before sensitive actions | Proposed |
 | [024](ADR-024-rotas-no-overlap-in-the-database.md) | Rotas and leave: shifts as instants, overlaps refused by the database | Proposed |
 | [025](ADR-025-backups-and-restore-drills.md) | Backups and restore drills checked against an inventory taken in the same snapshot | Proposed |
+| [026](ADR-026-separate-database-users.md) | Separate database users, with rights derived from the database and the data dictionary | Proposed |

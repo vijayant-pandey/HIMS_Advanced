@@ -5,6 +5,7 @@ All configuration comes from the environment (spec 31.4). Environment-specific m
 """
 
 import os
+import sys
 from pathlib import Path
 
 import environ
@@ -118,6 +119,30 @@ DATABASES["default"].setdefault("OPTIONS", {})["application_name"] = (
     f"hims-{HIMS_DEPLOYMENT_ID}-{HIMS_ENVIRONMENT}"
 )
 HIMS_DATABASE_ENVIRONMENT = env.str("HIMS_DATABASE_ENVIRONMENT", default=None)
+
+# --- Separate database users (HIMS-OPS-007; spec 13.2, 17.2, 30.5) ------------------------------
+# DATABASE_URL is the app's own limited user. The owner's credentials are used only by commands
+# that change the schema or need the owner's rights; in hosted environments the migration job
+# gets them as its DATABASE_URL instead. See docs/workflows/database-users.md.
+HIMS_MIGRATION_DATABASE_URL = env.str("HIMS_MIGRATION_DATABASE_URL", default="")
+OWNER_COMMANDS = frozenset({"migrate", "setup_database_roles", "flush", "createcachetable"})
+if HIMS_MIGRATION_DATABASE_URL and len(sys.argv) > 1 and sys.argv[1] in OWNER_COMMANDS:
+    _app_database = DATABASES["default"]
+    DATABASES["default"] = {
+        **_app_database,
+        **env.db_url("HIMS_MIGRATION_DATABASE_URL"),
+        "OPTIONS": _app_database["OPTIONS"],
+    }
+# Backups and restore drills (HIMS-OPS-009) need the owner's rights (they create a database).
+HIMS_OWNER_DATABASE = (
+    {**DATABASES["default"], **env.db_url("HIMS_MIGRATION_DATABASE_URL")}
+    if HIMS_MIGRATION_DATABASE_URL
+    else None
+)
+# Names of the database users; empty means hims_<deployment>_app / _readonly / _breakglass.
+HIMS_DB_APP_ROLE = env.str("HIMS_DB_APP_ROLE", default="")
+HIMS_DB_READONLY_ROLE = env.str("HIMS_DB_READONLY_ROLE", default="")
+HIMS_DB_BREAKGLASS_ROLE = env.str("HIMS_DB_BREAKGLASS_ROLE", default="")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

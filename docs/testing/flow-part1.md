@@ -37,6 +37,7 @@
 22. [Part 18: the admin console (Django admin) tour](#part-18-the-admin-console-django-admin-tour)
 22a. [Part 18a: rota, on-call and leave](#part-18a-rota-on-call-and-leave)
 22b. [Part 18b: backups and restore drills](#part-18b-backups-and-restore-drills)
+22c. [Part 18c: separate database users](#part-18c-separate-database-users)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -98,6 +99,7 @@ says "open the link from the email", look in the launcher window for lines that 
 | Access | Roles, giving and removing access, custom roles, accounts (including people who are not staff), access reviews, cover arrangements (lend someone's access to a colleague for a limited time) |
 | Audit | Audit log for auditors: search, details, CSV download; **Audit integrity**: proof that no audit record was changed or removed (tamper check) |
 | Backups | Make a backup and prove it can be restored: a restore drill checks every record, the audit log and every document in a separate copy |
+| Database access | The app uses its own limited database user that can never change, delete or empty the audit log (Compliance → Database access) |
 | Admin console | Every item above can also be managed in the Django admin console, and every change is audited |
 
 **Not built yet (do not look for it):** patients, appointments, doctors' notes, pharmacy, lab,
@@ -1105,6 +1107,26 @@ line tools or set `HIMS_PG_BIN_DIR` (see the guide), then restart HIMS.
 
 ---
 
+## Part 18c: separate database users
+
+Needs the HIMS-OPS-007 PR (no migrate step). Full guide:
+[separate database users](../workflows/database-users.md). **Window A** (administrator).
+
+| # | Do | Expect |
+|---|---|---|
+| 18c.1 | **Compliance** → **Database access** (before setting up) | Blue note "Not set up on this computer yet", the first check **Failed** with "has not been set up yet" |
+| 18c.2 | Stop HIMS. In a Command window: `cd backend`, `.venv\Scripts\activate.bat`, `set HIMS_ENV_FILE=`, `python manage.py setup_database_roles --write-env` | "Database users ready: hims_local_dev_app (app)…" and "Updated .env…". No password is shown. A file `.env.before-database-users` appears |
+| 18c.3 | `python manage.py check_database_roles` | Seven lines starting with `ok`, then `PASSED: database access is separated.` |
+| 18c.4 | Repeat 18c.2 and 18c.3 for the US: `set HIMS_ENV_FILE=.env.us` first, `set HIMS_ENV_FILE=` afterwards | Users named `hims_local_us_…`, `PASSED` |
+| 18c.5 | Start HIMS, sign in, open a few pages (Staff, Rota, Audit log as the auditor) | Everything works as before |
+| 18c.6 | **Compliance** → **Database access** | Green "Database access is separated", all seven checks **OK**, "App connects as hims_local_dev_app" |
+| 18c.7 | `python manage.py migrate` | Works as before (it uses the owner by itself) |
+| 18c.8 | As the auditor: **Audit log** → area **Database access** | "Separate database users set up or their rights re-applied", with the time |
+
+If anything goes wrong: stop HIMS, delete `.env` and rename `.env.before-database-users` back to `.env`.
+
+---
+
 ## Part 19: leaving staff (termination)
 
 **Window A** app + **Window B** (Asha signed in).
@@ -1256,6 +1278,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 18 | Admin console tour | | | |
 | 18a | Rota, on-call and leave | | | |
 | 18b | Backups and restore drills | | | |
+| 18c | Separate database users | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 
