@@ -109,6 +109,19 @@ log, and only `migrate` uses the owner (HIMS-OPS-007). Set it up once per hospit
 `python manage.py check_database_roles`: see
 [docs/workflows/database-users.md](docs/workflows/database-users.md).
 
+## Background jobs and runbooks
+
+Work done just after a change (emails, follow-ups) goes through the outbox: retried by itself,
+cleaned up daily, and shown on the **Background jobs** page, where an administrator sends a failed
+event again or dismisses it, with a reason (HIMS-PLAT-014). `python manage.py outbox_status` gives
+the same numbers. What to do when something goes wrong: [docs/runbooks](docs/runbooks/README.md).
+
+## Decisions and hosting
+
+Approvals from the PO, clinical and legal reviewers are kept in the
+[decisions log](docs/status/decisions-log.md). Hosting will be on Oracle Cloud at the end of the
+build ([ADR-027](docs/decisions/ADR-027-hosting-on-oracle-cloud.md)).
+
 ## Updating the databases after a merge
 
 When a change includes database migrations, **every hospital database must be updated**. Follow

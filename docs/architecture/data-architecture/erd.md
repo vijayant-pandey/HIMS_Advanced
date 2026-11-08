@@ -1111,6 +1111,9 @@ erDiagram
         timestamptz available_at
         timestamptz published_at
         varchar last_error
+        timestamptz resolved_at
+        uuid resolved_by_id
+        varchar resolution_note
     }
     outbox_processed_events {
         bigint id PK

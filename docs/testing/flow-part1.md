@@ -38,6 +38,7 @@
 22a. [Part 18a: rota, on-call and leave](#part-18a-rota-on-call-and-leave)
 22b. [Part 18b: backups and restore drills](#part-18b-backups-and-restore-drills)
 22c. [Part 18c: separate database users](#part-18c-separate-database-users)
+22d. [Part 18d: background jobs](#part-18d-background-jobs)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1127,6 +1128,26 @@ If anything goes wrong: stop HIMS, delete `.env` and rename `.env.before-databas
 
 ---
 
+## Part 18d: background jobs
+
+Needs the HIMS-PLAT-014 PR, then the migrate steps (India, then US): this part changes one table.
+**Window A** (administrator). Runbook: [background jobs](../runbooks/outbox-and-background-jobs.md).
+
+| # | Do | Expect |
+|---|---|---|
+| 18d.1 | Menu → **Background jobs** | Green "Everything is flowing: nothing needs a look", the numbers (waiting, failed, done in the last 24 hours, last clean-up), and an empty "Needs a look" list |
+| 18d.2 | **Staff** → add a new member of staff with an email (as in Part 9), then come back to **Background jobs** | "Done in the last 24 hours" went up by one or two (the invitation) |
+| 18d.3 | Tabs **Failed**, **Waiting**, **Dismissed** | Each says "Nothing here." on a healthy system |
+| 18d.4 | In the Command window (backend folder, activated): `python manage.py outbox_status` | The same numbers, ending with `OK: nothing needs a look.` |
+| 18d.5 | `python manage.py outbox_cleanup` | "Deleted 0 event(s) …" (nothing is old enough yet). The page now shows the last clean-up time |
+| 18d.6 | As the auditor: **Audit log** → area **Background jobs** | "Old background events cleaned up" with the counts |
+| 18d.7 | Admin console → **Outbox events** | Every event with its status; the action "Send selected failed/waiting events again (audited)" |
+
+A failed event cannot be produced on purpose in a healthy system; the automated tests cover
+"send again" and "dismiss". If one ever appears, follow the runbook.
+
+---
+
 ## Part 19: leaving staff (termination)
 
 **Window A** app + **Window B** (Asha signed in).
@@ -1279,6 +1300,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 18a | Rota, on-call and leave | | | |
 | 18b | Backups and restore drills | | | |
 | 18c | Separate database users | | | |
+| 18d | Background jobs | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 

@@ -1241,6 +1241,109 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionsEnded'
           description: ''
+  /api/v1/background-jobs/:
+    get:
+      operationId: background_jobs_list
+      description: Events that need a look, the outbox's health, and decisions on
+        failed events.
+      parameters:
+      - in: query
+        name: show
+        schema:
+          type: string
+          enum:
+          - attention
+          - dismissed
+          - failed
+          - waiting
+        description: 'Which events (default: attention).'
+      tags:
+      - background-jobs
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OutboxEvent'
+          description: ''
+  /api/v1/background-jobs/{id}/dismiss/:
+    post:
+      operationId: background_jobs_dismiss_create
+      description: Close a failed event that can never succeed; it is never retried.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this outbox event.
+        required: true
+      tags:
+      - background-jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutboxEvent'
+          description: ''
+  /api/v1/background-jobs/{id}/send-again/:
+    post:
+      operationId: background_jobs_send_again_create
+      description: Put a failed (or stuck) event back in the queue with a fresh set
+        of retries.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this outbox event.
+        required: true
+      tags:
+      - background-jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutboxEvent'
+          description: ''
+  /api/v1/background-jobs/health/:
+    get:
+      operationId: background_jobs_health_retrieve
+      description: How many events wait, are retried or failed; the last clean-up.
+      tags:
+      - background-jobs
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutboxHealth'
+          description: ''
   /api/v1/backups/:
     get:
       operationId: backups_list
@@ -6275,6 +6378,16 @@ components:
       - key
       - label
       - passed
+    DecisionRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          description: Why (kept in the audit log).
+          maxLength: 300
+      required:
+      - reason
     DefaultCurrencyEnum:
       enum:
       - USD
@@ -7586,6 +7699,20 @@ components:
         * `ALL` - Both countries
         * `IN` - India
         * `US` - United States
+    LastCleanup:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+        events_deleted:
+          type: integer
+        markers_deleted:
+          type: integer
+      required:
+      - at
+      - events_deleted
+      - markers_deleted
     LeaveCreateRequest:
       type: object
       properties:
@@ -8377,6 +8504,129 @@ components:
       required:
       - country
       - display_name
+    OutboxEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event_type:
+          type: string
+          readOnly: true
+        event_label:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OutboxEventStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        attempts:
+          type: integer
+          readOnly: true
+        available_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_error:
+          type: string
+          readOnly: true
+        aggregate_type:
+          type: string
+          readOnly: true
+        aggregate_id:
+          type: string
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        resolved_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        resolution_note:
+          type: string
+          readOnly: true
+      required:
+      - aggregate_id
+      - aggregate_type
+      - attempts
+      - available_at
+      - event_label
+      - event_type
+      - id
+      - last_error
+      - occurred_at
+      - resolution_note
+      - resolved_at
+      - resolved_by_name
+      - status
+      - status_label
+    OutboxEventStatusEnum:
+      enum:
+      - pending
+      - published
+      - dead
+      - dismissed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `published` - Published
+        * `dead` - Dead (retries exhausted)
+        * `dismissed` - Dismissed by a person (never retried)
+    OutboxHealth:
+      type: object
+      properties:
+        waiting:
+          type: integer
+        oldest_waiting_minutes:
+          type: integer
+        retrying:
+          type: integer
+        stuck:
+          type: integer
+        failed:
+          type: integer
+        dismissed:
+          type: integer
+        published_last_24h:
+          type: integer
+        stuck_after_minutes:
+          type: integer
+        retention_days:
+          type: integer
+        max_attempts:
+          type: integer
+        last_cleanup:
+          allOf:
+          - $ref: '#/components/schemas/LastCleanup'
+          nullable: true
+        attention:
+          type: array
+          items:
+            type: string
+      required:
+      - attention
+      - dismissed
+      - failed
+      - last_cleanup
+      - max_attempts
+      - oldest_waiting_minutes
+      - published_last_24h
+      - retention_days
+      - retrying
+      - stuck
+      - stuck_after_minutes
+      - waiting
     OutcomeEnum:
       enum:
       - success
@@ -9242,6 +9492,8 @@ components:
       - organization.manage
       - organization.view
       - platform.admin_console
+      - platform.jobs.manage
+      - platform.jobs.view
       - recovery.manage
       - recovery.view
       - rota.manage
@@ -9279,6 +9531,8 @@ components:
         * `organization.manage` - organization.manage
         * `organization.view` - organization.view
         * `platform.admin_console` - platform.admin_console
+        * `platform.jobs.manage` - platform.jobs.manage
+        * `platform.jobs.view` - platform.jobs.view
         * `recovery.manage` - recovery.manage
         * `recovery.view` - recovery.view
         * `rota.manage` - rota.manage

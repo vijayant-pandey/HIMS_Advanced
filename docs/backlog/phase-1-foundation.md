@@ -24,7 +24,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-PLAT-011 | Backend container image (non-root, single image for all roles) | Done |
 | HIMS-PLAT-012 | Hash-locked Python lockfile (uv, universal, `--require-hashes` in CI and image; [how-to](../workflows/dependencies.md)) | Done |
 | HIMS-PLAT-013 | Pin GitHub Actions to commit SHAs; least-privilege tokens per job; Dependabot for actions (test-enforced) | Done |
-| HIMS-PLAT-014 | Outbox and idempotency retention/archival jobs and runbook | Partial (idempotency purge done) |
+| HIMS-PLAT-014 | Outbox and idempotency retention/archival jobs and runbook | Done (daily outbox clean-up, health check, send again / dismiss with a reason, Background jobs page; [runbook](../runbooks/outbox-and-background-jobs.md)) |
 | HIMS-PLAT-015 | Route-level code splitting in the SPA (first download 1,045 → 494 kB; CI bundle budget 500 kB; reload page after updates) | Done |
 | HIMS-UI-001 | Theme selector (white & blue/red/green, minimal black & white) across launcher, apps and admin | Done (extended to 10 themes in HIMS-UI-002) |
 | HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event); plus 6 more colour themes (10 total) and a compact modern design | Done (visit recorded as `access.none_assigned`; reference = audit request_id) |
@@ -71,7 +71,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-006 | Invalidate all sessions on suspension/termination (password change: done via Django session hash) | Done (session register `user_sessions`; sessions deleted on deactivation, password change/reset and admin "Sign out of all devices"; audited as `auth.sessions.ended`) |
 | HIMS-IAM-007 | Confirm before sensitive actions ([how-to](../workflows/sensitive-actions.md)) | Done |
 | HIMS-IAM-020 | Confirm-it's-you for clinical actions (signing, amending, exporting patient records, merging), designed with Phase 2 (gap found in HIMS-IAM-007) | To do (🔒 with Phase 2 P0 sign-off) |
-| HIMS-IAM-008 | Enterprise SSO (OIDC/SAML) — decision in spec 36 | To do |
+| HIMS-IAM-008 | Enterprise SSO (OIDC/SAML) — decision in spec 36 | Deferred (PO 2026-11-08: not now) |
 | HIMS-IAM-009 | Scoped RBAC: catalog, roles, facility/department assignments, default deny, escalation guard (ADR-015) | Done |
 | HIMS-IAM-010 | Patient-relationship scope (treating team / encounter) | To do (Phase 2) |
 | HIMS-IAM-011 | Break-glass emergency access with reason, audit and review | To do (Phase 2) |
@@ -80,7 +80,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-015 | Accounts screen incl. people who are not staff; last-administrator protection | Done |
 | HIMS-IAM-016 | "My sign-ins": see own open sessions and sign out other devices on the Security page | Done |
 | HIMS-IAM-017 | Delegated access: temporary, time-limited cover with reason and audit (spec 4.4); Cover page, admin console ([design](../architecture/data-architecture/cover-arrangements.md)) | Done |
-| HIMS-IAM-018 | Clinical delegation (a consultant's patients, orders, signing rights) on top of cover arrangements (gap found in HIMS-IAM-017) | To do (🔒 CLIN) |
+| HIMS-IAM-018 | Clinical delegation (a consultant's patients, orders, signing rights) on top of cover arrangements (gap found in HIMS-IAM-017) | Moves to Phase 2 (needs clinical actions; 2026-11-08) |
 | HIMS-IAM-019 | Self-service cover requests: the away person proposes cover, an administrator approves (optional; gap found in HIMS-IAM-017) | To do (when hospitals ask) |
 | HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | To do |
 
@@ -98,9 +98,10 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-010 | Catalog screens: designations, specialties, qualification types (add/edit/deactivate in the app) | Done |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility; staff documents a separate permission ([how-to](../workflows/staff-visibility.md)) | Done |
 | HIMS-STAFF-012 | Shift schedules, leave and on-call rotations (spec 4.3): Rota, Leave and My schedule pages, admin console, no double booking enforced by the database ([design](../architecture/data-architecture/rotas-and-leave.md), [ADR-024](../decisions/ADR-024-rotas-no-overlap-in-the-database.md)) | Done |
-| HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) (gap found in HIMS-STAFF-012) | To do (🔒 PO: HR leave policy) |
+| HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) (gap found in HIMS-STAFF-012) | To do (🔓 unblocked 2026-11-08: the hospital sets the entitlements) |
 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head (gap found in HIMS-STAFF-012) | To do (when hospitals ask) |
-| HIMS-STAFF-015 | Minimum staffing per shift and alerts for gaps (gap found in HIMS-STAFF-012) | To do (🔒 CLIN: staffing ratios) |
+| HIMS-STAFF-015 | Minimum staffing per shift and alerts for gaps (gap found in HIMS-STAFF-012) | To do (🔓 unblocked 2026-11-08: the hospital sets the numbers) |
+| HIMS-STAFF-016 | Clinical privileges: what each doctor may perform, kept by the hospital (spec 4.3; unblocked 2026-11-08) | To do |
 | HIMS-STAFF-011 | Decide "today" by the hospital's time zone, not UTC: a licence that expired yesterday showed as "expiring soon" until 5:30 am in India (gap found in HIMS-SEC-012); also reviews, audit day search, postings, emails ([how-to](../workflows/dates-and-time-zones.md)) | Done |
 | HIMS-STAFF-009 | Designation catalog (IN/US, junior→senior), extended specialty/qualification catalogs, administrative system roles, RBAC document | Done |
 
@@ -112,7 +113,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-AUD-002 | Access-denied events recorded outside rolled-back transactions | Done |
 | HIMS-AUD-003 | Audit log screen for auditors in the app + CSV export | Done |
 | HIMS-SEC-010 | Audit tamper evidence: keyed hash chain over every audit event, sealed every minute, daily + on-demand integrity check, alerts to auditors, Audit integrity screen and admin console ([design](../architecture/data-architecture/audit-integrity.md)) | Done |
-| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Drafted with HIMS-COMP-005 ([threat model](../compliance/threat-model.md)); security reviewer pending |
+| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Drafted with HIMS-COMP-005 ([threat model](../compliance/threat-model.md)); security review scheduled as the last Phase 1 step (PO 2026-11-08) |
 | HIMS-SEC-012 | Security headers/CSP for the screens, admin console and API; reports of anything blocked ([how-to](../workflows/security-headers.md)) | Done (hosting must send the screens' headers: HIMS-SEC-018) |
 | HIMS-SEC-013 | Upload validation/malware scanning service | To do |
 | HIMS-SEC-014 | Trust `X-Forwarded-For` only from our own proxies, for audit addresses, sign-in register, rate limits and the console lock-out | Done |
@@ -143,7 +144,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | ID | Ticket | Status |
 |---|---|---|
 | HIMS-NOTIF-001 | Notification service: email + SMS, delivery log, retries, hidden secrets, Messages page, admin console ([how-to](../workflows/notifications.md)) | Done |
-| HIMS-NOTIF-002 | SMS gateway (India DLT-registered; US provider) | To do (🔒 VENDOR) |
+| HIMS-NOTIF-002 | SMS gateway (India DLT-registered; US provider) | Deferred (PO 2026-11-08: SMS printed to the console for now) |
 | HIMS-NOTIF-003 | Hospital-editable message templates and per-patient opt-out | To do |
 
 ## EPIC HIMS-COMP — Compliance documentation (doctor: "production grade")
@@ -155,7 +156,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-COMP-003 | India: ABDM Health Data Management Policy and IT Act security practices assessment | Drafted + built; counsel/hospital review pending |
 | HIMS-COMP-004 | Both: data retention schedule, incident response runbook, access-control policy, vendor list | Drafted + built; counsel/hospital review pending |
 | HIMS-COMP-005 | Threat model and risk register (spec 23) | Drafted + built; counsel/hospital review pending |
-| HIMS-COMP-006 | Retention purge job with legal hold, once periods are set | To do (🔒 LEGAL) |
+| HIMS-COMP-006 | Retention purge job with legal hold, once periods are set | To do (🔓 unblocked 2026-11-08: the hospital sets the periods; nothing deleted until set) |
 
 ## EPIC HIMS-OPS — Delivery and operations
 
@@ -169,6 +170,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-OPS-006 | Migration release job with lock; per-customer schema version tracking | To do |
 | HIMS-OPS-007 | Separate DB roles (runtime / migration / read-only / break-glass); runtime lacks TRUNCATE on audit | Done ([how-to](../workflows/database-users.md): app user only adds to evidence, owner only for migrate, read-only without credentials, break-glass off; Compliance → Database access) |
 | HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | To do (🔒 AWS) |
+| HIMS-OPS-020 | Hosting analysis: map the specification's hosting needs (sections 17, 30, 31, 34) to Oracle Cloud's free offering, its limits and gaps ([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)) | To do (first step of the hosting stage, at the end) |
 | HIMS-OPS-008 | Customer provisioning automation in the control plane | To do |
 | HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | Done ([how-to](../workflows/backup-and-restore.md): Backups page, admin console, commands; restore into a separate copy checked against the backup's inventory incl. audit chain and documents) |
 | HIMS-OPS-018 | Restore drill of a cloud database snapshot into a separate database, with the same checks as HIMS-OPS-009 (gap found in HIMS-OPS-009) | To do (🔒 AWS) |
@@ -180,3 +182,5 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 Phase 2 Patient/MPI and outpatient · Phase 3 ADT, beds, nursing, diet · Phase 4 Medication,
 pharmacy, eMAR, lab, radiology · Phase 5 Insurance (Stedi, India TPAs) and revenue cycle ·
 Phase 6 Portal, FHIR/ABDM, PACS/LIS, performance and go-live.
+
+**2026-11-08:** approvals and the hosting decision are in the [decisions log](../status/decisions-log.md): 'AWS' above now means the hosting stage at the end, on Oracle Cloud ([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)).

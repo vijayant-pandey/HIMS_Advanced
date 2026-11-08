@@ -310,6 +310,11 @@ HIMS_OUTBOX_BATCH_SIZE = env.int("HIMS_OUTBOX_BATCH_SIZE", default=100)
 HIMS_OUTBOX_MAX_ATTEMPTS = env.int("HIMS_OUTBOX_MAX_ATTEMPTS", default=12)
 # Without a broker (local development) events are processed in-process after commit.
 HIMS_OUTBOX_DISPATCH_INLINE = env.bool("HIMS_OUTBOX_DISPATCH_INLINE", default=not REDIS_URL)
+# Clean-up (HIMS-PLAT-014): published and dismissed events, and their duplicate-check markers,
+# are deleted after this many days. Waiting and failed events are never deleted automatically.
+HIMS_OUTBOX_RETENTION_DAYS = env.int("HIMS_OUTBOX_RETENTION_DAYS", default=30)
+# An event still waiting after this many minutes is "stuck" and needs a look (runbook).
+HIMS_OUTBOX_STUCK_MINUTES = env.int("HIMS_OUTBOX_STUCK_MINUTES", default=15)
 
 # --- Invitations and email (HIMS-IAM-003) ------------------------------------------------
 # Public URL of this deployment's React app; activation links point here.

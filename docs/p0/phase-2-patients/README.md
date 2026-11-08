@@ -78,14 +78,15 @@ to end.
 - 2026-10-30, PO: D6, D7, D8 as above. Email printed to the console now, Gmail SMTP later (by settings); SMS printed to the console until a gateway is chosen (built: notification service, HIMS-NOTIF-001).
 - 2026-10-30, reviewing doctor (via PO): "production grade, not a toy": compliance documentation (HIPAA; India DPDP, ABDM, IT Act) is part of the work (backlog HIMS-COMP).
 - Still open: the remaining decisions and the formal sign-off below.
+- **2026-11-08, PO, reviewing doctor and legal (relayed by the PO): approved for now, as proposed**, to be changed later if required. D6, D7, D8 as decided on 2026-10-30; D21 as its first option (patient-reported current medicines only; prescriptions in Phase 4). Slice 2A may start. [Decisions log](../../status/decisions-log.md).
 
 ## Sign-off (spec 26.10)
 
 | Role | Name | Decision | Date |
 |---|---|---|---|
-| Product owner | | ☐ Approved ☐ Approved with changes ☐ Not approved | |
-| Reviewing doctor (clinical governance) | | ☐ Approved ☐ Approved with changes ☐ Not approved | |
-| Legal/compliance (D6, D7, D9, D18, D24) | | ☐ Approved ☐ Pending (build may start; go-live waits) | |
+| Product owner | (name to be given) | ☑ Approved for now, as proposed (may be changed later) | 2026-11-08 |
+| Reviewing doctor (clinical governance) | (name to be given; relayed by the PO) | ☑ Approved for now, as proposed (may be changed later) | 2026-11-08 |
+| Legal/compliance (D6, D7, D9, D18, D24) | (name to be given; relayed by the PO) | ☑ Approved for now (revisit if required before real patient data) | 2026-11-08 |
 
 Engineering can start slice 2A (registration and search) once PO and doctor sign; legal items
 must be closed before any real patient data is entered (spec 26.7).

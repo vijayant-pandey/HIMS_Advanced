@@ -29,3 +29,14 @@
 ## Follow-ups
 Alarms on oldest pending age, dead count and dispatch lag (HIMS-OPS-004); retention and archival
 of published rows (HIMS-PLAT-014).
+
+## Update 2026-11-08 (HIMS-PLAT-014): clean-up, health and decisions on failed events
+- Daily clean-up deletes published and dismissed events after `HIMS_OUTBOX_RETENTION_DAYS` (30)
+  in small batches, with the duplicate-check markers of events that can no longer run again.
+  Waiting and failed (`dead`) events are never deleted automatically.
+- New status `dismissed`: a person closes a failed event that can never succeed. "Send again"
+  gives a failed or stuck event a fresh set of retries. Both need a reason and are audited.
+- Health (waiting, oldest age, retrying, stuck, failed) on the Background jobs page and in
+  `outbox_status`; a warning line every 15 minutes when something needs a look. Alarms on it come
+  with hosting (HIMS-OPS-004). Runbook:
+  [background jobs](../runbooks/outbox-and-background-jobs.md).

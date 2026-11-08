@@ -506,3 +506,12 @@ switched off, so the hospital cannot lock itself out.
   change these: they are set up by the owner's command. Everyone with `compliance.view` sees the
   checks on Compliance → Database access. Details:
   [separate database users](../workflows/database-users.md).
+
+## Update 2026-11-08: approved for now; background jobs (HIMS-PLAT-014)
+* **This document, including the clinical roles' permissions, is approved for now** by clinical
+  governance and the PO (relayed by the PO); it may be changed later. See the
+  [decisions log](decisions-log.md).
+* New `platform.jobs.view` (see the Background jobs page: waiting, retried and failed work) and
+  `platform.jobs.manage` (send a failed event again or dismiss it, with a reason; two-factor
+  required). Only the administrator has them. Runbook:
+  [background jobs](../runbooks/outbox-and-background-jobs.md).

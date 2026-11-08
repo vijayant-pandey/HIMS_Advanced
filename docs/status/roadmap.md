@@ -4,7 +4,13 @@ Built from [HIMS_Architecture_Specification_v2.MD](../../HIMS_Architecture_Speci
 section 20 (phases), 4 (domains), 21 (vertical slice), 26–27 (P0/P1), 36 (decisions), and from the
 [tracker](spec-status.md) and backlogs ([Phase 1](../backlog/phase-1-foundation.md),
 [Phase 2](../backlog/phase-2-patients.md)). The tracker stays the detailed record; this page is the
-ordered plan. **Last updated:** 2026-11-08 (after PR #38, with HIMS-OPS-007 built).
+ordered plan. **Last updated:** 2026-11-08 (after PR #39, with HIMS-PLAT-014 built and the approvals of 2026-11-08 recorded).
+
+**2026-11-08 decisions** ([decisions log](decisions-log.md)): CLIN, LEGAL and PO approved the pending documents
+**for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
+comes at the end of Phase 1; hosting is **Oracle Cloud at the very end** instead of AWS
+([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)). Below, 'AWS' therefore means the **hosting stage at
+the end**, re-planned for Oracle Cloud after the analysis (HIMS-OPS-020).
 
 **Legend:** ✅ done · 🟡 partly done · ⬜ not started · 🔓 can be built now · 🔒 blocked (blocker
 named) · **PO** you · **CLIN** doctors/nurses/pharmacists · **LEGAL** legal/compliance · **AWS**
@@ -18,11 +24,11 @@ PACS/LIS/drug database/SMS.
 | Phases in the spec (section 20) | 6 |
 | Phases finished | 0 (Phase 1 application part nearly finished; its cloud part deferred) |
 | Phases in progress | 1 (Phase 1) |
-| Phases not started | 5 (Phase 2 design drafted, waiting for sign-off) |
-| Spec sections (1–36) | 36: ✅ 2 · 🟡 26 · ⬜ 7 · not applicable 1 (section 24, links) |
+| Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
+| Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 8 started · ⬜ 17 not started |
-| Phase 1 tickets | 118: ✅ 78 done or drafted · 40 left: 18 🔓 can be built now (4 of them optional or later), 22 🔒 blocked (4 of those move with Phase 2) |
-| Phase 2 tickets (already written) | 20: all ⬜, all 🔒 until P0 sign-off |
+| Phase 1 tickets | 120: ✅ 81 done or approved · 39 left: 21 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 13 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 2 tickets (already written) | 20: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
 | Open decisions (section 36) | 19: 0 closed |
@@ -32,8 +38,8 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 78 tickets (PR #1–#38, #30 and HIMS-OPS-007) | 14 buildable items (section 4a); cloud items | Cloud part: AWS (deferred) | Hospital configured, staff onboarded, isolation enforced |
-| **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design drafted | P0 design (PR #28) | Sign-off, then slices 2A–2D (20 tickets) | PO + doctor sign-off (D1–D26); LEGAL before real patient data | Patients and outpatient visits end to end |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 81 (PR #1–#39 and #30, HIMS-PLAT-014, 2 approvals) | 21 buildable items (section 4a), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
+| **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
 | **5** Insurance and revenue cycle | Payers, Stedi, eligibility, authorizations, charges, invoices, payments, claims, denials, Indian TPAs | ⬜ | Numbering for invoices and claims (Phase 1) | P0 design, then build | Phases 2–4; PAYER; LEGAL (tax) | Services, payer obligations and balances reconcile |
@@ -45,7 +51,7 @@ PACS/LIS/drug database/SMS.
 |---|---|---|---|---|
 | 1 | Executive summary | ✅ | — | — |
 | 2 | Principles | 🟡 | Principles 2, 3, 7, 10, 12 apply with clinical domains | Domains, CLIN |
-| 3 | Personas (16) | 🟡 7 system roles | Clinical roles' permissions | CLIN (approve RBAC document) |
+| 3 | Personas (16) | 🟡 7 system roles | Clinical roles' permissions, built with Phase 2 | — (RBAC document approved for now, 2026-11-08) |
 | 4 | Functional domains (25) | 🟡 | See section 5 below | Mostly CLIN, P0 |
 | 5 | Clinical workflows | ⬜ | Admission, medication, claim flows | Domains |
 | 6 | Technical architecture | 🟡 | S3-compatible storage adapter; integration gateway | AWS; PAYER/VENDOR |
@@ -56,23 +62,23 @@ PACS/LIS/drug database/SMS.
 | 11 | Insurance and Stedi | ⬜ | All | PAYER |
 | 12 | Interoperability (FHIR, ABDM) | ⬜ | All | Partners, LEGAL |
 | 13 | Security and privacy | 🟡 | Passkeys; error text in traces (HIMS-SEC-020); patient scope; break-glass | 🔓 partly; CLIN; AWS |
-| 14 | Redis/Celery | 🟡 | Queue monitoring and alarms | AWS |
+| 14 | Redis/Celery | 🟡 | Alarms on queue health (monitoring and clean-up built, HIMS-PLAT-014) | Hosting stage |
 | 15 | React frontend | 🟡 1 of 7 workspaces | Clinical workspaces; patient chart | Domains |
 | 16 | REST API | 🟡 4 of 18 endpoint groups | Domain endpoints | Domains |
-| 17 | AWS deployment | ⬜ | All | AWS (deferred) |
+| 17 | AWS deployment | ⬜ | All, on Oracle Cloud instead (ADR-027) | Hosting stage at the end |
 | 18 | Non-functional | 🟡 | SLO measurement; cloud metrics and alarms | 🔓 partly; AWS |
 | 19 | Testing | 🟡 | Clinical validation | 🔓 partly; CLIN |
 | 20 | Roadmap | 🟡 Phase 1 | Phases 1 (rest) to 6 | See section 2 |
 | 21 | Vertical slice (14 steps) | 🟡 4 done | Steps 5–14 | Phases 2–5 |
-| 22 | Architecture decisions | 🟡 | Approve ADR-009 to ADR-023 | PO / security |
+| 22 | Architecture decisions | 🟡 | Review ADR-009 to ADR-027 one by one (accepted for now, 2026-11-08) | PO |
 | 23 | Readiness checklist (45) | 🟡 2 done, 7 partial | 36 items | CLIN, LEGAL, AWS, PAYER |
 | 24 | Reference links | n/a | — | — |
 | 25 | Delivery standard | 🟡 | Formal requirement records for built features | 🔓 |
-| 26 | P0 before each domain | 🟡 | Phase 2 sign-off; P0 for Phases 3–6 | PO, CLIN |
+| 26 | P0 before each domain | 🟡 | P0 for Phases 3–6 (Phase 2 approved for now, 2026-11-08) | PO, CLIN |
 | 27 | P1 before production | ⬜ | Cloud disaster recovery (local restore drills done, HIMS-OPS-009), runbooks, load tests, UAT | AWS, CLIN |
 | 28 | Artifact A (data) | 🟡 70% | Volume index check; P0 domains | 🔓 partly; P0 |
 | 29 | Artifact B (API) | 🟡 60% | Per-endpoint contract docs; webhooks/adapters | 🔓 partly; PAYER |
-| 30 | Artifact C (AWS) | ⬜ 5% | Terraform, network, KMS, backups | AWS |
+| 30 | Artifact C (AWS) | 🟡 8% | Terraform, network, KMS, cloud backups (30.5 separate database users done, HIMS-OPS-007) | Hosting stage (Oracle Cloud, ADR-027) |
 | 31 | Environments | 🟡 | Hosted Dev/QA/Staging/Production | PO (hosting accounts) |
 | 32 | GitHub workflow | 🟡 | Projects board | — |
 | 33 | CI/CD | 🟡 | Deploy pipelines | AWS / hosting |
@@ -95,7 +101,7 @@ fit, so nothing is forgotten.
 | 3 | 13.5, 19.1 | HIMS-SEC-019 | Secret-in-logs test (no password, token or key ever reaches a log) | ✅ done | One of the 10 security tests in spec 13.5 |
 | 4 | 13.5, 23 | HIMS-OPS-009 | Backup and restore drill, local (with audit chain and relationship checks) | ✅ done | Spec 13.5 restore test; needed before any real data |
 | 5 | 13.2, 17.2, 30.5 | HIMS-OPS-007 | Separate database users: app, migrations, read-only (the app cannot erase the audit log) | ✅ done | Defence in depth; can be set up locally |
-| 6 | 14.3 | HIMS-PLAT-014 | Outbox clean-up job and runbook (idempotency part done) | 🟡 | Keeps tables small |
+| 6 | 14.3 | HIMS-PLAT-014 | Outbox clean-up job and runbook (idempotency part done) | ✅ done | Keeps tables small |
 | 7 | 6.2, 17 | HIMS-OPS-010 | Serve admin and API-docs static files in hosted environments (WhiteNoise) | ⬜ | Needed for the first hosted environment |
 | 8 | 13.1 | HIMS-SEC-015 | Admin console address allow-list (setting; firewall later) | ⬜ | Before the console is reachable outside this computer |
 | 9 | 4.10, 15.1 | HIMS-FAC-008 | Bed board: every ward's beds and their status on one screen (no patients yet) | ⬜ | Ready for Phase 3 admissions |
@@ -109,15 +115,21 @@ fit, so nothing is forgotten.
 | 17 | 18 | HIMS-OPS-017 | Response-time targets (SLOs) measured locally | ⬜ | Baseline before hosting |
 | 18 | 4.22, 13.3 | HIMS-SEC-013 | Virus scanning of uploaded documents | ⬜ | Before patient documents |
 | 19 | 13.3, 18 | HIMS-SEC-020 | Filter the error text kept in traces with the same rules as logs | ⬜ | Gap found by HIMS-SEC-019; needed before traces are sent anywhere (HIMS-PLAT-019) |
+| 19a | 4.3 | HIMS-STAFF-016 | Clinical privileges: what each doctor may perform (the hospital keeps the list) | ⬜ | Unblocked 2026-11-08 (CLIN: fine for now) |
+| 19b | 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts (the hospital sets the numbers) | ⬜ | Unblocked 2026-11-08 (CLIN) |
+| 19c | 4.3 | HIMS-STAFF-013 | Leave balances and entitlements (the hospital sets them) | ⬜ | Unblocked 2026-11-08 (PO) |
+| 19d | 4.25, 28 | HIMS-COMP-006 | Retention purge with legal hold (the hospital sets the periods; nothing deleted until set) | ⬜ | Unblocked 2026-11-08 (LEGAL) |
+| 19e | 13 | HIMS-SEC-011 | Security review of the threat model | ⬜ last | PO: when the whole of Phase 1 is complete |
 | — | 4.4 | HIMS-IAM-019 | Self-service cover requests | ⬜ optional | When hospitals ask |
 | — | 4.3 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head | ⬜ optional | When hospitals ask |
 | — | 4.25 | HIMS-SEC-017 | Integrity check as a background job | ⬜ later | When the audit log nears ~1 million records |
 | — | 19.2 | HIMS-QA-002 | Make browser tests a required check | ⬜ PO | You, in the GitHub branch rules |
 
-### 4b. Phase 1: blocked (🔒)
+### 4b. Phase 1: not buildable now (hosting stage at the end, deferred, moved, or unblocked on 2026-11-08)
 
 | Spec § | Ticket | Task | Blocked by |
 |---|---|---|---|
+| 17, 30, 34 | HIMS-OPS-020 | Hosting analysis: map the spec's hosting needs to Oracle Cloud's offering, limits and gaps (ADR-027) | First step of the hosting stage |
 | 17, 30 | HIMS-OPS-003 | Terraform modules (network, ECS, RDS, Redis, S3, KMS, secrets, monitoring) | AWS |
 | 17.2, 30.5 | HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | AWS |
 | 17, 18 | HIMS-OPS-004 | Alarms and runbooks (errors, latency, database, queues, outbox) | AWS |
@@ -130,23 +142,23 @@ fit, so nothing is forgotten.
 | 17.3, 27.1 | HIMS-OPS-018 | Restore drill of a cloud snapshot with the same checks (gap found in HIMS-OPS-009) | AWS |
 | 13.3 | HIMS-SEC-018 | Send the screens' protection headers at hosting | AWS |
 | 18 | HIMS-PLAT-019 | Send traces to AWS | AWS |
-| 4.23 | HIMS-NOTIF-002 | SMS gateway (India DLT, US provider) | VENDOR |
-| 4.4, 36 | HIMS-IAM-008 | Single sign-on (OIDC/SAML) | PO decision (section 36) |
-| 4.4 | HIMS-IAM-018 | Clinical delegation | CLIN |
-| 4.3 | — | Clinical privileges (what a doctor may perform) | CLIN |
-| 4.3 | HIMS-STAFF-013 | Leave balances and entitlements | PO (HR leave policy) |
-| 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts | CLIN (staffing ratios) |
-| 3 | — | Approve the RBAC document, clinical role permissions | CLIN |
-| 4.25 | HIMS-COMP-006 | Retention purge with legal hold | LEGAL (periods) |
-| 23 | HIMS-COMP-001…005 | Counsel and hospital review of the compliance pack | LEGAL |
-| 23 | HIMS-SEC-011 | Security reviewer for the threat model | Security reviewer |
-| 4.1 | — | Tax rules | LEGAL |
+| 4.23 | HIMS-NOTIF-002 | SMS gateway (India DLT, US provider) | Deferred: SMS printed to the console for now (PO 2026-11-08) |
+| 4.4, 36 | HIMS-IAM-008 | Single sign-on (OIDC/SAML) | Deferred: not now (PO 2026-11-08) |
+| 4.4 | HIMS-IAM-018 | Clinical delegation | Moves to Phase 2 (needs clinical actions) |
+| 4.3 | HIMS-STAFF-016 | Clinical privileges (what a doctor may perform) | ✅ unblocked 2026-11-08: step 19a |
+| 4.3 | HIMS-STAFF-013 | Leave balances and entitlements | ✅ unblocked 2026-11-08: step 19c |
+| 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts | ✅ unblocked 2026-11-08: step 19b |
+| 3 | — | Approve the RBAC document, clinical role permissions | ✅ approved for now 2026-11-08 |
+| 4.25 | HIMS-COMP-006 | Retention purge with legal hold | ✅ unblocked 2026-11-08: step 19d |
+| 23 | HIMS-COMP-001…005 | Counsel and hospital review of the compliance pack | ✅ approved for now 2026-11-08 |
+| 23 | HIMS-SEC-011 | Security reviewer for the threat model | Scheduled: last step of Phase 1 (19e) |
+| 4.1 | — | Tax rules | Moves to Phase 5 (billing) |
 
 ### 4c. Phase 2 onwards
 
 | Step | Phase | Spec § | Tickets | Task | Status | Blocked by |
 |---|---|---|---|---|---|---|
-| 19 | 2 | 26 | HIMS-PAT-000 | Sign off the Phase 2 P0 design (26 decisions) | 🟡 waiting | **PO + doctor**; LEGAL items D6, D7, D9, D18, D24 before real data |
+| 19 | 2 | 26 | HIMS-PAT-000 | Sign off the Phase 2 P0 design (26 decisions) | ✅ approved for now 2026-11-08 | — (may be revisited) |
 | 20 | 2 | 4.5, 13 | HIMS-PAT-001, 002, 005, 006; HIMS-IAM-010; HIMS-DATA-003 | Slice 2A: registration with MRN, search, chart header, restricted records, patient scope | ⬜ | Step 19 |
 | 21 | 2 | 4.6, 4.23 | HIMS-OPD-001…004 | Slice 2B: schedules (uses step 1 rotas), appointments without double booking, walk-ins, queue, reminders | ⬜ | Step 20 |
 | 22 | 2 | 4.7, 4.8 | HIMS-CLIN-001…007; HIMS-IAM-011, 020 | Slice 2C: visits, vitals, allergies, diagnoses (ICD), notes with sign/amend, emergency access, confirm-it's-you for clinical actions | ⬜ | Step 21; CLIN (terminology) |
@@ -168,12 +180,12 @@ fit, so nothing is forgotten.
 | 38 | 6 | 4.24, 7.6 | — | Reporting and analytics | ⬜ | Domains; LEGAL for cross-hospital |
 | 39 | 6 | 12 | — | FHIR, ABDM (ABHA), external EHRs | ⬜ | Partners, LEGAL |
 | 40 | 6 | 4.15, 4.16 | — | PACS, LIS and device integrations | ⬜ | VENDOR |
-| 41 | 6 | 17, 27, 30 | Phase 1 🔒 AWS items | AWS stage: hosting, backups, disaster recovery, alarms (you chose to do this later) | ⬜ | AWS |
+| 41 | 6 | 17, 27, 30 | HIMS-OPS-020, then the Phase 1 hosting items | Hosting stage on Oracle Cloud (ADR-027): analysis, hosting, backups, disaster recovery, alarms | ⬜ | At the very end (PO 2026-11-08) |
 | 42 | 6 | 18, 19, 27 | — | Performance, security and recovery tests; clinical validation | ⬜ | Hosting, CLIN |
 | 43 | 6 | 20, 35 | — | Hospital acceptance testing, training, controlled rollout | ⬜ | Everything above |
 
-**Cross-cutting, at any time:** close the 19 decisions in section 36 (owner per row), approve
-ADR-009 to ADR-023, and work through the 45-item readiness checklist (section 23).
+**Cross-cutting, at any time:** close the 19 decisions in section 36 (owner per row), review
+ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-item readiness checklist (section 23).
 
 ## 5. Functional domains (section 4)
 
@@ -207,10 +219,10 @@ ADR-009 to ADR-023, and work through the 45-item readiness checklist (section 23
 
 ## 6. Done so far
 
-78 Phase 1 tickets, delivered in PR #1–#38 (and #30), and the HIMS-OPS-007 PR. The full list with what each PR did is in the
+81 Phase 1 items: tickets delivered in PR #1–#39 (and #30) and the HIMS-PLAT-014 PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
 tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and
 [work queue](spec-status.md#next-work-queue-dependency-free-in-recommended-order).
 
 New tickets named here for the first time (HIMS-SEC-019, HIMS-FAC-008, HIMS-FAC-009,
-HIMS-ORG-006, HIMS-DOC-001, HIMS-OPS-017, and HIMS-SEC-020, HIMS-OPS-018 and HIMS-OPS-019 added on
-2026-11-08) are also in the Phase 1 backlog.
+HIMS-ORG-006, HIMS-DOC-001, HIMS-OPS-017, and HIMS-SEC-020, HIMS-OPS-018, HIMS-OPS-019, HIMS-OPS-020 and HIMS-STAFF-016 added
+on 2026-11-08) are also in the Phase 1 backlog.

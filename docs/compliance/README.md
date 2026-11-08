@@ -5,6 +5,9 @@ something concrete to review. Spec 12.3 and 26.7: software and documents do not 
 compliant. Compliance also needs the hospital's own policies, training, contracts and qualified
 counsel. **No real patient data before counsel signs off.**
 
+**2026-11-08:** legal reviewed the pack and approved it **for now** (relayed by the PO); it will be
+revisited if required. See the [decisions log](../status/decisions-log.md).
+
 ## What HIPAA is, and India's equivalent
 
 | | United States | India |

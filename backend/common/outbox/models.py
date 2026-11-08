@@ -13,6 +13,7 @@ class OutboxEvent(models.Model):
         PENDING = "pending", "Pending"
         PUBLISHED = "published", "Published"
         DEAD = "dead", "Dead (retries exhausted)"
+        DISMISSED = "dismissed", "Dismissed by a person (never retried)"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     event_type = models.CharField(max_length=150)
@@ -31,10 +32,20 @@ class OutboxEvent(models.Model):
     available_at = models.DateTimeField(default=timezone.now)
     published_at = models.DateTimeField(null=True, blank=True)
     last_error = models.CharField(max_length=500, blank=True)
+    # A person's decision on a failed event (HIMS-PLAT-014): sent again or dismissed, and why.
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by_id = models.UUIDField(null=True, blank=True)
+    resolution_note = models.CharField(max_length=300, blank=True)
 
     class Meta:
         db_table = "outbox_events"
         indexes = [
+            # The daily clean-up finds old published rows without reading the whole table.
+            models.Index(
+                fields=["published_at"],
+                condition=Q(status="published"),
+                name="outbox_published_idx",
+            ),
             models.Index(
                 fields=["available_at", "occurred_at"],
                 condition=Q(status="pending"),
@@ -71,6 +82,7 @@ class ProcessedEvent(models.Model):
 
     class Meta:
         db_table = "outbox_processed_events"
+        indexes = [models.Index(fields=["processed_at"], name="outbox_processed_at_idx")]
         constraints = [
             models.UniqueConstraint(fields=["handler", "event_id"], name="processed_event_unique")
         ]
