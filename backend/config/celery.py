@@ -26,6 +26,9 @@ app.conf.update(
     task_soft_time_limit=240,
     broker_connection_retry_on_startup=True,
     enable_utc=True,
+    # Keep Django's LOGGING (JSON lines, secrets hidden; HIMS-SEC-019) in the worker too, instead
+    # of Celery's own plain-text set-up, which would write task arguments and errors unfiltered.
+    worker_hijack_root_logger=False,
 )
 app.autodiscover_tasks()
 

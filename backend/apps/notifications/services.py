@@ -21,7 +21,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
-from common import crypto
+from common import crypto, log_safety
 from common.exceptions import ConflictError
 
 from .backends import sms_backend
@@ -83,7 +83,7 @@ def _deliver(notification: Notification) -> Notification:
             for phone in notification.recipients:
                 backend.send(phone, body)
     except Exception as exc:  # any provider error; the detail is logged, not shown
-        notification.last_error = f"{type(exc).__name__}: {str(exc)[:250]}"
+        notification.last_error = _error_text(exc, notification, body)
         if notification.attempts >= settings.HIMS_NOTIFICATION_MAX_ATTEMPTS:
             notification.status = Status.GAVE_UP
             notification.next_attempt_at = None
@@ -108,6 +108,20 @@ def _deliver(notification: Notification) -> Notification:
         notification.body_encrypted = ""  # delivered: the secret-bearing copy is not kept
     notification.save()
     return notification
+
+
+def _error_text(exc: Exception, notification: Notification, body: str) -> str:
+    """The provider's error, safe to keep and show (HIMS-SEC-019). Providers sometimes repeat
+    the message they refused, so the sign-in links and codes it carried are hidden as well."""
+    return _error_text_from(type(exc).__name__, str(exc), notification.body, body)
+
+
+def _error_text_from(name: str, detail: str, readable: str, real: str | None) -> str:
+    secrets = log_safety.hidden_parts(readable, real) if real is not None else None
+    if secrets is None:  # cannot tell which parts are secret: keep only the kind of error
+        return name
+    detail = log_safety.scrub(redact(detail, secrets))
+    return f"{name}: {detail}"[:300] if detail else name
 
 
 def _skip(notification: Notification, reason: str) -> Notification:

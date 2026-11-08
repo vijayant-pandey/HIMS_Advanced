@@ -88,7 +88,7 @@ says "open the link from the email", look in the launcher window for lines that 
 
 | Area | What you can do |
 |---|---|
-| Sign-in and security | Sign in, two-factor codes, backup codes, forgot password, account activation by invitation, "My sign-ins", automatic sign-out after 30 minutes without activity |
+| Sign-in and security | Sign in, two-factor codes, backup codes, forgot password, account activation by invitation, "My sign-ins", automatic sign-out after 30 minutes without activity; passwords, links and codes never written to the logs |
 | Hospital setup | Hospital settings, facilities (branches), departments with head, services and opening hours |
 | Locations and beds | Buildings, floors, wards, rooms, beds, bed status (maintenance, blocked, out of service) |
 | Numbering | How patient record (MRN), visit, invoice and claim numbers will look |
@@ -1117,6 +1117,7 @@ Each of these must be **refused** with a clear message. A refusal here is a **pa
 | 20.11 | Look for any **Delete** button in the app or admin console | None exists. Records are switched off, revoked or archived instead. Only exception: a department's opening-hours rows in the admin console (they are settings, and changes are audited) |
 | 20.12 | Window A (admin): type http://localhost:5175/audit/integrity in the address bar | "You don't have access to this". Administrators cannot see or run the tamper check (only auditors can) |
 | 20.13 | **Cover** → **Arrange cover** with yourself as the **Person covering** | Refused: "You cannot arrange cover that gives yourself access" |
+| 20.14 | Window B (signed out): sign in as Asha with a **wrong password on purpose**, then with the right one. Now look through the **HIMS launcher window** (the black window with the server's lines) | Neither password appears **anywhere** in that window. Needs HIMS-SEC-019. (Printed emails in that window still show the full link: that is only on your own computer, so you can click it while testing; on a hosted server the link is hidden) |
 
 ---
 

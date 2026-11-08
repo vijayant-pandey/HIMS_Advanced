@@ -86,6 +86,13 @@ Managed environments must set `HIMS_FIELD_ENCRYPTION_KEYS` (see `common/crypto.p
 `HIMS_AUDIT_CHAIN_KEYS` (audit tamper evidence; see `apps/audit/integrity.py`) and
 `HIMS_TRUSTED_PROXIES` (real client addresses; see `docs/workflows/security-headers.md`).
 
+## Logs never hold secrets
+
+Every log line is JSON and passes a filter that hides passwords, sign-in links, codes, keys and
+personal details, and a security test runs the real flows to prove nothing leaks (HIMS-SEC-019).
+Log identifiers and outcomes, never contents: see
+[docs/workflows/log-safety.md](docs/workflows/log-safety.md).
+
 ## Updating the databases after a merge
 
 When a change includes database migrations, **every hospital database must be updated**. Follow

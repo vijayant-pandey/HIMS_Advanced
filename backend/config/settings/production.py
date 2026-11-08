@@ -13,6 +13,7 @@ from .base import *  # noqa: F403
 from .base import (
     DATABASES,
     DEBUG,
+    EMAIL_BACKEND,
     HIMS_AUDIT_CHAIN_KEYS,
     HIMS_CONFIRM_IDENTITY_MINUTES,
     HIMS_DATABASE_ENVIRONMENT,
@@ -37,6 +38,11 @@ SECURE_REDIRECT_EXEMPT = [r"^health/"]  # ALB health checks arrive over HTTP
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 X_FRAME_OPTIONS = "DENY"
+
+# Secrets never reach a log (HIMS-SEC-019): a printed email lands in the server log here, so it
+# is printed with sign-in links and codes hidden.
+if EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend":
+    EMAIL_BACKEND = "apps.notifications.backends.ConsoleEmailBackend"
 
 if not HIMS_FIELD_ENCRYPTION_KEYS:
     raise ImproperlyConfigured("HIMS_FIELD_ENCRYPTION_KEYS must be set (from the secret manager).")

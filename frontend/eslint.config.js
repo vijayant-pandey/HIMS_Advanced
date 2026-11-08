@@ -13,6 +13,9 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      // The browser console is a log anyone at the screen can read and copy: nothing (tokens,
+      // codes, patient details) is written there (HIMS-SEC-019; spec 13.3).
+      "no-console": "error",
     },
   },
 );
