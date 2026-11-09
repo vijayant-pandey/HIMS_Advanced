@@ -39,6 +39,7 @@
 22b. [Part 18b: backups and restore drills](#part-18b-backups-and-restore-drills)
 22c. [Part 18c: separate database users](#part-18c-separate-database-users)
 22d. [Part 18d: background jobs](#part-18d-background-jobs)
+22e. [Part 18e: API docs without outside sites](#part-18e-api-docs-without-outside-sites)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1148,6 +1149,19 @@ A failed event cannot be produced on purpose in a healthy system; the automated 
 
 ---
 
+## Part 18e: API docs without outside sites
+
+Needs the HIMS-OPS-010 PR and the one-time library install (no migrate step).
+Guide: [static files](../workflows/static-files.md).
+
+| # | Do | Expect |
+|---|---|---|
+| 18e.1 | Start HIMS. In the browser, open the backend address from the launcher window followed by `/api/docs/` | The "HIMS API" page with every endpoint, as before |
+| 18e.2 | Right-click the page → **View page source** | No `https://` address anywhere; the scripts start with `/static/drf_spectacular_sidecar/` |
+| 18e.3 | Admin console: open any page | Looks exactly as before (styles and buttons work) |
+
+---
+
 ## Part 19: leaving staff (termination)
 
 **Window A** app + **Window B** (Asha signed in).
@@ -1301,6 +1315,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 18b | Backups and restore drills | | | |
 | 18c | Separate database users | | | |
 | 18d | Background jobs | | | |
+| 18e | API docs without outside sites | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 

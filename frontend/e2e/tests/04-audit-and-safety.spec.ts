@@ -220,6 +220,34 @@ test.describe("administrator", () => {
     await context.close();
   });
 
+  test("API docs run from HIMS's own files, nothing from other sites, no inline scripts", async ({ browser }) => {
+    // HIMS-OPS-010: Swagger UI comes from the installed sidecar package, its start-up script is a file.
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const blocked: string[] = [];
+    page.on("console", (message) => {
+      if (message.text().includes("Content Security Policy")) blocked.push(message.text());
+    });
+    const elsewhere: string[] = [];
+    const missing: string[] = [];
+    page.on("request", (request) => {
+      if (!request.url().startsWith(`http://127.0.0.1:${E2E.apiPort}/`) && !request.url().startsWith("data:"))
+        elsewhere.push(request.url());
+    });
+    page.on("response", (response) => {
+      if (response.status() >= 400) missing.push(`${response.status()} ${response.url()}`);
+    });
+    const first = await page.goto(`http://127.0.0.1:${E2E.apiPort}/api/docs/`);
+    const policy = first!.headers()["content-security-policy"];
+    expect(policy).toContain("script-src 'self';");
+    expect(policy).not.toContain("http");
+    await expect(page.getByRole("heading", { name: /HIMS API/ })).toBeVisible();
+    expect(elsewhere).toEqual([]);
+    expect(missing).toEqual([]);
+    expect(blocked).toEqual([]);
+    await context.close();
+  });
+
   test("keyboard only: the menu can be reached and used with Tab and Enter", async ({ page }) => {
     await page.goto("/");
     for (let i = 0; i < 40; i++) {

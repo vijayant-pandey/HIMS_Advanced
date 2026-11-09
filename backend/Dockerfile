@@ -26,6 +26,9 @@ RUN groupadd --system hims && useradd --system --gid hims --home /app hims
 COPY --from=build /opt/venv /opt/venv
 WORKDIR /app
 COPY --chown=hims:hims . .
+# Admin console and API docs files, collected and fingerprinted once at build time and served by
+# WhiteNoise from the image (HIMS-OPS-010). Needs no database or secrets (config/settings/build.py).
+RUN DJANGO_SETTINGS_MODULE=config.settings.build python manage.py collectstatic --noinput -v 0
 USER hims
 EXPOSE 8000
 # Bind address, workers and a PHI-safe access log (no query strings) are in config/gunicorn_conf.py.

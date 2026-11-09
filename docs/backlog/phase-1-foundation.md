@@ -33,7 +33,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-PLAT-017 | Django admin operations console: RBAC-gated, audited, no deletion (ADR-016) | Done |
 | HIMS-PLAT-018 | Admin console coverage: every model manageable (test-enforced), password-reset action, full bed status, location drill-down | Done |
 | HIMS-SEC-015 | Console network restriction (IP allow-list/VPN) before enabling outside local | To do |
-| HIMS-OPS-010 | Static files for admin/API docs in managed environments (WhiteNoise or S3/CloudFront) | To do |
+| HIMS-OPS-010 | Static files for admin/API docs in managed environments (WhiteNoise or S3/CloudFront) | Done (WhiteNoise, collected at image build; Swagger UI bundled, no CDN; [static files](../workflows/static-files.md)) |
 | HIMS-OPS-012 | Runbook: updating every hospital database after a merge (docs/workflows/database-migrations.md) | Done |
 | HIMS-OPS-015 | S3-compatible document storage (KMS encryption, block public access, versioning) for hosted environments | To do (🔒 AWS / hosting) |
 | HIMS-OPS-016 | Phase 1 manual test guide for the product owner (browser, India + US, expected results) | Done (docs/testing/flow-part1.md) |

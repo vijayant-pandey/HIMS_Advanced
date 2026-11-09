@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "django.contrib.postgres",  # range types and no-overlap constraints (rotas)
     "rest_framework",
     "drf_spectacular",
+    "drf_spectacular_sidecar",  # Swagger UI files served by HIMS itself, no CDN (HIMS-OPS-010)
     # Shared platform services
     "common.idempotency",
     "common.outbox",
@@ -203,6 +204,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+# Hosted environments (HIMS-OPS-010): the admin console and API docs files are collected into the
+# image at build time (config/settings/build.py) and served by WhiteNoise (added to the middleware
+# in production.py), compressed, with fingerprinted names browsers may cache for a year. On a
+# developer PC runserver serves them, as before.
+HOSTED_STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
 # --- Uploaded documents (HIMS-STAFF-005, spec 4.22; ADR-020) -------------------------------
 # Never served from a public URL: files are downloaded only through the API, after a
@@ -273,6 +282,10 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SCHEMA_PATH_PREFIX": r"/api/v1",
+    # Swagger UI from the installed sidecar package, never a CDN (HIMS-OPS-010).
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
     "ENUM_NAME_OVERRIDES": {
         "OrganizationStatusEnum": "apps.organizations.models.Organization.Status",
         "ActiveStatusEnum": "apps.facilities.models.Facility.Status",

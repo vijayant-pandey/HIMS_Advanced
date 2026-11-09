@@ -36,6 +36,10 @@ The screens are static files, so **the hosting service must send these headers**
   headers (AWS: a CloudFront response headers policy). `/api` must stay on the same address as the
   screens; if it ever moves, add its address to `connect-src`.
 - If admin static files move to another address (HIMS-OPS-010), add it to `CONSOLE_POLICY`.
+  **2026-11-08 (HIMS-OPS-010):** they stay on the same address: the app serves them itself
+  ([static files](static-files.md)). The **API docs** no longer load Swagger UI from
+  `cdn.jsdelivr.net` and run no inline script, so their rules are now only
+  `script-src 'self'`, with no other site allowed.
 
 ## What was blocked
 

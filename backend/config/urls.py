@@ -33,9 +33,14 @@ if settings.HIMS_ENABLE_ADMIN:
     urlpatterns += [path("admin/", admin.site.urls)]
 
 if settings.HIMS_ENABLE_API_DOCS:
-    from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+    from drf_spectacular import views as spectacular
 
     urlpatterns += [
-        path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
-        path("api/docs/", SpectacularSwaggerView.as_view(url_name="api-schema"), name="api-docs"),
+        path("api/schema/", spectacular.SpectacularAPIView.as_view(), name="api-schema"),
+        # The split view serves its start-up script as a file, so no inline script is needed.
+        path(
+            "api/docs/",
+            spectacular.SpectacularSwaggerSplitView.as_view(url_name="api-schema"),
+            name="api-docs",
+        ),
     ]

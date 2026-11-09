@@ -12,6 +12,10 @@ django-environ==0.14.0
 argon2-cffi==25.1.0
 cryptography==50.0.2
 gunicorn==26.2.0
+# Static files served by the app itself in hosted environments (HIMS-OPS-010): the admin
+# console's style and script files, and the API docs' own Swagger UI (no outside CDN).
+whitenoise==6.12.0
+drf-spectacular-sidecar==2026.10.1
 # Tracing (spec 6, 18; HIMS-PLAT-016). Off unless HIMS_TRACING_EXPORTER is set.
 opentelemetry-api==1.45.1
 opentelemetry-sdk==1.45.1
