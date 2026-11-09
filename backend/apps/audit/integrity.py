@@ -33,7 +33,7 @@ from django.db import DEFAULT_DB_ALIAS, connection, transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.notifications.services import send_email
+from apps.notifications.services import send_message
 from common.crypto import LOCAL_ENVIRONMENTS
 from common.exceptions import ConflictError
 
@@ -445,22 +445,15 @@ def auditor_emails() -> list[str]:
 
 def _alert_auditors(check: AuditIntegrityCheck) -> None:
     recipients = auditor_emails()
-    link = f"{settings.HIMS_APP_BASE_URL.rstrip('/')}/audit/integrity/{check.pk}"
-    body = (
-        "The audit log integrity check found "
-        f"{check.problem_count} problem(s) on {check.finished_at:%Y-%m-%d %H:%M} UTC.\n\n"
-        "This can mean that someone changed or removed audit records directly in the database.\n"
-        "Treat it as a possible security incident: do not change anything, and follow the\n"
-        "incident procedure.\n\n"
-        f"See the details (sign-in needed): {link}\n"
-    )
     if recipients:
-        send_email(
-            subject="HIMS: audit log integrity check found problems",
-            body=body,
+        send_message(
+            "audit.integrity_alert",
             to=recipients,
-            category="audit",
-            template="audit.integrity_alert",
+            values={
+                "count": check.problem_count,
+                "when": f"{check.finished_at:%Y-%m-%d %H:%M}",
+                "link": f"{settings.HIMS_APP_BASE_URL.rstrip('/')}/audit/integrity/{check.pk}",
+            },
         )
     record_audit_event(
         action=AuditAction.AUDIT_INTEGRITY_ALERT_SENT,

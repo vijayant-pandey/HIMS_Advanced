@@ -31,7 +31,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
-from apps.notifications.services import send_email
+from apps.notifications.services import send_message
 from apps.organizations.dates import hospital_time
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
@@ -365,41 +365,37 @@ def _period(delegation: AccessDelegation) -> str:
     return f"from {start} to {end}"
 
 
-def _send(subject: str, body: str, *emails: str) -> None:
+def _send(key: str, values: dict, *emails: str) -> None:
     recipients = [e for e in emails if e]
     if recipients:
-        send_email(
-            subject=subject,
-            body=body,
-            to=recipients,
-            category="access",
-            template="access.cover",
-        )
+        send_message(key, to=recipients, values=values)
 
 
 def _notify_created(delegation: AccessDelegation, lent: list[dict]) -> None:
     roles = "\n".join(f"- {r['role_name']} ({r['scope']})" for r in lent)
     delegator, delegate = delegation.delegator, delegation.delegate
+    details = {"period": _period(delegation), "reason": delegation.reason, "roles": roles}
     _send(
-        f"HIMS: you are covering for {delegator.display_name}",
-        f"You will work with {delegator.display_name}'s access {_period(delegation)}.\n\n"
-        f"Reason: {delegation.reason}\n\nAccess lent to you:\n{roles}\n\n"
-        "Everything you do is recorded under your own name. The access ends by itself.\n",
+        "access.cover_starting",
+        {"colleague": delegator.display_name, **details},
         delegate.email,
     )
     _send(
-        f"HIMS: {delegate.display_name} is covering for you",
-        f"{delegate.display_name} will work with your access {_period(delegation)}.\n\n"
-        f"Reason: {delegation.reason}\n\nAccess lent:\n{roles}\n\n"
-        "If you did not expect this, tell your hospital administrator.\n",
+        "access.cover_for_you",
+        {"colleague": delegate.display_name, **details},
         delegator.email,
     )
 
 
 def _notify_ended(delegation: AccessDelegation) -> None:
     delegator, delegate = delegation.delegator, delegation.delegate
-    body = (
-        f"The cover by {delegate.display_name} for {delegator.display_name} ended early.\n\n"
-        f"Reason: {delegation.end_reason}\n"
+    _send(
+        "access.cover_ended",
+        {
+            "covering": delegate.display_name,
+            "covered": delegator.display_name,
+            "reason": delegation.end_reason,
+        },
+        delegate.email,
+        delegator.email,
     )
-    _send("HIMS: cover arrangement ended", body, delegate.email, delegator.email)

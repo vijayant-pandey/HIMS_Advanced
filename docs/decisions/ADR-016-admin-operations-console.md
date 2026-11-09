@@ -82,3 +82,7 @@ or active wards cannot be set to inactive, and the console shows the same plain-
   the next access review is due**; the Access reviews list now shows it.
 - Every console save now tells the record who is saving (`_hims_actor`), so records that keep
   their own history (bed status) name the person.
+
+## Update (2026-11-09, Hospital setup group)
+
+The console gained **Equipment** and **Equipment service records** (status and visits go through the app's rules; existing visits are read-only), **Message templates** (same checks as the app, confirm-it's-you, and an action to go back to the standard wording) and the **letterhead** fields on the hospital's page, with a logo preview served through a console page because files have no public address. A check of what #42 and #43 added found nothing else missing.

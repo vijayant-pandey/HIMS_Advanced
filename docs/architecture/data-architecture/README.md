@@ -70,6 +70,8 @@ facility or department through a current posting ([staff visibility](../../workf
 |---|---|---|---|---|---|---|---|
 | Hospital, facilities, departments | ✅ change | change, own facility | view | view, own department | view facilities | view | — |
 | Locations and beds | ✅ change | change, own facility | — | view, own department | view; change bed status | view | — |
+| Equipment register (HIMS-FAC-009) | ✅ change | change, own facility | — | view, own department | — | — | — |
+| Message wording (HIMS-NOTIF-003) | ✅ change | — | — | — | — | — | — |
 | Numbering, feature settings | ✅ change | change, own facility | — | — | — | — | — |
 | Staff, qualifications, licences, catalogs (Restricted) | ✅ change | view, staff posted at own facility | ✅ change and verify | view, staff posted in own department | — | — | — |
 | Staff documents: licence and certificate copies (Restricted) | ✅ open | — | ✅ open | — | — | — | — |

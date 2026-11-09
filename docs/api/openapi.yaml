@@ -2337,6 +2337,213 @@ paths:
               schema:
                 $ref: '#/components/schemas/Designation'
           description: ''
+  /api/v1/equipment/:
+    get:
+      operationId: equipment_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+      - in: query
+        name: department
+        schema:
+          type: string
+      - in: query
+        name: due
+        schema:
+          type: string
+          enum:
+          - due_soon
+          - overdue
+      - in: query
+        name: facility
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Part of the asset tag, name, serial or maker
+      - in: query
+        name: status
+        schema:
+          type: string
+      - in: query
+        name: ward
+        schema:
+          type: string
+      tags:
+      - equipment
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEquipmentList'
+          description: ''
+    post:
+      operationId: equipment_create
+      tags:
+      - equipment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipment'
+          description: ''
+  /api/v1/equipment/{id}/:
+    get:
+      operationId: equipment_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this equipment.
+        required: true
+      tags:
+      - equipment
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipment'
+          description: ''
+    patch:
+      operationId: equipment_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this equipment.
+        required: true
+      tags:
+      - equipment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEquipmentUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipment'
+          description: ''
+  /api/v1/equipment/{id}/history/:
+    get:
+      operationId: equipment_history_list
+      description: The last 50 service, repair and calibration visits, newest first.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this equipment.
+        required: true
+      tags:
+      - equipment
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceRecord'
+          description: ''
+  /api/v1/equipment/{id}/service-records/:
+    post:
+      operationId: equipment_service_records_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this equipment.
+        required: true
+      tags:
+      - equipment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRecordCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRecord'
+          description: ''
+  /api/v1/equipment/{id}/status/:
+    post:
+      operationId: equipment_status_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this equipment.
+        required: true
+      tags:
+      - equipment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EquipmentStatusRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Equipment'
+          description: ''
   /api/v1/facilities/:
     get:
       operationId: facilities_list
@@ -2876,6 +3083,128 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeaveRequest'
           description: ''
+  /api/v1/message-templates/:
+    get:
+      operationId: message_templates_list
+      tags:
+      - message-templates
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageTemplate'
+          description: ''
+  /api/v1/message-templates/{id}/:
+    get:
+      operationId: message_templates_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this message template.
+        required: true
+      tags:
+      - message-templates
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+          description: ''
+    patch:
+      operationId: message_templates_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this message template.
+        required: true
+      tags:
+      - message-templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMessageTemplateUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+          description: ''
+  /api/v1/message-templates/{id}/preview/:
+    post:
+      operationId: message_templates_preview_create
+      description: How this wording would read, with made-up values. Nothing is saved
+        or sent.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this message template.
+        required: true
+      tags:
+      - message-templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageWordingRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePreview'
+          description: ''
+  /api/v1/message-templates/{id}/reset/:
+    post:
+      operationId: message_templates_reset_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this message template.
+        required: true
+      tags:
+      - message-templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageTemplateResetRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageTemplate'
+          description: ''
   /api/v1/my-delegations/:
     get:
       operationId: my_delegations_list
@@ -3259,6 +3588,78 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchedOrganizationUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          description: ''
+  /api/v1/organization/letterhead/:
+    get:
+      operationId: organization_letterhead_retrieve
+      description: The hospital's letterhead, for anything that prints (HIMS-ORG-006;
+        spec 4.1).
+      tags:
+      - organization
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Letterhead'
+          description: ''
+  /api/v1/organization/logo/:
+    get:
+      operationId: organization_logo_retrieve
+      description: Open the logo (anyone signed in; it has no public URL), or replace
+        it.
+      tags:
+      - organization
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+          description: ''
+    post:
+      operationId: organization_logo_create
+      description: Open the logo (anyone signed in; it has no public URL), or replace
+        it.
+      tags:
+      - organization
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoUploadRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+          description: ''
+  /api/v1/organization/logo/remove/:
+    post:
+      operationId: organization_logo_remove_create
+      tags:
+      - organization
       security:
       - sessionAuth: []
       responses:
@@ -7249,6 +7650,303 @@ components:
           maxLength: 2000
       required:
       - reason
+    Equipment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        asset_tag:
+          type: string
+          readOnly: true
+          description: The hospital's own number on the label. Set once; it cannot
+            change later.
+        name:
+          type: string
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/EquipmentCategoryEnum'
+          readOnly: true
+        category_label:
+          type: string
+          readOnly: true
+        facility:
+          type: string
+          format: uuid
+          readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
+        department:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        department_name:
+          type: string
+          readOnly: true
+          nullable: true
+        ward:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        ward_name:
+          type: string
+          readOnly: true
+          nullable: true
+        room:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        room_name:
+          type: string
+          readOnly: true
+          nullable: true
+        location_note:
+          type: string
+          readOnly: true
+          description: Anything more about where it is, e.g. 'Store 2'.
+        manufacturer:
+          type: string
+          readOnly: true
+        model_name:
+          type: string
+          readOnly: true
+        serial_number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/EquipmentStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        status_reason:
+          type: string
+          readOnly: true
+        status_changed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        purchased_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        warranty_until:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_service_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        next_service_due:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        last_calibrated_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        next_calibration_due:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        due_state:
+          type: string
+          readOnly: true
+          description: '"overdue", "due_soon" or empty'
+        notes:
+          type: string
+          readOnly: true
+          description: No patient details.
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - asset_tag
+      - category
+      - category_label
+      - created_at
+      - department
+      - department_name
+      - due_state
+      - facility
+      - facility_name
+      - id
+      - last_calibrated_on
+      - last_service_on
+      - location_note
+      - manufacturer
+      - model_name
+      - name
+      - next_calibration_due
+      - next_service_due
+      - notes
+      - purchased_on
+      - room
+      - room_name
+      - serial_number
+      - status
+      - status_changed_at
+      - status_label
+      - status_reason
+      - updated_at
+      - version
+      - ward
+      - ward_name
+      - warranty_until
+    EquipmentCategoryEnum:
+      enum:
+      - monitoring
+      - life_support
+      - infusion
+      - oxygen
+      - imaging
+      - laboratory
+      - surgical
+      - sterilization
+      - mobility
+      - other
+      type: string
+      description: |-
+        * `monitoring` - Patient monitoring
+        * `life_support` - Life support (ventilator, defibrillator)
+        * `infusion` - Infusion and syringe pumps
+        * `oxygen` - Oxygen and gases
+        * `imaging` - Imaging
+        * `laboratory` - Laboratory
+        * `surgical` - Operating theatre and surgical
+        * `sterilization` - Sterilization
+        * `mobility` - Wheelchairs and stretchers
+        * `other` - Other
+    EquipmentCreateRequest:
+      type: object
+      properties:
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        ward:
+          type: string
+          format: uuid
+          nullable: true
+        room:
+          type: string
+          format: uuid
+          nullable: true
+        location_note:
+          type: string
+          maxLength: 120
+        category:
+          $ref: '#/components/schemas/EquipmentCategoryEnum'
+        manufacturer:
+          type: string
+          maxLength: 120
+        model_name:
+          type: string
+          maxLength: 120
+        serial_number:
+          type: string
+          maxLength: 80
+        purchased_on:
+          type: string
+          format: date
+          nullable: true
+        warranty_until:
+          type: string
+          format: date
+          nullable: true
+        last_service_on:
+          type: string
+          format: date
+          nullable: true
+        next_service_due:
+          type: string
+          format: date
+          nullable: true
+        last_calibrated_on:
+          type: string
+          format: date
+          nullable: true
+        next_calibration_due:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          maxLength: 1000
+        facility:
+          type: string
+          format: uuid
+        asset_tag:
+          type: string
+          minLength: 1
+          maxLength: 40
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required:
+      - asset_tag
+      - facility
+      - name
+    EquipmentServiceKindEnum:
+      enum:
+      - service
+      - repair
+      - calibration
+      type: string
+      description: |-
+        * `service` - Service
+        * `repair` - Repair
+        * `calibration` - Calibration
+    EquipmentStatusEnum:
+      enum:
+      - in_service
+      - maintenance
+      - out_of_service
+      - retired
+      type: string
+      description: |-
+        * `in_service` - In service
+        * `maintenance` - Under maintenance
+        * `out_of_service` - Out of service
+        * `retired` - Retired
+    EquipmentStatusRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/EquipmentStatusEnum'
+        reason:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - status
+      - version
     ExpiringCredential:
       type: object
       properties:
@@ -8317,6 +9015,31 @@ components:
       - scope
       - valid_from
       - valid_until
+    Letterhead:
+      type: object
+      description: |-
+        What goes at the top and bottom of a printout. Any signed-in person may read it: they
+        may need to print, and it is what the hospital prints for everyone.
+      properties:
+        display_name:
+          type: string
+        legal_name:
+          type: string
+        lines:
+          type: array
+          items:
+            type: string
+        has_logo:
+          type: boolean
+        version:
+          type: integer
+          description: Changes when the logo or details change
+      required:
+      - display_name
+      - has_logo
+      - legal_name
+      - lines
+      - version
     LoginRequest:
       type: object
       properties:
@@ -8333,6 +9056,114 @@ components:
       required:
       - email
       - password
+    LogoUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+          description: PNG or JPG, up to 2 MB
+      required:
+      - file
+    MessagePreview:
+      type: object
+      properties:
+        subject:
+          type: string
+        body:
+          type: string
+      required:
+      - body
+      - subject
+    MessageTemplate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        key:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        when:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          readOnly: true
+        subject:
+          type: string
+          readOnly: true
+          description: The wording in use
+        body:
+          type: string
+          readOnly: true
+          description: The wording in use
+        standard_subject:
+          type: string
+          readOnly: true
+        standard_body:
+          type: string
+          readOnly: true
+        is_customised:
+          type: boolean
+          readOnly: true
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/TemplateVariable'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+      - body
+      - category
+      - id
+      - is_customised
+      - key
+      - name
+      - standard_body
+      - standard_subject
+      - subject
+      - updated_at
+      - updated_by_name
+      - variables
+      - version
+      - when
+    MessageTemplateResetRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - version
+    MessageWordingRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 255
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+      required:
+      - body
+      - subject
     MfaChallenge:
       type: object
       properties:
@@ -8831,6 +9662,30 @@ components:
           allOf:
           - $ref: '#/components/schemas/OrganizationStatusEnum'
           readOnly: true
+        has_logo:
+          type: boolean
+          readOnly: true
+        letterhead_address:
+          type: string
+          readOnly: true
+        letterhead_phone:
+          type: string
+          readOnly: true
+        letterhead_email:
+          type: string
+          format: email
+          readOnly: true
+        letterhead_website:
+          type: string
+          readOnly: true
+        letterhead_registration:
+          type: string
+          readOnly: true
+          description: The registration or tax number to show, e.g. 'Reg. no. MH-1234'.
+        letterhead_footer:
+          type: string
+          readOnly: true
+          description: A line at the very end, e.g. a helpline.
         version:
           type: integer
           readOnly: true
@@ -8848,8 +9703,15 @@ components:
       - default_currency
       - default_timezone
       - display_name
+      - has_logo
       - id
       - legal_name
+      - letterhead_address
+      - letterhead_email
+      - letterhead_footer
+      - letterhead_phone
+      - letterhead_registration
+      - letterhead_website
       - status
       - updated_at
       - version
@@ -9119,6 +9981,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Department'
+    PaginatedEquipmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Equipment'
     PaginatedFacilityList:
       type: object
       required:
@@ -9487,6 +10372,69 @@ components:
           type: string
         is_active:
           type: boolean
+    PatchedEquipmentUpdateRequest:
+      type: object
+      properties:
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        ward:
+          type: string
+          format: uuid
+          nullable: true
+        room:
+          type: string
+          format: uuid
+          nullable: true
+        location_note:
+          type: string
+          maxLength: 120
+        category:
+          $ref: '#/components/schemas/EquipmentCategoryEnum'
+        manufacturer:
+          type: string
+          maxLength: 120
+        model_name:
+          type: string
+          maxLength: 120
+        serial_number:
+          type: string
+          maxLength: 80
+        purchased_on:
+          type: string
+          format: date
+          nullable: true
+        warranty_until:
+          type: string
+          format: date
+          nullable: true
+        last_service_on:
+          type: string
+          format: date
+          nullable: true
+        next_service_due:
+          type: string
+          format: date
+          nullable: true
+        last_calibrated_on:
+          type: string
+          format: date
+          nullable: true
+        next_calibration_due:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          maxLength: 1000
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
     PatchedFacilityUpdateRequest:
       type: object
       properties:
@@ -9570,6 +10518,20 @@ components:
           type: string
         closure_summary:
           type: string
+    PatchedMessageTemplateUpdateRequest:
+      type: object
+      properties:
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 255
+        body:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        version:
+          type: integer
+          minimum: 1
     PatchedNumberingSchemeUpdateRequest:
       type: object
       properties:
@@ -9620,6 +10582,27 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+        letterhead_address:
+          type: string
+          maxLength: 500
+        letterhead_phone:
+          type: string
+          maxLength: 40
+        letterhead_email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        letterhead_website:
+          type: string
+          maxLength: 200
+        letterhead_registration:
+          type: string
+          maxLength: 120
+        letterhead_footer:
+          type: string
+          maxLength: 255
     PatchedQualificationTypeUpdateRequest:
       type: object
       properties:
@@ -9845,6 +10828,8 @@ components:
       - compliance.view
       - departments.manage
       - departments.view
+      - equipment.manage
+      - equipment.view
       - facilities.manage
       - facilities.view
       - features.manage
@@ -9853,6 +10838,7 @@ components:
       - locations.manage
       - locations.view
       - notifications.manage
+      - notifications.templates.manage
       - notifications.view
       - numbering.manage
       - numbering.view
@@ -9884,6 +10870,8 @@ components:
         * `compliance.view` - compliance.view
         * `departments.manage` - departments.manage
         * `departments.view` - departments.view
+        * `equipment.manage` - equipment.manage
+        * `equipment.view` - equipment.view
         * `facilities.manage` - facilities.manage
         * `facilities.view` - facilities.view
         * `features.manage` - features.manage
@@ -9892,6 +10880,7 @@ components:
         * `locations.manage` - locations.manage
         * `locations.view` - locations.view
         * `notifications.manage` - notifications.manage
+        * `notifications.templates.manage` - notifications.templates.manage
         * `notifications.view` - notifications.view
         * `numbering.manage` - numbering.manage
         * `numbering.view` - numbering.view
@@ -10921,6 +11910,77 @@ components:
         * `-` - Dash (-)
         * `/` - Slash (/)
         * `` - None
+    ServiceRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/EquipmentServiceKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        performed_on:
+          type: string
+          format: date
+          readOnly: true
+        performed_by:
+          type: string
+          readOnly: true
+          description: 'Who did it: the technician or company.'
+        notes:
+          type: string
+          readOnly: true
+          description: No patient details.
+        next_due:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          description: When the next one is due, if it is known.
+        recorded_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        recorded_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - kind
+      - kind_label
+      - next_due
+      - notes
+      - performed_by
+      - performed_on
+      - recorded_at
+      - recorded_by_name
+    ServiceRecordCreateRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/EquipmentServiceKindEnum'
+        performed_on:
+          type: string
+          format: date
+        performed_by:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+          maxLength: 500
+        next_due:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - kind
+      - performed_on
     SessionsEnded:
       type: object
       properties:
@@ -11826,6 +12886,19 @@ components:
           description: The backup to restore and check.
       required:
       - backup
+    TemplateVariable:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        required:
+          type: boolean
+      required:
+      - description
+      - name
+      - required
     TestMessageRequest:
       type: object
       properties:

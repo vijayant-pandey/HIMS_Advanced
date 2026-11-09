@@ -53,11 +53,11 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | Done |
 | HIMS-ORG-004 | Feature flags per organization/country/facility | Done |
 | HIMS-ORG-005 | Hospital settings screen (name, legal name, default time zone) | Done |
-| HIMS-ORG-006 | Hospital logo and letterhead for printouts and emails (spec 4.1) | To do |
+| HIMS-ORG-006 | Hospital logo and letterhead for printouts and emails (spec 4.1) | Done ([letterhead](../workflows/letterhead.md)) |
 | HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done |
 | HIMS-FAC-007 | Department head, services offered and operating hours | Done |
 | HIMS-FAC-008 | Bed board: every ward's beds and their status on one screen, no patients yet (spec 4.10) | Done (with per-bed status history; [bed board](../workflows/bed-board.md)) |
-| HIMS-FAC-009 | Equipment register: item, location, status, service dates (spec 4.12; workflows wait for PO) | To do |
+| HIMS-FAC-009 | Equipment register: item, location, status, service dates (spec 4.12; workflows wait for PO) | Done ([equipment register](../workflows/equipment-register.md)); requests, job orders, transport and service-due reminders wait for the PO |
 
 ## EPIC HIMS-IAM — Identity and access
 
@@ -145,7 +145,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 |---|---|---|
 | HIMS-NOTIF-001 | Notification service: email + SMS, delivery log, retries, hidden secrets, Messages page, admin console ([how-to](../workflows/notifications.md)) | Done |
 | HIMS-NOTIF-002 | SMS gateway (India DLT-registered; US provider) | Deferred (PO 2026-11-08: SMS printed to the console for now) |
-| HIMS-NOTIF-003 | Hospital-editable message templates and per-patient opt-out | To do |
+| HIMS-NOTIF-003 | Hospital-editable message templates and per-patient opt-out | Done for the wording ([message wording](../workflows/message-wording.md)); per-patient opt-out split to HIMS-NOTIF-004 in the [Phase 2 backlog](phase-2-patients.md) |
 
 ## EPIC HIMS-COMP — Compliance documentation (doctor: "production grade")
 

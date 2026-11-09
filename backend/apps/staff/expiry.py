@@ -14,7 +14,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
-from apps.notifications.services import send_email
+from apps.notifications.services import send_message
 from apps.organizations.dates import hospital_today
 
 from .models import CredentialExpiryAlert, StaffCredential, StaffMember, VerificationStatus
@@ -91,32 +91,25 @@ def _describe(credential: StaffCredential, stage: int) -> str:
 def send_credential_expiry_alerts(today: date | None = None) -> int:
     """Send every alert that is due. Returns how many licence alerts were sent."""
     today = today or hospital_today()
-    hospital = _hospital_name()
     hr = hr_recipients()
     sent_lines: list[str] = []
     for credential in watched_credentials(today):
         stage = stage_for(credential.expires_at, today)
         if stage is None:
             continue
-        line = _send_one(credential, stage, hr, hospital)
+        line = _send_one(credential, stage, hr)
         if line:
             sent_lines.append(line)
     if sent_lines and hr:
-        send_email(
-            subject=f"{hospital}: {len(sent_lines)} licence(s) expiring or expired",
-            body=(
-                "These staff licences need attention (renewal or a new copy):\n\n"
-                + "\n".join(sent_lines)
-                + "\n\nSee the Licence expiry page in HIMS for the full list.\n"
-            ),
+        send_message(
+            "staff.licence_expiry_hr",
             to=hr,
-            category="staff",
-            template="staff.licence_expiry_hr",
+            values={"count": len(sent_lines), "licences": "\n".join(sent_lines)},
         )
     return len(sent_lines)
 
 
-def _send_one(credential, stage: int, hr: list[str], hospital: str) -> str | None:
+def _send_one(credential, stage: int, hr: list[str]) -> str | None:
     """Record the alert first (once only), then email the person. Returns the HR summary line,
     or None when this stage was already sent."""
     try:
@@ -142,27 +135,20 @@ def _send_one(credential, stage: int, hr: list[str], hospital: str) -> str | Non
         return None  # already sent for this stage
     person = credential.staff.user
     if person is not None and person.is_active:
-        when = credential.expires_at.strftime("%d %b %Y")
-        what = f"{credential.get_credential_type_display()} {credential.registration_number}"
-        send_email(
-            subject=f"{hospital}: your licence {'has expired' if stage == 0 else 'expires soon'}",
-            body=(
-                f"Hello {credential.staff.given_name},\n\n"
-                f"Your {what} ({credential.issuing_authority}) "
-                f"{'expired on' if stage == 0 else 'expires on'} {when}.\n"
-                "Please renew it and give a copy of the new licence to HR.\n"
-            ),
+        send_message(
+            "staff.licence_expiry_person",
             to=[person.email],
-            category="staff",
-            template="staff.licence_expiry_person",
+            values={
+                "name": credential.staff.given_name,
+                "licence": (
+                    f"{credential.get_credential_type_display()} {credential.registration_number}"
+                ),
+                "authority": credential.issuing_authority,
+                "state": "expired on" if stage == 0 else "expires on",
+                "date": credential.expires_at.strftime("%d %b %Y"),
+                "headline": "has expired" if stage == 0 else "expires soon",
+            },
         )
         alert.recipients += 1
         alert.save(update_fields=["recipients"])
     return _describe(credential, stage)
-
-
-def _hospital_name() -> str:
-    from apps.organizations.models import Organization
-
-    organization = Organization.objects.only("display_name").first()
-    return organization.display_name if organization else "HIMS"

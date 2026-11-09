@@ -4,7 +4,7 @@ Built from [HIMS_Architecture_Specification_v2.MD](../../HIMS_Architecture_Speci
 section 20 (phases), 4 (domains), 21 (vertical slice), 26–27 (P0/P1), 36 (decisions), and from the
 [tracker](spec-status.md) and backlogs ([Phase 1](../backlog/phase-1-foundation.md),
 [Phase 2](../backlog/phase-2-patients.md)). The tracker stays the detailed record; this page is the
-ordered plan. **Last updated:** 2026-11-09 (after PR #42, with HIMS-FAC-008 built).
+ordered plan. **Last updated:** 2026-11-09 (after PR #43, with the Hospital setup group built).
 
 **2026-11-08 decisions** ([decisions log](decisions-log.md)): CLIN, LEGAL and PO approved the pending documents
 **for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
@@ -26,9 +26,9 @@ PACS/LIS/drug database/SMS.
 | Phases in progress | 1 (Phase 1) |
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
-| Functional domains (section 4.1–4.25) | 25: 🟡 8 started · ⬜ 17 not started |
-| Phase 1 tickets | 120: ✅ 84 done or approved · 36 left: 18 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 13 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
-| Phase 2 tickets (already written) | 20: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
+| Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
+| Phase 1 tickets | 120: ✅ 87 done or approved · 33 left: 15 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 13 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 2 tickets (already written) | 21: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
 | Open decisions (section 36) | 19: 0 closed |
@@ -38,7 +38,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 84 (PR #1–#42 and #30, HIMS-FAC-008, 2 approvals) | 18 buildable items (section 4a), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 87 (PR #1–#43 and #30, the Hospital setup group, 2 approvals) | 15 buildable items (section 4a), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -94,6 +94,20 @@ fit, so nothing is forgotten.
 
 ### 4a. Phase 1: buildable now (🔓), in order
 
+**Built in groups** (PO, 2026-11-09): related tasks share one PR; anything risky goes alone.
+
+| PR | Group | Tasks | Spec § | Status |
+|---|---|---|---|---|
+| 1 | Hospital setup | HIMS-FAC-009, HIMS-ORG-006, HIMS-NOTIF-003 | 4.12, 4.1, 4.23 | ✅ done |
+| 2 | Staff | HIMS-STAFF-016, HIMS-STAFF-015, HIMS-STAFF-013 | 4.3 | ⬜ **next** |
+| 3 | Security filters | HIMS-SEC-020, HIMS-SEC-013 | 13.3, 18, 4.22 | ⬜ |
+| 4 | Passkeys (alone: changes sign-in) | HIMS-IAM-014 | 13.1 | ⬜ |
+| 5 | Retention purge (alone: deletes data) | HIMS-COMP-006 | 4.25, 28 | ⬜ |
+| 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ⬜ |
+| 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ⬜ |
+
+Then the security review (HIMS-SEC-011). The table below keeps each task's own row.
+
 | Step | Spec § | Ticket | Task | Status | Why this order |
 |---|---|---|---|---|---|
 | 1 | 4.3 | HIMS-STAFF-012 | Shift schedules, leave and on-call rotations | ✅ done | Last open part of spec 4.3; nurses and doctors need rotas before Phase 2 scheduling |
@@ -105,9 +119,9 @@ fit, so nothing is forgotten.
 | 7 | 6.2, 17 | HIMS-OPS-010 | Serve admin and API-docs static files in hosted environments (WhiteNoise) | ✅ done | Needed for the first hosted environment |
 | 8 | 13.1 | HIMS-SEC-015 | Admin console address allow-list (setting; firewall later) | ✅ done | Before the console is reachable outside this computer |
 | 9 | 4.10, 15.1 | HIMS-FAC-008 | Bed board: every ward's beds and their status on one screen (no patients yet) | ✅ done | Ready for Phase 3 admissions |
-| 10 | 4.12 | HIMS-FAC-009 | Equipment register (what, where, status, service dates) | ⬜ | Only the register; workflows wait for PO |
-| 11 | 4.1 | HIMS-ORG-006 | Hospital logo and letterhead for printouts and emails | ⬜ | Needed by Phase 2 visit summaries |
-| 12 | 4.23 | HIMS-NOTIF-003 | Hospital-editable message templates (patient opt-out comes with Phase 2) | ⬜ | Before patient emails in slice 2B |
+| 10 | 4.12 | HIMS-FAC-009 | Equipment register (what, where, status, service dates) | ✅ done (group 1) | Only the register; workflows wait for PO |
+| 11 | 4.1 | HIMS-ORG-006 | Hospital logo and letterhead for printouts and emails | ✅ done (group 1) | Needed by Phase 2 visit summaries |
+| 12 | 4.23 | HIMS-NOTIF-003 | Hospital-editable message templates (patient opt-out comes with Phase 2: HIMS-NOTIF-004) | ✅ done (group 1) | Before patient emails in slice 2B |
 | 13 | 28.6 | HIMS-DATA-002 | Index check with production-like synthetic volume | ⬜ | Before real volume |
 | 14 | 19.2 | HIMS-QA-003 | Browser tests for the US deployment and the admin console | ⬜ | US is a separate deployment |
 | 15 | 13.1 | HIMS-IAM-014 | Passkeys as a second factor | ⬜ | Optional upgrade over authenticator codes |
@@ -191,7 +205,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 
 | § | Domain | Phase | Status | Left (🔓 now / 🔒 blocked) |
 |---|---|---|---|---|
-| 4.1 | Hospital and branches | 1 | 🟡 94% | 🔓 logo/letterhead · 🔒 tax rules (LEGAL) |
+| 4.1 | Hospital and branches | 1 | 🟡 97% | logo and letterhead done (HIMS-ORG-006) · 🔒 tax rules (LEGAL) |
 | 4.2 | Departments | 1 | 🟡 85% | 🔒 pricing, slots, escalation (CLIN) |
 | 4.3 | Staff and credentials | 1 | 🟡 99% | ✅ shifts, leave, on-call · 🔒 clinical privileges (CLIN), leave balances (PO), minimum staffing (CLIN) |
 | 4.4 | Identity and access | 1 | 🟡 99% (department-level staff view done) | 🔒 SSO (PO), break-glass (Phase 2) |
@@ -202,7 +216,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 | 4.9 | Nursing | 3 | ⬜ | 🔒 CLIN |
 | 4.10 | Beds and wards | 1, 3 | 🟡 50% | bed board done (HIMS-FAC-008) · 🔒 allocation (Phase 3) |
 | 4.11 | Diet and kitchen | 3 | ⬜ | 🔒 CLIN |
-| 4.12 | Housekeeping, equipment, transport | 1, 3 | ⬜ | 🔓 equipment register · 🔒 workflows (PO) |
+| 4.12 | Housekeeping, equipment, transport | 1, 3 | 🟡 20% | equipment register done (HIMS-FAC-009) · 🔒 requests, job orders, transport, service-due reminders (PO) |
 | 4.13 | Pharmacy | 4 | ⬜ | 🔒 CLIN, VENDOR |
 | 4.14 | eMAR | 4 | ⬜ | 🔒 CLIN |
 | 4.15 | Laboratory | 4 | ⬜ | 🔒 CLIN, VENDOR |
@@ -213,13 +227,13 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 | 4.20 | Procurement, inventory, accounting | 4, 5 | ⬜ | 🔒 PO (finance rules) |
 | 4.21 | Patient portal | 6 | ⬜ | 🔒 needs 4.5+ |
 | 4.22 | Documents and consent | 1, 2 | 🟡 20% | 🔓 virus scanning · 🔒 S3 (AWS), consent forms (LEGAL) |
-| 4.23 | Notifications | 1, 2 | 🟡 60% | 🔓 editable templates · 🔒 SMS (VENDOR) |
+| 4.23 | Notifications | 1, 2 | 🟡 70% | editable wording done (HIMS-NOTIF-003) · per-patient opt-out with Phase 2 (HIMS-NOTIF-004) · 🔒 SMS (VENDOR) |
 | 4.24 | Reporting | 2–6 | ⬜ | 🔒 needs domains |
 | 4.25 | Audit and governance | 1 | 🟡 90% | 🔒 retention periods (LEGAL), write-once copy (AWS) |
 
 ## 6. Done so far
 
-84 Phase 1 items: tickets delivered in PR #1–#42 (and #30) and the HIMS-FAC-008 PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
+87 Phase 1 items: tickets delivered in PR #1–#43 (and #30) and the Hospital setup group PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
 tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and
 [work queue](spec-status.md#next-work-queue-dependency-free-in-recommended-order).
 

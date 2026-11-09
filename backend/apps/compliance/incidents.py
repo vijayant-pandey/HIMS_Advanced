@@ -16,7 +16,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
-from apps.notifications.services import send_email
+from apps.notifications.services import send_message
 from apps.organizations.dates import hospital_time
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
@@ -113,16 +113,14 @@ def _alert_reported(incident: SecurityIncident) -> None:
         f"- {row.get_kind_display()}: {hospital_time(row.due_at):%d %b %Y %H:%M %Z}"
         for row in incident.notifications.all()
     )
-    send_email(
+    send_message(
+        "compliance.incident_reported",
         to=compliance_team_emails(),
-        subject="HIMS: security incident reported",
-        body=(
-            f"A security incident was reported ({incident.get_severity_display()} severity).\n\n"
-            + (f"Deadlines:\n{deadlines}\n\n" if deadlines else "")
-            + f"See it here (sign-in needed): {_link(incident)}\n"
-        ),
-        category="compliance",
-        template="compliance.incident_reported",
+        values={
+            "severity": incident.get_severity_display(),
+            "deadlines": f"Deadlines:\n{deadlines}" if deadlines else "",
+            "link": _link(incident),
+        },
         related=("security_incident", incident.pk),
     )
 
@@ -239,15 +237,14 @@ def send_deadline_alerts(now=None) -> int:
 
 
 def _alert_deadline(row: IncidentNotification, state: str) -> None:
-    send_email(
+    send_message(
+        "compliance.incident_deadline",
         to=compliance_team_emails(),
-        subject=f"HIMS: {row.get_kind_display()} {state}",
-        body=(
-            f"{row.get_kind_display()} {state} "
-            f"(deadline {hospital_time(row.due_at):%d %b %Y %H:%M %Z}).\n\n"
-            f"See the incident (sign-in needed): {_link(row.incident)}\n"
-        ),
-        category="compliance",
-        template="compliance.incident_deadline",
+        values={
+            "what": row.get_kind_display(),
+            "state": state,
+            "deadline": f"{hospital_time(row.due_at):%d %b %Y %H:%M %Z}",
+            "link": _link(row.incident),
+        },
         related=("security_incident", row.incident_id),
     )

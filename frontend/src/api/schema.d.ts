@@ -1380,6 +1380,87 @@ export interface paths {
         patch: operations["designations_partial_update"];
         trace?: never;
     };
+    "/api/v1/equipment/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["equipment_list"];
+        put?: never;
+        post: operations["equipment_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/equipment/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["equipment_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["equipment_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/equipment/{id}/history/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The last 50 service, repair and calibration visits, newest first. */
+        get: operations["equipment_history_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/equipment/{id}/service-records/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["equipment_service_records_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/equipment/{id}/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["equipment_status_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/facilities/": {
         parameters: {
             query?: never;
@@ -1658,6 +1739,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/message-templates/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["message_templates_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/message-templates/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["message_templates_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["message_templates_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/message-templates/{id}/preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description How this wording would read, with made-up values. Nothing is saved or sent. */
+        post: operations["message_templates_preview_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/message-templates/{id}/reset/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["message_templates_reset_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/my-delegations/": {
         parameters: {
             query?: never;
@@ -1905,6 +2051,57 @@ export interface paths {
          *     (``manage.py provision_organization``), not this API (ADR-009).
          */
         patch: operations["organization_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/organization/letterhead/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The hospital's letterhead, for anything that prints (HIMS-ORG-006; spec 4.1). */
+        get: operations["organization_letterhead_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organization/logo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Open the logo (anyone signed in; it has no public URL), or replace it. */
+        get: operations["organization_logo_retrieve"];
+        put?: never;
+        /** @description Open the logo (anyone signed in; it has no public URL), or replace it. */
+        post: operations["organization_logo_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organization/logo/remove/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["organization_logo_remove_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/permissions/": {
@@ -3694,6 +3891,123 @@ export interface components {
             valid_until?: string | null;
             reason: string;
         };
+        Equipment: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description The hospital's own number on the label. Set once; it cannot change later. */
+            readonly asset_tag: string;
+            readonly name: string;
+            readonly category: components["schemas"]["EquipmentCategoryEnum"];
+            readonly category_label: string;
+            /** Format: uuid */
+            readonly facility: string;
+            readonly facility_name: string;
+            /** Format: uuid */
+            readonly department: string | null;
+            readonly department_name: string | null;
+            /** Format: uuid */
+            readonly ward: string | null;
+            readonly ward_name: string | null;
+            /** Format: uuid */
+            readonly room: string | null;
+            readonly room_name: string | null;
+            /** @description Anything more about where it is, e.g. 'Store 2'. */
+            readonly location_note: string;
+            readonly manufacturer: string;
+            readonly model_name: string;
+            readonly serial_number: string;
+            readonly status: components["schemas"]["EquipmentStatusEnum"];
+            readonly status_label: string;
+            readonly status_reason: string;
+            /** Format: date-time */
+            readonly status_changed_at: string;
+            /** Format: date */
+            readonly purchased_on: string | null;
+            /** Format: date */
+            readonly warranty_until: string | null;
+            /** Format: date */
+            readonly last_service_on: string | null;
+            /** Format: date */
+            readonly next_service_due: string | null;
+            /** Format: date */
+            readonly last_calibrated_on: string | null;
+            /** Format: date */
+            readonly next_calibration_due: string | null;
+            /** @description "overdue", "due_soon" or empty */
+            readonly due_state: string;
+            /** @description No patient details. */
+            readonly notes: string;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `monitoring` - Patient monitoring
+         *     * `life_support` - Life support (ventilator, defibrillator)
+         *     * `infusion` - Infusion and syringe pumps
+         *     * `oxygen` - Oxygen and gases
+         *     * `imaging` - Imaging
+         *     * `laboratory` - Laboratory
+         *     * `surgical` - Operating theatre and surgical
+         *     * `sterilization` - Sterilization
+         *     * `mobility` - Wheelchairs and stretchers
+         *     * `other` - Other
+         * @enum {string}
+         */
+        EquipmentCategoryEnum: "monitoring" | "life_support" | "infusion" | "oxygen" | "imaging" | "laboratory" | "surgical" | "sterilization" | "mobility" | "other";
+        EquipmentCreateRequest: {
+            /** Format: uuid */
+            department?: string | null;
+            /** Format: uuid */
+            ward?: string | null;
+            /** Format: uuid */
+            room?: string | null;
+            location_note?: string;
+            category?: components["schemas"]["EquipmentCategoryEnum"];
+            manufacturer?: string;
+            model_name?: string;
+            serial_number?: string;
+            /** Format: date */
+            purchased_on?: string | null;
+            /** Format: date */
+            warranty_until?: string | null;
+            /** Format: date */
+            last_service_on?: string | null;
+            /** Format: date */
+            next_service_due?: string | null;
+            /** Format: date */
+            last_calibrated_on?: string | null;
+            /** Format: date */
+            next_calibration_due?: string | null;
+            notes?: string;
+            /** Format: uuid */
+            facility: string;
+            asset_tag: string;
+            name: string;
+        };
+        /**
+         * @description * `service` - Service
+         *     * `repair` - Repair
+         *     * `calibration` - Calibration
+         * @enum {string}
+         */
+        EquipmentServiceKindEnum: "service" | "repair" | "calibration";
+        /**
+         * @description * `in_service` - In service
+         *     * `maintenance` - Under maintenance
+         *     * `out_of_service` - Out of service
+         *     * `retired` - Retired
+         * @enum {string}
+         */
+        EquipmentStatusEnum: "in_service" | "maintenance" | "out_of_service" | "retired";
+        EquipmentStatusRequest: {
+            version: number;
+            status: components["schemas"]["EquipmentStatusEnum"];
+            /** @default  */
+            reason: string;
+        };
         ExpiringCredential: {
             /** Format: uuid */
             readonly id: string;
@@ -4132,10 +4446,60 @@ export interface components {
             /** @description Usable right now. */
             readonly is_active: boolean;
         };
+        /**
+         * @description What goes at the top and bottom of a printout. Any signed-in person may read it: they
+         *     may need to print, and it is what the hospital prints for everyone.
+         */
+        Letterhead: {
+            display_name: string;
+            legal_name: string;
+            lines: string[];
+            has_logo: boolean;
+            /** @description Changes when the logo or details change */
+            version: number;
+        };
         LoginRequest: {
             /** Format: email */
             email: string;
             password: string;
+        };
+        LogoUploadRequest: {
+            /**
+             * Format: binary
+             * @description PNG or JPG, up to 2 MB
+             */
+            file: string;
+        };
+        MessagePreview: {
+            subject: string;
+            body: string;
+        };
+        MessageTemplate: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly key: string;
+            readonly name: string;
+            readonly when: string;
+            readonly category: string;
+            /** @description The wording in use */
+            readonly subject: string;
+            /** @description The wording in use */
+            readonly body: string;
+            readonly standard_subject: string;
+            readonly standard_body: string;
+            readonly is_customised: boolean;
+            readonly variables: components["schemas"]["TemplateVariable"][];
+            readonly version: number;
+            /** Format: date-time */
+            readonly updated_at: string;
+            readonly updated_by_name: string | null;
+        };
+        MessageTemplateResetRequest: {
+            version: number;
+        };
+        MessageWordingRequest: {
+            subject: string;
+            body: string;
         };
         MfaChallenge: {
             mfa_required: boolean;
@@ -4331,6 +4695,16 @@ export interface components {
             readonly default_timezone: string;
             readonly default_currency: components["schemas"]["DefaultCurrencyEnum"];
             readonly status: components["schemas"]["OrganizationStatusEnum"];
+            readonly has_logo: boolean;
+            readonly letterhead_address: string;
+            readonly letterhead_phone: string;
+            /** Format: email */
+            readonly letterhead_email: string;
+            readonly letterhead_website: string;
+            /** @description The registration or tax number to show, e.g. 'Reg. no. MH-1234'. */
+            readonly letterhead_registration: string;
+            /** @description A line at the very end, e.g. a helpline. */
+            readonly letterhead_footer: string;
             readonly version: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -4470,6 +4844,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Department"][];
+        };
+        PaginatedEquipmentList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Equipment"][];
         };
         PaginatedFacilityList: {
             /** @example 123 */
@@ -4678,6 +5067,34 @@ export interface components {
             description?: string;
             is_active?: boolean;
         };
+        PatchedEquipmentUpdateRequest: {
+            /** Format: uuid */
+            department?: string | null;
+            /** Format: uuid */
+            ward?: string | null;
+            /** Format: uuid */
+            room?: string | null;
+            location_note?: string;
+            category?: components["schemas"]["EquipmentCategoryEnum"];
+            manufacturer?: string;
+            model_name?: string;
+            serial_number?: string;
+            /** Format: date */
+            purchased_on?: string | null;
+            /** Format: date */
+            warranty_until?: string | null;
+            /** Format: date */
+            last_service_on?: string | null;
+            /** Format: date */
+            next_service_due?: string | null;
+            /** Format: date */
+            last_calibrated_on?: string | null;
+            /** Format: date */
+            next_calibration_due?: string | null;
+            notes?: string;
+            version?: number;
+            name?: string;
+        };
         PatchedFacilityUpdateRequest: {
             version?: number;
             name?: string;
@@ -4710,6 +5127,11 @@ export interface components {
             actions_taken?: string;
             closure_summary?: string;
         };
+        PatchedMessageTemplateUpdateRequest: {
+            subject?: string;
+            body?: string;
+            version?: number;
+        };
         PatchedNumberingSchemeUpdateRequest: {
             version?: number;
             prefix?: string;
@@ -4727,6 +5149,12 @@ export interface components {
             legal_name?: string;
             display_name?: string;
             default_timezone?: string;
+            letterhead_address?: string;
+            letterhead_phone?: string;
+            letterhead_email?: string;
+            letterhead_website?: string;
+            letterhead_registration?: string;
+            letterhead_footer?: string;
         };
         PatchedQualificationTypeUpdateRequest: {
             version?: number;
@@ -4832,6 +5260,8 @@ export interface components {
          *     * `compliance.view` - compliance.view
          *     * `departments.manage` - departments.manage
          *     * `departments.view` - departments.view
+         *     * `equipment.manage` - equipment.manage
+         *     * `equipment.view` - equipment.view
          *     * `facilities.manage` - facilities.manage
          *     * `facilities.view` - facilities.view
          *     * `features.manage` - features.manage
@@ -4840,6 +5270,7 @@ export interface components {
          *     * `locations.manage` - locations.manage
          *     * `locations.view` - locations.view
          *     * `notifications.manage` - notifications.manage
+         *     * `notifications.templates.manage` - notifications.templates.manage
          *     * `notifications.view` - notifications.view
          *     * `numbering.manage` - numbering.manage
          *     * `numbering.view` - numbering.view
@@ -4858,7 +5289,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.view";
         Person: {
             /** Format: uuid */
             id: string;
@@ -5235,6 +5666,35 @@ export interface components {
          * @enum {string}
          */
         SeparatorEnum: "-" | "/";
+        ServiceRecord: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["EquipmentServiceKindEnum"];
+            readonly kind_label: string;
+            /** Format: date */
+            readonly performed_on: string;
+            /** @description Who did it: the technician or company. */
+            readonly performed_by: string;
+            /** @description No patient details. */
+            readonly notes: string;
+            /**
+             * Format: date
+             * @description When the next one is due, if it is known.
+             */
+            readonly next_due: string | null;
+            readonly recorded_by_name: string | null;
+            /** Format: date-time */
+            readonly recorded_at: string;
+        };
+        ServiceRecordCreateRequest: {
+            kind: components["schemas"]["EquipmentServiceKindEnum"];
+            /** Format: date */
+            performed_on: string;
+            performed_by?: string;
+            notes?: string;
+            /** Format: date */
+            next_due?: string | null;
+        };
         SessionsEnded: {
             sessions_ended: number;
         };
@@ -5592,6 +6052,11 @@ export interface components {
              * @description The backup to restore and check.
              */
             backup: string;
+        };
+        TemplateVariable: {
+            name: string;
+            description: string;
+            required: boolean;
         };
         TestMessageRequest: {
             channel: components["schemas"]["ChannelEnum"];
@@ -7935,6 +8400,183 @@ export interface operations {
             };
         };
     };
+    equipment_list: {
+        parameters: {
+            query?: {
+                category?: string;
+                department?: string;
+                due?: "due_soon" | "overdue";
+                facility?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description Part of the asset tag, name, serial or maker */
+                search?: string;
+                status?: string;
+                ward?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedEquipmentList"];
+                };
+            };
+        };
+    };
+    equipment_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Equipment"];
+                };
+            };
+        };
+    };
+    equipment_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this equipment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Equipment"];
+                };
+            };
+        };
+    };
+    equipment_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this equipment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedEquipmentUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Equipment"];
+                };
+            };
+        };
+    };
+    equipment_history_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this equipment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRecord"][];
+                };
+            };
+        };
+    };
+    equipment_service_records_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this equipment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceRecordCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRecord"];
+                };
+            };
+        };
+    };
+    equipment_status_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this equipment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentStatusRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Equipment"];
+                };
+            };
+        };
+    };
     facilities_list: {
         parameters: {
             query?: {
@@ -8395,6 +9037,125 @@ export interface operations {
             };
         };
     };
+    message_templates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplate"][];
+                };
+            };
+        };
+    };
+    message_templates_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this message template. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplate"];
+                };
+            };
+        };
+    };
+    message_templates_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this message template. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedMessageTemplateUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplate"];
+                };
+            };
+        };
+    };
+    message_templates_preview_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this message template. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageWordingRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessagePreview"];
+                };
+            };
+        };
+    };
+    message_templates_reset_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this message template. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageTemplateResetRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageTemplate"];
+                };
+            };
+        };
+    };
     my_delegations_list: {
         parameters: {
             query?: never;
@@ -8748,6 +9509,87 @@ export interface operations {
                 "application/json": components["schemas"]["PatchedOrganizationUpdateRequest"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organization"];
+                };
+            };
+        };
+    };
+    organization_letterhead_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Letterhead"];
+                };
+            };
+        };
+    };
+    organization_logo_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/jpeg": string;
+                };
+            };
+        };
+    };
+    organization_logo_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["LogoUploadRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Organization"];
+                };
+            };
+        };
+    };
+    organization_logo_remove_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

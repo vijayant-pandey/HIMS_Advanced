@@ -26,7 +26,7 @@ from django.utils import timezone
 
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction, record_audit_event
-from apps.notifications.services import send_email
+from apps.notifications.services import send_message
 from common.exceptions import DomainError
 from common.outbox.services import publish_event
 
@@ -188,45 +188,17 @@ def _complete(*, token: str, password: str, request=None) -> User:
     return user
 
 
-def _hospital_name() -> str:
-    from apps.organizations.models import Organization
-
-    organization = Organization.objects.only("display_name").first()
-    return organization.display_name if organization else "HIMS"
-
-
 def send_reset_email(reset: PasswordReset) -> None:
-    hospital = _hospital_name()
-    body = (
-        f"Hello {reset.user.display_name},\n\n"
-        f"We received a request to reset the password of your {hospital} HIMS account.\n"
-        f"Open this link to choose a new password:\n\n"
-        f"{reset_link(reset)}\n\n"
-        f"The link can be used once and expires in "
-        f"{settings.HIMS_PASSWORD_RESET_TTL_MINUTES} minutes.\n"
-        f"If you did not ask for this, you can ignore this email; your password stays the same.\n"
-    )
-    send_email(
-        subject=f"Reset your {hospital} HIMS password",
-        body=body,
+    send_message(
+        "identity.password_reset",
         to=[reset.user.email],
-        category="security",
-        template="identity.password_reset",
+        values={
+            "name": reset.user.display_name,
+            "link": reset_link(reset),
+            "minutes": settings.HIMS_PASSWORD_RESET_TTL_MINUTES,
+        },
     )
 
 
 def send_password_changed_notice(user: User) -> None:
-    hospital = _hospital_name()
-    body = (
-        f"Hello {user.display_name},\n\n"
-        f"The password of your {hospital} HIMS account was just changed, and all devices "
-        f"that were signed in have been signed out.\n\n"
-        f"If you did not do this, contact your hospital administrator immediately.\n"
-    )
-    send_email(
-        subject=f"Your {hospital} HIMS password was changed",
-        body=body,
-        to=[user.email],
-        category="security",
-        template="identity.password_changed",
-    )
+    send_message("identity.password_changed", to=[user.email], values={"name": user.display_name})

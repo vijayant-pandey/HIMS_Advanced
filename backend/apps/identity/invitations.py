@@ -23,7 +23,7 @@ from django.utils import timezone
 
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction, record_audit_event
-from apps.notifications.services import send_email
+from apps.notifications.services import send_message
 from apps.organizations.dates import hospital_time
 from common.exceptions import ConflictError, DomainError
 from common.outbox.services import publish_event
@@ -102,25 +102,14 @@ def issue_invitation(*, user: User, actor=None, request=None) -> Invitation:
 
 
 def send_invitation_email(invitation: Invitation) -> None:
-    from apps.organizations.models import Organization
-
-    organization = Organization.objects.only("display_name").first()
-    hospital = organization.display_name if organization else "HIMS"
-    expires = hospital_time(invitation.expires_at).strftime("%d %b %Y, %H:%M %Z")
-    body = (
-        f"Hello {invitation.user.display_name},\n\n"
-        f"You have been invited to use the {hospital} hospital system (HIMS).\n"
-        f"Open this link to choose your password and activate your account:\n\n"
-        f"{activation_link(invitation)}\n\n"
-        f"The link can be used once and expires on {expires}.\n"
-        f"If you were not expecting this email, you can ignore it.\n"
-    )
-    send_email(
-        subject=f"Activate your {hospital} HIMS account",
-        body=body,
+    send_message(
+        "identity.invitation",
         to=[invitation.user.email],
-        category="account",
-        template="identity.invitation",
+        values={
+            "name": invitation.user.display_name,
+            "link": activation_link(invitation),
+            "expires": hospital_time(invitation.expires_at).strftime("%d %b %Y, %H:%M %Z"),
+        },
     )
 
 

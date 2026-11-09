@@ -16,6 +16,8 @@ class P:
     LOCATIONS_VIEW = "locations.view"
     LOCATIONS_MANAGE = "locations.manage"
     BEDS_STATUS_MANAGE = "beds.status.manage"
+    EQUIPMENT_VIEW = "equipment.view"
+    EQUIPMENT_MANAGE = "equipment.manage"
     NUMBERING_VIEW = "numbering.view"
     NUMBERING_MANAGE = "numbering.manage"
     FEATURES_VIEW = "features.view"
@@ -33,6 +35,7 @@ class P:
     ACCOUNTS_MANAGE = "accounts.manage"
     NOTIFICATIONS_VIEW = "notifications.view"
     NOTIFICATIONS_MANAGE = "notifications.manage"
+    MESSAGE_TEMPLATES_MANAGE = "notifications.templates.manage"
     COMPLIANCE_VIEW = "compliance.view"
     COMPLIANCE_MANAGE = "compliance.manage"
     CATALOGS_MANAGE = "catalogs.manage"
@@ -86,6 +89,9 @@ PERMISSIONS: dict[str, str] = {
     P.COMPLIANCE_MANAGE: "Update compliance requirements and risks; manage security incidents",
     P.NOTIFICATIONS_VIEW: "See the emails and SMS HIMS has sent and whether they arrived",
     P.NOTIFICATIONS_MANAGE: "Send failed emails and SMS again; send a test message",
+    P.MESSAGE_TEMPLATES_MANAGE: "Change the wording of the messages HIMS sends",
+    P.EQUIPMENT_VIEW: "See the equipment register: what, where, status and service dates",
+    P.EQUIPMENT_MANAGE: "Add and change equipment, its status and its service records",
     P.RECOVERY_VIEW: "See backups and the results of restore drills (evidence)",
     P.RECOVERY_MANAGE: (
         "Make a backup (a full copy of all records and documents) and run restore drills"
@@ -118,6 +124,7 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.AUDIT_VIEW,
         P.NOTIFICATIONS_VIEW,
         P.NOTIFICATIONS_MANAGE,
+        P.MESSAGE_TEMPLATES_MANAGE,
         P.COMPLIANCE_VIEW,
         P.COMPLIANCE_MANAGE,
         P.RECOVERY_MANAGE,
@@ -165,6 +172,8 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.LOCATIONS_VIEW,
             P.LOCATIONS_MANAGE,
             P.BEDS_STATUS_MANAGE,
+            P.EQUIPMENT_VIEW,
+            P.EQUIPMENT_MANAGE,
             P.NUMBERING_VIEW,
             P.NUMBERING_MANAGE,
             P.FEATURES_VIEW,
@@ -194,6 +203,7 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
             P.LOCATIONS_VIEW,
+            P.EQUIPMENT_VIEW,
             P.STAFF_VIEW,
             P.ROTA_VIEW,
             P.ROTA_MANAGE,
@@ -211,5 +221,17 @@ SYSTEM_ROLES: dict[str, dict] = {
         "description": "Keeps beds usable: marks beds for maintenance, blocked or out of "
         "service. Bed allocation to patients is added in Phase 3. Assign at facility scope.",
         "permissions": [P.FACILITIES_VIEW, P.LOCATIONS_VIEW, P.BEDS_STATUS_MANAGE],
+    },
+    "equipment-officer": {
+        "name": "Equipment / biomedical officer",
+        "description": "Keeps the equipment register: what the hospital owns, where it is, its "
+        "status and its service and calibration dates. Assign at facility or department scope.",
+        "permissions": [
+            P.FACILITIES_VIEW,
+            P.DEPARTMENTS_VIEW,
+            P.LOCATIONS_VIEW,
+            P.EQUIPMENT_VIEW,
+            P.EQUIPMENT_MANAGE,
+        ],
     },
 }

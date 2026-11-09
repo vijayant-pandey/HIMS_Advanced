@@ -97,6 +97,16 @@ FEATURES: tuple[Feature, ...] = (
         default=True,
     ),
     Feature(
+        key="equipment.module",
+        name="Equipment register",
+        description="What the hospital owns, where it is, its status and service dates. When "
+        "off for a facility, its equipment cannot be seen or changed in the app (the admin "
+        "console still shows it).",
+        category=SETUP,
+        scope=FACILITY,
+        default=True,
+    ),
+    Feature(
         key="staff.rotas",
         name="Rotas, leave and on-call",
         description="Plan shifts and on-call per department, ask for and approve leave, see who "
@@ -207,3 +217,4 @@ class F:
     CONFIRM_SENSITIVE_ACTIONS = BY_KEY["auth.confirm_sensitive_actions"].key
     LOCATIONS = BY_KEY["locations.module"].key
     ROTAS = BY_KEY["staff.rotas"].key
+    EQUIPMENT = BY_KEY["equipment.module"].key

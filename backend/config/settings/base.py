@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     "apps.access_control",
     "apps.staff",
     "apps.beds",
+    "apps.equipment",
     "apps.numbering",
     "apps.features",
     "apps.notifications",
@@ -311,6 +312,9 @@ SPECTACULAR_SETTINGS = {
         "LeaveStatusEnum": "apps.rosters.models.LeaveRequest.Status",
         "RestoreDrillOutcomeEnum": "apps.recovery.models.RestoreDrill.Outcome",
         "RestoreDrillTriggerEnum": "apps.recovery.models.RestoreDrill.Trigger",
+        "EquipmentCategoryEnum": "apps.equipment.models.Equipment.Category",
+        "EquipmentStatusEnum": "apps.equipment.models.Equipment.Status",
+        "EquipmentServiceKindEnum": "apps.equipment.models.EquipmentServiceRecord.Kind",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)
@@ -345,8 +349,10 @@ HIMS_PASSWORD_RESET_MAX_PER_HOUR = env.int("HIMS_PASSWORD_RESET_MAX_PER_HOUR", d
 # Console backend prints emails to the backend output. A real provider (e.g. Amazon SES)
 # is configured per environment before go-live (HIMS-OPS-011).
 EMAIL_BACKEND = env.str(
-    "DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
+    "DJANGO_EMAIL_BACKEND", default="apps.notifications.backends.ConsoleEmailBackend"
 )
+if EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend":
+    EMAIL_BACKEND = "apps.notifications.backends.ConsoleEmailBackend"
 DEFAULT_FROM_EMAIL = env.str("DJANGO_DEFAULT_FROM_EMAIL", default="HIMS <no-reply@hims.invalid>")
 # SMTP (e.g. Gmail with an app password, or Amazon SES) when DJANGO_EMAIL_BACKEND is
 # django.core.mail.backends.smtp.EmailBackend. See docs/workflows/notifications.md.

@@ -4,6 +4,8 @@ from django.db.models import Q
 from common.models import TimeStampedModel, UUIDPrimaryKeyModel, VersionedModel
 from common.validators import validate_timezone
 
+from .logo import logo_path, validate_logo
+
 
 class Country(models.TextChoices):
     UNITED_STATES = "US", "United States"
@@ -34,6 +36,26 @@ class Organization(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
     default_currency = models.CharField(max_length=3, choices=Currency.choices)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     singleton = models.BooleanField(default=True, editable=False)
+    # Letterhead on printouts and emails (HIMS-ORG-006; spec 4.1). All optional.
+    logo = models.FileField(
+        upload_to=logo_path,
+        max_length=120,
+        blank=True,
+        validators=[validate_logo],
+        help_text="PNG or JPG, up to 2 MB.",
+    )
+    letterhead_address = models.TextField(blank=True, max_length=500)
+    letterhead_phone = models.CharField(max_length=40, blank=True)
+    letterhead_email = models.EmailField(blank=True)
+    letterhead_website = models.CharField(max_length=200, blank=True)
+    letterhead_registration = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text="The registration or tax number to show, e.g. 'Reg. no. MH-1234'.",
+    )
+    letterhead_footer = models.CharField(
+        max_length=255, blank=True, help_text="A line at the very end, e.g. a helpline."
+    )
 
     class Meta:
         db_table = "organizations"
@@ -46,3 +68,13 @@ class Organization(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
 
     def __str__(self) -> str:
         return self.display_name
+
+    def letterhead_lines(self) -> list[str]:
+        """The letterhead's details, in print order, leaving out what is not filled in."""
+        contact = " · ".join(
+            part
+            for part in (self.letterhead_phone, self.letterhead_email, self.letterhead_website)
+            if part
+        )
+        lines = [*self.letterhead_address.splitlines(), contact, self.letterhead_registration]
+        return [line.strip() for line in [*lines, self.letterhead_footer] if line.strip()]

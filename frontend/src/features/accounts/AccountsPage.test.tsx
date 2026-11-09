@@ -30,6 +30,13 @@ const ORGANIZATION: Organization = {
   default_timezone: "Asia/Kolkata",
   default_currency: "INR",
   status: "active",
+  has_logo: false,
+  letterhead_address: "",
+  letterhead_phone: "",
+  letterhead_email: "",
+  letterhead_website: "",
+  letterhead_registration: "",
+  letterhead_footer: "",
   version: 3,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
@@ -49,6 +56,9 @@ function mockApi() {
     const method = init?.method ?? "GET";
     // Saving hospital settings reloads the signed-in user (to show the new name).
     if (url.endsWith("/auth/me/")) return json(signedIn(ADMIN));
+    if (url.includes("/organization/letterhead/")) {
+      return json({ display_name: "Synthetic Health", legal_name: "Synthetic", lines: [], has_logo: false, version: 3 });
+    }
     if (url.includes("/organization/")) return json(ORGANIZATION);
     if (method === "POST" && url.endsWith("/accounts/")) return json({ ...AUDITOR, id: "u-new" }, 201);
     if (method === "POST") return json({ ...AUDITOR, is_active: false });

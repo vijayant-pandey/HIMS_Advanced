@@ -42,3 +42,9 @@ doctor sign-off** (spec 26). Legal items must close before real patient data.
 |---|---|---|
 | HIMS-RPT-001 | Visit summary print/PDF | To do |
 | HIMS-RPT-002 | OPD daily list; unsigned-notes report | To do |
+
+## EPIC HIMS-NOTIF: Notifications for patients
+
+| ID | Ticket | Status |
+|---|---|---|
+| HIMS-NOTIF-004 | Per-patient opt-out of messages, with consent (spec 4.23; split from HIMS-NOTIF-003 because it needs patients) | To do |

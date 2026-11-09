@@ -12,7 +12,7 @@ from apps.access_control.catalog import P
 from apps.audit.services import AuditAction, record_audit_event, snapshot
 from apps.features.catalog import F
 from apps.features.services import require_enabled
-from apps.notifications.services import send_email
+from apps.notifications.services import send_message
 from apps.organizations.dates import hospital_timezone, hospital_today
 from apps.staff.models import StaffDepartmentAssignment, StaffMember
 from common.concurrency import bump_version, lock_for_update
@@ -379,16 +379,12 @@ def _person_email(staff: StaffMember) -> list[str]:
     return [staff.user.email] if staff.user_id and staff.user.is_active else []
 
 
-def _notify(
-    leave: LeaveRequest, *, to, subject: str, lines: list[str], template: str, page: str
-) -> None:
+def _notify(leave: LeaveRequest, message: str, *, to, page: str, **values) -> None:
     link = f"{settings.HIMS_APP_BASE_URL.rstrip('/')}{page}"
-    send_email(
+    send_message(
+        message,
         to=to,
-        subject=subject,
-        body="\n".join([*lines, "", f"Open HIMS to see it (sign-in needed): {link}", ""]),
-        category="staff",
-        template=template,
+        values={"period": _period(leave), "link": link, **values},
         related=("leave_request", leave.pk),
     )
 
@@ -476,15 +472,12 @@ def request_leave(
     )
     _notify(
         leave,
+        "rosters.leave_requested",
         to=leave_approver_emails(department, exclude=[getattr(actor, "pk", None), staff.user_id]),
-        subject=f"Leave to decide: {_name(staff)}, {_period(leave)}",
-        lines=[
-            f"{_name(staff)} ({department.name}) has leave waiting for your decision:",
-            f"{leave.get_leave_type_display()}, {_period(leave)}.",
-            "Go to Leave in HIMS to approve or refuse it.",
-        ],
-        template="rosters.leave_requested",
         page="/leave",
+        person=_name(staff),
+        department=department.name,
+        leave_type=leave.get_leave_type_display(),
     )
     return leave
 
@@ -569,14 +562,11 @@ def approve_leave(
     )
     _notify(
         leave,
+        "rosters.leave_approved",
         to=_person_email(leave.staff),
-        subject=f"Leave approved: {_period(leave)}",
-        lines=[
-            f"Your {leave.get_leave_type_display().lower()} for {_period(leave)} was approved.",
-            *([f"Note: {leave.decision_note}"] if leave.decision_note else []),
-        ],
-        template="rosters.leave_approved",
         page="/my-schedule",
+        leave_type=leave.get_leave_type_display().lower(),
+        note=f"Note: {leave.decision_note}" if leave.decision_note else "",
     )
     return leave
 
@@ -600,14 +590,11 @@ def reject_leave(*, actor, leave_id, version: int, note: str, request=None) -> L
     )
     _notify(
         leave,
+        "rosters.leave_rejected",
         to=_person_email(leave.staff),
-        subject=f"Leave refused: {_period(leave)}",
-        lines=[
-            f"Your {leave.get_leave_type_display().lower()} for {_period(leave)} was refused.",
-            f"Reason: {leave.decision_note}",
-        ],
-        template="rosters.leave_rejected",
         page="/my-schedule",
+        leave_type=leave.get_leave_type_display().lower(),
+        reason=leave.decision_note,
     )
     return leave
 
@@ -648,20 +635,21 @@ def cancel_leave(
         request=request,
     )
     if own:
-        to = leave_approver_emails(leave.department, exclude=[actor.pk])
-        lines = [f"{_name(leave.staff)} withdrew their leave for {_period(leave)}."]
+        _notify(
+            leave,
+            "rosters.leave_withdrawn",
+            to=leave_approver_emails(leave.department, exclude=[actor.pk]),
+            page="/leave",
+            person=_name(leave.staff),
+        )
     else:
-        to = _person_email(leave.staff)
-        lines = [
-            f"Your {leave.get_leave_type_display().lower()} for {_period(leave)} was cancelled.",
-            f"Reason: {leave.cancel_reason}",
-        ]
-    _notify(
-        leave,
-        to=to,
-        subject=f"Leave cancelled: {_name(leave.staff)}, {_period(leave)}",
-        lines=lines,
-        template="rosters.leave_cancelled",
-        page="/leave" if own else "/my-schedule",
-    )
+        _notify(
+            leave,
+            "rosters.leave_cancelled",
+            to=_person_email(leave.staff),
+            page="/my-schedule",
+            person=_name(leave.staff),
+            leave_type=leave.get_leave_type_display().lower(),
+            reason=leave.cancel_reason,
+        )
     return leave

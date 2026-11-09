@@ -129,6 +129,15 @@ Menu **Bed board** shows every ward's beds and their status on one screen, refre
 seconds, with each bed's status history (HIMS-FAC-008):
 [docs/workflows/bed-board.md](docs/workflows/bed-board.md).
 
+## Equipment, letterhead and message wording
+
+- Menu **Equipment**: what the hospital owns, where it is, its status and service dates (HIMS-FAC-009):
+  [docs/workflows/equipment-register.md](docs/workflows/equipment-register.md).
+- **Hospital settings → Letterhead**: logo and details on printouts and emails (HIMS-ORG-006):
+  [docs/workflows/letterhead.md](docs/workflows/letterhead.md).
+- Menu **Message wording**: change the words of every email HIMS sends (HIMS-NOTIF-003):
+  [docs/workflows/message-wording.md](docs/workflows/message-wording.md).
+
 ## Admin console: only from allowed addresses
 
 The admin console answers only the addresses in `HIMS_ADMIN_ALLOWED_NETWORKS`; anyone else gets
