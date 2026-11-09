@@ -193,3 +193,37 @@ The Locations page (menu → Locations) is where non-developers set up the layou
 * Server messages (e.g. "This code is already used in this facility.", "Deactivate everything
   inside it first.") appear next to the field they concern.
 * **Hide inactive** removes deactivated items from view; they are never deleted.
+
+## 9. Update 2026-11-09: bed board and status history (HIMS-FAC-008)
+
+How-to: [bed board](../../workflows/bed-board.md).
+
+### bed_status_changes (app `beds`, new)
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | |
+| bed_id, facility_id, ward_id | uuid | facility and ward copied from the bed, for filtering |
+| from_status, to_status | varchar(16) | the bed states in section 3 |
+| reason | varchar(255) | the reason given; no patient details |
+| changed_by_id | uuid, nullable | who; empty for earlier changes whose person no longer exists |
+| changed_at | timestamptz | equals the bed's `status_changed_at` |
+
+* **Append-only:** trigger `bed_status_changes_append_only` (function `audit_reject_mutation`, as
+  the audit log); the app's database user may only add rows (HIMS-OPS-007 detects the trigger).
+* Indexes: (bed, changed_at desc) for one bed's history, (facility, changed_at desc) for reports.
+* Written by `Bed.save()` whenever the status differs from the one loaded: the status service and
+  switching a bed off (app or console). The caller attaches who (`_hims_actor`).
+* Migration `beds.0002` copied earlier changes from the audit log (`bed.status.changed`).
+
+### Board query
+
+`apps/beds/board.py`: one query for the facilities the person can see, one for the wards (with
+floor, building and department) and one for their active beds with rooms: a fixed number of
+queries however many beds (tested). It uses the existing index (facility, ward, status).
+
+### Visibility
+
+`locations.view` hospital-wide or for the facility: every active ward; for a department: that
+department's wards. The bed endpoints now check the bed's facility **and its ward's department**,
+so a department grant also covers those beds (history, status change with `beds.status.manage`).

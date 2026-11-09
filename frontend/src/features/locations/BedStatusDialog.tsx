@@ -9,7 +9,7 @@ import {
   Stack,
   TextField,
 } from "@mui/material";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import type { TreeBed } from "../../api/types";
 import { ErrorAlert } from "../../components/ErrorAlert";
@@ -22,14 +22,19 @@ import {
 } from "./bedStatus";
 
 interface Props {
-  bed: TreeBed;
+  /** A bed from the Locations tree or the bed board: only these fields are needed. */
+  bed: Pick<TreeBed, "id" | "code" | "status" | "status_reason" | "version">;
   wardName: string;
   onClose: () => void;
   /** Shown to people who may change the bed itself (type, active): opens the edit form. */
   onEditDetails?: () => void;
+  /** People who may not change the status only see it (the bed board, HIMS-FAC-008). */
+  readOnly?: boolean;
+  /** Extra content under the form, e.g. the bed's status history on the bed board. */
+  children?: ReactNode;
 }
 
-export function BedStatusDialog({ bed, wardName, onClose, onEditDetails }: Props) {
+export function BedStatusDialog({ bed, wardName, onClose, onEditDetails, readOnly = false, children }: Props) {
   // One key per dialog session: a double-click or network retry cannot apply the change twice.
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const change = useChangeBedStatus(bed.id, idempotencyKey);
@@ -39,6 +44,7 @@ export function BedStatusDialog({ bed, wardName, onClose, onEditDetails }: Props
   const [reason, setReason] = useState(bed.status_reason);
   const reasonNeeded = status !== "available";
   const managedByAdmissions = !isSettable(bed.status);
+  const canSave = !managedByAdmissions && !readOnly;
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -60,7 +66,13 @@ export function BedStatusDialog({ bed, wardName, onClose, onEditDetails }: Props
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            {managedByAdmissions ? (
+            {readOnly && !managedByAdmissions ? (
+              <Alert severity="info">
+                {statusInfo(bed.status).label}
+                {bed.status_reason ? `: ${bed.status_reason}` : ""}. Only people who manage
+                this ward's beds can change it.
+              </Alert>
+            ) : managedByAdmissions ? (
               <Alert severity="info">
                 This bed is {statusInfo(bed.status).label.toLowerCase()}. Its
                 status changes through admission, transfer, discharge and
@@ -95,6 +107,7 @@ export function BedStatusDialog({ bed, wardName, onClose, onEditDetails }: Props
                 )}
               </>
             )}
+            {children}
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -103,10 +116,8 @@ export function BedStatusDialog({ bed, wardName, onClose, onEditDetails }: Props
               Edit bed details
             </Button>
           )}
-          <Button onClick={onClose}>
-            {managedByAdmissions ? "Close" : "Cancel"}
-          </Button>
-          {!managedByAdmissions && (
+          <Button onClick={onClose}>{canSave ? "Cancel" : "Close"}</Button>
+          {canSave && (
             <Button
               type="submit"
               variant="contained"

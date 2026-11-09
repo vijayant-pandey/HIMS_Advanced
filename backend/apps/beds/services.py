@@ -59,6 +59,8 @@ def change_bed_status(
     bed.status_reason = "" if status == Bed.Status.AVAILABLE else reason
     bed.status_changed_at = timezone.now()
     bump_version(bed)
+    bed._hims_actor = actor  # for the bed's status history (BedStatusChange, HIMS-FAC-008)
+    bed._status_note = reason
     bed.save(
         update_fields=["status", "status_reason", "status_changed_at", "version", "updated_at"]
     )

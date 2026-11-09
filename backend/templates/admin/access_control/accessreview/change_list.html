@@ -1,0 +1,14 @@
+{% extends "admin/change_list.html" %}
+{# When the next access review is due, as on the Access reviews page (HIMS-IAM-012). #}
+{% block content %}
+<div class="module" aria-label="Access review schedule">
+  <h2>Schedule</h2>
+  <p>
+    A full review is due every {{ schedule.interval_days }} days.
+    {% if schedule.last_completed_at %}Last completed: {{ schedule.last_completed_at|date:"j M Y" }}.{% else %}None completed yet.{% endif %}
+    Next due: <strong>{{ schedule.next_due_on|date:"j M Y" }}</strong>.
+  </p>
+  {% if schedule.open_review_overdue %}<p><strong>The review in progress is overdue.</strong></p>{% elif schedule.review_due %}<p><strong>A review is due now: start one with "Add access review".</strong></p>{% endif %}
+</div>
+{{ block.super }}
+{% endblock %}

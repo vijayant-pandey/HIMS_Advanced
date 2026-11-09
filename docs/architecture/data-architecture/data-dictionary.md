@@ -20,7 +20,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 
 - **Hospital (organization)**: [`organizations`](#organizations)
 - **Facilities, departments and locations**: [`facilities`](#facilities), [`departments`](#departments), [`department_services`](#department_services), [`department_hours`](#department_hours), [`buildings`](#buildings), [`floors`](#floors), [`wards`](#wards), [`rooms`](#rooms)
-- **Beds**: [`beds`](#beds)
+- **Beds**: [`beds`](#beds), [`bed_status_changes`](#bed_status_changes)
 - **Numbering (MRN, visit, invoice, claim numbers)**: [`numbering_schemes`](#numbering_schemes), [`numbering_counters`](#numbering_counters), [`issued_numbers`](#issued_numbers)
 - **Feature settings**: [`feature_flags`](#feature_flags)
 - **Identity: accounts, sign-in, two-factor**: [`users`](#users), [`user_invitations`](#user_invitations), [`user_password_resets`](#user_password_resets), [`user_sessions`](#user_sessions), [`user_mfa_devices`](#user_mfa_devices), [`user_mfa_recovery_codes`](#user_mfa_recovery_codes)
@@ -275,6 +275,27 @@ A ward or unit (general ward, ICU, NICU, operating theatre, …).
 | `status` | varchar(16) | no | `Bed.Status.AVAILABLE` | `available` (Available), `reserved` (Reserved), `occupied` (Occupied), `cleaning` (Cleaning), `maintenance` (Maintenance), `blocked` (Blocked), `out_of_service` (Out of service) | System | Internal: Business data | Status |
 | `status_reason` | varchar(255) | no | — | up to 255 characters | System | Internal: Business data | Status reason |
 | `status_changed_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Status changed at |
+
+<a id="bed_status_changes"></a>
+### `bed_status_changes`
+
+One change of a bed's status: from, to, why, who and when (spec 4.10; HIMS-FAC-008).
+
+- **Model:** `beds.BedStatusChange`
+- **Lifecycle:** Append-only (database trigger); one row per bed status change, from, to, why, who and when (HIMS-FAC-008). Earlier changes copied from the audit log once.
+- **Extra indexes:** `bed_changes_bed_idx`: bed, -changed_at; `bed_changes_facility_idx`: facility, -changed_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `bed_id` | uuid → beds.id | no | — | on delete PROTECT | Person | Internal: Reference | Bed |
+| `facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Facility |
+| `ward_id` | uuid → wards.id | no | — | on delete PROTECT | Person | Internal: Reference | Ward |
+| `from_status` | varchar(16) | no | — | `available` (Available), `reserved` (Reserved), `occupied` (Occupied), `cleaning` (Cleaning), `maintenance` (Maintenance), `blocked` (Blocked), `out_of_service` (Out of service) | Person | Internal: Business data | From status |
+| `to_status` | varchar(16) | no | — | `available` (Available), `reserved` (Reserved), `occupied` (Occupied), `cleaning` (Cleaning), `maintenance` (Maintenance), `blocked` (Blocked), `out_of_service` (Out of service) | Person | Internal: Business data | To status |
+| `reason` | varchar(255) | no | — | up to 255 characters | Person | Internal: Bed status reason (no patient details) | No patient details. |
+| `changed_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Changed by |
+| `changed_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Changed at |
 
 ## Numbering (MRN, visit, invoice, claim numbers)
 

@@ -60,6 +60,10 @@ export const routes = [
                 lazy: screen(() => import("../features/locations/LocationsPage"), (m) => m.LocationsPage),
               },
               {
+                path: "bed-board",
+                lazy: screen(() => import("../features/locations/BedBoardPage"), (m) => m.BedBoardPage),
+              },
+              {
                 path: "numbering",
                 lazy: screen(() => import("../features/numbering/NumberingPage"), (m) => m.NumberingPage),
               },

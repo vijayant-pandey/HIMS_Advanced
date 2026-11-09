@@ -41,6 +41,7 @@
 22d. [Part 18d: background jobs](#part-18d-background-jobs)
 22e. [Part 18e: API docs without outside sites](#part-18e-api-docs-without-outside-sites)
 22f. [Part 18f: admin console only from allowed addresses](#part-18f-admin-console-only-from-allowed-addresses)
+22g. [Part 18g: bed board](#part-18g-bed-board)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1184,6 +1185,25 @@ works for you, and the new pages.
 
 ---
 
+## Part 18g: bed board
+
+Needs the HIMS-FAC-008 PR and its migrate step (India and US), and a ward with beds (Part 9 or the
+Locations page). Guide: [bed board](../workflows/bed-board.md).
+
+| # | Do | Expect |
+|---|---|---|
+| 18g.1 | Sign in as the administrator. Menu → **Bed board** | Your wards as cards, a tile per bed with its type, room and status; counts per ward; "Available now" by bed type; "Updated" with the time |
+| 18g.2 | Select an available bed → Status **Maintenance**, Reason "Broken side rail" → Save | The tile turns to Maintenance "for 0 min"; the ward's counts change |
+| 18g.3 | Select the same bed again | The reason, and **Status history**: "Available → Maintenance: Broken side rail", with the time and your name |
+| 18g.4 | Select the **Maintenance** chip at the top; then **All** | Only beds in maintenance; then everything again |
+| 18g.5 | Open the board in a second browser window, change a bed in the first window | Within 30 seconds the second window shows the change by itself |
+| 18g.6 | Put the bed back to Available | History now shows both changes |
+| 18g.7 | Admin console → **Beds** → **Bed board** | A table of wards and statuses, and the unavailable beds with their reason |
+| 18g.8 | Admin console → open a bed | A **Status history** section at the bottom (read-only) |
+| 18g.9 | Admin console → **Access reviews** | A "Schedule" box: every 90 days, next due date |
+
+---
+
 ## Part 19: leaving staff (termination)
 
 **Window A** app + **Window B** (Asha signed in).
@@ -1339,6 +1359,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 18d | Background jobs | | | |
 | 18e | API docs without outside sites | | | |
 | 18f | Admin console only from allowed addresses | | | |
+| 18g | Bed board | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 

@@ -56,7 +56,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-ORG-006 | Hospital logo and letterhead for printouts and emails (spec 4.1) | To do |
 | HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done |
 | HIMS-FAC-007 | Department head, services offered and operating hours | Done |
-| HIMS-FAC-008 | Bed board: every ward's beds and their status on one screen, no patients yet (spec 4.10) | To do |
+| HIMS-FAC-008 | Bed board: every ward's beds and their status on one screen, no patients yet (spec 4.10) | Done (with per-bed status history; [bed board](../workflows/bed-board.md)) |
 | HIMS-FAC-009 | Equipment register: item, location, status, service dates (spec 4.12; workflows wait for PO) | To do |
 
 ## EPIC HIMS-IAM — Identity and access
