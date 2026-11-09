@@ -35,7 +35,8 @@ one**, before a sensitive action.
 
 **In the admin console** the same areas ask before saving or running an action: users (including
 setting a password), roles, role assignments, access reviews and their items, cover, staff,
-feature settings and "Make a backup now". Looking does not ask. Nothing is changed until the person has confirmed, and they
+feature settings, "Make a backup now", and **downloading an access review or audit events as CSV**
+(added 2026-11-09, HIMS-SEC-015). Looking does not ask. Nothing is changed until the person has confirmed, and they
 then repeat what they were doing.
 
 **Why these:** each one changes who can do what, ends someone's access, weakens a security setting

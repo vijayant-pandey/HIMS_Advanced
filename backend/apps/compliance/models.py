@@ -184,6 +184,43 @@ class BrowserSecurityReport(UUIDPrimaryKeyModel, TimeStampedModel, VersionedMode
         return f"{self.day}: {self.directive} blocked {self.blocked}"
 
 
+class ConsoleAccessBlock(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
+    """Admin console requests refused because the address is not allowed, added up per day and
+    address (spec 13.1, 13.4; HIMS-SEC-015). At most 500 addresses a day."""
+
+    day = models.DateField()
+    ip_address = models.GenericIPAddressField(help_text="The address that was refused.")
+    attempts = models.PositiveIntegerField(default=1)
+    last_seen_at = models.DateTimeField(default=timezone.now)
+    last_path = models.CharField(max_length=200, blank=True, help_text="Console page, ids removed.")
+    signed_in_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Someone signed in to the console tried from this address: their session may "
+        "be in the wrong hands.",
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "console_access_blocks"
+        ordering = ["-day", "-attempts"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["day", "ip_address"], name="console_block_unique_per_day"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.day}: {self.ip_address} refused {self.attempts} time(s)"
+
+
 class IncidentNotification(UUIDPrimaryKeyModel, TimeStampedModel):
     """One notification the law requires for an incident, with its deadline (see incidents.py)."""
 

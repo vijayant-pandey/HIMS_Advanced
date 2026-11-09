@@ -43,3 +43,6 @@
 {% endblock %}
 
 {% block nav-global %}{% endblock %}
+
+{# Security status page for holders of compliance.view (HIMS-SEC-015). #}
+{% block userlinks %}{% if show_security_status %}<a href="{% url 'admin:compliance_security_status' %}">Security status</a> / {% endif %}{{ block.super }}{% endblock %}

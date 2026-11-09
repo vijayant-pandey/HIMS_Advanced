@@ -1,5 +1,8 @@
 """Developer workstation settings. Synthetic data only (spec 31.1)."""
 
+from django.core.exceptions import ImproperlyConfigured
+
+from common.client_ip import validate_console_networks
 from common.environment import validate_environment
 
 from .base import *  # noqa: F403
@@ -19,6 +22,12 @@ CSRF_TRUSTED_ORIGINS = env.list(
 )
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=True)
 HIMS_ENABLE_ADMIN = env.bool("HIMS_ENABLE_ADMIN", default=True)
+# The console answers this computer only, unless another address is listed (HIMS-SEC-015).
+HIMS_ADMIN_ALLOWED_NETWORKS = env.list("HIMS_ADMIN_ALLOWED_NETWORKS", default=["127.0.0.1", "::1"])
+try:
+    validate_console_networks(HIMS_ADMIN_ALLOWED_NETWORKS)
+except ValueError as exc:
+    raise ImproperlyConfigured(f"HIMS_ADMIN_ALLOWED_NETWORKS has a bad entry: {exc}") from exc
 
 REST_FRAMEWORK = {
     **REST_FRAMEWORK,

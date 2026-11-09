@@ -6,7 +6,7 @@ secrets differ. HIMS_ENVIRONMENT selects which managed environment this process 
 
 from django.core.exceptions import ImproperlyConfigured
 
-from common.client_ip import validate_trusted_proxies
+from common.client_ip import validate_console_networks, validate_trusted_proxies
 from common.environment import validate_environment
 
 from .base import *  # noqa: F403
@@ -14,10 +14,12 @@ from .base import (
     DATABASES,
     DEBUG,
     EMAIL_BACKEND,
+    HIMS_ADMIN_ALLOWED_NETWORKS,
     HIMS_AUDIT_CHAIN_KEYS,
     HIMS_CONFIRM_IDENTITY_MINUTES,
     HIMS_DATABASE_ENVIRONMENT,
     HIMS_DEPLOYMENT_ID,
+    HIMS_ENABLE_ADMIN,
     HIMS_ENVIRONMENT,
     HIMS_FIELD_ENCRYPTION_KEYS,
     HIMS_MFA_REQUIRED_FOR_PRIVILEGED,
@@ -77,6 +79,17 @@ try:
     validate_trusted_proxies(HIMS_TRUSTED_PROXIES)
 except ValueError as exc:
     raise ImproperlyConfigured(f"HIMS_TRUSTED_PROXIES has a bad entry: {exc}") from exc
+# The console answers only listed addresses (HIMS-SEC-015, ADR-016): with it switched on, the
+# list must name the office or VPN network, never every address.
+if HIMS_ENABLE_ADMIN and not HIMS_ADMIN_ALLOWED_NETWORKS:
+    raise ImproperlyConfigured(
+        "HIMS_ADMIN_ALLOWED_NETWORKS must list the networks the admin console may be used from "
+        "(for example the office or VPN network) when HIMS_ENABLE_ADMIN is on."
+    )
+try:
+    validate_console_networks(HIMS_ADMIN_ALLOWED_NETWORKS)
+except ValueError as exc:
+    raise ImproperlyConfigured(f"HIMS_ADMIN_ALLOWED_NETWORKS has a bad entry: {exc}") from exc
 
 validate_environment(
     settings_profile="production",

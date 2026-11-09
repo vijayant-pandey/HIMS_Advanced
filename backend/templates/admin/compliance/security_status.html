@@ -1,0 +1,44 @@
+{% extends "admin/base_site.html" %}
+{# Security status (HIMS-SEC-015): the same facts as the Compliance page's Browser protection,
+   Console access and Database access tabs. Read-only: these settings change only at hosting. #}
+{% block breadcrumbs %}
+<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; Security status</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>Security status</h1>
+
+  <div class="module">
+    <h2>Admin console: where it can be used from</h2>
+    <table>
+      <tr><th scope="row">Console</th><td>{% if console.enabled %}Switched on{% else %}Switched off{% endif %}</td></tr>
+      <tr><th scope="row">Allowed addresses</th><td>{% for network in console.allowed_networks %}{{ network }}{% if not forloop.last %}, {% endif %}{% empty %}None: nobody can use the console{% endfor %}</td></tr>
+      <tr><th scope="row">Your address</th><td>{{ console.your_address|default:"unknown" }} ({% if console.you_are_allowed %}allowed{% else %}not allowed{% endif %})</td></tr>
+      <tr><th scope="row">Refused addresses not yet reviewed</th><td><a href="{% url 'admin:compliance_consoleaccessblock_changelist' %}">{{ console.refusals_to_review }}</a></td></tr>
+    </table>
+    <p class="help">The list is the server setting HIMS_ADMIN_ALLOWED_NETWORKS. It cannot be changed here, so that what protects the console cannot be changed through it.</p>
+  </div>
+
+  <div class="module">
+    <h2>Browser protection</h2>
+    <table>
+      <tr><th scope="row">Blocking</th><td>{% if policy_mode == "report_only" %}Report-only: problems are reported, not blocked{% else %}On{% endif %}</td></tr>
+      <tr><th scope="row">Our own proxies</th><td>{% for proxy in trusted_proxies %}{{ proxy }}{% if not forloop.last %}, {% endif %}{% empty %}None (correct without a load balancer){% endfor %}</td></tr>
+      <tr><th scope="row">Blocks not yet reviewed</th><td><a href="{% url 'admin:compliance_browsersecurityreport_changelist' %}">{{ browser_reports_to_review }}</a></td></tr>
+    </table>
+  </div>
+
+  <div class="module">
+    <h2>Database users</h2>
+    <p>{% if database_separated %}Separated: the app runs with its own limited database user.{% elif not database.set_up %}Not set up yet (allowed on a developer PC; required when hosted).{% else %}A check failed: see below.{% endif %} The app connects as <strong>{{ database.current_user }}</strong>.</p>
+    <table>
+      <thead><tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col">Detail</th></tr></thead>
+      <tbody>
+      {% for check in database.checks %}
+        <tr><td>{{ check.label }}</td><td>{% if check.passed %}Passed{% else %}<strong>Failed</strong>{% endif %}</td><td>{{ check.detail }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

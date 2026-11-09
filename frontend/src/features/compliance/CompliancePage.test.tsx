@@ -111,6 +111,28 @@ let databaseAccess: unknown = {
   checks: DATABASE_CHECKS,
 };
 
+const CONSOLE_REFUSAL = {
+  id: "c1",
+  day: "2026-11-09",
+  ip_address: "198.51.100.23",
+  attempts: 4,
+  last_seen_at: "2026-11-09T10:00:00Z",
+  last_path: "/admin/login/",
+  signed_in_user_name: "Synthetic Admin",
+  reviewed_by_name: null,
+  reviewed_at: null,
+  review_note: "",
+  version: 1,
+};
+let consoleAccess: unknown = {
+  enabled: true,
+  allowed_networks: ["127.0.0.1", "::1"],
+  your_address: "127.0.0.1",
+  you_are_allowed: true,
+  developer_pc: true,
+  refusals_to_review: 1,
+};
+
 function renderIt(ui: React.ReactElement, grants: string[], entry = "/compliance") {
   const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
@@ -132,6 +154,8 @@ function renderIt(ui: React.ReactElement, grants: string[], entry = "/compliance
     if (url.includes("/compliance-risks/")) return json([RISK]);
     if (url.includes("/security-incidents/")) return json([INCIDENT]);
     if (url.includes("/security/database-access/")) return json(databaseAccess);
+    if (url.includes("/security/console-access/")) return json(consoleAccess);
+    if (url.includes("/console-access-blocks/")) return json([CONSOLE_REFUSAL]);
     if (url.includes("/security/status/"))
       return json({
         policy_mode: "enforcing",
@@ -270,5 +294,49 @@ describe("Database access tab (HIMS-OPS-007)", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "Database access" }));
     expect(await screen.findByText(/Not set up on this computer yet/)).toBeInTheDocument();
     expect(screen.getByText("python manage.py setup_database_roles --write-env")).toBeInTheDocument();
+  });
+});
+
+describe("Console access tab (HIMS-SEC-015)", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("shows the allowed addresses and the refused ones, and sends the review with its version", async () => {
+    const fetchMock = renderIt(<CompliancePage />, MANAGE);
+    fireEvent.click(await screen.findByRole("tab", { name: "Console access" }));
+    expect(await screen.findByText("Your address (127.0.0.1) can use the admin console.")).toBeInTheDocument();
+    expect(screen.getByText("::1")).toBeInTheDocument();
+    const table = await screen.findByRole("table", { name: "Refused console addresses" });
+    expect(within(table).getByText("198.51.100.23")).toBeInTheDocument();
+    expect(within(table).getByText("Synthetic Admin")).toBeInTheDocument();
+    fireEvent.click(within(table).getByRole("button", { name: /^Mark reviewed/ }));
+    await waitFor(() => {
+      const review = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/c1/review/"));
+      expect(JSON.parse(String(review?.[1]?.body))).toEqual({ version: 1 });
+    });
+  });
+
+  it("warns a person whose own address is not on the list; view-only people cannot review", async () => {
+    consoleAccess = {
+      enabled: true,
+      allowed_networks: ["192.0.2.0/24"],
+      your_address: "203.0.113.9",
+      you_are_allowed: false,
+      developer_pc: false,
+      refusals_to_review: 1,
+    };
+    renderIt(<CompliancePage />, ["compliance.view"]);
+    fireEvent.click(await screen.findByRole("tab", { name: "Console access" }));
+    expect(await screen.findByText(/is not on the list/)).toBeInTheDocument();
+    const table = await screen.findByRole("table", { name: "Refused console addresses" });
+    expect(within(table).getByText("Not reviewed")).toBeInTheDocument();
+    expect(within(table).queryByRole("button")).toBeNull();
+  });
+
+  it("says so when the console is switched off", async () => {
+    consoleAccess = { enabled: false, allowed_networks: [], your_address: "203.0.113.9", you_are_allowed: false, developer_pc: false, refusals_to_review: 0 };
+    renderIt(<CompliancePage />, ["compliance.view"]);
+    fireEvent.click(await screen.findByRole("tab", { name: "Console access" }));
+    expect(await screen.findByText("The admin console is switched off on this server.")).toBeInTheDocument();
+    expect(screen.getByText("None: nobody can use the console")).toBeInTheDocument();
   });
 });

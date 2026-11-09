@@ -77,12 +77,19 @@ INSTALLED_APPS = [
 # is_staff/is_superuser, every change audited, deletion disabled, and domain rules reused from
 # services. It is exposed only where HIMS_ENABLE_ADMIN is true (default: local only).
 HIMS_ENABLE_ADMIN = env.bool("HIMS_ENABLE_ADMIN", default=False)
+# Addresses or networks the console answers (HIMS-SEC-015), checked against the real client
+# address on every console page, before sign-in. Anyone else gets "Not found". Empty means
+# nobody; a developer PC defaults to this computer only. Hosted environments refuse to start
+# with the console on and no list. A firewall rule in front of the server comes with hosting.
+HIMS_ADMIN_ALLOWED_NETWORKS = env.list("HIMS_ADMIN_ALLOWED_NETWORKS", default=[])
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "common.security_headers.SecurityHeadersMiddleware",
     "common.request_context.RequestContextMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # Before CommonMiddleware, so "/admin" is not redirected to "/admin/" for a refused address.
+    "common.admin.allowed_addresses.ConsoleAddressMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",

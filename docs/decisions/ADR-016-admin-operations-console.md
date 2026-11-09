@@ -31,7 +31,9 @@ signed/financial facts.
   default in managed environments.
 
 ## Before enabling in Development/QA/Staging/Production
-MFA on console sign-in (HIMS-IAM-005), IP allow-listing or VPN-only access (HIMS-SEC-015), and
+MFA on console sign-in (HIMS-IAM-005), IP allow-listing or VPN-only access (HIMS-SEC-015, **done
+2026-11-09**: `HIMS_ADMIN_ALLOWED_NETWORKS`; [console allow-list](../workflows/console-allow-list.md);
+the firewall layer comes with hosting, HIMS-OPS-020), and
 static-file serving for admin assets (HIMS-OPS-010, **done 2026-11-08**: collected at image build
 and served by the app with WhiteNoise; [static files](../workflows/static-files.md)).
 
@@ -54,3 +56,19 @@ Floor → Ward → Room → Bed sections on each parent page. Inline edits now a
 Departments and facilities follow the same "close in order" rules in the console as in the app
 (`Department.clean` / `Facility.clean`). A department with staff posted, access limited to it,
 or active wards cannot be set to inactive, and the console shows the same plain-language message.
+
+## Update 2026-11-09 (HIMS-SEC-015): address allow-list, and what the app had but the console did not
+- **Address allow-list.** Every console page, the sign-in page included, answers only addresses in
+  `HIMS_ADMIN_ALLOWED_NETWORKS` (real client address, ADR-022). Others get the same "Not found" as a
+  missing page. A developer PC defaults to this computer only; a hosted environment with the console
+  on refuses to start without a list, or with one that lets every address in. Refusals are counted
+  per day and address, audited once, reviewable. The list is a server setting on purpose: what
+  protects the console is not editable through it. Firewall layer at hosting (HIMS-OPS-020).
+  Details: [console allow-list](../workflows/console-allow-list.md).
+- **Console parity check.** Everything the app can do was compared with the console. Added, each
+  through the same service as the app (same rules, same audit): dismissing a failed background
+  event with a typed reason, and the health summary on the Outbox events list (HIMS-PLAT-014);
+  "Send a test message" (HIMS-NOTIF-001); "Download as CSV" on an access review (HIMS-IAM-012)
+  and "Download selected events as CSV" for auditors (HIMS-AUD-003), both after "confirm it's you";
+  and a **Security status** page (top bar, for `compliance.view`): browser protection, where the
+  console may be used from, and the database-user checks (HIMS-SEC-012/014, HIMS-OPS-007).

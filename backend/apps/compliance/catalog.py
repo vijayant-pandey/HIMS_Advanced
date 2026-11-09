@@ -467,8 +467,9 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         "access",
         4,
         4,
-        "Two-factor for privileged roles, throttling, sign-in register. Planned: "
-        "two-factor for clinical roles (D13), passkeys (HIMS-IAM-014).",
+        "Two-factor for privileged roles, throttling, sign-in register; the admin console "
+        "answers only allowed addresses (HIMS-SEC-015). Planned: two-factor for clinical roles "
+        "(D13), passkeys (HIMS-IAM-014), firewall rule at hosting (HIMS-OPS-020).",
     ),
     (
         "R-002",

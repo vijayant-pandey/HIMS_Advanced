@@ -3,7 +3,8 @@
 Every email and SMS HIMS sends goes through one **notification service** (spec 4.23):
 
 - It is **logged**: menu → **Messages** (and the admin console → Notifications) shows what was
-  sent, to whom, when, and whether it arrived.
+  sent, to whom, when, and whether it arrived. **Send a test message** is on both (the console's
+  button was added 2026-11-09).
 - A failure (for example the email provider being down) **never breaks** the action that caused
   it. The message is retried after 5, 15, 60 and 240 minutes, then marked "Failed". An
   administrator can press **Send again now**.

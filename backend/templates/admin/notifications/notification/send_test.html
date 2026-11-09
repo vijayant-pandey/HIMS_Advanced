@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+{# Same as "Send a test message" on the Messages page (HIMS-NOTIF-001): no personal data, audited. #}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+  <a href="{% url 'admin:notifications_notification_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo; Send a test message
+</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>Send a test message</h1>
+  <p>Checks that email or SMS works. The message says who sent it and holds no personal data. Until an SMS provider is chosen, SMS is printed in the server window.</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <fieldset class="module aligned">
+      <div class="form-row">
+        {{ form.channel.errors }}
+        {{ form.channel.label_tag }} {{ form.channel }}
+      </div>
+      <div class="form-row">
+        {{ form.to.errors }}
+        {{ form.to.label_tag }} {{ form.to }}
+        <div class="help">{{ form.to.help_text }}</div>
+      </div>
+    </fieldset>
+    <div class="submit-row"><input type="submit" value="Send" class="default"></div>
+  </form>
+</div>
+{% endblock %}

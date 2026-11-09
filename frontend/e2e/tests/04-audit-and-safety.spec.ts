@@ -184,6 +184,16 @@ test.describe("administrator", () => {
     await expect(page.getByRole("button", { name: /^Mark reviewed/ })).toHaveCount(0);
   });
 
+  test("console access: the admin console answers this computer, and the list is shown", async ({ page }) => {
+    // HIMS-SEC-015: the list is a server setting; on a developer PC it is this computer only.
+    await page.goto("/compliance");
+    await page.getByRole("tab", { name: "Console access" }).click();
+    await expect(page.getByText(/can use the admin console\./)).toBeVisible();
+    await expect(page.getByText("127.0.0.1", { exact: true })).toBeVisible();
+    await expect(page.getByText("No address has been refused.")).toBeVisible();
+    await expectAccessible(page, "Console access");
+  });
+
   test("admin console works under its browser protection rules", async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -204,7 +214,17 @@ test.describe("administrator", () => {
     await page.getByLabel("Authenticator code").fill(await freshCode(recall("admin-secret")));
     await page.getByRole("button", { name: /Log in|Sign in/ }).click();
     await expect(page).toHaveURL(/\/admin\/$/);
-    for (const path of ["compliance/browsersecurityreport/", "facilities/facility/", "facilities/facility/add/"]) {
+    // The console answered this computer (HIMS-SEC-015); its newer pages work under the same rules.
+    // The add page stays last: the script check below looks at the page that is open.
+    for (const path of [
+      "compliance/consoleaccessblock/",
+      "compliance/consoleaccessblock/security-status/",
+      "outbox/outboxevent/",
+      "notifications/notification/send-test/",
+      "compliance/browsersecurityreport/",
+      "facilities/facility/",
+      "facilities/facility/add/",
+    ]) {
       await page.goto(`${console}${path}`);
       await expect(page.locator("#content")).toBeVisible();
     }

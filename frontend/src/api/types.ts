@@ -154,5 +154,7 @@ export type RestoreDrillDetail = Schemas["RestoreDrillDetail"];
 export type DrillCheck = Schemas["DrillCheck"];
 export type RecoveryStatus = Schemas["RecoveryStatus"];
 export type DatabaseAccess = Schemas["DatabaseAccess"];
+export type ConsoleAccess = Schemas["ConsoleAccess"];
+export type ConsoleAccessBlock = Schemas["ConsoleAccessBlock"];
 export type OutboxEvent = Schemas["OutboxEvent"];
 export type OutboxHealth = Schemas["OutboxHealth"];

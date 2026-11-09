@@ -28,7 +28,7 @@ The specification is not changed; this ADR records the difference.
 | Redis for the Celery broker and cache (14) | Self-run Redis on the same machine? |
 | Object storage with versioning and encryption for documents (6, 30.6) | Oracle Object Storage (S3-compatible API) limits and versioning |
 | Secrets and key management (13.3, 30) | Vault service, or environment files on the server? |
-| TLS, firewall, admin console allow-list (13.1, 17.2) | Load balancer and certificates; network rules |
+| TLS, firewall, admin console allow-list (13.1, 17.2) | Load balancer and certificates; network rules (the app's own allow-list is done, HIMS-SEC-015: [console allow-list](../workflows/console-allow-list.md); the network rule for `/admin/` is the hosting layer) |
 | Logs, metrics, traces and alarms (18, 27.2) | Monitoring and logging service; OpenTelemetry export |
 | Separate Development, QA, Staging, Production (31) | How many environments fit in the free offering? |
 | India and US as separate deployments, data residency (7, 36) | Regions available for each country |

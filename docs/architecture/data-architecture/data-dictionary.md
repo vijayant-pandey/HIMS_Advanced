@@ -28,7 +28,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts)
 - **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
-- **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`security_incident_notifications`](#security_incident_notifications)
+- **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`console_access_blocks`](#console_access_blocks), [`security_incident_notifications`](#security_incident_notifications)
 - **Notifications: emails and SMS**: [`notifications`](#notifications)
 - **Backups and restore drills**: [`recovery_backups`](#recovery_backups), [`recovery_restore_drills`](#recovery_restore_drills)
 - **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events)
@@ -1158,6 +1158,31 @@ Something a browser blocked under the security headers, added up per day (spec 1
 | `page_path` | varchar(200) | no | — | up to 200 characters | Person | Internal: Business data | Page, ids removed. |
 | `occurrences` | integer | no | `1` | 0 or more | Person | Internal: Business data | Occurrences |
 | `last_seen_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Last seen at |
+| `reviewed_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Reviewed by |
+| `reviewed_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Reviewed at |
+| `review_note` | text | no | — | — | Person | Restricted: Reviewer note (no patient details) | Review note |
+
+<a id="console_access_blocks"></a>
+### `console_access_blocks`
+
+Admin console requests refused because the address is not allowed, added up per day and address (spec 13.1, 13.4; HIMS-SEC-015). At most 500 addresses a day.
+
+- **Model:** `compliance.ConsoleAccessBlock`
+- **Lifecycle:** One row per day and refused address, at most 500 a day; reviewed, never edited otherwise. Purge comes with the retention job (HIMS-COMP-006).
+- **Rules:** `console_block_unique_per_day`: Unique: day, ip_address
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `day` | date | no | — | — | Person | Internal: Business data | Day |
+| `ip_address` | inet | no | — | — | Person | Restricted: Online identifier | The address that was refused. |
+| `attempts` | integer | no | `1` | 0 or more | Person | Internal: Business data | Attempts |
+| `last_seen_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Last seen at |
+| `last_path` | varchar(200) | no | — | up to 200 characters | Person | Internal: Console page (ids removed) | Console page, ids removed. |
+| `signed_in_user_id` | uuid → users.id | yes | — | on delete PROTECT | Person | Internal: Person reference (id only) | Someone signed in to the console tried from this address: their session may be in the wrong hands. |
 | `reviewed_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Reviewed by |
 | `reviewed_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Reviewed at |
 | `review_note` | text | no | — | — | Person | Restricted: Reviewer note (no patient details) | Review note |

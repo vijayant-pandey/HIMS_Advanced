@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
@@ -7,6 +9,7 @@ from django.utils.html import format_html, format_html_join
 from common.admin.site import can_view_audit
 from common.exceptions import ConflictError
 
+from .exports import EXPORT_LIMIT, events_csv_response
 from .models import AuditChainEntry, AuditEvent, AuditIntegrityCheck
 from .services import AuditAction, record_audit_event
 
@@ -29,6 +32,7 @@ class AuditEventAdmin(admin.ModelAdmin):
     search_fields = ("action", "resource_id", "request_id", "actor_id")
     date_hierarchy = "occurred_at"
     ordering = ("-occurred_at",)
+    actions = ["download_csv"]
 
     def get_queryset(self, request):
         from .api.views import with_names
@@ -59,6 +63,36 @@ class AuditEventAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+    @admin.action(description="Download selected events as CSV (at most 5,000; audited)")
+    def download_csv(self, request, queryset):
+        """The same file as the Audit log page's download, after the same "confirm it's you"
+        (HIMS-AUD-003, HIMS-IAM-007). Tick "select all" to take every event matching the filters."""
+        if not can_view_audit(request.user):
+            raise PermissionDenied
+        from apps.identity import confirmation
+
+        if not confirmation.is_confirmed(request):
+            messages.warning(
+                request, "Nothing was downloaded yet. Confirm it's you, then try again."
+            )
+            back = urlencode({"next": request.get_full_path()})
+            return redirect(f"{reverse('admin:confirm_identity')}?{back}")
+        rows = list(queryset.order_by("-occurred_at")[: EXPORT_LIMIT + 1])
+        truncated = len(rows) > EXPORT_LIMIT
+        rows = rows[:EXPORT_LIMIT]
+        record_audit_event(
+            action=AuditAction.AUDIT_EXPORTED,
+            resource_type="audit_event",
+            request=request,
+            metadata={
+                "via": "admin-console",
+                "query": dict(request.GET.items()),
+                "rows": len(rows),
+                "truncated": truncated,
+            },
+        )
+        return events_csv_response(rows, truncated=truncated)
 
     def changelist_view(self, request, extra_context=None):
         response = super().changelist_view(request, extra_context)

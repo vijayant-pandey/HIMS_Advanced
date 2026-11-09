@@ -5,7 +5,8 @@ one of our own proxies (HIMS_TRUSTED_PROXIES, e.g. the load balancer's network).
 the address it saw to the right-hand end, so we walk from the right, skip our own proxies and stop
 at the first address that is not ours. Everything further left was written by the sender.
 
-Audit records, the sign-in register, rate limits and the console lock-out all use this function.
+Audit records, the sign-in register, rate limits, the console lock-out and the console's address
+allow-list (HIMS-SEC-015) all use this function.
 """
 
 import ipaddress
@@ -34,6 +35,28 @@ def _is_trusted(address, networks: tuple) -> bool:
 def validate_trusted_proxies(entries: list[str]) -> None:
     """Raises ValueError for an entry that is not an address or network."""
     _networks(tuple(entries))
+
+
+def validate_console_networks(entries: list[str]) -> None:
+    """Raises ValueError for an entry that is not an address or network, or that lets every
+    address in (HIMS_ADMIN_ALLOWED_NETWORKS, HIMS-SEC-015)."""
+    for network in _networks(tuple(entries)):
+        if network.prefixlen == 0:
+            raise ValueError(f"{network} would let every address in")
+
+
+def console_allows(address: str | None) -> bool:
+    """True when the admin console may answer this address (HIMS-SEC-015).
+
+    The address must be in HIMS_ADMIN_ALLOWED_NETWORKS. One of our own proxies is never enough:
+    client_ip() returns a proxy only when it could not find the real sender.
+    """
+    parsed = _parse(address) if address else None
+    if parsed is None:
+        return False
+    if _is_trusted(parsed, _networks(tuple(settings.HIMS_TRUSTED_PROXIES))):
+        return False
+    return _is_trusted(parsed, _networks(tuple(settings.HIMS_ADMIN_ALLOWED_NETWORKS)))
 
 
 def client_ip(request) -> str | None:

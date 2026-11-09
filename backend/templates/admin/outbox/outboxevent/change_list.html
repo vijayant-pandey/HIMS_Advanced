@@ -1,0 +1,22 @@
+{% extends "admin/change_list.html" %}
+{# Health summary above the list: the same numbers as the Background jobs page (HIMS-PLAT-014). #}
+{% block content %}
+<div class="module" aria-label="Background jobs health">
+  <h2>Health</h2>
+  <p>
+    Waiting: <strong>{{ health.waiting }}</strong> (oldest {{ health.oldest_waiting_minutes }} minutes) ·
+    being retried: <strong>{{ health.retrying }}</strong> ·
+    stuck over {{ health.stuck_after_minutes }} minutes: <strong>{{ health.stuck }}</strong> ·
+    failed: <strong>{{ health.failed }}</strong> ·
+    dismissed: {{ health.dismissed }} ·
+    sent in the last 24 hours: {{ health.published_last_24h }}
+  </p>
+  <p>
+    Each event is tried up to {{ health.max_attempts }} times. Sent and dismissed events are cleaned up after
+    {{ health.retention_days }} days.
+    {% if health.last_cleanup %}Last clean-up: {{ health.last_cleanup.at }} ({{ health.last_cleanup.events_deleted }} removed).{% else %}No clean-up has run yet.{% endif %}
+  </p>
+  {% for line in health.attention %}<p><strong>Needs a look:</strong> {{ line }}</p>{% endfor %}
+</div>
+{{ block.super }}
+{% endblock %}
