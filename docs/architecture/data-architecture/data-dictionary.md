@@ -21,6 +21,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Hospital (organization)**: [`organizations`](#organizations)
 - **Facilities, departments and locations**: [`facilities`](#facilities), [`departments`](#departments), [`department_services`](#department_services), [`department_hours`](#department_hours), [`buildings`](#buildings), [`floors`](#floors), [`wards`](#wards), [`rooms`](#rooms)
 - **Beds**: [`beds`](#beds), [`bed_status_changes`](#bed_status_changes)
+- **Equipment register**: [`equipment`](#equipment), [`equipment_service_records`](#equipment_service_records)
 - **Numbering (MRN, visit, invoice, claim numbers)**: [`numbering_schemes`](#numbering_schemes), [`numbering_counters`](#numbering_counters), [`issued_numbers`](#issued_numbers)
 - **Feature settings**: [`feature_flags`](#feature_flags)
 - **Identity: accounts, sign-in, two-factor**: [`users`](#users), [`user_invitations`](#user_invitations), [`user_password_resets`](#user_password_resets), [`user_sessions`](#user_sessions), [`user_mfa_devices`](#user_mfa_devices), [`user_mfa_recovery_codes`](#user_mfa_recovery_codes)
@@ -29,7 +30,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
 - **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`console_access_blocks`](#console_access_blocks), [`security_incident_notifications`](#security_incident_notifications)
-- **Notifications: emails and SMS**: [`notifications`](#notifications)
+- **Notifications: emails and SMS**: [`notifications`](#notifications), [`message_templates`](#message_templates)
 - **Backups and restore drills**: [`recovery_backups`](#recovery_backups), [`recovery_restore_drills`](#recovery_restore_drills)
 - **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events)
 - **Platform: idempotency**: [`idempotency_records`](#idempotency_records)
@@ -61,6 +62,13 @@ The hospital organization served by this dedicated deployment (ADR-003, ADR-009)
 | `default_currency` | varchar(3) | no | — | `USD` (US Dollar), `INR` (Indian Rupee) | Person | Internal: Business data | Default currency |
 | `status` | varchar(16) | no | `Organization.Status.ACTIVE` | `active` (Active), `suspended` (Suspended) | Person | Internal: Business data | Status |
 | `singleton` | boolean | no | `True` | — | System | Internal: Business data | Singleton |
+| `logo` | varchar(120) | no | — | — | Person | Internal: Hospital logo | PNG or JPG, up to 2 MB. |
+| `letterhead_address` | text | no | — | — | Person | Internal: Business data | Letterhead address |
+| `letterhead_phone` | varchar(40) | no | — | up to 40 characters | Person | Internal: Business data | Letterhead phone |
+| `letterhead_email` | varchar(254) | no | — | up to 254 characters | Person | Restricted: Contact | Letterhead email |
+| `letterhead_website` | varchar(200) | no | — | up to 200 characters | Person | Internal: Business data | Letterhead website |
+| `letterhead_registration` | varchar(120) | no | — | up to 120 characters | Person | Internal: Business data | The registration or tax number to show, e.g. 'Reg. no. MH-1234'. |
+| `letterhead_footer` | varchar(255) | no | — | up to 255 characters | Person | Internal: Business data | A line at the very end, e.g. a helpline. |
 
 ## Facilities, departments and locations
 
@@ -296,6 +304,69 @@ One change of a bed's status: from, to, why, who and when (spec 4.10; HIMS-FAC-0
 | `reason` | varchar(255) | no | — | up to 255 characters | Person | Internal: Bed status reason (no patient details) | No patient details. |
 | `changed_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Changed by |
 | `changed_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Changed at |
+
+## Equipment register
+
+**Owner (source of truth):** Organization/facility domain (requests and job orders wait for the PO). **Design:** [equipment-register](../../workflows/equipment-register.md).
+
+<a id="equipment"></a>
+### `equipment`
+
+- **Model:** `equipment.Equipment`
+- **Lifecycle:** Never deleted; retired with a reason. Status and date changes in the audit log.
+- **Rules:** `equipment_tag_unique`: Unique: facility, asset_tag
+- **Extra indexes:** `equipment_status_idx`: facility, status; `equipment_service_due_idx`: next_service_due; `equipment_calibration_due_idx`: next_calibration_due
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Facility |
+| `department_id` | uuid → departments.id | yes | — | on delete PROTECT | Person | Internal: Reference | Department |
+| `ward_id` | uuid → wards.id | yes | — | on delete PROTECT | Person | Internal: Reference | Ward |
+| `room_id` | uuid → rooms.id | yes | — | on delete PROTECT | Person | Internal: Reference | Room |
+| `location_note` | varchar(120) | no | — | up to 120 characters | Person | Internal: Business data | Anything more about where it is, e.g. 'Store 2'. |
+| `asset_tag` | varchar(40) | no | — | up to 40 characters | Person | Internal: Business data | The hospital's own number on the label. Set once; it cannot change later. |
+| `name` | varchar(120) | no | — | up to 120 characters | Person | Internal: Business data | Name |
+| `category` | varchar(20) | no | `Equipment.Category.OTHER` | `monitoring` (Patient monitoring), `life_support` (Life support (ventilator, defibrillator)), `infusion` (Infusion and syringe pumps), `oxygen` (Oxygen and gases), `imaging` (Imaging), `laboratory` (Laboratory), `surgical` (Operating theatre and surgical), `sterilization` (Sterilization), `mobility` (Wheelchairs and stretchers), `other` (Other) | Person | Internal: Business data | Category |
+| `manufacturer` | varchar(120) | no | — | up to 120 characters | Person | Internal: Business data | Manufacturer |
+| `model_name` | varchar(120) | no | — | up to 120 characters | Person | Internal: Business data | Model name |
+| `serial_number` | varchar(80) | no | — | up to 80 characters | Person | Internal: Business data | Serial number |
+| `status` | varchar(20) | no | `Equipment.Status.IN_SERVICE` | `in_service` (In service), `maintenance` (Under maintenance), `out_of_service` (Out of service), `retired` (Retired) | Person | Internal: Business data | Status |
+| `status_reason` | varchar(255) | no | — | up to 255 characters | Person | Internal: Equipment status reason (no patient details) | Status reason |
+| `status_changed_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Status changed at |
+| `purchased_on` | date | yes | — | — | Person | Internal: Business data | Purchased on |
+| `warranty_until` | date | yes | — | — | Person | Internal: Business data | Warranty until |
+| `last_service_on` | date | yes | — | — | Person | Internal: Business data | Last service on |
+| `next_service_due` | date | yes | — | — | Person | Internal: Business data | Next service due |
+| `last_calibrated_on` | date | yes | — | — | Person | Internal: Business data | Last calibrated on |
+| `next_calibration_due` | date | yes | — | — | Person | Internal: Business data | Next calibration due |
+| `notes` | text | no | — | — | Person | Internal: Equipment notes (no patient details) | No patient details. |
+
+<a id="equipment_service_records"></a>
+### `equipment_service_records`
+
+One service, repair or calibration visit. Append-only (database trigger): a mistake is corrected by adding another record, so the history can be trusted in an inspection.
+
+- **Model:** `equipment.EquipmentServiceRecord`
+- **Lifecycle:** Append-only (database trigger); a mistake is corrected by adding another record. Kept with the equipment.
+- **Extra indexes:** `equipment_records_item_idx`: equipment, -performed_on
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `equipment_id` | uuid → equipment.id | no | — | on delete PROTECT | Person | Internal: Reference | Equipment |
+| `facility_id` | uuid → facilities.id | no | — | on delete PROTECT | System | Internal: Reference | Facility |
+| `kind` | varchar(12) | no | `EquipmentServiceRecord.Kind.SERVICE` | `service` (Service), `repair` (Repair), `calibration` (Calibration) | Person | Internal: Business data | Kind |
+| `performed_on` | date | no | — | — | Person | Internal: Business data | Performed on |
+| `performed_by` | varchar(120) | no | — | up to 120 characters | System (who did it) | Internal: Technician or company | Who did it: the technician or company. |
+| `notes` | varchar(500) | no | — | up to 500 characters | Person | Internal: Visit notes (no patient details) | No patient details. |
+| `next_due` | date | yes | — | — | Person | Internal: Business data | When the next one is due, if it is known. |
+| `recorded_by_id` | uuid → users.id | yes | — | on delete PROTECT | System | Internal: Person reference (id only) | Recorded by |
+| `recorded_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Recorded at |
 
 ## Numbering (MRN, visit, invoice, claim numbers)
 
@@ -1267,6 +1338,25 @@ One email or SMS sent by HIMS (spec 4.23; HIMS-NOTIF-001), with its delivery out
 | `related_type` | varchar(40) | no | — | up to 40 characters | Person | Internal: Business data | Related type |
 | `related_id` | varchar(64) | no | — | up to 64 characters | Person | Internal: Business data | Related id |
 | `requested_by_id` | uuid | yes | — | — | Person | Internal: Business data | Requested by id |
+
+<a id="message_templates"></a>
+### `message_templates`
+
+A hospital's wording for one message in the catalog (HIMS-NOTIF-003). Blank means "use the standard wording" (message_catalog.py). Every change is in the audit log, before and after.
+
+- **Model:** `notifications.MessageTemplate`
+- **Lifecycle:** One row per message in the catalog; blank wording means the standard. Every change is in the audit log, before and after.
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `key` | varchar(80) | no | — | up to 80 characters; unique | System | Internal: Business data | Key |
+| `subject` | varchar(255) | no | — | up to 255 characters | Person | Internal: Business data | Subject |
+| `body` | text | no | — | — | Person | Internal: Message wording (no values, no patient details) | Body |
+| `updated_by_id` | uuid → users.id | yes | — | on delete PROTECT | System | Internal: Person reference (id only) | Updated by |
 
 ## Backups and restore drills
 

@@ -1,7 +1,10 @@
 import uuid
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
+
+from common.models import TimeStampedModel, UUIDPrimaryKeyModel, VersionedModel
 
 
 class Notification(models.Model):
@@ -56,3 +59,27 @@ class Notification(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_channel_display()} {self.template} ({self.get_status_display()})"
+
+
+class MessageTemplate(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
+    """A hospital's wording for one message in the catalog (HIMS-NOTIF-003). Blank means "use the
+    standard wording" (message_catalog.py). Every change is in the audit log, before and after."""
+
+    key = models.CharField(max_length=80, unique=True, editable=False)
+    subject = models.CharField(max_length=255, blank=True)
+    body = models.TextField(blank=True, max_length=5000)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+        editable=False,
+    )
+
+    class Meta:
+        db_table = "message_templates"
+        ordering = ["key"]
+
+    def __str__(self) -> str:
+        return self.key

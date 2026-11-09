@@ -42,6 +42,9 @@
 22e. [Part 18e: API docs without outside sites](#part-18e-api-docs-without-outside-sites)
 22f. [Part 18f: admin console only from allowed addresses](#part-18f-admin-console-only-from-allowed-addresses)
 22g. [Part 18g: bed board](#part-18g-bed-board)
+22h. [Part 18h: equipment register](#part-18h-equipment-register)
+22i. [Part 18i: logo and letterhead](#part-18i-logo-and-letterhead)
+22j. [Part 18j: message wording](#part-18j-message-wording)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1204,6 +1207,56 @@ Locations page). Guide: [bed board](../workflows/bed-board.md).
 
 ---
 
+## Part 18h: equipment register
+
+Needs the Hospital setup PR and its migrate step (India and US), and a ward with rooms (Part 9).
+Sign in as the administrator.
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18h.1 | Menu → **Equipment** → **Add equipment**: asset tag `icu-vent-01`, name "Ventilator", category Life support, choose a ward and room, Next service due: yesterday → Add | In the list as `ICU-VENT-01`, with where it is, **In service**, and a red **Overdue** |
+| 18h.2 | Add another with the same asset tag | Refused: the tag is already used at this facility |
+| 18h.3 | Select `ICU-VENT-01` → **Change status** → Under maintenance | Save stays greyed out until you type a reason |
+| 18h.4 | Reason "Battery fault" → Save | Details show **Under maintenance** and the reason |
+| 18h.5 | **Record a visit**: Service, today, done by "Acme Biomed", next one due next year → Save | The visit is listed; **Next service due** moves to next year; **Overdue** goes away |
+| 18h.6 | **Change status** back to In service | The reason disappears |
+| 18h.7 | Filter **Due** = Overdue; then Any | Filtered list; then everything again |
+| 18h.8 | **Print** (use the browser's print preview) | The letterhead and the table. No menu, no buttons, no filters |
+| 18h.9 | Admin console → **Equipment** → open the item | Same details, a **Last visits** section, and Change status with the same reason rule |
+| 18h.10 | Admin console → **Equipment service records** → open a visit | It cannot be changed: no Save button |
+
+---
+
+## Part 18i: logo and letterhead
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18i.1 | Menu → **Hospital settings** → **Letterhead** → **Upload logo**: choose a PNG or JPG | The logo appears; the buttons change to Replace and Remove |
+| 18i.2 | Upload a file that is not a picture, or rename a `.txt` to `.png` and try it | Refused: "The logo must be a PNG or JPG picture" |
+| 18i.3 | **Edit letterhead**: an address and phone → Save | They appear under the hospital's name |
+| 18i.4 | **Print a sample** (browser's print preview) | The letterhead, without the menu or the hospital details table |
+| 18i.5 | Messages → **Send a test message** by email | In the launcher window: the message and your letterhead details, then "An HTML copy with the letterhead goes too". No long block of encoded text |
+| 18i.6 | Admin console → **Organizations** → open the hospital | **Letterhead on printouts and emails** with a logo preview and the same fields |
+| 18i.7 | Remove the logo | Only the name and details remain |
+
+---
+
+## Part 18j: message wording
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18j.1 | Menu → **Message wording** | 18 messages, all **Standard** |
+| 18j.2 | Select **Account invitation** → delete `{{link}}` from the message → Save | Refused: the message must keep `{{link}}` |
+| 18j.3 | Type `{{patient_name}}` into the message → **Preview** | Refused: not available in this message |
+| 18j.4 | Remove that, change the greeting to "Welcome {{name}}", keep `{{link}}` → **Preview** | Shows it with made-up details. Nothing is sent |
+| 18j.5 | **Save** (confirm it's you if asked) | The list shows **Changed** |
+| 18j.6 | Add a new account or staff invitation (Part 5) | The email in the launcher window has your wording and a working link |
+| 18j.7 | Open the message → **Use the standard wording** | The list shows **Standard** again |
+| 18j.8 | Audit log (as the auditor) | "Message wording changed" with the words before and after, and "put back to the standard" |
+| 18j.9 | Admin console → **Notifications** → **Message templates** → the same message | Placeholders, standard wording and how it reads now; the same refusals |
+
+---
+
 ## Part 19: leaving staff (termination)
 
 **Window A** app + **Window B** (Asha signed in).
@@ -1360,6 +1413,9 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 18e | API docs without outside sites | | | |
 | 18f | Admin console only from allowed addresses | | | |
 | 18g | Bed board | | | |
+| 18h | Equipment register | | | |
+| 18i | Logo and letterhead | | | |
+| 18j | Message wording | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 

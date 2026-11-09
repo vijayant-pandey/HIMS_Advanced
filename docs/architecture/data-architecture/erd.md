@@ -19,6 +19,8 @@ erDiagram
     rooms
     beds
     bed_status_changes
+    equipment
+    equipment_service_records
     numbering_schemes
     numbering_counters
     issued_numbers
@@ -59,6 +61,7 @@ erDiagram
     console_access_blocks
     security_incident_notifications
     notifications
+    message_templates
     recovery_backups
     recovery_restore_drills
     outbox_events
@@ -91,6 +94,14 @@ erDiagram
     facilities ||--o{ bed_status_changes : "facility_id"
     wards ||--o{ bed_status_changes : "ward_id"
     users |o--o{ bed_status_changes : "changed_by_id"
+    organizations ||--o{ equipment : "organization_id"
+    facilities ||--o{ equipment : "facility_id"
+    departments |o--o{ equipment : "department_id"
+    wards |o--o{ equipment : "ward_id"
+    rooms |o--o{ equipment : "room_id"
+    equipment ||--o{ equipment_service_records : "equipment_id"
+    facilities ||--o{ equipment_service_records : "facility_id"
+    users |o--o{ equipment_service_records : "recorded_by_id"
     organizations ||--o{ numbering_schemes : "organization_id"
     facilities |o--o{ numbering_schemes : "facility_id"
     numbering_schemes ||--o{ numbering_counters : "scheme_id"
@@ -177,6 +188,7 @@ erDiagram
     users |o--o{ console_access_blocks : "reviewed_by_id"
     security_incidents ||--o{ security_incident_notifications : "incident_id"
     users |o--o{ security_incident_notifications : "done_by_id"
+    users |o--o{ message_templates : "updated_by_id"
     recovery_backups ||--o{ recovery_restore_drills : "backup_id"
 ```
 
@@ -197,6 +209,13 @@ erDiagram
         varchar default_currency
         varchar status
         boolean singleton
+        varchar logo
+        text letterhead_address
+        varchar letterhead_phone
+        varchar letterhead_email
+        varchar letterhead_website
+        varchar letterhead_registration
+        varchar letterhead_footer
     }
 ```
 
@@ -380,6 +399,68 @@ erDiagram
 ```
 
 Tables from other domains are shown without columns: `facilities`, `organizations`, `rooms`, `users`, `wards`.
+
+## Equipment register (logical)
+
+```mermaid
+erDiagram
+    equipment {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid facility_id FK
+        uuid department_id FK
+        uuid ward_id FK
+        uuid room_id FK
+        varchar location_note
+        varchar asset_tag
+        varchar name
+        varchar category
+        varchar manufacturer
+        varchar model_name
+        varchar serial_number
+        varchar status
+        varchar status_reason
+        timestamptz status_changed_at
+        date purchased_on
+        date warranty_until
+        date last_service_on
+        date next_service_due
+        date last_calibrated_on
+        date next_calibration_due
+        text notes
+    }
+    equipment_service_records {
+        uuid id PK
+        uuid equipment_id FK
+        uuid facility_id FK
+        varchar kind
+        date performed_on
+        varchar performed_by
+        varchar notes
+        date next_due
+        uuid recorded_by_id FK
+        timestamptz recorded_at
+    }
+    departments
+    facilities
+    organizations
+    rooms
+    users
+    wards
+    organizations ||--o{ equipment : "organization_id"
+    facilities ||--o{ equipment : "facility_id"
+    departments |o--o{ equipment : "department_id"
+    wards |o--o{ equipment : "ward_id"
+    rooms |o--o{ equipment : "room_id"
+    equipment ||--o{ equipment_service_records : "equipment_id"
+    facilities ||--o{ equipment_service_records : "facility_id"
+    users |o--o{ equipment_service_records : "recorded_by_id"
+```
+
+Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `rooms`, `users`, `wards`.
 
 ## Numbering (MRN, visit, invoice, claim numbers) (logical)
 
@@ -1091,7 +1172,21 @@ erDiagram
         varchar related_id
         uuid requested_by_id
     }
+    message_templates {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        varchar key UK
+        varchar subject
+        text body
+        uuid updated_by_id FK
+    }
+    users
+    users |o--o{ message_templates : "updated_by_id"
 ```
+
+Tables from other domains are shown without columns: `users`.
 
 ## Backups and restore drills (logical)
 

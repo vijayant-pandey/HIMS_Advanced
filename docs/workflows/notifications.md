@@ -64,3 +64,7 @@ send_email(to=[person.email], subject="…", body="…", category="account",
 Never put clinical details in an email or SMS (spec 13.3): appointment reminders say only date,
 time, doctor and hospital. `retry_notifications` retries due messages by hand (the same job runs
 every 5 minutes under Celery beat).
+
+## Wording and letterhead
+
+The words of every email can be changed in the app ([message wording](message-wording.md), HIMS-NOTIF-003), and emails can carry the hospital's details and logo ([letterhead](letterhead.md), HIMS-ORG-006). In code, new messages go through `send_message` with a key from `message_catalog.py`, not `send_email` with written-out text.

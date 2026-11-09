@@ -45,8 +45,17 @@ class ConsoleEmailBackend(console.EmailBackend):
     printed, with secrets hidden (Django's encoded copy of the message could not be checked)."""
 
     def write_message(self, message):
-        if _shows_everything():
+        extras = getattr(message, "alternatives", None) or message.attachments
+        if _shows_everything() and not extras:
             return super().write_message(message)
+        if _shows_everything():
+            # A letterhead email: thousands of lines of encoded logo would bury the sign-in link.
+            self.stream.write(
+                f"To: {', '.join(message.recipients())}\nSubject: {message.subject}\n\n"
+                f"{message.body}\n(An HTML copy with the letterhead goes too, not printed here.)"
+                f"\n{LINE}\n"
+            )
+            return None
         self.stream.write(
             f"Email to {len(message.recipients())} recipient(s): {scrub(message.subject)}\n"
             f"{scrub(message.body)}\n{LINE}\n"

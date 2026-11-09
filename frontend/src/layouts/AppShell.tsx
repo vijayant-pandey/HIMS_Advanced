@@ -1,6 +1,7 @@
 import { AppBar, Box, Button, Container, LinearProgress, Stack, Toolbar, Typography } from "@mui/material";
 import { NavLink, Outlet, useNavigate, useNavigation } from "react-router-dom";
 
+import { HIDE_WHEN_PRINTING } from "../components/Letterhead";
 import { ThemePicker } from "../components/ThemePicker";
 import { useCurrentUser, useLogout } from "../features/auth/api";
 import { MENU_ACTIVE_SHADE, MENU_TEXT_OPACITY, hasNestedItem, visibleNavItems } from "./navigation";
@@ -28,7 +29,8 @@ export function AppShell() {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      <AppBar position="sticky">
+      {/* Printouts carry the letterhead (HIMS-ORG-006), not the menu. */}
+      <AppBar position="sticky" sx={HIDE_WHEN_PRINTING}>
         <Toolbar sx={{ gap: 1.5, flexWrap: "wrap" }}>
           <Typography
             variant="subtitle1"
@@ -86,7 +88,7 @@ export function AppShell() {
         </Toolbar>
       </AppBar>
       {/* A screen opened for the first time is being downloaded (code splitting, HIMS-PLAT-015). */}
-      <Box sx={{ height: 4 }}>{navigation.state === "loading" && <LinearProgress aria-label="Loading" />}</Box>
+      <Box sx={{ height: 4, ...HIDE_WHEN_PRINTING }}>{navigation.state === "loading" && <LinearProgress aria-label="Loading" />}</Box>
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <Outlet />
       </Container>

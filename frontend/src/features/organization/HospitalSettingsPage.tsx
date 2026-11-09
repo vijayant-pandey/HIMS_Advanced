@@ -6,8 +6,10 @@ import { ApiError, api } from "../../api/client";
 import type { Organization, OrganizationUpdateRequest } from "../../api/types";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { FormDialog, fieldErrors } from "../../components/FormDialog";
+import { HIDE_WHEN_PRINTING } from "../../components/Letterhead";
 import { currentUserKey, useCurrentUser } from "../auth/api";
 import { hasOrganizationWidePermission } from "../auth/grants";
+import { LetterheadSection } from "./LetterheadSection";
 
 const organizationKey = ["organization"] as const;
 
@@ -119,7 +121,7 @@ export function HospitalSettingsPage() {
 
   return (
     <Stack spacing={2}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", ...HIDE_WHEN_PRINTING }}>
         <Typography variant="h5" component="h1">
           Hospital settings
         </Typography>
@@ -132,7 +134,7 @@ export function HospitalSettingsPage() {
       {isPending && <LinearProgress />}
       {error && <ErrorAlert error={error} />}
       {organization && (
-        <Paper sx={{ p: 2 }}>
+        <Paper sx={{ p: 2, ...HIDE_WHEN_PRINTING }}>
           <Row label="Name shown in HIMS" value={organization.display_name} />
           <Row label="Legal name" value={organization.legal_name} />
           <Row label="Country" value={COUNTRY[organization.country] ?? organization.country} />
@@ -144,6 +146,7 @@ export function HospitalSettingsPage() {
           </Typography>
         </Paper>
       )}
+      {organization && <LetterheadSection organization={organization} canEdit={canEdit} />}
       {editing && organization && <EditDialog organization={organization} onClose={() => setEditing(false)} />}
     </Stack>
   );

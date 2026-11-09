@@ -16,7 +16,7 @@ from django.db.models import Count, Q
 from django.utils import timezone
 
 from apps.audit.services import AuditAction, record_audit_event
-from apps.notifications.services import send_email
+from apps.notifications.services import send_message
 from apps.organizations.dates import hospital_date, hospital_time, hospital_today
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
@@ -319,21 +319,16 @@ def send_access_review_reminders(today: date | None = None) -> int:
     if plan["open_review_overdue"]:
         review = AccessReview.objects.get(pk=plan["open_review_id"])
         kind, due_on = AccessReviewReminder.Kind.OVERDUE, review.due_on
-        subject = f"{organization.display_name}: the access review is overdue"
-        body = (
-            f"The access review “{review.title}” was due to finish on "
-            f"{review.due_on:%d %b %Y}. {summary(review)['pending']} item(s) still need a "
-            "decision.\n\nOpen HIMS → Access reviews to finish it.\n"
-        )
+        message = "access.review_overdue"
+        values = {
+            "title": review.title,
+            "due": f"{review.due_on:%d %b %Y}",
+            "pending": summary(review)["pending"],
+        }
     elif plan["review_due"]:
         review, kind, due_on = None, AccessReviewReminder.Kind.DUE, plan["next_due_on"]
-        subject = f"{organization.display_name}: a periodic access review is due"
-        body = (
-            "It is time to check who has access to HIMS and remove access people no longer "
-            f"need (due {due_on:%d %b %Y}; reviews are due every "
-            f"{plan['interval_days']} days).\n\nOpen HIMS → Access reviews → "
-            "Start a review.\n"
-        )
+        message = "access.review_due"
+        values = {"due": f"{due_on:%d %b %Y}", "interval": plan["interval_days"]}
     else:
         return 0
     recipients = reviewer_emails()
@@ -360,11 +355,5 @@ def send_access_review_reminders(today: date | None = None) -> int:
     except IntegrityError:
         return 0  # already sent
     if recipients:
-        send_email(
-            subject=subject,
-            body=body,
-            to=recipients,
-            category="access",
-            template="access.review_reminder",
-        )
+        send_message(message, to=recipients, values=values)
     return 1

@@ -23,6 +23,11 @@ DOMAINS: dict[str, dict] = {
         "owner": "Bed domain (occupancy will come from bed assignments, Phase 3)",
         "docs": ["locations-and-beds.md"],
     },
+    "equipment": {
+        "name": "Equipment register",
+        "owner": "Organization/facility domain (requests and job orders wait for the PO)",
+        "docs": ["../../workflows/equipment-register.md"],
+    },
     "numbering": {
         "name": "Numbering (MRN, visit, invoice, claim numbers)",
         "owner": "Organization/facility domain",
@@ -109,6 +114,11 @@ LIFECYCLE: dict[str, str] = {
     "wards": "Never deleted; switched off (`is_active`).",
     "rooms": "Never deleted; switched off (`is_active`).",
     "beds": "Never deleted; switched off. Status changes with reason; history in the audit log.",
+    "equipment": "Never deleted; retired with a reason. Status and date changes in the audit log.",
+    "equipment_service_records": "Append-only (database trigger); a mistake is corrected by adding "
+    "another record. Kept with the equipment.",
+    "message_templates": "One row per message in the catalog; blank wording means the standard. "
+    "Every change is in the audit log, before and after.",
     "bed_status_changes": "Append-only (database trigger); one row per bed status change, from, "
     "to, why, who and when (HIMS-FAC-008). Earlier changes copied from the audit log once.",
     "numbering_schemes": "Never deleted; switched off. Edits versioned and audited.",
@@ -241,6 +251,13 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "leave_requests.end_date": (RESTRICTED, "Personal (time away)"),
     "shifts.note": (RESTRICTED, "Work note (no patient details)"),
     "bed_status_changes.reason": (INTERNAL, "Bed status reason (no patient details)"),
+    "organizations.letterhead_email": (RESTRICTED, "Contact"),
+    "organizations.logo": (INTERNAL, "Hospital logo"),
+    "equipment.status_reason": (INTERNAL, "Equipment status reason (no patient details)"),
+    "equipment.notes": (INTERNAL, "Equipment notes (no patient details)"),
+    "equipment_service_records.notes": (INTERNAL, "Visit notes (no patient details)"),
+    "equipment_service_records.performed_by": (INTERNAL, "Technician or company"),
+    "message_templates.body": (INTERNAL, "Message wording (no values, no patient details)"),
     "shifts.cancel_reason": (RESTRICTED, "Work note"),
 }
 # Column names, checked next: name -> (level, category).

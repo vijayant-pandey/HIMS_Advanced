@@ -24,7 +24,9 @@ from apps.audit.services import AuditAction, record_audit_event
 from common import crypto, log_safety
 from common.exceptions import ConflictError
 
+from . import letterhead, message_templates
 from .backends import sms_backend
+from .message_catalog import BY_KEY
 from .models import Notification
 
 logger = logging.getLogger(__name__)
@@ -72,12 +74,18 @@ def _deliver(notification: Notification) -> Notification:
     notification.attempts += 1
     try:
         if notification.channel == Channel.EMAIL:
-            send_mail(
-                subject=notification.subject,
-                message=body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=notification.recipients,
+            branded = letterhead.email_with_letterhead(
+                subject=notification.subject, body=body, recipients=notification.recipients
             )
+            if branded is not None:
+                branded.send()
+            else:
+                send_mail(
+                    subject=notification.subject,
+                    message=body,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=notification.recipients,
+                )
         else:
             backend = sms_backend()
             for phone in notification.recipients:
@@ -159,6 +167,23 @@ def send_email(
     if not recipients:
         return _skip(notification, "Nobody to send it to.")
     return _deliver(notification)
+
+
+def send_message(
+    key: str, *, to, values: dict, related=None, requested_by=None, secrets=()
+) -> Notification:
+    """Send a message from the catalog, in the hospital's wording (HIMS-NOTIF-003)."""
+    subject, body = message_templates.render(key, values)
+    return send_email(
+        to=to,
+        subject=subject,
+        body=body,
+        category=BY_KEY[key].category,
+        template=key,
+        related=related,
+        requested_by=requested_by,
+        secrets=secrets,
+    )
 
 
 def send_sms(

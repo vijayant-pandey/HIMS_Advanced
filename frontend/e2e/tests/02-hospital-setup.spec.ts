@@ -1,8 +1,12 @@
-// Hospital set-up by the administrator (spec 4.1, 4.2, 4.10, 21 steps 1–3): facility, department,
-// the location tree down to beds, and bed status rules. Each screen is checked for accessibility.
+// Hospital set-up by the administrator (spec 4.1, 4.2, 4.10, 4.12, 4.23, 21 steps 1–3): facility,
+// department, the location tree down to beds, bed status rules, equipment, letterhead and message
+// wording. Each screen is checked for accessibility.
 import { expect, test } from "@playwright/test";
 
 import { expectAccessible, openMenu, storageFor } from "../helpers";
+
+const ONE_PIXEL_PNG =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
 
 test.use({ storageState: storageFor("admin") });
 test.describe.configure({ mode: "serial" });
@@ -141,6 +145,135 @@ test("bed board: the ward's beds, why one is unavailable and its history; put it
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
   await expect(ward.getByText("3 available")).toBeVisible();
+});
+
+test("letterhead: upload a logo, a wrong file is refused, details show on the page", async ({ page }) => {
+  // HIMS-ORG-006 (spec 4.1). It stays on for the later tests, so the activation emails they read
+  // are real letterhead emails.
+  await page.goto("/");
+  await openMenu(page, "Hospital settings");
+  const section = page.getByRole("region", { name: "Letterhead" });
+  const logoFile = section.getByLabel("Logo file");
+  await logoFile.setInputFiles({
+    name: "logo.svg",
+    mimeType: "image/svg+xml",
+    buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>'),
+  });
+  await expect(section.getByText("The logo must be a PNG or JPG picture.")).toBeVisible();
+
+  await logoFile.setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: Buffer.from(ONE_PIXEL_PNG, "base64") });
+  await expect(section.getByRole("button", { name: "Remove logo" })).toBeVisible();
+  const logo = section.locator("img");
+  await expect(logo).toBeVisible();
+  await expect.poll(() => logo.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1);
+
+  await section.getByRole("button", { name: "Edit letterhead" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Address").fill("1 Synthetic Road, Pune");
+  await dialog.getByLabel("Phone").fill("+91 20 0000 0000");
+  await expectAccessible(page, "Edit letterhead dialog");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(section.getByText("1 Synthetic Road, Pune")).toBeVisible();
+  await expectAccessible(page, "Hospital settings with letterhead");
+});
+
+test("equipment register: add, record a visit, status needs a reason, prints with the letterhead", async ({ page }) => {
+  // HIMS-FAC-009 (spec 4.12).
+  await page.goto("/");
+  await openMenu(page, "Equipment");
+  await expect(page.getByRole("heading", { name: "Equipment", level: 1 })).toBeVisible();
+  await page.getByRole("button", { name: "Add equipment" }).click();
+  const add = page.getByRole("dialog");
+  const chooser = add.getByRole("combobox", { name: "Facility" });
+  if (await chooser.count()) {
+    await chooser.click();
+    await page.getByRole("option", { name: "Test Branch One" }).click();
+  }
+  await add.getByLabel("Asset tag").fill("icu-vent-01");
+  await add.getByRole("textbox", { name: "Name", exact: false }).first().fill("Ventilator");
+  await add.getByRole("combobox", { name: "Ward" }).click();
+  await page.getByRole("option", { name: "Cardiac Ward" }).click();
+  await expect(page.locator(".MuiMenu-root")).toHaveCount(0);
+  await add.getByRole("combobox", { name: "Room" }).click();
+  await page.getByRole("option", { name: "Room 101" }).click();
+  await expect(page.locator(".MuiMenu-root")).toHaveCount(0);
+  await expectAccessible(page, "Add equipment dialog");
+  await add.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(add).toBeHidden();
+
+  const table = page.getByRole("table", { name: "Equipment" });
+  await expect(table.getByText("Cardiac Ward · Room 101")).toBeVisible();
+  await expectAccessible(page, "Equipment");
+
+  await table.getByRole("button", { name: "ICU-VENT-01" }).click();
+  const details = page.getByRole("dialog");
+  await details.getByRole("button", { name: "Record a visit" }).click();
+  const visit = page.getByRole("dialog", { name: /Record a visit/ });
+  await visit.getByLabel("Done by").fill("Acme Biomed");
+  await visit.getByLabel("Next one due").fill(`${new Date().getFullYear() + 1}-12-31`);
+  await expectAccessible(page, "Record a visit dialog");
+  await visit.getByRole("button", { name: "Save" }).click();
+  await expect(visit).toBeHidden();
+  const visits = page.getByRole("list", { name: "Visits" });
+  await expect(visits.getByText(/Service on .*Acme Biomed/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Change status" }).click();
+  const status = page.getByRole("dialog", { name: /Status of/ });
+  await status.getByRole("combobox", { name: "Status" }).click();
+  await page.getByRole("option", { name: "Under maintenance" }).click();
+  await expect(page.locator(".MuiMenu-root")).toHaveCount(0);
+  await expect(status.getByRole("button", { name: "Save" })).toBeDisabled();
+  await status.getByLabel(/Reason/).fill("Battery fault");
+  await status.getByRole("button", { name: "Save" }).click();
+  await expect(status).toBeHidden();
+  await expect(page.getByRole("dialog").getByText("Battery fault")).toBeVisible();
+  await expectAccessible(page, "Equipment details");
+  await page.getByRole("button", { name: "Close" }).click();
+
+  // On paper: the letterhead and the register, without the menu or the buttons.
+  await page.emulateMedia({ media: "print" });
+  const letterhead = page.getByTestId("print-letterhead");
+  await expect(letterhead).toBeVisible();
+  await expect(letterhead.getByText("1 Synthetic Road, Pune")).toBeVisible();
+  await expect(letterhead.locator("img")).toBeVisible();
+  await expect(page.getByRole("navigation")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Add equipment" })).toBeHidden();
+  await expect(table.getByText("Ventilator")).toBeVisible();
+  await page.emulateMedia({ media: "screen" });
+  await expect(letterhead).toBeHidden();
+});
+
+test("message wording: wrong wording refused, a change is previewed and saved, the standard comes back", async ({ page }) => {
+  // HIMS-NOTIF-003 (spec 4.1, 4.23).
+  await page.goto("/");
+  await openMenu(page, "Message wording");
+  await expect(page.getByRole("heading", { name: "Message wording", level: 1 })).toBeVisible();
+  await expectAccessible(page, "Message wording");
+  const row = page.getByRole("row", { name: /Account invitation/ });
+  await expect(row.getByText("Standard")).toBeVisible();
+
+  await row.getByRole("button", { name: "Account invitation" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(/The activation link \(must stay\)/)).toBeVisible();
+  await expectAccessible(page, "Message wording dialog");
+  const message = dialog.getByRole("textbox", { name: "Message" });
+  await message.fill("Welcome {{name}}, there is no link here.");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog.getByText(/must keep \{\{link\}\}/)).toBeVisible();
+
+  await message.fill("Welcome {{name}}. Please open {{link}}");
+  await dialog.getByRole("button", { name: "Preview" }).click();
+  await expect(dialog.getByRole("region", { name: "Preview" }).getByText(/Welcome Asha Verma/)).toBeVisible();
+  await expectAccessible(page, "Message wording preview");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(row.getByText("Changed")).toBeVisible();
+
+  await row.getByRole("button", { name: "Account invitation" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Use the standard wording" }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(row.getByText("Standard")).toBeVisible();
 });
 
 test("numbering, features and hospital settings screens open and are accessible", async ({ page }) => {

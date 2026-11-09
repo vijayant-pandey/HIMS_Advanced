@@ -74,8 +74,9 @@ function messagesTo(email: string): string[] {
 
 /** Every link of this kind (`activate` or `reset-password`) emailed to `email` so far. */
 export function linksFromEmails(email: string, kind: LinkKind): string[] {
-  const pattern = new RegExp(`https?://\\S+/${kind}#token=[^\\s"<]+`, "g");
-  return messagesTo(email).flatMap((message) => message.match(pattern) ?? []);
+  const pattern = new RegExp(`https?://[^\\s"<>]+/${kind}#token=[^\\s"<>]+`, "g");
+  // An email with the hospital's letterhead holds the link twice: plain text and HTML (HIMS-ORG-006).
+  return messagesTo(email).flatMap((message) => [...new Set(message.match(pattern) ?? [])]);
 }
 
 /**
