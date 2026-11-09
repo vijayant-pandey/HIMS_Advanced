@@ -193,6 +193,7 @@ class RoleAssignmentAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
 @admin.register(AccessReview)
 class AccessReviewAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
     change_form_template = "admin/access_control/accessreview/change_form.html"
+    change_list_template = "admin/access_control/accessreview/change_list.html"
     list_display = ("title", "status", "due_on", "created_at", "started_by", "completed_at")
     list_filter = ("status",)
     search_fields = ("title",)
@@ -207,6 +208,11 @@ class AccessReviewAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
             ),
             *super().get_urls(),
         ]
+
+    def changelist_view(self, request, extra_context=None):
+        """Shows when the next review is due, as the Access reviews page does (HIMS-IAM-012)."""
+        extra_context = {**(extra_context or {}), "schedule": reviews.schedule()}
+        return super().changelist_view(request, extra_context)
 
     def export_view(self, request, review_id):
         """The same CSV as the app's download, after the same "confirm it's you" (HIMS-IAM-012)."""

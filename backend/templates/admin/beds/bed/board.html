@@ -1,0 +1,49 @@
+{% extends "admin/base_site.html" %}
+{# Bed board (HIMS-FAC-008): each ward's beds by status for one facility, and the beds that are
+   not available with their reason. Same visibility as the app's Bed board page. #}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+  <a href="{% url 'admin:beds_bed_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo; Bed board
+</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>Bed board</h1>
+  {% if board.facilities|length > 1 %}
+  <form method="get">
+    <label for="id_facility">Facility</label>
+    <select id="id_facility" name="facility">
+      {% for facility in board.facilities %}<option value="{{ facility.id }}"{% if facility.id == board.facility %} selected{% endif %}>{{ facility.name }}</option>{% endfor %}
+    </select>
+    <input type="submit" value="Show" class="button">
+  </form>
+  {% endif %}
+  {% if not board.facility %}
+  <p>No facility to show: none is active, or Locations is switched off.</p>
+  {% else %}
+  <p>As of {{ board.generated_at }}. No patients yet: admissions fill beds in Phase 3. Change a bed's status on its own page.</p>
+  <div class="module">
+    <table>
+      <thead>
+        <tr><th scope="col">Ward</th>{% for status in statuses %}<th scope="col">{{ status.label }}</th>{% endfor %}<th scope="col">Not available</th></tr>
+      </thead>
+      <tbody>
+      {% for ward in wards %}
+        <tr>
+          <th scope="row">{{ ward.name }} ({{ ward.code }})<br><span class="help">{{ ward.building_name }}, {{ ward.floor_name }}{% if ward.department_name %} · {{ ward.department_name }}{% endif %}</span></th>
+          {% for count in ward.counts %}<td>{{ count }}</td>{% endfor %}
+          <td>{% for bed in ward.unavailable %}<a href="{% url 'admin:beds_bed_change' bed.id %}">{{ bed.code }}</a>: {{ bed.status_reason|default:bed.status }}{% if not forloop.last %}<br>{% endif %}{% empty %}—{% endfor %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="9">No wards with active beds here.</td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><th scope="row">All wards</th>{% for count in totals %}<td><strong>{{ count }}</strong></td>{% endfor %}<td></td></tr>
+      </tfoot>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

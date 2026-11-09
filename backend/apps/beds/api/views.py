@@ -1,4 +1,4 @@
-"""Bed API and the facility location tree (HIMS-FAC-004)."""
+"""Bed API, the facility location tree (HIMS-FAC-004) and the bed board (HIMS-FAC-008)."""
 
 from collections import Counter
 
@@ -19,10 +19,12 @@ from apps.features.services import disabled_facility_ids, require_enabled
 from common.idempotency.decorators import idempotent
 from common.permissions import FACILITY, filter_by_facility_scope
 
-from .. import services
+from .. import board, services
 from ..models import Bed
 from .serializers import (
+    BedBoardSerializer,
     BedCreateSerializer,
+    BedHistorySerializer,
     BedSerializer,
     BedStatusChangeSerializer,
     BedUpdateSerializer,
@@ -49,11 +51,12 @@ class BedViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gene
         "partial_update": P.LOCATIONS_MANAGE,
         "bulk": P.LOCATIONS_MANAGE,
         "change_status": P.BEDS_STATUS_MANAGE,
+        "history": P.LOCATIONS_VIEW,
     }
     http_method_names = ["get", "post", "patch", "head"]
 
     def get_queryset(self):
-        queryset = filter_by_facility_scope(self, Bed.objects.all())
+        queryset = filter_by_facility_scope(self, Bed.objects.select_related("ward"))
         if self.action == "list":
             # Facilities where the hospital turned Locations off (HIMS-ORG-004) are left out.
             queryset = queryset.exclude(
@@ -68,7 +71,9 @@ class BedViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gene
         return queryset
 
     def get_permission_context(self, obj):
-        return obj.facility_id, None
+        # A department grant covers the beds in that department's wards (HIMS-FAC-008), as on
+        # the bed board; a facility grant covers every bed of the facility.
+        return obj.facility_id, obj.ward.department_id
 
     def get_object(self):
         obj = super().get_object()
@@ -123,6 +128,12 @@ class BedViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Gene
             actor=request.user, bed_id=bed.pk, request=request, **serializer.validated_data
         )
         return Response(BedSerializer(bed).data)
+
+    @extend_schema(responses=BedHistorySerializer(many=True))
+    @action(detail=True, methods=["get"], pagination_class=None)
+    def history(self, request, pk=None):
+        """The bed's last 20 status changes: from, to, why, who and when."""
+        return Response(BedHistorySerializer(board.bed_history(self.get_object()), many=True).data)
 
     @extend_schema(request=BulkBedsSerializer, responses={201: BedSerializer(many=True)})
     @action(detail=False, methods=["post"])
@@ -256,3 +267,23 @@ class FacilityLocationsView(APIView):
             )
         data = {"facility": pk, "bed_counts": dict(totals), "buildings": tree}
         return Response(FacilityLocationsSerializer(data).data)
+
+
+class BedBoardView(APIView):
+    """Every ward's beds and their status on one screen (spec 4.10, 15.1; HIMS-FAC-008)."""
+
+    permission_scope = FACILITY
+    required_permissions = {"get": P.LOCATIONS_VIEW}
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("facility", str, description="Facility id (default: the first one)")
+        ],
+        responses=BedBoardSerializer,
+    )
+    def get(self, request):
+        facility_id = request.query_params.get("facility") or None
+        data = board.build_board(request.user, facility_id=facility_id, request=request)
+        if facility_id and data["facility"] is None:
+            raise Http404  # not visible looks the same as missing
+        return Response(BedBoardSerializer(data).data)

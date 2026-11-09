@@ -221,6 +221,7 @@ test.describe("administrator", () => {
       "compliance/consoleaccessblock/security-status/",
       "outbox/outboxevent/",
       "notifications/notification/send-test/",
+      "beds/bed/board/",
       "compliance/browsersecurityreport/",
       "facilities/facility/",
       "facilities/facility/add/",

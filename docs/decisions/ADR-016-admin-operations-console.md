@@ -72,3 +72,13 @@ or active wards cannot be set to inactive, and the console shows the same plain-
   and "Download selected events as CSV" for auditors (HIMS-AUD-003), both after "confirm it's you";
   and a **Security status** page (top bar, for `compliance.view`): browser protection, where the
   console may be used from, and the database-user checks (HIMS-SEC-012/014, HIMS-OPS-007).
+
+## Update 2026-11-09 (HIMS-FAC-008): bed board, bed history and access review schedule
+- **Beds → Bed board**: each ward's beds by status for one facility, with the unavailable beds and
+  their reason; the same visibility as the app's Bed board.
+- **Status history** section on each bed's page and a **Bed status changes** list; read-only, the
+  database refuses changes (append-only table `bed_status_changes`).
+- Console parity check repeated: the one thing the app showed and the console did not was **when
+  the next access review is due**; the Access reviews list now shows it.
+- Every console save now tells the record who is saving (`_hims_actor`), so records that keep
+  their own history (bed status) name the person.

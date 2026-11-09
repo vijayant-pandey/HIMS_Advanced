@@ -1,11 +1,16 @@
 from django import forms
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
+from django.template.response import TemplateResponse
+from django.urls import path
+from django.utils.html import format_html, format_html_join
 
 from apps.facilities.admin import RoomAdmin, _LocationAdmin
-from common.admin.options import HimsInline
+from common.admin.options import HimsInline, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
-from .models import Bed
+from . import board
+from .models import Bed, BedStatusChange
 from .services import change_bed_status
 
 STATUS_CHOICES = [("", "— keep current status —")] + [
@@ -55,6 +60,7 @@ class BedForm(forms.ModelForm):
 @admin.register(Bed)
 class BedAdmin(_LocationAdmin):
     form = BedForm
+    change_list_template = "admin/beds/bed/change_list.html"
     parent_field = "room"
     list_display = ("code", "ward", "room", "bed_type", "status", "status_reason", "is_active")
     list_filter = ("status", "bed_type", "is_active", "facility")
@@ -73,10 +79,78 @@ class BedAdmin(_LocationAdmin):
                 )
             },
         ),
+        ("Status history", {"fields": ("status_history",)}),
         ("Record", {"fields": ("version", "created_at", "updated_at")}),
     )
-    readonly_fields = ("status", "status_reason", "status_changed_at")
+    readonly_fields = ("status", "status_reason", "status_changed_at", "status_history")
+
+    @admin.display(description="Last changes")
+    def status_history(self, obj):
+        """The bed's last status changes (HIMS-FAC-008). A read-only field, not an inline, so
+        saving the bed page needs nothing extra; the database refuses edits anyway."""
+        changes = board.bed_history(obj) if obj and obj.pk else []
+        if not changes:
+            return "No status changes yet."
+        rows = format_html_join(
+            "",
+            "<tr><td>{}</td><td>{} → {}</td><td>{}</td><td>{}</td></tr>",
+            (
+                (
+                    c.changed_at.strftime("%Y-%m-%d %H:%M"),
+                    c.get_from_status_display(),
+                    c.get_to_status_display(),
+                    c.reason or "—",
+                    c.changed_by.display_name if c.changed_by else "—",
+                )
+                for c in changes
+            ),
+        )
+        return format_html(
+            "<table><thead><tr><th>When (UTC)</th><th>Change</th><th>Why</th><th>Who</th></tr>"
+            "</thead><tbody>{}</tbody></table>",
+            rows,
+        )
+
     actions = ["mark_available", "mark_out_of_service"]
+
+    def get_urls(self):
+        return [
+            path(
+                "board/",
+                self.admin_site.admin_view(self.board_view),
+                name="beds_bed_board",
+            ),
+            *super().get_urls(),
+        ]
+
+    def board_view(self, request):
+        """The bed board in the console: each ward's beds by status, for one facility, with the
+        same visibility rules as the app's Bed board page (HIMS-FAC-008)."""
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        data = board.build_board(
+            request.user, facility_id=request.GET.get("facility") or None, request=request
+        )
+        statuses = list(Bed.Status)
+        wards = [
+            {
+                **ward,
+                "counts": [ward["bed_counts"].get(status.value, 0) for status in statuses],
+                "unavailable": [b for b in ward["beds"] if b["status"] != Bed.Status.AVAILABLE],
+            }
+            for ward in data["wards"]
+        ]
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Bed board",
+            "opts": self.model._meta,
+            "board": data,
+            "statuses": statuses,
+            "totals": [data["bed_counts"].get(status.value, 0) for status in statuses],
+            "wards": wards,
+            "type_labels": dict(Bed.BedType.choices),
+        }
+        return TemplateResponse(request, "admin/beds/bed/board.html", context)
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
@@ -119,3 +193,14 @@ class BedAdmin(_LocationAdmin):
     @admin.action(description="Mark selected beds out of service")
     def mark_out_of_service(self, request, queryset):
         self._change_status(request, queryset, Bed.Status.OUT_OF_SERVICE, "Set from admin console")
+
+
+@admin.register(BedStatusChange)
+class BedStatusChangeAdmin(ReadOnlyModelAdmin):
+    """Every bed status change (HIMS-FAC-008). Append-only: the database refuses changes."""
+
+    list_display = ("changed_at", "bed", "ward", "from_status", "to_status", "reason", "changed_by")
+    list_filter = ("to_status", "facility")
+    search_fields = ("bed__code", "ward__code", "reason")
+    date_hierarchy = "changed_at"
+    list_select_related = ("bed__ward", "ward", "changed_by")

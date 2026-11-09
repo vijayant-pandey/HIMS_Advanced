@@ -123,6 +123,12 @@ served by the app itself (WhiteNoise); Swagger UI is bundled, not loaded from a 
 [docs/workflows/static-files.md](docs/workflows/static-files.md). After pulling a change that adds a
 library, run `pip install --require-hashes -r requirements/dev.txt` in `backend`.
 
+## Bed board
+
+Menu **Bed board** shows every ward's beds and their status on one screen, refreshed every 30
+seconds, with each bed's status history (HIMS-FAC-008):
+[docs/workflows/bed-board.md](docs/workflows/bed-board.md).
+
 ## Admin console: only from allowed addresses
 
 The admin console answers only the addresses in `HIMS_ADMIN_ALLOWED_NETWORKS`; anyone else gets

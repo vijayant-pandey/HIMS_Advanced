@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, api } from "../../api/client";
 import type {
   Bed,
+  BedBoard,
+  BedHistory,
   BedStatusChangeRequest,
   BulkBedsRequest,
   FacilityLocations,
@@ -42,6 +44,31 @@ export function useDepartments(facilityId: string | undefined) {
         signal,
       }),
     enabled: !!facilityId,
+  });
+}
+
+/** How often the bed board asks again (HIMS-FAC-008); also on returning to the tab. */
+export const BOARD_REFRESH_MS = 30_000;
+
+/** The bed board for one facility (default: the first one the person can see). */
+export function useBedBoard(facilityId: string | undefined) {
+  return useQuery<BedBoard, ApiError>({
+    queryKey: [...locationsKey, "board", facilityId ?? "first"],
+    queryFn: ({ signal }) =>
+      api.get<BedBoard>("/bed-board/", {
+        query: facilityId ? { facility: facilityId } : undefined,
+        signal,
+      }),
+    refetchInterval: BOARD_REFRESH_MS,
+    refetchOnWindowFocus: true,
+  });
+}
+
+/** A bed's last status changes: from, to, why, who and when. */
+export function useBedHistory(bedId: string) {
+  return useQuery<BedHistory[], ApiError>({
+    queryKey: [...locationsKey, "history", bedId],
+    queryFn: ({ signal }) => api.get<BedHistory[]>(`/beds/${bedId}/history/`, { signal }),
   });
 }
 

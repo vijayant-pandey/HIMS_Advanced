@@ -18,6 +18,7 @@ erDiagram
     wards
     rooms
     beds
+    bed_status_changes
     numbering_schemes
     numbering_counters
     issued_numbers
@@ -86,6 +87,10 @@ erDiagram
     rooms ||--o{ beds : "room_id"
     wards ||--o{ beds : "ward_id"
     facilities ||--o{ beds : "facility_id"
+    beds ||--o{ bed_status_changes : "bed_id"
+    facilities ||--o{ bed_status_changes : "facility_id"
+    wards ||--o{ bed_status_changes : "ward_id"
+    users |o--o{ bed_status_changes : "changed_by_id"
     organizations ||--o{ numbering_schemes : "organization_id"
     facilities |o--o{ numbering_schemes : "facility_id"
     numbering_schemes ||--o{ numbering_counters : "scheme_id"
@@ -348,17 +353,33 @@ erDiagram
         varchar status_reason
         timestamptz status_changed_at
     }
+    bed_status_changes {
+        uuid id PK
+        uuid bed_id FK
+        uuid facility_id FK
+        uuid ward_id FK
+        varchar from_status
+        varchar to_status
+        varchar reason
+        uuid changed_by_id FK
+        timestamptz changed_at
+    }
     facilities
     organizations
     rooms
+    users
     wards
     organizations ||--o{ beds : "organization_id"
     rooms ||--o{ beds : "room_id"
     wards ||--o{ beds : "ward_id"
     facilities ||--o{ beds : "facility_id"
+    beds ||--o{ bed_status_changes : "bed_id"
+    facilities ||--o{ bed_status_changes : "facility_id"
+    wards ||--o{ bed_status_changes : "ward_id"
+    users |o--o{ bed_status_changes : "changed_by_id"
 ```
 
-Tables from other domains are shown without columns: `facilities`, `organizations`, `rooms`, `wards`.
+Tables from other domains are shown without columns: `facilities`, `organizations`, `rooms`, `users`, `wards`.
 
 ## Numbering (MRN, visit, invoice, claim numbers) (logical)
 

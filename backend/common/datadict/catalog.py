@@ -109,6 +109,8 @@ LIFECYCLE: dict[str, str] = {
     "wards": "Never deleted; switched off (`is_active`).",
     "rooms": "Never deleted; switched off (`is_active`).",
     "beds": "Never deleted; switched off. Status changes with reason; history in the audit log.",
+    "bed_status_changes": "Append-only (database trigger); one row per bed status change, from, "
+    "to, why, who and when (HIMS-FAC-008). Earlier changes copied from the audit log once.",
     "numbering_schemes": "Never deleted; switched off. Edits versioned and audited.",
     "numbering_counters": "One per scheme and period; the value only increases.",
     "issued_numbers": "Append-only register; a number is never reused.",
@@ -238,6 +240,7 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "leave_requests.start_date": (RESTRICTED, "Personal (time away)"),
     "leave_requests.end_date": (RESTRICTED, "Personal (time away)"),
     "shifts.note": (RESTRICTED, "Work note (no patient details)"),
+    "bed_status_changes.reason": (INTERNAL, "Bed status reason (no patient details)"),
     "shifts.cancel_reason": (RESTRICTED, "Work note"),
 }
 # Column names, checked next: name -> (level, category).

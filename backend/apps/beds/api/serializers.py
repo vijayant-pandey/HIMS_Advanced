@@ -118,3 +118,64 @@ class FacilityLocationsSerializer(serializers.Serializer):
     facility = serializers.UUIDField()
     bed_counts = serializers.DictField(child=serializers.IntegerField(), help_text="by status")
     buildings = TreeBuildingSerializer(many=True)
+
+
+# --- Bed board (HIMS-FAC-008) ---------------------------------------------------------------
+class BoardBedSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+    bed_type = serializers.CharField()
+    status = serializers.CharField()
+    status_reason = serializers.CharField()
+    status_changed_at = serializers.DateTimeField(help_text="Since when the bed has this status.")
+    version = serializers.IntegerField()
+    room_code = serializers.CharField()
+    room_name = serializers.CharField()
+    is_isolation_capable = serializers.BooleanField()
+
+
+class BoardWardSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+    name = serializers.CharField()
+    ward_type = serializers.CharField()
+    building_name = serializers.CharField()
+    floor_name = serializers.CharField()
+    floor_level = serializers.IntegerField()
+    department = serializers.UUIDField(allow_null=True)
+    department_name = serializers.CharField(allow_null=True)
+    gender_restriction = serializers.CharField()
+    age_group = serializers.CharField()
+    can_change_status = serializers.BooleanField(
+        help_text="The person may put this ward's beds into or out of service."
+    )
+    bed_counts = serializers.DictField(child=serializers.IntegerField(), help_text="by status")
+    beds = BoardBedSerializer(many=True)
+
+
+class BoardFacilitySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+    name = serializers.CharField()
+
+
+class BedBoardSerializer(serializers.Serializer):
+    generated_at = serializers.DateTimeField()
+    facilities = BoardFacilitySerializer(many=True, help_text="Facilities the person can see.")
+    facility = serializers.UUIDField(allow_null=True, help_text="The facility shown.")
+    bed_counts = serializers.DictField(child=serializers.IntegerField(), help_text="by status")
+    available_by_type = serializers.DictField(
+        child=serializers.IntegerField(), help_text="Available beds by bed type"
+    )
+    wards = BoardWardSerializer(many=True)
+
+
+class BedHistorySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    from_status = serializers.CharField()
+    to_status = serializers.CharField()
+    reason = serializers.CharField()
+    changed_by_name = serializers.CharField(
+        source="changed_by.display_name", default=None, allow_null=True
+    )
+    changed_at = serializers.DateTimeField()

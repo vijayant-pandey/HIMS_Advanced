@@ -49,6 +49,7 @@ def update_location(model: type[models.Model], *, actor, pk, version: int, reque
         setattr(instance, field, value)
     instance.full_clean()
     bump_version(instance)
+    instance._hims_actor = actor  # who, for records that keep their own history (bed status)
     instance.save()
     record_audit_event(
         action=AuditAction.LOCATION_UPDATED,

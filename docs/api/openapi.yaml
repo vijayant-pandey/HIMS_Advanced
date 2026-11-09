@@ -1416,6 +1416,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecoveryStatus'
           description: ''
+  /api/v1/bed-board/:
+    get:
+      operationId: bed_board_retrieve
+      description: Every ward's beds and their status on one screen (spec 4.10, 15.1;
+        HIMS-FAC-008).
+      parameters:
+      - in: query
+        name: facility
+        schema:
+          type: string
+        description: 'Facility id (default: the first one)'
+      tags:
+      - bed-board
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BedBoard'
+          description: ''
   /api/v1/beds/:
     get:
       operationId: beds_list
@@ -1534,6 +1556,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Bed'
+          description: ''
+  /api/v1/beds/{id}/history/:
+    get:
+      operationId: beds_history_list
+      description: 'The bed''s last 20 status changes: from, to, why, who and when.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this bed.
+        required: true
+      tags:
+      - beds
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BedHistory'
           description: ''
   /api/v1/beds/{id}/status/:
     post:
@@ -5864,6 +5911,43 @@ components:
       - updated_at
       - version
       - ward
+    BedBoard:
+      type: object
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        facilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoardFacility'
+          description: Facilities the person can see.
+        facility:
+          type: string
+          format: uuid
+          nullable: true
+          description: The facility shown.
+        bed_counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: by status
+        available_by_type:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Available beds by bed type
+        wards:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoardWard'
+      required:
+      - available_by_type
+      - bed_counts
+      - facilities
+      - facility
+      - generated_at
+      - wards
     BedCreateRequest:
       type: object
       properties:
@@ -5882,6 +5966,30 @@ components:
       - bed_type
       - code
       - room
+    BedHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        from_status:
+          type: string
+        to_status:
+          type: string
+        reason:
+          type: string
+        changed_by_name:
+          type: string
+          nullable: true
+        changed_at:
+          type: string
+          format: date-time
+      required:
+      - changed_at
+      - from_status
+      - id
+      - reason
+      - to_status
     BedStatusChangeRequest:
       type: object
       properties:
@@ -5960,6 +6068,113 @@ components:
     BlankEnum:
       enum:
       - ''
+    BoardBed:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        bed_type:
+          type: string
+        status:
+          type: string
+        status_reason:
+          type: string
+        status_changed_at:
+          type: string
+          format: date-time
+          description: Since when the bed has this status.
+        version:
+          type: integer
+        room_code:
+          type: string
+        room_name:
+          type: string
+        is_isolation_capable:
+          type: boolean
+      required:
+      - bed_type
+      - code
+      - id
+      - is_isolation_capable
+      - room_code
+      - room_name
+      - status
+      - status_changed_at
+      - status_reason
+      - version
+    BoardFacility:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - id
+      - name
+    BoardWard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        ward_type:
+          type: string
+        building_name:
+          type: string
+        floor_name:
+          type: string
+        floor_level:
+          type: integer
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        department_name:
+          type: string
+          nullable: true
+        gender_restriction:
+          type: string
+        age_group:
+          type: string
+        can_change_status:
+          type: boolean
+          description: The person may put this ward's beds into or out of service.
+        bed_counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: by status
+        beds:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoardBed'
+      required:
+      - age_group
+      - bed_counts
+      - beds
+      - building_name
+      - can_change_status
+      - code
+      - department
+      - department_name
+      - floor_level
+      - floor_name
+      - gender_restriction
+      - id
+      - name
+      - ward_type
     BrowserReportReviewRequest:
       type: object
       properties:

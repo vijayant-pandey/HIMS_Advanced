@@ -117,6 +117,32 @@ test("build building → floor → ward → room → beds, then put a bed into m
   await expect(page.getByRole("button", { name: /Bed B02, Maintenance/ })).toBeVisible();
 });
 
+test("bed board: the ward's beds, why one is unavailable and its history; put it back", async ({ page }) => {
+  // HIMS-FAC-008 (spec 4.10 availability board, 15.1 ward board). No patients yet.
+  await page.goto("/");
+  await openMenu(page, "Bed board");
+  await expect(page.getByRole("heading", { name: "Bed board", level: 1 })).toBeVisible();
+  const chooser = page.getByRole("combobox", { name: "Facility" });
+  if (await chooser.count()) {
+    await chooser.click();
+    await page.getByRole("option", { name: "Test Branch One" }).click();
+  }
+  const ward = page.getByRole("region", { name: "Cardiac Ward" });
+  await expect(ward.getByText("2 available · 1 maintenance")).toBeVisible();
+  await expectAccessible(page, "Bed board");
+
+  await ward.getByRole("button", { name: /Bed B02.*Room 101.*Maintenance/ }).click();
+  const dialog = page.getByRole("dialog");
+  const history = dialog.getByRole("list", { name: "Status history" });
+  await expect(history.getByText("Available → Maintenance: Broken side rail")).toBeVisible();
+  await expectAccessible(page, "Bed board: bed details");
+  await dialog.getByRole("combobox", { name: "Status" }).click();
+  await page.getByRole("option", { name: "Available" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(ward.getByText("3 available")).toBeVisible();
+});
+
 test("numbering, features and hospital settings screens open and are accessible", async ({ page }) => {
   for (const [menu, heading] of [
     ["Numbering", "Numbering"],

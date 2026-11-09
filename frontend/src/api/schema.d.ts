@@ -941,6 +941,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bed-board/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Every ward's beds and their status on one screen (spec 4.10, 15.1; HIMS-FAC-008). */
+        get: operations["bed_board_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/beds/": {
         parameters: {
             query?: never;
@@ -971,6 +988,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["beds_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/beds/{id}/history/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The bed's last 20 status changes: from, to, why, who and when. */
+        get: operations["beds_history_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/beds/{id}/status/": {
@@ -3096,12 +3130,42 @@ export interface components {
             /** Format: date-time */
             readonly updated_at: string;
         };
+        BedBoard: {
+            /** Format: date-time */
+            generated_at: string;
+            /** @description Facilities the person can see. */
+            facilities: components["schemas"]["BoardFacility"][];
+            /**
+             * Format: uuid
+             * @description The facility shown.
+             */
+            facility: string | null;
+            /** @description by status */
+            bed_counts: {
+                [key: string]: number;
+            };
+            /** @description Available beds by bed type */
+            available_by_type: {
+                [key: string]: number;
+            };
+            wards: components["schemas"]["BoardWard"][];
+        };
         BedCreateRequest: {
             /** Format: uuid */
             room: string;
             /** @description Bed label, unique within the ward */
             code: string;
             bed_type: components["schemas"]["BedTypeEnum"];
+        };
+        BedHistory: {
+            /** Format: uuid */
+            id: string;
+            from_status: string;
+            to_status: string;
+            reason: string;
+            changed_by_name?: string | null;
+            /** Format: date-time */
+            changed_at: string;
         };
         BedStatusChangeRequest: {
             version: number;
@@ -3147,6 +3211,51 @@ export interface components {
         BedTypeEnum: "general" | "semi_private" | "private" | "deluxe" | "icu" | "hdu" | "nicu" | "picu" | "isolation" | "day_care" | "labour" | "recovery" | "emergency_trolley";
         /** @enum {unknown} */
         BlankEnum: "";
+        BoardBed: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            bed_type: string;
+            status: string;
+            status_reason: string;
+            /**
+             * Format: date-time
+             * @description Since when the bed has this status.
+             */
+            status_changed_at: string;
+            version: number;
+            room_code: string;
+            room_name: string;
+            is_isolation_capable: boolean;
+        };
+        BoardFacility: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+        };
+        BoardWard: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            ward_type: string;
+            building_name: string;
+            floor_name: string;
+            floor_level: number;
+            /** Format: uuid */
+            department: string | null;
+            department_name: string | null;
+            gender_restriction: string;
+            age_group: string;
+            /** @description The person may put this ward's beds into or out of service. */
+            can_change_status: boolean;
+            /** @description by status */
+            bed_counts: {
+                [key: string]: number;
+            };
+            beds: components["schemas"]["BoardBed"][];
+        };
         BrowserReportReviewRequest: {
             version: number;
             note?: string;
@@ -6985,6 +7094,28 @@ export interface operations {
             };
         };
     };
+    bed_board_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Facility id (default: the first one) */
+                facility?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BedBoard"];
+                };
+            };
+        };
+    };
     beds_list: {
         parameters: {
             query?: {
@@ -7083,6 +7214,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Bed"];
+                };
+            };
+        };
+    };
+    beds_history_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this bed. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BedHistory"][];
                 };
             };
         };
