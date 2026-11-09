@@ -1180,6 +1180,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/console-access-blocks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["console_access_blocks_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/console-access-blocks/{id}/review/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["console_access_blocks_review_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/department-services/{id}/": {
         parameters: {
             query?: never;
@@ -2188,6 +2220,22 @@ export interface paths {
         put?: never;
         /** @description Where browsers send reports of what they blocked. The same empty answer whether a report is used or ignored. */
         post: operations["security_browser_reports_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/console-access/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["security_console_access_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3229,6 +3277,38 @@ export interface components {
             confirmed_until: string | null;
             window_minutes: number;
             needs_code: boolean;
+        };
+        ConsoleAccess: {
+            /** @description The admin console is switched on here. */
+            enabled: boolean;
+            allowed_networks: string[];
+            your_address: string | null;
+            you_are_allowed: boolean;
+            developer_pc: boolean;
+            refusals_to_review: number;
+        };
+        ConsoleAccessBlock: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date */
+            readonly day: string;
+            /** @description The address that was refused. */
+            readonly ip_address: string;
+            readonly attempts: number;
+            /** Format: date-time */
+            readonly last_seen_at: string;
+            /** @description Console page, ids removed. */
+            readonly last_path: string;
+            readonly signed_in_user_name: string | null;
+            readonly reviewed_by_name: string | null;
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+            readonly review_note: string;
+            readonly version: number;
+        };
+        ConsoleBlockReviewRequest: {
+            version: number;
+            note?: string;
         };
         CopyWeekRequest: {
             /** Format: uuid */
@@ -7384,6 +7464,51 @@ export interface operations {
             };
         };
     };
+    console_access_blocks_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleAccessBlock"][];
+                };
+            };
+        };
+    };
+    console_access_blocks_review_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this console access block. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsoleBlockReviewRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleAccessBlock"];
+                };
+            };
+        };
+    };
     department_services_partial_update: {
         parameters: {
             query?: never;
@@ -9114,6 +9239,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    security_console_access_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleAccess"];
+                };
             };
         };
     };

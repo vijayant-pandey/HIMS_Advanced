@@ -1947,6 +1947,50 @@ paths:
               schema:
                 $ref: '#/components/schemas/ComplianceSummary'
           description: ''
+  /api/v1/console-access-blocks/:
+    get:
+      operationId: console_access_blocks_list
+      tags:
+      - console-access-blocks
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsoleAccessBlock'
+          description: ''
+  /api/v1/console-access-blocks/{id}/review/:
+    post:
+      operationId: console_access_blocks_review_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this console access block.
+        required: true
+      tags:
+      - console-access-blocks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsoleBlockReviewRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsoleAccessBlock'
+          description: ''
   /api/v1/department-services/{id}/:
     patch:
       operationId: department_services_partial_update
@@ -3871,6 +3915,20 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/security/console-access/:
+    get:
+      operationId: security_console_access_retrieve
+      tags:
+      - security
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsoleAccess'
+          description: ''
   /api/v1/security/database-access/:
     get:
       operationId: security_database_access_retrieve
@@ -6238,6 +6296,100 @@ components:
       - enabled
       - needs_code
       - window_minutes
+    ConsoleAccess:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: The admin console is switched on here.
+        allowed_networks:
+          type: array
+          items:
+            type: string
+        your_address:
+          type: string
+          nullable: true
+        you_are_allowed:
+          type: boolean
+        developer_pc:
+          type: boolean
+        refusals_to_review:
+          type: integer
+      required:
+      - allowed_networks
+      - developer_pc
+      - enabled
+      - refusals_to_review
+      - you_are_allowed
+      - your_address
+    ConsoleAccessBlock:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        day:
+          type: string
+          format: date
+          readOnly: true
+        ip_address:
+          type: string
+          readOnly: true
+          description: The address that was refused.
+        attempts:
+          type: integer
+          readOnly: true
+        last_seen_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_path:
+          type: string
+          readOnly: true
+          description: Console page, ids removed.
+        signed_in_user_name:
+          type: string
+          readOnly: true
+          nullable: true
+        reviewed_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        review_note:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - attempts
+      - day
+      - id
+      - ip_address
+      - last_path
+      - last_seen_at
+      - review_note
+      - reviewed_at
+      - reviewed_by_name
+      - signed_in_user_name
+      - version
+    ConsoleBlockReviewRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        note:
+          type: string
+          maxLength: 2000
+      required:
+      - version
     CopyWeekRequest:
       type: object
       properties:

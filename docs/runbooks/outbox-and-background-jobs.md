@@ -17,7 +17,7 @@ event that fails every retry needs a person.
 | App → **Background jobs** (`platform.jobs.view`, administrator) | Waiting, oldest waiting, being retried, failed, done in 24 hours, last clean-up; the events that need a look, with **Send again** and **Dismiss** |
 | `python manage.py outbox_status` | The same numbers; exits with an error when something needs a look (for monitoring) |
 | Server log | `outbox_attention_needed` (checked every 15 minutes), `Outbox event exhausted publish retries`, `outbox_cleaned_up` |
-| Admin console → Outbox events | Every event, filter by status; "Send selected … again" |
+| Admin console → Outbox events | The same health numbers above the list; every event, filter by status; "Send selected … again"; "Dismiss selected failed events" asks for a typed reason, like the app (added 2026-11-09) |
 | Audit log → area **Background jobs** | Every clean-up and every decision, with who and why |
 
 ## Owner

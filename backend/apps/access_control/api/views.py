@@ -1,7 +1,4 @@
-import csv
-
 from django.db.models import Count, Q
-from django.http import HttpResponse
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
@@ -9,13 +6,13 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.audit.services import AuditAction, record_audit_event
 from apps.organizations.selectors import get_deployment_organization
 from common.idempotency.decorators import idempotent
 
 from .. import reviews, services
 from ..catalog import P
 from ..models import AccessReview, Permission, Role, RoleAssignment
+from ..review_export import review_csv_response
 from .serializers import (
     AccessReviewCancelSerializer,
     AccessReviewCompleteSerializer,
@@ -167,16 +164,6 @@ class RoleAssignmentViewSet(
         return Response(RoleAssignmentSerializer(assignment).data)
 
 
-def _cell(value) -> str:
-    """Spreadsheet-safe text: a leading = + - @ would otherwise run as a formula."""
-    text = "" if value is None else str(value)
-    return f"'{text}" if text[:1] in ("=", "+", "-", "@") else text
-
-
-def _iso(value) -> str:
-    return value.isoformat() if value else ""
-
-
 class AccessReviewViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
 ):
@@ -296,58 +283,4 @@ class AccessReviewViewSet(
     @action(detail=True, methods=["get"])
     def export(self, request, pk=None):
         """Download the review with every decision as CSV (evidence for auditors)."""
-        review = self.get_object()
-        items = list(review.items.select_related("decided_by"))
-        record_audit_event(
-            action=AuditAction.ACCESS_REVIEW_EXPORTED,
-            resource_type="access_review",
-            resource_id=review.pk,
-            request=request,
-            metadata={"rows": len(items)},
-        )
-        response = HttpResponse(content_type="text/csv; charset=utf-8")
-        response["Content-Disposition"] = (
-            f'attachment; filename="access-review-{review.created_at:%Y%m%d}.csv"'
-        )
-        writer = csv.writer(response)
-        writer.writerow(
-            [
-                "Review",
-                "Review status",
-                "Person",
-                "Email",
-                "Account could sign in",
-                "Last signed in (UTC)",
-                "Role",
-                "Where",
-                "Access given (UTC)",
-                "Access ends (UTC)",
-                "Decision",
-                "Decided by",
-                "Decided at (UTC)",
-                "Comment",
-            ]
-        )
-        for item in items:
-            writer.writerow(
-                [
-                    _cell(value)
-                    for value in (
-                        review.title,
-                        review.get_status_display(),
-                        item.person_name,
-                        item.person_email,
-                        "yes" if item.account_active else "no",
-                        _iso(item.last_signed_in_at),
-                        item.role_name,
-                        item.scope,
-                        _iso(item.granted_at),
-                        _iso(item.access_ends_at),
-                        item.get_decision_display(),
-                        item.decided_by.display_name if item.decided_by else "",
-                        _iso(item.decided_at),
-                        item.comment,
-                    )
-                ]
-            )
-        return response
+        return review_csv_response(self.get_object(), request=request)

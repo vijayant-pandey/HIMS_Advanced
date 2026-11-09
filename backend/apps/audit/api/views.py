@@ -4,12 +4,9 @@ Only ``audit.view`` holders (auditors) can search; administrators cannot (separa
 Every search and every export is itself written to the audit log.
 """
 
-import csv
 from datetime import datetime, time
 
 from django.db.models import OuterRef, Q, Subquery
-from django.http import StreamingHttpResponse
-from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import mixins, serializers, viewsets
@@ -20,11 +17,9 @@ from apps.access_control.catalog import P
 from apps.organizations.dates import hospital_timezone
 
 from .. import catalog
+from ..exports import EXPORT_LIMIT, events_csv_response
 from ..models import AuditEvent
 from ..services import AuditAction, record_audit_event
-
-# Most rows one export may contain; narrow the filters for more (keeps exports reviewable).
-EXPORT_LIMIT = 5000
 
 
 class AuditSearchSerializer(serializers.Serializer):
@@ -150,12 +145,6 @@ def with_names(queryset):
     )
 
 
-def _cell(value) -> str:
-    """Spreadsheet-safe text: a leading = + - @ would otherwise run as a formula."""
-    text = "" if value is None else str(value)
-    return f"'{text}" if text[:1] in ("=", "+", "-", "@") else text
-
-
 SEARCH_PARAMETERS = [
     OpenApiParameter(name, OpenApiTypes.STR, description=str(field.help_text or ""))
     for name, field in AuditSearchSerializer().fields.items()
@@ -211,54 +200,7 @@ class AuditEventViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         rows = rows[:EXPORT_LIMIT]
         self._record(AuditAction.AUDIT_EXPORTED, rows=len(rows), truncated=truncated)
 
-        class Echo:
-            def write(self, value):
-                return value
-
-        writer = csv.writer(Echo())
-        header = [
-            "When (UTC)",
-            "What happened",
-            "Action code",
-            "Outcome",
-            "Who",
-            "Email",
-            "Facility",
-            "Record type",
-            "Record id",
-            "Reason",
-            "Reference number",
-            "IP address",
-        ]
-
-        def lines():
-            yield writer.writerow(header)
-            for event in rows:
-                yield writer.writerow(
-                    [
-                        _cell(value)
-                        for value in (
-                            event.occurred_at.isoformat(),
-                            catalog.label(event.action),
-                            event.action,
-                            event.outcome,
-                            event.actor_name or event.actor_type,
-                            event.actor_email,
-                            event.facility_name,
-                            event.resource_type,
-                            event.resource_id,
-                            event.reason,
-                            event.request_id,
-                            event.ip_address,
-                        )
-                    ]
-                )
-
-        stamp = timezone.now().strftime("%Y%m%d-%H%M")
-        response = StreamingHttpResponse(lines(), content_type="text/csv; charset=utf-8")
-        response["Content-Disposition"] = f'attachment; filename="audit-log-{stamp}.csv"'
-        response["X-Export-Truncated"] = "true" if truncated else "false"
-        return response
+        return events_csv_response(rows, truncated=truncated)
 
     @extend_schema(responses=AuditActionSerializer(many=True))
     @action(detail=False, methods=["get"], pagination_class=None)

@@ -40,6 +40,7 @@
 22c. [Part 18c: separate database users](#part-18c-separate-database-users)
 22d. [Part 18d: background jobs](#part-18d-background-jobs)
 22e. [Part 18e: API docs without outside sites](#part-18e-api-docs-without-outside-sites)
+22f. [Part 18f: admin console only from allowed addresses](#part-18f-admin-console-only-from-allowed-addresses)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1162,6 +1163,27 @@ Guide: [static files](../workflows/static-files.md).
 
 ---
 
+## Part 18f: admin console only from allowed addresses
+
+Needs the HIMS-SEC-015 PR and its migrate step (India and US). Guide:
+[console allow-list](../workflows/console-allow-list.md).
+
+A refused address cannot be tried from this one computer: the automated tests do that (another
+address gets "Not found", even with the right password). Here you check that everything still
+works for you, and the new pages.
+
+| # | Do | Expect |
+|---|---|---|
+| 18f.1 | Sign in to the app as the administrator. Menu → **Compliance** → tab **Console access** | Green: "Your address (127.0.0.1) can use the admin console." Allowed addresses: `127.0.0.1` and `::1`. "No address has been refused." |
+| 18f.2 | Open the admin console (backend address followed by `/admin/`) and sign in as before | Works exactly as before; at the top right there is a new link **Security status** |
+| 18f.3 | Click **Security status** | Three boxes: where the console can be used from (your address "allowed"), browser protection, and the database-user checks |
+| 18f.4 | Console → **Outbox events** | A **Health** box above the list. Select a failed event (if any), action "Dismiss selected failed events" → a page asks for a reason |
+| 18f.5 | Console → **Notifications** → **Send a test message** → Email, your test address → Send | The message page opens with its status; the email arrives (or is printed in the server window) |
+| 18f.6 | Console → **Access reviews** → open one → **Download as CSV** | After "Confirm it's you" (if asked), a CSV file downloads |
+| 18f.7 | Sign in to the console as the **auditor** → Audit events → tick one → action "Download selected events as CSV" → Go | After "Confirm it's you" (if asked), a CSV file downloads |
+
+---
+
 ## Part 19: leaving staff (termination)
 
 **Window A** app + **Window B** (Asha signed in).
@@ -1316,6 +1338,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 18c | Separate database users | | | |
 | 18d | Background jobs | | | |
 | 18e | API docs without outside sites | | | |
+| 18f | Admin console only from allowed addresses | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 

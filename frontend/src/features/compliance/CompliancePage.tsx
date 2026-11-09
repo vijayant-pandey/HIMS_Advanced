@@ -40,6 +40,7 @@ import {
   useUpdateRisk,
 } from "./api";
 import { BrowserProtectionTab } from "./BrowserProtectionTab";
+import { ConsoleAccessTab } from "./ConsoleAccessTab";
 import { DatabaseAccessTab } from "./DatabaseAccessTab";
 import { ReportIncidentDialog, SEVERITIES } from "./ReportIncidentDialog";
 
@@ -564,17 +565,19 @@ export function CompliancePage() {
           <Chip color={summary.data.incidents_open ? "error" : "default"} label={`${summary.data.incidents_open} open incidents`} />
         </Stack>
       )}
-      <Tabs value={tab} onChange={(_, value: string) => setTab(value)}>
+      <Tabs value={tab} onChange={(_, value: string) => setTab(value)} variant="scrollable" scrollButtons="auto">
         <Tab value="requirements" label="Requirements" />
         <Tab value="risks" label="Risks" />
         <Tab value="incidents" label="Incidents" />
         <Tab value="browser" label="Browser protection" />
+        <Tab value="console" label="Console access" />
         <Tab value="database" label="Database access" />
       </Tabs>
       {tab === "requirements" && <RequirementsTab canManage={canManage} />}
       {tab === "risks" && <RisksTab canManage={canManage} />}
       {tab === "incidents" && <IncidentsTab canManage={canManage} />}
       {tab === "browser" && <BrowserProtectionTab canManage={canManage} />}
+      {tab === "console" && <ConsoleAccessTab canManage={canManage} />}
       {tab === "database" && <DatabaseAccessTab />}
     </Stack>
   );

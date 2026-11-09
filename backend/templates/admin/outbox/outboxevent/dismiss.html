@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+{# Dismissing needs a typed reason, as on the Background jobs page (HIMS-PLAT-014). #}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+  <a href="{% url 'admin:outbox_outboxevent_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo; Dismiss
+</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>Dismiss failed events</h1>
+  {% if events %}
+  <p>These events failed after every retry. Dismissing closes them for good: they are never tried again. Say why, so the decision can be understood later.</p>
+  <ul>{% for event in events %}<li>{{ event.event_type }}, {{ event.occurred_at }} ({{ event.attempts }} attempts)</li>{% endfor %}</ul>
+  {% if skipped %}<p>{{ skipped }} selected event(s) have not failed and are left as they are.</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% for pk in selected %}<input type="hidden" name="{{ action_checkbox_name }}" value="{{ pk }}">{% endfor %}
+    <input type="hidden" name="action" value="dismiss_selected">
+    <input type="hidden" name="apply" value="1">
+    <fieldset class="module aligned">
+      <div class="form-row">
+        <label for="id_reason" class="required">Reason</label>
+        <textarea id="id_reason" name="reason" rows="3" cols="60" maxlength="300" required></textarea>
+        <div class="help">For example: the record it was about no longer exists.</div>
+      </div>
+    </fieldset>
+    <div class="submit-row"><input type="submit" value="Dismiss" class="default"></div>
+  </form>
+  {% else %}
+  <p>None of the selected events has failed, so there is nothing to dismiss.</p>
+  {% endif %}
+  <p><a href="{% url 'admin:outbox_outboxevent_changelist' %}">Back to the list</a></p>
+</div>
+{% endblock %}

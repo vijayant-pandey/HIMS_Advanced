@@ -55,6 +55,7 @@ erDiagram
     compliance_risks
     security_incidents
     browser_security_reports
+    console_access_blocks
     security_incident_notifications
     notifications
     recovery_backups
@@ -167,6 +168,8 @@ erDiagram
     users |o--o{ compliance_risks : "updated_by_id"
     users |o--o{ security_incidents : "reported_by_id"
     users |o--o{ browser_security_reports : "reviewed_by_id"
+    users |o--o{ console_access_blocks : "signed_in_user_id"
+    users |o--o{ console_access_blocks : "reviewed_by_id"
     security_incidents ||--o{ security_incident_notifications : "incident_id"
     users |o--o{ security_incident_notifications : "done_by_id"
     recovery_backups ||--o{ recovery_restore_drills : "backup_id"
@@ -1000,6 +1003,21 @@ erDiagram
         timestamptz reviewed_at
         text review_note
     }
+    console_access_blocks {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        date day
+        inet ip_address
+        integer attempts
+        timestamptz last_seen_at
+        varchar last_path
+        uuid signed_in_user_id FK
+        uuid reviewed_by_id FK
+        timestamptz reviewed_at
+        text review_note
+    }
     security_incident_notifications {
         uuid id PK
         timestamptz created_at
@@ -1020,6 +1038,8 @@ erDiagram
     users |o--o{ compliance_risks : "updated_by_id"
     users |o--o{ security_incidents : "reported_by_id"
     users |o--o{ browser_security_reports : "reviewed_by_id"
+    users |o--o{ console_access_blocks : "signed_in_user_id"
+    users |o--o{ console_access_blocks : "reviewed_by_id"
     security_incidents ||--o{ security_incident_notifications : "incident_id"
     users |o--o{ security_incident_notifications : "done_by_id"
 ```

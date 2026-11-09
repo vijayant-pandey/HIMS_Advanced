@@ -33,6 +33,8 @@ if HIMS_MIGRATION_DATABASE_URL:
 
 DEBUG = False
 HIMS_ENABLE_ADMIN = True
+# The test client's address; tests of refused addresses change REMOTE_ADDR (HIMS-SEC-015).
+HIMS_ADMIN_ALLOWED_NETWORKS = ["127.0.0.1", "::1"]
 ALLOWED_HOSTS = ["testserver", "localhost"]
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]  # speed; tests only
 

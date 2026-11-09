@@ -2,18 +2,25 @@
 the app, so the rules and audit are identical. Nothing can be deleted."""
 
 from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import connection
+from django.template.response import TemplateResponse
+from django.urls import path
 
 from apps.access_control.catalog import P
 from apps.access_control.selectors import has_permission
+from common import database_roles
 from common.admin.options import ReadOnlyModelAdmin
 from common.exceptions import DomainError
+from common.security_headers import policy_mode
 
-from . import browser_reports, incidents, services
+from . import browser_reports, console_access, incidents, services
 from .models import (
     BrowserSecurityReport,
     ComplianceRequirement,
+    ConsoleAccessBlock,
     IncidentNotification,
     RiskEntry,
     SecurityIncident,
@@ -271,6 +278,76 @@ class BrowserSecurityReportAdmin(_ComplianceAdmin):
                 self.message_user(request, f"{row}: reviewed.")
             except DomainError as exc:
                 self.message_user(request, f"{row}: {exc.detail}", messages.ERROR)
+
+
+@admin.register(ConsoleAccessBlock)
+class ConsoleAccessBlockAdmin(_ComplianceAdmin):
+    """Addresses the console refused (HIMS-SEC-015). Marking one reviewed follows the same rules as
+    the app. Also holds the console's "Security status" page."""
+
+    change_list_template = "admin/compliance/consoleaccessblock/change_list.html"
+    list_display = (
+        "day",
+        "ip_address",
+        "attempts",
+        "last_path",
+        "signed_in_user",
+        "last_seen_at",
+        "reviewed_at",
+    )
+    list_filter = ("day",)
+    search_fields = ("ip_address", "last_path")
+    actions = ["mark_reviewed"]
+
+    @admin.action(description="Mark selected as reviewed")
+    def mark_reviewed(self, request, queryset):
+        if not self._can_manage(request):
+            self.message_user(request, "You may not change these.", messages.ERROR)
+            return
+        for row in queryset:
+            try:
+                console_access.review_block(
+                    actor=request.user,
+                    block_id=row.pk,
+                    version=row.version,
+                    note="Reviewed in the admin console",
+                    request=request,
+                )
+                self.message_user(request, f"{row}: reviewed.")
+            except DomainError as exc:
+                self.message_user(request, f"{row}: {exc.detail}", messages.ERROR)
+
+    def get_urls(self):
+        return [
+            path(
+                "security-status/",
+                self.admin_site.admin_view(self.security_status_view),
+                name="compliance_security_status",
+            ),
+            *super().get_urls(),
+        ]
+
+    def security_status_view(self, request):
+        """Browser protection, where the console may be used from, and the database users: the
+        same facts as the Compliance page's tabs, read-only (settings change only at hosting)."""
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        with connection.cursor() as cursor:
+            database = database_roles.inspect(cursor)
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Security status",
+            "policy_mode": policy_mode(),
+            "trusted_proxies": list(settings.HIMS_TRUSTED_PROXIES),
+            "console": console_access.console_status(request),
+            "database": database,
+            "database_separated": database["set_up"]
+            and all(check["passed"] for check in database["checks"]),
+            "browser_reports_to_review": BrowserSecurityReport.objects.filter(
+                reviewed_at__isnull=True
+            ).count(),
+        }
+        return TemplateResponse(request, "admin/compliance/security_status.html", context)
 
 
 @admin.register(IncidentNotification)

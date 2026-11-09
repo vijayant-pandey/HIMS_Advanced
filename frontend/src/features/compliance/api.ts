@@ -5,6 +5,8 @@ import type {
   BrowserSecurityReport,
   ComplianceRequirement,
   ComplianceSummary,
+  ConsoleAccess,
+  ConsoleAccessBlock,
   DatabaseAccess,
   IncidentReceipt,
   IncidentReportRequest,
@@ -58,6 +60,20 @@ export function useSecurityStatus() {
   });
 }
 
+export function useConsoleAccess() {
+  return useQuery<ConsoleAccess, ApiError>({
+    queryKey: [...key, "console-access"],
+    queryFn: ({ signal }) => api.get<ConsoleAccess>("/security/console-access/", { signal }),
+  });
+}
+
+export function useConsoleRefusals() {
+  return useQuery<ConsoleAccessBlock[], ApiError>({
+    queryKey: [...key, "console-refusals"],
+    queryFn: ({ signal }) => api.get<ConsoleAccessBlock[]>("/console-access-blocks/", { signal }),
+  });
+}
+
 export function useBrowserReports() {
   return useQuery<BrowserSecurityReport[], ApiError>({
     queryKey: [...key, "browser-reports"],
@@ -76,6 +92,12 @@ function useChange<TResult, TBody>(request: (body: TBody) => Promise<TResult>) {
 export function useReviewBrowserReport(id: string) {
   return useChange((body: { version: number; note?: string }) =>
     api.post<BrowserSecurityReport>(`/browser-security-reports/${id}/review/`, body),
+  );
+}
+
+export function useReviewConsoleRefusal(id: string) {
+  return useChange((body: { version: number; note?: string }) =>
+    api.post<ConsoleAccessBlock>(`/console-access-blocks/${id}/review/`, body),
   );
 }
 

@@ -1,0 +1,6 @@
+{% extends "admin/change_list.html" %}
+{# Addresses the console refused (HIMS-SEC-015), with a link to the Security status page. #}
+{% block object-tools-items %}
+  <li><a href="{% url 'admin:compliance_security_status' %}">Security status</a></li>
+  {{ block.super }}
+{% endblock %}

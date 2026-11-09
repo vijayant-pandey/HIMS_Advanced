@@ -1,6 +1,10 @@
+from urllib.parse import urlencode
+
 from django import forms
 from django.contrib import admin, messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import path, reverse
 
 from apps.organizations.selectors import get_deployment_organization
 from common.admin.options import (
@@ -12,6 +16,7 @@ from common.admin.options import (
 from common.exceptions import DomainError
 
 from . import delegations, reviews
+from .catalog import P
 from .models import (
     AccessDelegation,
     AccessReview,
@@ -22,6 +27,7 @@ from .models import (
     RoleAssignment,
     RolePermission,
 )
+from .review_export import review_csv_response
 from .selectors import has_permission
 from .services import assign_role, revoke_role_assignment, validate_role_assignment
 
@@ -186,10 +192,38 @@ class RoleAssignmentAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
 
 @admin.register(AccessReview)
 class AccessReviewAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
+    change_form_template = "admin/access_control/accessreview/change_form.html"
     list_display = ("title", "status", "due_on", "created_at", "started_by", "completed_at")
     list_filter = ("status",)
     search_fields = ("title",)
     actions = ["complete_selected", "cancel_selected"]
+
+    def get_urls(self):
+        return [
+            path(
+                "<uuid:review_id>/export/",
+                self.admin_site.admin_view(self.export_view),
+                name="access_control_accessreview_export",
+            ),
+            *super().get_urls(),
+        ]
+
+    def export_view(self, request, review_id):
+        """The same CSV as the app's download, after the same "confirm it's you" (HIMS-IAM-012)."""
+        if request.method != "POST" or not has_permission(request.user, P.ACCESS_REVIEWS_VIEW):
+            raise PermissionDenied
+        from apps.identity import confirmation
+
+        review = get_object_or_404(AccessReview, pk=review_id)
+        if not confirmation.is_confirmed(request):
+            messages.warning(
+                request, "Nothing was downloaded yet. Confirm it's you, then try again."
+            )
+            back = urlencode(
+                {"next": reverse("admin:access_control_accessreview_change", args=[review.pk])}
+            )
+            return redirect(f"{reverse('admin:confirm_identity')}?{back}")
+        return review_csv_response(review, request=request)
 
     def get_fields(self, request, obj=None):
         if obj is None:

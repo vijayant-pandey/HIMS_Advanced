@@ -132,19 +132,23 @@ def test_image_build_settings_need_no_secrets_or_database():
     assert storage == HOSTED["staticfiles"]["BACKEND"]
 
 
+# A synthetic hosted environment: placeholders only, nothing here is a real key or server.
+PRODUCTION_ENV = {
+    "HIMS_ENVIRONMENT": "staging",
+    "HIMS_DATABASE_ENVIRONMENT": "staging",
+    "HIMS_DEPLOYMENT_ID": "static-test",
+    "DJANGO_SECRET_KEY": "x" * 50,
+    "DJANGO_ALLOWED_HOSTS": "static.invalid",
+    "HIMS_FIELD_ENCRYPTION_KEYS": "Zm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyMTI=",
+    "HIMS_AUDIT_CHAIN_KEYS": "ci:" + "a" * 64,
+    "HIMS_TRUSTED_PROXIES": "10.0.0.0/8",
+    "DATABASE_URL": "postgres://u:p@db.static.invalid:5432/hims",
+    "HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE": "true",
+}
+
+
 def test_production_serves_the_fingerprinted_files():
-    production = {
-        "HIMS_ENVIRONMENT": "staging",
-        "HIMS_DATABASE_ENVIRONMENT": "staging",
-        "HIMS_DEPLOYMENT_ID": "static-test",
-        "DJANGO_SECRET_KEY": "x" * 50,
-        "DJANGO_ALLOWED_HOSTS": "static.invalid",
-        "HIMS_FIELD_ENCRYPTION_KEYS": "Zm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyMTI=",
-        "HIMS_AUDIT_CHAIN_KEYS": "ci:" + "a" * 64,
-        "HIMS_TRUSTED_PROXIES": "10.0.0.0/8",
-        "DATABASE_URL": "postgres://u:p@db.static.invalid:5432/hims",
-        "HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE": "true",
-    }
+    production = PRODUCTION_ENV
     middleware = _setting_in("config.settings.production", "settings.MIDDLEWARE[1]", production)
     assert middleware == "whitenoise.middleware.WhiteNoiseMiddleware"
     storage = _setting_in(

@@ -6,7 +6,7 @@ Score = likelihood x impact (each 1 to 5). The live register, with owners, treat
 
 | Code | Risk | Area | Likelihood | Impact | Score | What reduces it |
 |---|---|---|---|---|---|---|
-| R-001 | **Stolen staff password**: A password is phished or reused and used to sign in. | access | 4 | 4 | 16 | Two-factor for privileged roles, throttling, sign-in register. Planned: two-factor for clinical roles (D13), passkeys (HIMS-IAM-014). |
+| R-001 | **Stolen staff password**: A password is phished or reused and used to sign in. | access | 4 | 4 | 16 | Two-factor for privileged roles, throttling, sign-in register; the admin console answers only allowed addresses (HIMS-SEC-015). Planned: two-factor for clinical roles (D13), passkeys (HIMS-IAM-014), firewall rule at hosting (HIMS-OPS-020). |
 | R-003 | **Insider browses records**: Staff open records without a care reason. | access | 3 | 5 | 15 | Audit log. Planned in Phase 2: patient-level rules, chart-read audit, restricted records, emergency access review. |
 | R-008 | **Secret or key leak**: Credentials reach the code, logs or a laptop. | data | 3 | 5 | 15 | Secret scanning in CI, gitignored environment files, encrypted secrets. Planned: managed secret store and rotation at hosting. |
 | R-010 | **Data loss or ransomware**: Data is destroyed or encrypted by an attacker. | availability | 3 | 5 | 15 | Planned at hosting: backups, point-in-time recovery, restore drills, RTO/RPO. Until then no real patient data is entered. |

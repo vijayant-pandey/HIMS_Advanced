@@ -3,6 +3,8 @@
 * Entry requires the ``platform.admin_console`` permission (or ``audit.view`` for auditors, who
   only see the audit log). There is no ``is_staff``/``is_superuser`` bypass.
 * Sign-in failures are rate limited per client IP and audited.
+* Only addresses in HIMS_ADMIN_ALLOWED_NETWORKS reach any of it, sign-in included
+  (allowed_addresses.py, HIMS-SEC-015).
 * Two-factor (HIMS-IAM-005): accounts with an authenticator must enter its code on this form;
   privileged accounts without one are sent to the HIMS app's Security page to set it up first.
 """
@@ -36,6 +38,13 @@ def can_view_audit(user) -> bool:
     from apps.access_control.selectors import has_permission
 
     return has_permission(user, P.AUDIT_VIEW)
+
+
+def can_view_compliance(user) -> bool:
+    from apps.access_control.catalog import P
+    from apps.access_control.selectors import has_permission
+
+    return has_permission(user, P.COMPLIANCE_VIEW)
 
 
 class HimsAdminAuthenticationForm(AdminAuthenticationForm):
@@ -146,6 +155,14 @@ class HimsAdminSite(admin.AdminSite):
             and (can_use_console(user) or can_view_audit(user))
             and (mfa.session_verified(request) or not mfa.is_required(user))
         )
+
+    def each_context(self, request):
+        context = super().each_context(request)
+        user = getattr(request, "user", None)
+        context["show_security_status"] = bool(
+            user is not None and user.is_authenticated and can_view_compliance(user)
+        )
+        return context
 
     def get_urls(self):
         return [

@@ -123,6 +123,14 @@ served by the app itself (WhiteNoise); Swagger UI is bundled, not loaded from a 
 [docs/workflows/static-files.md](docs/workflows/static-files.md). After pulling a change that adds a
 library, run `pip install --require-hashes -r requirements/dev.txt` in `backend`.
 
+## Admin console: only from allowed addresses
+
+The admin console answers only the addresses in `HIMS_ADMIN_ALLOWED_NETWORKS`; anyone else gets
+"Not found" (HIMS-SEC-015). On your PC the default is this computer only, so nothing changes:
+[docs/workflows/console-allow-list.md](docs/workflows/console-allow-list.md). The Compliance page's
+**Console access** tab, and **Security status** in the console, show the list and any refused
+addresses.
+
 ## Decisions and hosting
 
 Approvals from the PO, clinical and legal reviewers are kept in the
