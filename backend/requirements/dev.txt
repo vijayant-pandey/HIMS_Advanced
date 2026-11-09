@@ -487,6 +487,7 @@ django==5.2.18 \
     #   -r base.in
     #   djangorestframework
     #   drf-spectacular
+    #   drf-spectacular-sidecar
 django-environ==0.14.0 \
     --hash=sha256:8dbe8a57f0a540ab8abd6f54f230de5e99e3a2c9d797cb9caecb037bca3d47d8 \
     --hash=sha256:b6c48d93b9d2ff8a3ea14099e90c35aa4f101c1b4d5f262dfee0d27b06742ed7
@@ -503,6 +504,12 @@ djangorestframework==3.18.2 \
 drf-spectacular==0.30.0 \
     --hash=sha256:006cf5921ebe20a9bd24f7c846261ebbf78780be5961b0d6e87afaa82afd62ff \
     --hash=sha256:53e79e7ba00e240441b63c32273754a5368e4c2ab44a19f2595277cc1cd559c9
+    # via
+    #   -c base.txt
+    #   -r base.in
+drf-spectacular-sidecar==2026.10.1 \
+    --hash=sha256:ec8d20b2594e8a10ebf22e5bab62ec313c7cf8793753a050290b209e16e81c9c \
+    --hash=sha256:fe1d005d8ac9b5d0472f2fe5deeb2e7d6dcffaa24118044f22578b4b8c4b31f2
     # via
     #   -c base.txt
     #   -r base.in
@@ -1398,6 +1405,12 @@ wcwidth==0.9.4 \
     # via
     #   -c base.txt
     #   prompt-toolkit
+whitenoise==6.12.0 \
+    --hash=sha256:f723ebb76a112e98816ff80fcea0a6c9b8ecde835f8ddda25df7a30a3c2db6ad \
+    --hash=sha256:fc5e8c572e33ebf24795b47b6a7da8da3c00cff2349f5b04c02f28d0cc5a3cc2
+    # via
+    #   -c base.txt
+    #   -r base.in
 wrapt==2.5.2 \
     --hash=sha256:01ace38a377198e0b981b027a46cbdb5502d0123bd39c1a0f60a83a5eab7698e \
     --hash=sha256:035cd71e2aadfc0ad366ab4785b49e62093370885ea4b527b61b308b7a92ff14 \

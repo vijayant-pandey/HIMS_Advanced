@@ -116,6 +116,13 @@ cleaned up daily, and shown on the **Background jobs** page, where an administra
 event again or dismisses it, with a reason (HIMS-PLAT-014). `python manage.py outbox_status` gives
 the same numbers. What to do when something goes wrong: [docs/runbooks](docs/runbooks/README.md).
 
+## Static files in hosted environments
+
+The admin console's and API docs' style and script files are collected into the server image and
+served by the app itself (WhiteNoise); Swagger UI is bundled, not loaded from a CDN (HIMS-OPS-010):
+[docs/workflows/static-files.md](docs/workflows/static-files.md). After pulling a change that adds a
+library, run `pip install --require-hashes -r requirements/dev.txt` in `backend`.
+
 ## Decisions and hosting
 
 Approvals from the PO, clinical and legal reviewers are kept in the

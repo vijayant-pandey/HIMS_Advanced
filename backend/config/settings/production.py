@@ -22,6 +22,8 @@ from .base import (
     HIMS_FIELD_ENCRYPTION_KEYS,
     HIMS_MFA_REQUIRED_FOR_PRIVILEGED,
     HIMS_TRUSTED_PROXIES,
+    HOSTED_STORAGES,
+    MIDDLEWARE,
     env,
 )
 
@@ -38,6 +40,10 @@ SECURE_REDIRECT_EXEMPT = [r"^health/"]  # ALB health checks arrive over HTTP
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 X_FRAME_OPTIONS = "DENY"
+# Static files collected at image build, served by the app itself with WhiteNoise, right after
+# Django's security middleware (HIMS-OPS-010). On a developer PC runserver serves them instead.
+STORAGES = HOSTED_STORAGES
+MIDDLEWARE = [MIDDLEWARE[0], "whitenoise.middleware.WhiteNoiseMiddleware", *MIDDLEWARE[1:]]
 
 # Secrets never reach a log (HIMS-SEC-019): a printed email lands in the server log here, so it
 # is printed with sign-in links and codes hidden.

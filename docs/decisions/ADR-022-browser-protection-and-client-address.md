@@ -41,3 +41,9 @@ How-to: [security-headers.md](../workflows/security-headers.md).
 - `HIMS_CSP_REPORT_ONLY` covers the backend-served pages; for the screens the header is renamed at
   hosting. Hosting must send the screens' headers (recorded under HIMS-SEC-012 and the deployment
   work), since nothing protects the screens until it does.
+
+## Update 2026-11-08 (HIMS-OPS-010): API docs without a CDN
+- Swagger UI is served by HIMS itself (the hash-locked `drf-spectacular-sidecar` package) and its
+  start-up script is a file, so the API docs policy is now `script-src 'self'` with no outside
+  site and no `'unsafe-inline'` for scripts. A browser test checks that nothing is blocked or
+  loaded from another site. Details: [static files](../workflows/static-files.md).

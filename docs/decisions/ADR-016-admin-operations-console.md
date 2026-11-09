@@ -32,7 +32,8 @@ signed/financial facts.
 
 ## Before enabling in Development/QA/Staging/Production
 MFA on console sign-in (HIMS-IAM-005), IP allow-listing or VPN-only access (HIMS-SEC-015), and
-static-file serving for admin assets (HIMS-OPS-010).
+static-file serving for admin assets (HIMS-OPS-010, **done 2026-11-08**: collected at image build
+and served by the app with WhiteNoise; [static files](../workflows/static-files.md)).
 
 ## Consequences
 "Full control" means full control of configuration and operational records, within the
