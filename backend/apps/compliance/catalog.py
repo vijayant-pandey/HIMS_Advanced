@@ -517,8 +517,9 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         "application",
         3,
         3,
-        "Type and size checks, no public links, sandboxed responses. Planned: "
-        "malware scanning (HIMS-SEC-013).",
+        "Type and size checks, no public links, sandboxed responses; every upload checked "
+        "for viruses before it is stored, uploads refused while the scanner is unreachable, "
+        "refusals audited and reported (HIMS-SEC-013).",
     ),
     (
         "R-007",

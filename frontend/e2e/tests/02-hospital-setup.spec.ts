@@ -161,6 +161,12 @@ test("letterhead: upload a logo, a wrong file is refused, details show on the pa
   });
   await expect(section.getByText("The logo must be a PNG or JPG picture.")).toBeVisible();
 
+  // The standard, harmless anti-virus test file is refused as a virus (HIMS-SEC-013). Built from
+  // pieces so this source file is not itself taken for a virus by the PC's own scanner.
+  const testFile = ["X5O!P%@AP[4", String.fromCharCode(92), "PZX54(P^)7CC)7}$", "EICAR-STANDARD-", "ANTIVIRUS-TEST-FILE!$H+H*"].join("");
+  await logoFile.setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: Buffer.from(testFile) });
+  await expect(section.getByText(/contains a virus or harmful content \(EICAR test file\)/)).toBeVisible();
+
   await logoFile.setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: Buffer.from(ONE_PIXEL_PNG, "base64") });
   await expect(section.getByRole("button", { name: "Remove logo" })).toBeVisible();
   const logo = section.locator("img");

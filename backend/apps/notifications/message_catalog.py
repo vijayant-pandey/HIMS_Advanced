@@ -320,6 +320,26 @@ MESSAGES: tuple[MessageSpec, ...] = (
         required=("reason",),
     ),
     MessageSpec(
+        code="security.upload_blocked",
+        name="Virus blocked",
+        when="A file with a virus is refused at upload, or found by a later scan.",
+        category="security",
+        subject="HIMS: a file with a virus was blocked",
+        body=(
+            "A file {{where}} contained {{threat}}, on {{when}}. It cannot be opened from HIMS.\n\n"
+            "Who uploaded it and when is in the audit log (sign-in needed): {{link}}\n\n"
+            "Tell your IT team: the computer it came from may need checking.\n"
+        ),
+        variables=(
+            Variable("where", "Where it was", "uploaded as a staff document"),
+            Variable("threat", "What the scanner found", "Win.Test.EICAR_HDB-1"),
+            Variable("when", "When", "10 Nov 2026 10:00 IST"),
+            Variable("link", "The audit log", "https://hims.example/audit"),
+            HOSPITAL,
+        ),
+        required=frozenset({"link"}),
+    ),
+    MessageSpec(
         code="rosters.staffing_gaps",
         name="Staffing gaps coming up",
         when="Shifts in the next 7 days have fewer people than the hospital's minimum.",

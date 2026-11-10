@@ -130,6 +130,7 @@ jobs:
             -e HIMS_TRUSTED_PROXIES=10.0.0.0/8 \
             -e DATABASE_URL=postgres://u:p@db.ci.invalid:5432/hims \
             -e HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE=true \
+            -e HIMS_ACCEPT_UNSCANNED_UPLOADS=true \
             hims-backend:${{ github.sha }} python manage.py check --deploy --fail-level WARNING
 
   secret-scan:

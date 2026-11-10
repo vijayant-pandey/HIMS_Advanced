@@ -53,3 +53,17 @@ CloudWatch. That is set up in the AWS stage (HIMS-PLAT-019, 🔒 AWS).
 
 Celery workers trace each task in its worker process. The interim Render hosting can send to any
 OTLP-compatible service in the same way.
+
+## Error text in traces (HIMS-SEC-020)
+
+When something fails, the trace keeps the error's message and its stack, so support can see why.
+Before any trace leaves HIMS, whether printed or sent to a collector, every text in it goes through
+the same filter as the logs ([log safety](log-safety.md)): passwords, keys, sign-in links, query
+strings, emails, phone numbers and the values a database repeats in its errors are replaced by
+`[hidden]`. The kind of error and the useful part of the message stay.
+
+An unexpected error in the API is also recorded on its trace now. Before, the trace of a failed
+request did not say why.
+
+The **Compliance → Scanning and traces** tab and the console's **Security status** show whether
+tracing is on and that the error text is filtered.

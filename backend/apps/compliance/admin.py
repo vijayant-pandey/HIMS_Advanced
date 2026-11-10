@@ -11,6 +11,7 @@ from django.urls import path
 
 from apps.access_control.catalog import P
 from apps.access_control.selectors import has_permission
+from apps.compliance.api.scanning_views import scanning_status
 from common import database_roles
 from common.admin.options import ReadOnlyModelAdmin
 from common.exceptions import DomainError
@@ -346,6 +347,7 @@ class ConsoleAccessBlockAdmin(_ComplianceAdmin):
             "browser_reports_to_review": BrowserSecurityReport.objects.filter(
                 reviewed_at__isnull=True
             ).count(),
+            "scanning": scanning_status(),
         }
         return TemplateResponse(request, "admin/compliance/security_status.html", context)
 

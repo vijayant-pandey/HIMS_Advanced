@@ -386,12 +386,19 @@ class StaffDocumentForm(forms.ModelForm):
         model = StaffDocument
         fields = ("staff", "credential", "qualification", "file")
 
+    actor = None  # set by the admin for this request
+
     def clean_file(self):
         upload = self.cleaned_data.get("file")
         if upload is not None and hasattr(upload, "content_type"):  # a newly uploaded file
-            from .uploads import validate_upload
+            from common.virus_scan import ScannerUnavailable
 
-            self.detected = validate_upload(upload)  # plain-language error shown on the field
+            from .uploads import check_upload
+
+            try:  # plain-language error shown on the field; a virus is audited and reported
+                self.detected = check_upload(upload, actor=self.actor)
+            except ScannerUnavailable as exc:
+                raise forms.ValidationError(str(exc.detail)) from exc
         return upload
 
 
@@ -406,8 +413,10 @@ class StaffDocumentAdmin(HimsModelAdmin):
         "uploaded_by",
         "created_at",
         "archived",
+        "scan_status",
     )
-    list_filter = ("content_type",)
+    list_filter = ("scan_status", "content_type")
+    actions = ["scan_selected"]
     search_fields = ("original_name", "staff__family_name", "staff__employee_number")
     readonly_fields = (
         "open_file",
@@ -419,13 +428,43 @@ class StaffDocumentAdmin(HimsModelAdmin):
         "archived_at",
         "archived_by",
         "archive_reason",
+        "scan_status",
+        "scanned_by",
+        "scanned_at",
+        "scan_threat",
     )
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(request, obj, change=change, **kwargs)
+        form.actor = request.user
+        return form
 
     def get_readonly_fields(self, request, obj=None):
         readonly = list(super().get_readonly_fields(request, obj))
         if obj is not None:
             readonly += ["staff", "credential", "qualification", "file"]
         return readonly
+
+    @admin.action(description="Check selected documents for viruses now")
+    def scan_selected(self, request, queryset):
+        from common.exceptions import DomainError as ScanError
+
+        from .documents import scan_stored_documents
+
+        try:
+            counts = scan_stored_documents(
+                actor=request.user, request=request, documents=queryset, only_unchecked=False
+            )
+        except ScanError as exc:
+            self.message_user(request, str(exc.detail), messages.ERROR)
+            return
+        self.message_user(
+            request,
+            f"Checked {counts['checked']}: {counts['clean']} without a virus, "
+            f"{counts['infected']} with a virus (blocked), {counts['not_checked']} could not be "
+            f"checked by this scanner, {counts['missing']} file(s) missing.",
+            messages.WARNING if counts["infected"] else messages.SUCCESS,
+        )
 
     def get_fields(self, request, obj=None):
         fields = ["staff", "credential", "qualification", "file", "open_file"]
@@ -439,6 +478,10 @@ class StaffDocumentAdmin(HimsModelAdmin):
                 "archived_at",
                 "archived_by",
                 "archive_reason",
+                "scan_status",
+                "scanned_by",
+                "scanned_at",
+                "scan_threat",
             ]
             if obj.archived_at is None:
                 fields.append("archive_reason_input")
@@ -462,6 +505,8 @@ class StaffDocumentAdmin(HimsModelAdmin):
 
         if not obj or not obj.pk:
             return "Shown after saving"
+        if obj.scan_status == "infected":
+            return "Blocked: a virus was found. It cannot be opened."
         url = f"/api/v1/staff-documents/{obj.pk}/download/?inline=true"
         return format_html('<a href="{}" target="_blank" rel="noopener">Open (audited)</a>', url)
 
@@ -477,6 +522,13 @@ class StaffDocumentAdmin(HimsModelAdmin):
             obj.size_bytes = upload.size
             obj.sha256 = sha256_of(upload)
             obj.uploaded_by = request.user
+            scan = form.detected[2]
+            if scan is not None:
+                from django.utils import timezone
+
+                obj.scan_status = scan.status
+                obj.scanned_by = scan.scanner
+                obj.scanned_at = timezone.now()
         super().save_model(request, obj, form, change)
         reason = form.cleaned_data.get("archive_reason_input")
         if change and reason and obj.archived_at is None:

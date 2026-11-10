@@ -36,5 +36,14 @@ services:
       - "16686:16686" # web UI
       - "4318:4318" # OTLP over HTTP
 
+  # Optional virus scanner (HIMS-SEC-013). Starts only when asked for:
+  #   docker compose --profile scanning up -d clamav
+  # then set HIMS_VIRUS_SCANNER=clamd in backend/.env (see docs/workflows/virus-scanning.md).
+  clamav:
+    image: clamav/clamav:1.4.2
+    profiles: ["scanning"]
+    ports:
+      - "3310:3310"
+
 volumes:
   postgres-data:

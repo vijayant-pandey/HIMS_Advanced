@@ -19,6 +19,7 @@ from django.core.cache import cache
 from django.core.mail.backends.base import BaseEmailBackend
 from django.db import IntegrityError, transaction
 from django.test import override_settings
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from rest_framework.test import APIClient
 
 from apps.audit.models import AuditEvent
@@ -26,7 +27,7 @@ from apps.identity import mfa
 from apps.identity.api.views import CurrentUserView
 from apps.identity.models import MfaDevice, User
 from apps.notifications.models import Notification
-from common import crypto
+from common import crypto, tracing
 from common.logging import JsonFormatter
 from common.outbox.dispatcher import dispatch_pending, process_event
 from common.outbox.models import OutboxEvent
@@ -74,6 +75,20 @@ def log_lines():
         root.setLevel(previous)
 
 
+@pytest.fixture
+def traces():
+    """Tracing on, as when sent to a collector: what leaves the process is kept in memory."""
+    exporter = InMemorySpanExporter()
+    provider = tracing.build_tracer_provider(
+        "none", service_name="hims-security-test", span_exporter=exporter
+    )
+    tracing.instrument(provider)
+    try:
+        yield exporter
+    finally:
+        tracing.uninstrument()
+
+
 def drain_outbox() -> None:
     while dispatch_pending(publish=lambda event: process_event(event.pk)):
         pass
@@ -102,7 +117,7 @@ def leaks(secrets: dict[str, str], places: dict[str, str]) -> list[str]:
 
 @pytest.mark.django_db
 def test_no_secret_reaches_a_log_the_audit_log_or_a_stored_error(
-    log_lines, capsys, client_for, make_user, system_roles, monkeypatch
+    log_lines, capsys, client_for, make_user, system_roles, monkeypatch, traces
 ):
     cache.clear()  # fresh sign-in rate limits
     secrets = {
@@ -232,6 +247,8 @@ def test_no_secret_reaches_a_log_the_audit_log_or_a_stored_error(
     assert "Unhandled API exception" in logged and "RuntimeError" in logged
     assert "notification_failed" in logged and "Could not save the person" in logged
     assert "IntegrityError" in logged and "[hidden]" in logged
+    traced = "\n".join(span.to_json() for span in traces.get_finished_spans())
+    assert "RuntimeError" in traced and "exception.stacktrace" in traced  # the error was traced
     output = capsys.readouterr()
     # … and no secret is anywhere.
     places = {
@@ -244,6 +261,8 @@ def test_no_secret_reaches_a_log_the_audit_log_or_a_stored_error(
         "the outbox": json.dumps(list(OutboxEvent.objects.values("payload")), default=str),
         "the error shown to the administrator": shown.content.decode(),
         "the error shown to the caller": crashed.content.decode(),
+        # HIMS-SEC-020: what a trace would carry out of the process, error text included.
+        "the traces": "\n".join(span.to_json() for span in traces.get_finished_spans()),
     }
     found = leaks(secrets, places)
     assert not found, "Leaked: " + "; ".join(found)

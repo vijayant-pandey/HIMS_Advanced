@@ -626,6 +626,7 @@ class StaffDocumentViewSet(_StaffScopeMixin, viewsets.GenericViewSet):
     @action(detail=True, methods=["get"])
     def download(self, request, pk=None):
         document = self.get_object()
+        documents.ensure_openable(document)
         documents.record_download(actor=request.user, document=document, request=request)
         response = FileResponse(
             document.file.open("rb"),

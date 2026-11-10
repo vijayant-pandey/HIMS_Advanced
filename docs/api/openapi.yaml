@@ -4625,6 +4625,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/SecurityStatus'
           description: ''
+  /api/v1/security/upload-scanning/:
+    get:
+      operationId: security_upload_scanning_retrieve
+      tags:
+      - security
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanningStatus'
+          description: ''
+  /api/v1/security/upload-scanning/scan/:
+    post:
+      operationId: security_upload_scanning_scan_create
+      description: Check stored documents not yet checked (up to 200 a time). A virus
+        found blocks the file.
+      tags:
+      - security
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanResult'
+          description: ''
   /api/v1/shift-types/:
     get:
       operationId: shift_types_list
@@ -8005,6 +8035,19 @@ components:
       - category
       - name
       - seniority
+    DocumentCounts:
+      type: object
+      properties:
+        clean:
+          type: integer
+        not_scanned:
+          type: integer
+        infected:
+          type: integer
+      required:
+      - clean
+      - infected
+      - not_scanned
     DocumentTypeEnum:
       enum:
       - mrn
@@ -12504,6 +12547,67 @@ components:
       - people
       - staffing_gaps
       - start
+    ScanResult:
+      type: object
+      properties:
+        checked:
+          type: integer
+        clean:
+          type: integer
+        infected:
+          type: integer
+        not_checked:
+          type: integer
+          description: This scanner cannot really check them
+        missing:
+          type: integer
+      required:
+      - checked
+      - clean
+      - infected
+      - missing
+      - not_checked
+    ScanStatusEnum:
+      enum:
+      - clean
+      - not_scanned
+      - infected
+      type: string
+      description: |-
+        * `clean` - Checked: no virus
+        * `not_scanned` - Not checked for viruses
+        * `infected` - Virus found: blocked
+    ScanningStatus:
+      type: object
+      properties:
+        scanner:
+          type: string
+          description: clamd, test-file or none
+        label:
+          type: string
+        protects:
+          type: boolean
+        reachable:
+          type: boolean
+          nullable: true
+          description: Empty without a real scanner
+        developer_pc:
+          type: boolean
+        documents:
+          $ref: '#/components/schemas/DocumentCounts'
+        blocked_last_30_days:
+          type: integer
+        traces:
+          $ref: '#/components/schemas/Traces'
+      required:
+      - blocked_last_30_days
+      - developer_pc
+      - documents
+      - label
+      - protects
+      - reachable
+      - scanner
+      - traces
     ScopeEnum:
       enum:
       - organization
@@ -13242,6 +13346,19 @@ components:
         archive_reason:
           type: string
           readOnly: true
+        scan_status:
+          allOf:
+          - $ref: '#/components/schemas/ScanStatusEnum'
+          readOnly: true
+        scanned_by:
+          type: string
+          readOnly: true
+          description: 'Which scanner: clamd, test-file or none.'
+        scanned_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
       required:
       - archive_reason
       - archived_at
@@ -13252,6 +13369,9 @@ components:
       - is_archived
       - original_name
       - qualification
+      - scan_status
+      - scanned_at
+      - scanned_by
       - size_bytes
       - staff
       - uploaded_by_name
@@ -13890,6 +14010,20 @@ components:
       required:
       - channel
       - to
+    Traces:
+      type: object
+      properties:
+        exporter:
+          type: string
+          description: none, console or otlp
+        sent_elsewhere:
+          type: boolean
+        error_text_filtered:
+          type: boolean
+      required:
+      - error_text_filtered
+      - exporter
+      - sent_elsewhere
     TreatmentEnum:
       enum:
       - mitigate

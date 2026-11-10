@@ -21,3 +21,20 @@ def document_storage_is_durable(app_configs, **kwargs):
             )
         ]
     return []
+
+
+@register(Tags.security, deploy=True)
+def uploads_are_scanned(app_configs, **kwargs):
+    """Hosted environments check every upload with a real virus scanner (HIMS-SEC-013)."""
+    hosted = settings.HIMS_ENVIRONMENT in ("qa", "staging", "production")
+    accepted = settings.HIMS_ACCEPT_UNSCANNED_UPLOADS  # throw-away runs only (e.g. CI)
+    if hosted and not accepted and settings.HIMS_VIRUS_SCANNER != "clamd":
+        return [
+            Warning(
+                "Uploaded files are not checked for viruses.",
+                hint="Set HIMS_VIRUS_SCANNER=clamd with HIMS_CLAMD_HOST and HIMS_CLAMD_PORT "
+                "(docs/workflows/virus-scanning.md).",
+                id="hims.W002",
+            )
+        ]
+    return []

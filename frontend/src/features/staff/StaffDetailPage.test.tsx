@@ -95,6 +95,9 @@ const STAFF: StaffMemberDetail = {
       is_archived: false,
       archived_at: null,
       archive_reason: "",
+      scan_status: "clean",
+      scanned_by: "clamd",
+      scanned_at: null,
     },
   ],
 };
@@ -483,5 +486,34 @@ describe("Clinical privileges (HIMS-STAFF-016)", () => {
     const table = await screen.findByRole("table", { name: "Clinical privileges" });
     expect(screen.queryByRole("button", { name: "Give a privilege" })).toBeNull();
     expect(within(table).queryByRole("button", { name: /End / })).toBeNull();
+  });
+});
+
+describe("Documents and virus checks (HIMS-SEC-013)", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  function withDocuments(documents: unknown[]) {
+    const base = mockApi();
+    const answer = base.getMockImplementation()!;
+    base.mockImplementation(async (input, init) => {
+      if ((init?.method ?? "GET") === "GET" && String(input).includes("/staff/s1/")) return json({ ...STAFF, documents });
+      return answer(input, init);
+    });
+  }
+
+  it("a blocked file cannot be opened; an unchecked one says so", async () => {
+    const one = STAFF.documents[0]!;
+    withDocuments([
+      { ...one, id: "d-ok", original_name: "checked.pdf" },
+      { ...one, id: "d-old", original_name: "old.pdf", scan_status: "not_scanned" },
+      { ...one, id: "d-bad", original_name: "bad.pdf", scan_status: "infected", is_archived: true },
+    ]);
+    renderAt("/staff/s1", HR);
+    fireEvent.click(await screen.findByRole("tab", { name: /Licences/ }));
+    const licences = await screen.findByRole("table", { name: "Licences" });
+    expect(within(licences).getByRole("link", { name: "checked.pdf" })).toBeInTheDocument();
+    expect(within(licences).getByText(/not checked for viruses/)).toBeInTheDocument();
+    expect(within(licences).getByText("bad.pdf: a virus was found, so it cannot be opened")).toBeInTheDocument();
+    expect(within(licences).queryByRole("link", { name: "bad.pdf" })).toBeNull();
   });
 });

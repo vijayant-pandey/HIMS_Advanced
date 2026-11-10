@@ -8,6 +8,7 @@ from .browser_views import (
 )
 from .console_views import ConsoleAccessBlockViewSet, ConsoleAccessView
 from .database_views import DatabaseAccessView
+from .scanning_views import ScanDocumentsView, ScanningStatusView
 from .views import (
     ComplianceRequirementViewSet,
     ComplianceSummaryView,
@@ -32,5 +33,11 @@ urlpatterns = [
     path("security/status/", SecurityStatusView.as_view(), name="security-status"),
     path("security/database-access/", DatabaseAccessView.as_view(), name="database-access"),
     path("security/console-access/", ConsoleAccessView.as_view(), name="console-access"),
+    path("security/upload-scanning/", ScanningStatusView.as_view(), name="upload-scanning"),
+    path(
+        "security/upload-scanning/scan/",
+        ScanDocumentsView.as_view(),
+        name="upload-scanning-scan",
+    ),
     *router.urls,
 ]

@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.http import FileResponse, Http404
 from django.urls import path, reverse
@@ -5,12 +6,33 @@ from django.utils.html import format_html
 
 from common.admin.options import HimsModelAdmin
 
-from .logo import logo_type
+from .logo import LOGO_MAX_BYTES, logo_type
 from .models import Organization
+
+
+class OrganizationForm(forms.ModelForm):
+    actor = None  # set by the admin for this request
+
+    class Meta:
+        model = Organization
+        fields = ("logo",)  # the admin adds the fields of its fieldsets
+
+    def clean_logo(self):
+        """A new logo is checked for viruses too (HIMS-SEC-013); type and size by the model."""
+        upload = self.cleaned_data.get("logo")
+        if upload and hasattr(upload, "content_type") and 0 < upload.size <= LOGO_MAX_BYTES:
+            from common.virus_scan import ScannerUnavailable, check_upload
+
+            try:
+                check_upload(upload, where="uploaded as the hospital logo", actor=self.actor)
+            except ScannerUnavailable as exc:
+                raise forms.ValidationError(str(exc.detail)) from exc
+        return upload
 
 
 @admin.register(Organization)
 class OrganizationAdmin(HimsModelAdmin):
+    form = OrganizationForm
     list_display = ("display_name", "legal_name", "country", "default_currency", "status")
     fieldsets = (
         (
@@ -50,6 +72,11 @@ class OrganizationAdmin(HimsModelAdmin):
 
     def has_add_permission(self, request, *args):
         return False
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(request, obj, change=change, **kwargs)
+        form.actor = request.user
+        return form
 
     @admin.display(description="Logo now")
     def logo_preview(self, obj):

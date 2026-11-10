@@ -149,6 +149,13 @@ The hospital sets every value; HIMS ships no clinical rules or numbers.
 - **Leave → Entitlements and Balances**: days per year, carry-over, balances (HIMS-STAFF-013):
   [docs/workflows/leave-balances.md](docs/workflows/leave-balances.md).
 
+## Virus scanning and traces
+
+Every upload is checked for viruses before it is saved; on your PC only the standard test file is
+recognised (HIMS-SEC-013): [docs/workflows/virus-scanning.md](docs/workflows/virus-scanning.md).
+Error text in traces gets the same filter as logs (HIMS-SEC-020):
+[docs/workflows/tracing.md](docs/workflows/tracing.md).
+
 ## Admin console: only from allowed addresses
 
 The admin console answers only the addresses in `HIMS_ADMIN_ALLOWED_NETWORKS`; anyone else gets

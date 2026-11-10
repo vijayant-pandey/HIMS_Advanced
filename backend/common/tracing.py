@@ -17,12 +17,21 @@ a patient's name never reach a trace), SQL is recorded with placeholders only (n
 no request or response bodies, headers or user details are recorded. Each API span carries the
 request's reference number (``hims.request_id``) so a trace can be found from an error screen,
 and every log line written during a traced request carries ``trace_id`` / ``span_id``.
+
+Error text (HIMS-SEC-020): a failed request, task or outside call keeps the error's message and
+stack in the trace (``exception.message``, ``exception.stacktrace``, the span's status). Every
+span passes through :class:`ScrubbingSpanExporter` before it leaves the process, whichever
+exporter is used, and every text in it gets the same rules as a log line
+(``common.log_safety``): secrets, sign-in links, query strings, emails, phone numbers and
+database row values are hidden.
 """
 
 import logging
 from urllib.parse import urlsplit, urlunsplit
 
 from django.conf import settings
+
+from common import log_safety
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +94,72 @@ def _http_response_hook(span, *args, **kwargs) -> None:
     scrub_span(span)
 
 
+def _safe_attributes(attributes) -> dict:
+    """Every text value in a span's or event's attributes, through the log rules."""
+    safe = {}
+    for key, value in (attributes or {}).items():
+        if isinstance(value, str):
+            safe[key] = log_safety.scrub_value(key, value)
+        elif isinstance(value, (list, tuple)) and any(isinstance(item, str) for item in value):
+            hidden = log_safety.is_sensitive_key(key)
+            safe[key] = tuple(
+                log_safety.HIDDEN
+                if hidden
+                else log_safety.scrub(item)
+                if isinstance(item, str)
+                else item
+                for item in value
+            )
+        else:
+            safe[key] = value
+    return safe
+
+
+def scrubbed(span):
+    """A copy of a finished span with its texts made safe: attributes, the error events'
+    message and stack, the status description and the name."""
+    from opentelemetry.sdk.trace import Event, ReadableSpan
+    from opentelemetry.trace import Status
+
+    status = span.status
+    if status.description:
+        status = Status(status.status_code, log_safety.scrub(status.description))
+    return ReadableSpan(
+        name=log_safety.scrub(span.name),
+        context=span.context,
+        parent=span.parent,
+        resource=span.resource,
+        attributes=_safe_attributes(span.attributes),
+        events=[
+            Event(event.name, _safe_attributes(event.attributes), event.timestamp)
+            for event in span.events
+        ],
+        links=span.links,
+        kind=span.kind,
+        status=status,
+        start_time=span.start_time,
+        end_time=span.end_time,
+        instrumentation_scope=span.instrumentation_scope,
+    )
+
+
+class ScrubbingSpanExporter:
+    """Wraps the real exporter: spans are made safe on their way out of the process, so no
+    exporter (console, collector, a test's memory) ever receives the raw error text."""
+
+    def __init__(self, inner):
+        self.inner = inner
+
+    def export(self, spans):
+        return self.inner.export([scrubbed(span) for span in spans])
+
+    def shutdown(self):
+        return self.inner.shutdown()
+
+    def force_flush(self, timeout_millis: int = 30000):
+        return self.inner.force_flush(timeout_millis)
+
+
 def build_tracer_provider(exporter: str, *, service_name: str, span_exporter=None):
     """A tracer provider for ``exporter``; ``span_exporter`` overrides it (tests)."""
     from opentelemetry.sdk.resources import Resource
@@ -105,15 +180,17 @@ def build_tracer_provider(exporter: str, *, service_name: str, span_exporter=Non
         sampler=ParentBased(TraceIdRatioBased(settings.HIMS_TRACING_SAMPLE_RATIO)),
     )
     if span_exporter is not None:
-        provider.add_span_processor(SimpleSpanProcessor(span_exporter))
+        provider.add_span_processor(SimpleSpanProcessor(ScrubbingSpanExporter(span_exporter)))
     elif exporter == "console":
         from opentelemetry.sdk.trace.export import ConsoleSpanExporter
 
-        provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
+        provider.add_span_processor(
+            SimpleSpanProcessor(ScrubbingSpanExporter(ConsoleSpanExporter()))
+        )
     elif exporter == "otlp":
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
-        provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+        provider.add_span_processor(BatchSpanProcessor(ScrubbingSpanExporter(OTLPSpanExporter())))
     return provider
 
 
@@ -180,6 +257,19 @@ def configure_tracing(service_name: str, *, django: bool = True) -> bool:
         extra={"exporter": exporter, "service": service_name},
     )
     return True
+
+
+def record_error(exc: BaseException) -> None:
+    """Note an error on the current span (no-op when not tracing). The exporter filters it."""
+    try:
+        from opentelemetry import trace
+        from opentelemetry.trace import Status, StatusCode
+    except ImportError:  # pragma: no cover - packages not installed
+        return
+    span = trace.get_current_span()
+    if span.is_recording():
+        span.record_exception(exc)
+        span.set_status(Status(StatusCode.ERROR, f"{type(exc).__name__}: {exc}"))
 
 
 def current_trace_ids() -> dict[str, str]:

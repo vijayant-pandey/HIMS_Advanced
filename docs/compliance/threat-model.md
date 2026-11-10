@@ -36,10 +36,10 @@ separate deployments, separate databases; (5) developers and hosting staff to pr
 | **S**poofing | Forged invitation or reset link | Signed single-use expiring tokens, kept out of server logs and the message log | — | R-001 |
 | **T**ampering | Altering audit records | Append-only triggers, keyed hash chain, daily check, alerts | External chain copy (HIMS-SEC-016); separate DB roles (HIMS-OPS-007, **done 2026-11-08**: the app's database user cannot TRUNCATE the audit log or touch its triggers) | R-007 |
 | **T**ampering | Injection, cross-site scripting, forged requests | ORM queries, React escaping, CSRF tokens, input validation | Content security policy (HIMS-SEC-012) | R-005 |
-| **T**ampering | Malicious upload | Type/size checks from file content, no public links, sandboxed responses | Malware scan (HIMS-SEC-013) | R-006 |
+| **T**ampering | Malicious upload | Type/size checks from file content, no public links, sandboxed responses; every upload checked for viruses before it is stored, refused while the scanner is down, refusals audited and reported (HIMS-SEC-013, done 2026-11-10) | ClamAV running at hosting (HIMS-OPS-020) | R-006 |
 | **R**epudiation | "I didn't do that" | Every change audited with who, when, before/after, reference number, real client address believed only from our own proxies (HIMS-SEC-014) | Set `HIMS_TRUSTED_PROXIES` correctly at hosting and check it on the Compliance page | R-007 |
 | **I**nformation disclosure | Insider browsing | Least-privilege roles, separation of duties, access reviews | Patient-level rules, chart-read audit, restricted records (Phase 2) | R-003 |
-| **I**nformation disclosure | Leak through logs, traces, email | No query strings, no SQL values, hidden tokens, no clinical text in messages; tested | Secret-in-logs test (spec 13.5) | R-009 |
+| **I**nformation disclosure | Leak through logs, traces, email | No query strings, no SQL values, hidden tokens, no clinical text in messages; error text in traces filtered with the log rules (HIMS-SEC-020, done 2026-11-10); tested | Secret-in-logs test (spec 13.5) | R-009 |
 | **I**nformation disclosure | Leak of secrets | Secret scan in CI, gitignored env files, encryption of secrets | Managed secret store at hosting | R-008 |
 | **I**nformation disclosure | Another hospital's data | One database per hospital, environment guard | Isolation tests at hosting | R-012 |
 | **D**enial of service | Flooding, lost data, ransomware | Rate limits, safe retries | Backups, restore drills, RTO/RPO, WAF at hosting; load tests | R-010 |

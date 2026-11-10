@@ -29,7 +29,7 @@ the values it refused (`Key (email)=(asha@…) already exists`).
 | **Background worker (Celery)** | Uses the same JSON lines (`worker_hijack_root_logger=False` in `config/celery.py`). Celery's own plain-text set-up would write task arguments and errors unfiltered |
 | **A request in a log line** | Written as method and path only (`POST /api/v1/auth/login/`): never the query string, headers or body |
 | **Web server access log** | Path only, never the query string (already so since HIMS-PLAT-016, `config/gunicorn_conf.py`) |
-| **Traces** | Addresses without query strings, database queries without values (HIMS-PLAT-016). The error text a trace keeps is not filtered yet: see "Known gap" below |
+| **Traces** | Addresses without query strings, database queries without values (HIMS-PLAT-016). The error text a trace keeps, and every other text in it, gets the same rules on its way out (HIMS-SEC-020; see "Known gap" below, now closed) |
 | **"Last error" of a failed email/SMS** (Notifications page, admin console) | The provider's error is kept with the message's sign-in links and codes hidden, then passed through the same rules. If HIMS cannot tell which parts were secret, only the kind of error is kept (`SMTPDataError`). Older rows were cleaned by migration `notifications.0002_scrub_last_errors` |
 | **Error shown to the person** | Only "An unexpected error occurred" and a reference number; never the error text (unchanged) |
 | **Printed emails and SMS** (developer PC) | Printed in full in the launcher window, so links can be clicked while testing |
@@ -80,7 +80,11 @@ When the security test fails: read the label (for example `reset link in the log
 code that writes it, and change that code to log an identifier instead. Do **not** weaken the
 test.
 
-## Known gap (recorded, not built yet)
+## Known gap (closed 2026-11-10 by HIMS-SEC-020)
+
+Closed: every span now passes through `ScrubbingSpanExporter` (`common/tracing.py`) before it leaves
+the process, whichever exporter is used, and every text in it gets the rules above. The security test
+searches the traces too. The original note follows.
 
 **HIMS-SEC-020:** when tracing is switched on, an error's own text is also kept in the trace
 (`exception.message`). Tracing is off by default and traces are not sent anywhere yet

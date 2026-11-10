@@ -954,6 +954,10 @@ A scanned certificate for a licence or qualification (HIMS-STAFF-005).
 | `archived_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Archived at |
 | `archived_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Archived by |
 | `archive_reason` | varchar(255) | no | — | up to 255 characters | Person | Internal: Business data | Archive reason |
+| `scan_status` | varchar(12) | no | `ScanStatus.NOT_SCANNED` | `clean` (Checked: no virus), `not_scanned` (Not checked for viruses), `infected` (Virus found: blocked) | Person | Internal: Business data | Scan status |
+| `scanned_by` | varchar(20) | no | — | up to 20 characters | System (who did it) | Internal: Business data | Which scanner: clamd, test-file or none. |
+| `scanned_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Scanned at |
+| `scan_threat` | varchar(120) | no | — | up to 120 characters | Person | Internal: Business data | Scan threat |
 
 <a id="staff_credential_expiry_alerts"></a>
 ### `staff_credential_expiry_alerts`

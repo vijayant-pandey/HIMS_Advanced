@@ -2628,6 +2628,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/security/upload-scanning/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["security_upload_scanning_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/security/upload-scanning/scan/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Check stored documents not yet checked (up to 200 a time). A virus found blocks the file. */
+        post: operations["security_upload_scanning_scan_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shift-types/": {
         parameters: {
             query?: never;
@@ -4077,6 +4110,11 @@ export interface components {
             seniority: number;
             /** @default  */
             description: string;
+        };
+        DocumentCounts: {
+            clean: number;
+            not_scanned: number;
+            infected: number;
         };
         /**
          * @description * `mrn` - Patient record number (MRN)
@@ -5954,6 +5992,33 @@ export interface components {
             people: components["schemas"]["RotaPerson"][];
             staffing_gaps: components["schemas"]["StaffingGap"][];
         };
+        ScanResult: {
+            checked: number;
+            clean: number;
+            infected: number;
+            /** @description This scanner cannot really check them */
+            not_checked: number;
+            missing: number;
+        };
+        /**
+         * @description * `clean` - Checked: no virus
+         *     * `not_scanned` - Not checked for viruses
+         *     * `infected` - Virus found: blocked
+         * @enum {string}
+         */
+        ScanStatusEnum: "clean" | "not_scanned" | "infected";
+        ScanningStatus: {
+            /** @description clamd, test-file or none */
+            scanner: string;
+            label: string;
+            protects: boolean;
+            /** @description Empty without a real scanner */
+            reachable: boolean | null;
+            developer_pc: boolean;
+            documents: components["schemas"]["DocumentCounts"];
+            blocked_last_30_days: number;
+            traces: components["schemas"]["Traces"];
+        };
         /**
          * @description * `organization` - Whole hospital
          *     * `facility` - Per facility
@@ -6261,6 +6326,11 @@ export interface components {
             /** Format: date-time */
             readonly archived_at: string | null;
             readonly archive_reason: string;
+            readonly scan_status: components["schemas"]["ScanStatusEnum"];
+            /** @description Which scanner: clamd, test-file or none. */
+            readonly scanned_by: string;
+            /** Format: date-time */
+            readonly scanned_at: string | null;
         };
         StaffDocumentUploadRequest: {
             /**
@@ -6511,6 +6581,12 @@ export interface components {
             channel: components["schemas"]["ChannelEnum"];
             /** @description An email address, or a phone number like +919876543210. */
             to: string;
+        };
+        Traces: {
+            /** @description none, console or otlp */
+            exporter: string;
+            sent_elsewhere: boolean;
+            error_text_filtered: boolean;
         };
         /**
          * @description * `mitigate` - Reduce it
@@ -10946,6 +11022,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SecurityStatus"];
+                };
+            };
+        };
+    };
+    security_upload_scanning_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanningStatus"];
+                };
+            };
+        };
+    };
+    security_upload_scanning_scan_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanResult"];
                 };
             };
         };
