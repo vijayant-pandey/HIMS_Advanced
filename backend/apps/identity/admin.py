@@ -18,7 +18,7 @@ from common.exceptions import DomainError
 
 from . import mfa
 from .invitations import issue_invitation
-from .models import Invitation, MfaDevice, PasswordReset, User, UserSession
+from .models import Invitation, MfaDevice, Passkey, PasswordReset, User, UserSession
 from .password_reset import send_reset_from_console
 from .sessions import end_user_sessions, track_session
 
@@ -53,6 +53,28 @@ class MfaDeviceAdmin(ReadOnlyModelAdmin):
     list_filter = (("confirmed_at", admin.EmptyFieldListFilter),)
     search_fields = ("user__email", "user__display_name")
     exclude = ("secret_encrypted", "last_used_step")
+
+
+@admin.register(Passkey)
+class PasskeyAdmin(ConfirmIdentityAdminMixin, ReadOnlyModelAdmin):
+    """Passkeys people added as a second factor (HIMS-IAM-014). Only the public key is stored, and
+    it is not shown. A lost device's passkey can be removed here (after "confirm it's you")."""
+
+    list_display = ("user", "name", "backed_up", "created_at", "last_used_at")
+    list_filter = ("backed_up",)
+    search_fields = ("user__email", "user__display_name", "name")
+    exclude = ("public_key", "credential_id", "sign_count", "transports")
+    actions = ["remove_selected"]
+
+    @admin.action(description="Remove selected passkeys (for a lost or replaced device)")
+    def remove_selected(self, request, queryset):
+        from .passkeys import remove
+
+        count = 0
+        for passkey in queryset:
+            remove(actor=request.user, passkey_id=passkey.pk, request=request)
+            count += 1
+        self.message_user(request, f"{count} passkey(s) removed. The person keeps their code.")
 
 
 @admin.register(UserSession)

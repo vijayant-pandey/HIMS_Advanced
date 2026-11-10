@@ -145,7 +145,7 @@ function renderPage(ui: ReactElement, grants: string[], routes: Record<string, u
     staff_member_id: "st-head",
     grants: grants.map((permission) => ({ permission, facility_id: "fac-1", department_id: "dep-1" })),
     organization: { display_name: "Synthetic Health", country: "IN" },
-    mfa: { enabled: false, required: false, verified: false, recovery_codes_remaining: 0 },
+    mfa: { enabled: false, required: false, verified: false, recovery_codes_remaining: 0, passkeys: 0 },
   };
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   queryClient.setQueryData(currentUserKey, user);
@@ -480,7 +480,7 @@ function renderPageOrgWide(grants: string[], routes: Record<string, unknown>) {
     staff_member_id: null,
     grants: grants.map((permission) => ({ permission, facility_id: null, department_id: null })),
     organization: { display_name: "Synthetic Health", country: "IN" },
-    mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 10 },
+    mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 10, passkeys: 0 },
   };
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   queryClient.setQueryData(currentUserKey, user);

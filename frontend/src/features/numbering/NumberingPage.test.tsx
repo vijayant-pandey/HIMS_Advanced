@@ -54,7 +54,7 @@ function renderPage(grants: CurrentUser["grants"]) {
     staff_member_id: null,
     grants,
     organization: { display_name: "Synthetic Health", country: "IN" },
-    mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 10 },
+    mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 10, passkeys: 0 },
   };
   const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);

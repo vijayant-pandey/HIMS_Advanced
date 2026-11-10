@@ -96,6 +96,8 @@ class AuditAction:
     AUTH_MFA_FAILED = "auth.mfa.failed"
     AUTH_MFA_RECOVERY_CODE_USED = "auth.mfa.recovery_code_used"
     AUTH_MFA_RECOVERY_CODES_REGENERATED = "auth.mfa.recovery_codes_regenerated"
+    AUTH_PASSKEY_ADDED = "auth.passkey.added"
+    AUTH_PASSKEY_REMOVED = "auth.passkey.removed"
     ROLE_CREATED = "access.role.created"
     ROLE_UPDATED = "access.role.updated"
     ROLE_ASSIGNED = "access.role.assigned"

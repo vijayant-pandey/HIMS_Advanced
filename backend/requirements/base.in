@@ -24,3 +24,7 @@ opentelemetry-instrumentation-django==0.66b1
 opentelemetry-instrumentation-celery==0.66b1
 opentelemetry-instrumentation-psycopg==0.66b1
 opentelemetry-instrumentation-urllib3==0.66b1
+# Passkeys as a second factor (spec 13.1; HIMS-IAM-014): WebAuthn checks by Duo Labs' library.
+webauthn==3.0.1
+# webauthn needs cbor2. Held at a release at least two weeks old (6.2.x was days old when added).
+cbor2==6.1.5

@@ -51,7 +51,7 @@ function renderPage(grants: string[]) {
     staff_member_id: null,
     grants: grants.map((permission) => ({ permission, facility_id: null, department_id: null })),
     organization: { display_name: "Synthetic Health", country: "IN" },
-    mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 10 },
+    mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 10, passkeys: 0 },
   };
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   queryClient.setQueryData(currentUserKey, user);

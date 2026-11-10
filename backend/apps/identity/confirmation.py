@@ -23,6 +23,7 @@ from apps.features.services import is_enabled
 from common.exceptions import DomainError
 
 from . import mfa
+from .models import Passkey
 
 SESSION_CONFIRMED_KEY = "hims_identity_confirmed_at"
 SESSION_FAILURES_KEY = "hims_identity_confirm_failures"
@@ -87,6 +88,8 @@ def status(request) -> dict:
         "confirmed_until": confirmed_until(request),
         "window_minutes": settings.HIMS_CONFIRM_IDENTITY_MINUTES,
         "needs_code": mfa.confirmed_device(request.user) is not None,
+        "passkey_available": mfa.confirmed_device(request.user) is not None
+        and Passkey.objects.filter(user=request.user).exists(),
     }
 
 
@@ -118,17 +121,28 @@ def _refuse(request, user) -> None:
     )
 
 
-def confirm(request, *, password: str, code: str = "") -> None:
-    """Check the password, and the authenticator or backup code if the person uses two-factor.
-    Five wrong tries end the session: whoever holds it would need the password to get back in."""
+def confirm(request, *, password: str, code: str = "", passkey: dict | None = None) -> None:
+    """Check the password, and the authenticator or backup code (or a passkey, HIMS-IAM-014) if
+    the person uses two-factor. Five wrong tries end the session: whoever holds it would need the
+    password to get back in."""
+    from .passkeys import (
+        CONFIRM,
+        PasskeyNotAccepted,
+        check_assertion,
+    )
+
     user = request.user
     method = "password"
     accepted = user.check_password(password)
     if accepted and mfa.confirmed_device(user) is not None:
         try:
             with transaction.atomic():  # a backup code is only used up if the password was right
-                method = f"password+{mfa._check_code(user, code.strip(), allow_recovery=True)}"
-        except mfa.InvalidMfaCode:
+                if passkey:
+                    check_assertion(request, user, CONFIRM, passkey)
+                    method = "password+passkey"
+                else:
+                    method = f"password+{mfa._check_code(user, code.strip(), allow_recovery=True)}"
+        except (mfa.InvalidMfaCode, PasskeyNotAccepted):
             accepted = False
     if not accepted:
         _refuse(request, user)

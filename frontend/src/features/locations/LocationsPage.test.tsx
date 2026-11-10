@@ -96,6 +96,7 @@ function renderPage(permissions: string[]) {
       required: false,
       verified: false,
       recovery_codes_remaining: 0,
+      passkeys: 0,
     },
   };
   const fetchMock = vi

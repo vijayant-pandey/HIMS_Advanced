@@ -33,6 +33,7 @@ import {
 import { MyCoverSection } from "../accessControl/MyCoverSection";
 import { SensitiveActionsSection } from "./SensitiveActionsSection";
 import { ReportIncidentDialog } from "../compliance/ReportIncidentDialog";
+import { PasskeysSection } from "./PasskeysSection";
 import { RecoveryCodes } from "./RecoveryCodes";
 
 function QrCode({ value }: { value: string }) {
@@ -319,6 +320,7 @@ export function SecurityPage() {
                 Backup codes left: <strong>{mfa.recovery_codes_remaining}</strong>
               </Typography>
               <ManageEnabled required={mfa.required} />
+              <PasskeysSection />
             </>
           ) : (
             <SetupFlow onEnabled={setNewCodes} />

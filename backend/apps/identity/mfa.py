@@ -33,7 +33,7 @@ from apps.audit.services import AuditAction, record_audit_event
 from common.crypto import decrypt, encrypt
 from common.exceptions import ConflictError, DomainError
 
-from .models import MfaDevice, MfaRecoveryCode, User, UserSession
+from .models import MfaDevice, MfaRecoveryCode, Passkey, User, UserSession
 
 STEP_SECONDS = 30
 DIGITS = 6
@@ -154,6 +154,7 @@ def status(user, request=None) -> dict:
         ).count()
         if device
         else 0,
+        "passkeys": Passkey.objects.filter(user=user).count() if device else 0,
     }
 
 
@@ -290,8 +291,10 @@ def admin_reset(*, user: User, actor, request=None) -> None:
 
 
 def _remove(user: User) -> None:
+    """Two-factor off or reset: the passkeys go too (they are added to it, HIMS-IAM-014)."""
     MfaDevice.objects.filter(user=user).delete()
     MfaRecoveryCode.objects.filter(user=user).delete()
+    Passkey.objects.filter(user=user).delete()
 
 
 def _check_code(user: User, code: str, *, allow_recovery: bool) -> str:
@@ -337,8 +340,8 @@ def begin_challenge(request, user: User) -> None:
     }
 
 
-def verify_challenge(request, code: str) -> User:
-    """Second sign-in step. Returns the user on success (the caller then logs them in)."""
+def pending_challenge(request) -> tuple[User, dict]:
+    """The person whose password was accepted in this session, still to give a second factor."""
     pending = request.session.get(SESSION_PENDING_KEY)
     expires_at = parse_datetime(pending["expires_at"]) if pending else None
     if not pending or expires_at is None or expires_at <= timezone.now():
@@ -349,28 +352,27 @@ def verify_challenge(request, code: str) -> User:
     if user is None:
         request.session.pop(SESSION_PENDING_KEY, None)
         raise MfaChallengeExpired("Your sign-in expired. Enter your email and password again.")
+    return user, pending
 
-    try:
-        with transaction.atomic():
-            method = _check_code(user, code, allow_recovery=True)
-    except InvalidMfaCode:
-        pending["attempts"] += 1
-        record_audit_event(
-            action=AuditAction.AUTH_MFA_FAILED,
-            resource_type="user",
-            resource_id=user.pk,
-            request=request,
-            outcome=AuditEvent.Outcome.FAILURE,
-            metadata={"attempt": pending["attempts"]},
-        )
-        if pending["attempts"] >= CHALLENGE_MAX_ATTEMPTS:
-            request.session.pop(SESSION_PENDING_KEY, None)
-            raise MfaChallengeExpired(
-                "Too many wrong codes. Enter your email and password again."
-            ) from None
-        request.session[SESSION_PENDING_KEY] = pending
-        raise
 
+def count_failed_attempt(request, user: User, pending: dict, *, method: str = "code") -> None:
+    """A wrong code or passkey: audited, and the fifth ends the sign-in (raises then)."""
+    pending["attempts"] += 1
+    record_audit_event(
+        action=AuditAction.AUTH_MFA_FAILED,
+        resource_type="user",
+        resource_id=user.pk,
+        request=request,
+        outcome=AuditEvent.Outcome.FAILURE,
+        metadata={"attempt": pending["attempts"], "method": method},
+    )
+    if pending["attempts"] >= CHALLENGE_MAX_ATTEMPTS:
+        request.session.pop(SESSION_PENDING_KEY, None)
+        raise MfaChallengeExpired("Too many wrong tries. Enter your email and password again.")
+    request.session[SESSION_PENDING_KEY] = pending
+
+
+def finish_challenge(request, user: User, *, method: str) -> None:
     request.session.pop(SESSION_PENDING_KEY, None)
     record_audit_event(
         action=AuditAction.AUTH_MFA_RECOVERY_CODE_USED
@@ -382,6 +384,23 @@ def verify_challenge(request, code: str) -> User:
         request=request,
         metadata={"method": method},
     )
+
+
+def verify_challenge(request, code: str) -> User:
+    """Second sign-in step. Returns the user on success (the caller then logs them in)."""
+    user, pending = pending_challenge(request)
+    try:
+        with transaction.atomic():
+            method = _check_code(user, code, allow_recovery=True)
+    except InvalidMfaCode:
+        try:
+            count_failed_attempt(request, user, pending)
+        except MfaChallengeExpired:
+            raise MfaChallengeExpired(
+                "Too many wrong codes. Enter your email and password again."
+            ) from None
+        raise
+    finish_challenge(request, user, method=method)
     return user
 
 

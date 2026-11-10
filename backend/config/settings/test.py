@@ -58,6 +58,8 @@ HIMS_OUTBOX_DISPATCH_INLINE = False
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 HIMS_SMS_BACKEND = "apps.notifications.backends.LocmemSmsBackend"
 HIMS_APP_BASE_URL = "http://app.test"
+HIMS_WEBAUTHN_RP_ID = "app.test"
+HIMS_WEBAUTHN_ORIGINS = ["http://app.test"]
 # Uploaded files go to a throw-away folder, never the real one.
 import tempfile  # noqa: E402
 

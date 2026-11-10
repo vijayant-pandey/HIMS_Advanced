@@ -64,7 +64,7 @@ function user(grants: CurrentUser["grants"]): CurrentUser {
     staff_member_id: null,
     grants,
     organization: { display_name: "Synthetic Health", country: "IN" },
-    mfa: { enabled: true, required: false, verified: true, recovery_codes_remaining: 10 },
+    mfa: { enabled: true, required: false, verified: true, recovery_codes_remaining: 10, passkeys: 0 },
   };
 }
 

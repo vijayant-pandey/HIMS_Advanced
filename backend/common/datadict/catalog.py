@@ -135,6 +135,8 @@ LIFECYCLE: dict[str, str] = {
     "user_mfa_devices": "One per person; deleted when two-factor is switched off or reset "
     "(audited).",
     "user_mfa_recovery_codes": "Single use; replaced as a set when regenerated or reset.",
+    "user_passkeys": "Deleted when the person or an administrator removes it, or when two-factor "
+    "is switched off or reset. Public keys only (HIMS-IAM-014).",
     "permissions": "Synced from the code catalog on migrate; removed codes are deactivated, "
     "never deleted.",
     "roles": "Never deleted. System roles follow the code catalog; custom roles are versioned.",
@@ -218,6 +220,9 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "users.password": (SECRET, "Credential (hashed)"),
     "user_mfa_devices.secret_encrypted": (SECRET, "Credential (encrypted)"),
     "user_mfa_recovery_codes.code_hash": (SECRET, "Credential (hashed)"),
+    "user_passkeys.public_key": (RESTRICTED, "Credential (public key, not secret)"),
+    "user_passkeys.credential_id": (RESTRICTED, "Credential identifier"),
+    "user_passkeys.name": (RESTRICTED, "Device label chosen by the person"),
     "user_sessions.session_key": (SECRET, "Credential (session identifier)"),
     "idempotency_records.response_body": (RESTRICTED, "Stored response (may hold personal data)"),
     "idempotency_records.request_fingerprint": (INTERNAL, "Checksum"),

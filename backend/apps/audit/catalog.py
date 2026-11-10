@@ -106,6 +106,8 @@ LABELS: dict[str, str] = {
     A.AUTH_MFA_FAILED: "Wrong two-factor code",
     A.AUTH_MFA_RECOVERY_CODE_USED: "Backup code used",
     A.AUTH_MFA_RECOVERY_CODES_REGENERATED: "New backup codes created",
+    A.AUTH_PASSKEY_ADDED: "Passkey added",
+    A.AUTH_PASSKEY_REMOVED: "Passkey removed",
     A.ROLE_CREATED: "Role created",
     A.ROLE_UPDATED: "Role changed",
     A.ROLE_ASSIGNED: "Access given",

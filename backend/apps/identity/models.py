@@ -225,3 +225,28 @@ class MfaRecoveryCode(UUIDPrimaryKeyModel):
 
     def __str__(self) -> str:
         return f"Recovery code for {self.user_id} ({'used' if self.used_at else 'unused'})"
+
+
+class Passkey(UUIDPrimaryKeyModel):
+    """A passkey a person added as a second factor (HIMS-IAM-014; spec 13.1). Only the public key
+    is stored: the private key never leaves the person's device. ``sign_count`` must go up at each
+    use, so a copied key is refused."""
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="passkeys")
+    name = models.CharField(max_length=60, help_text='Chosen by the person, e.g. "Work laptop".')
+    credential_id = models.CharField(max_length=1024, unique=True)
+    public_key = models.BinaryField()
+    sign_count = models.BigIntegerField(default=0)
+    transports = models.JSONField(default=list, blank=True)
+    backed_up = models.BooleanField(
+        default=False, help_text="Synced to the person's cloud account (e.g. on their phone)."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "user_passkeys"
+        ordering = ["created_at"]
+
+    def __str__(self) -> str:
+        return f"Passkey {self.name} of {self.user_id}"
