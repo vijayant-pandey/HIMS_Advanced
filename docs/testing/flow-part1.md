@@ -49,6 +49,7 @@
 22l. [Part 18l: minimum staffing](#part-18l-minimum-staffing)
 22m. [Part 18m: leave balances](#part-18m-leave-balances)
 22n. [Part 18n: virus scanning and traces](#part-18n-virus-scanning-and-traces)
+22o. [Part 18o: passkeys](#part-18o-passkeys)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1333,6 +1334,25 @@ On your PC only the standard anti-virus test file is recognised: see
 
 ---
 
+## Part 18o: passkeys
+
+Needs the passkeys PR and its migrate step (India and US), **Chrome or Edge** and Windows Hello (a PIN
+is enough), or a phone. Sign in as the administrator, with your code.
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18o.1 | Menu → your name → **Security** | Under two-factor sign-in, a **Passkeys** section, "0 added" |
+| 18o.2 | Name it "My PC", **Add a passkey** (confirm it's you if asked), and unlock with your Windows PIN | "Passkey added"; listed as "My PC", not used yet |
+| 18o.3 | Sign out; sign in with email and password | Two buttons: **Use a passkey**, and the code box |
+| 18o.4 | **Use a passkey**, unlock with your PIN | Signed in, without typing a code |
+| 18o.5 | Sign out; sign in again, and this time type the code | Also works: the code was not replaced |
+| 18o.6 | Make a sensitive change, e.g. a Feature setting, when asked to confirm | Password, then **Confirm with a passkey instead of the code** works |
+| 18o.7 | Admin console → **Passkeys** | "My PC" is listed, with no key shown; the action "Remove selected passkeys" |
+| 18o.8 | Security → **Remove** "My PC" | Gone; sign-in offers only the code again |
+| 18o.9 | **Audit log** (as the auditor) | "Passkey added", "Passkey removed", and sign-ins with method "passkey" |
+
+---
+
 ## Part 19: leaving staff (termination)
 
 **Window A** app + **Window B** (Asha signed in).
@@ -1496,6 +1516,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 18l | Minimum staffing | | | |
 | 18m | Leave balances | | | |
 | 18n | Virus scanning and traces | | | |
+| 18o | Passkeys | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 

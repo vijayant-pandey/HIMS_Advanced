@@ -7,6 +7,7 @@ All configuration comes from the environment (spec 31.4). Environment-specific m
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import environ
 from django.core.exceptions import ImproperlyConfigured
@@ -352,6 +353,14 @@ HIMS_OUTBOX_STUCK_MINUTES = env.int("HIMS_OUTBOX_STUCK_MINUTES", default=15)
 # --- Invitations and email (HIMS-IAM-003) ------------------------------------------------
 # Public URL of this deployment's React app; activation links point here.
 HIMS_APP_BASE_URL = env.str("HIMS_APP_BASE_URL", default="http://localhost:5175")
+# Passkeys (HIMS-IAM-014) belong to the app's own web address: its host name, and the full origin
+# the browser reports. Both follow HIMS_APP_BASE_URL unless set.
+_APP_ADDRESS = urlsplit(HIMS_APP_BASE_URL)
+_RP_HOST = _APP_ADDRESS.hostname or "localhost"
+HIMS_WEBAUTHN_RP_ID = env.str("HIMS_WEBAUTHN_RP_ID", _RP_HOST)
+HIMS_WEBAUTHN_ORIGINS = env.list(
+    "HIMS_WEBAUTHN_ORIGINS", default=[f"{_APP_ADDRESS.scheme}://{_APP_ADDRESS.netloc}"]
+)
 HIMS_INVITATION_TTL_HOURS = env.int("HIMS_INVITATION_TTL_HOURS", default=72)
 HIMS_PASSWORD_RESET_TTL_MINUTES = env.int("HIMS_PASSWORD_RESET_TTL_MINUTES", default=60)
 HIMS_PASSWORD_RESET_MAX_PER_HOUR = env.int("HIMS_PASSWORD_RESET_MAX_PER_HOUR", default=3)

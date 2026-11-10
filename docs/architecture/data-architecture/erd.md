@@ -31,6 +31,7 @@ erDiagram
     user_sessions
     user_mfa_devices
     user_mfa_recovery_codes
+    user_passkeys
     permissions
     roles
     role_permissions
@@ -124,6 +125,7 @@ erDiagram
     users ||--o{ user_sessions : "user_id"
     users ||--o| user_mfa_devices : "user_id"
     users ||--o{ user_mfa_recovery_codes : "user_id"
+    users ||--o{ user_passkeys : "user_id"
     organizations ||--o{ roles : "organization_id"
     roles ||--o{ role_permissions : "role_id"
     permissions ||--o{ role_permissions : "permission_id"
@@ -624,12 +626,25 @@ erDiagram
         timestamptz created_at
         timestamptz used_at
     }
+    user_passkeys {
+        uuid id PK
+        uuid user_id FK
+        varchar name
+        varchar credential_id UK
+        bytea public_key
+        bigint sign_count
+        jsonb transports
+        boolean backed_up
+        timestamptz created_at
+        timestamptz last_used_at
+    }
     users ||--o{ user_invitations : "user_id"
     users |o--o{ user_invitations : "created_by_id"
     users ||--o{ user_password_resets : "user_id"
     users ||--o{ user_sessions : "user_id"
     users ||--o| user_mfa_devices : "user_id"
     users ||--o{ user_mfa_recovery_codes : "user_id"
+    users ||--o{ user_passkeys : "user_id"
 ```
 
 ## Access control: roles, access, reviews, cover (logical)

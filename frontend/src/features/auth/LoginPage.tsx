@@ -1,14 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Link, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Button, Link, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Navigate, Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
+import { ApiError } from "../../api/client";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { FEATURE, useFeatureOn } from "../featureFlags/api";
-import { isMfaChallenge, useCurrentUser, useLogin, useVerifyLogin } from "./api";
+import { isMfaChallenge, useCurrentUser, useLogin, useVerifyLogin, usePasskeyLogin } from "./api";
 import { AuthCard } from "./AuthCard";
+import { passkeyErrorText, passkeysSupported } from "./webauthn";
 
 const schema = z.object({
   email: z.email("Enter a valid email address"),
@@ -17,11 +19,24 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 /** Step 2 of sign-in for accounts with two-factor on (HIMS-IAM-005). */
-function CodeStep({ onDone, onRestart }: { onDone: () => void; onRestart: () => void }) {
+function CodeStep({
+  passkeyAvailable,
+  onDone,
+  onRestart,
+}: {
+  passkeyAvailable: boolean;
+  onDone: () => void;
+  onRestart: () => void;
+}) {
   const verify = useVerifyLogin();
+  const withPasskey = usePasskeyLogin();
   const [useBackup, setUseBackup] = useState(false);
   const [code, setCode] = useState("");
-  const expired = verify.error?.code === "MFA_CHALLENGE_EXPIRED";
+  const failure = withPasskey.error;
+  const expired =
+    verify.error?.code === "MFA_CHALLENGE_EXPIRED" ||
+    (failure instanceof ApiError && failure.code === "MFA_CHALLENGE_EXPIRED");
+  const canUsePasskey = passkeyAvailable && passkeysSupported();
 
   return (
     <form
@@ -38,6 +53,28 @@ function CodeStep({ onDone, onRestart }: { onDone: () => void; onRestart: () => 
             : "Open your authenticator app and enter the 6-digit code for HIMS."}
         </Typography>
         {verify.error && <ErrorAlert error={verify.error} />}
+        {failure ? (
+          passkeyErrorText(failure) ? (
+            <Alert severity="warning">{passkeyErrorText(failure)}</Alert>
+          ) : (
+            <ErrorAlert error={failure} />
+          )
+        ) : null}
+        {!expired && canUsePasskey && (
+          <>
+            <Button
+              variant="contained"
+              color="secondary"
+              disabled={withPasskey.isPending}
+              onClick={() => withPasskey.mutate(undefined, { onSuccess: onDone })}
+            >
+              Use a passkey
+            </Button>
+            <Typography variant="body2" sx={{ textAlign: "center" }}>
+              or enter a code
+            </Typography>
+          </>
+        )}
         {expired ? (
           <Button variant="contained" onClick={onRestart}>
             Start again
@@ -82,6 +119,7 @@ export function LoginPage() {
   // The hospital may turn self-service resets off (Features page); the server enforces it too.
   const selfServiceReset = useFeatureOn(FEATURE.selfServicePasswordReset);
   const [needsCode, setNeedsCode] = useState(false);
+  const [passkeyAvailable, setPasskeyAvailable] = useState(false);
   const {
     register,
     handleSubmit,
@@ -94,7 +132,11 @@ export function LoginPage() {
   const done = () => navigate(redirectTo, { replace: true });
   const onSubmit = handleSubmit((values) =>
     login.mutate(values, {
-      onSuccess: (result) => (isMfaChallenge(result) ? setNeedsCode(true) : done()),
+      onSuccess: (result) => {
+        if (!isMfaChallenge(result)) return done();
+        setPasskeyAvailable(result.passkey_available);
+        setNeedsCode(true);
+      },
     }),
   );
 
@@ -102,6 +144,7 @@ export function LoginPage() {
     return (
       <AuthCard title="Two-factor sign-in">
         <CodeStep
+          passkeyAvailable={passkeyAvailable}
           onDone={done}
           onRestart={() => {
             login.reset();

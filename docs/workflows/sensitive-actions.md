@@ -34,10 +34,11 @@ one**, before a sensitive action.
 | Change a Feature setting | Features | `features`: change |
 | Change the wording of a message, or go back to the standard (HIMS-NOTIF-003) | Message wording | `message-templates`: update, reset |
 | Give or end a clinical privilege (HIMS-STAFF-016) | Staff | `staff`: privileges; `staff-privileges`: end |
+| Add or remove one of your passkeys (HIMS-IAM-014) | Security | `auth/passkeys`: add-options, add, remove |
 
 **In the admin console** the same areas ask before saving or running an action: users (including
 setting a password), roles, role assignments, access reviews and their items, cover, staff,
-feature settings, message wording, staff privileges, "Make a backup now", and **downloading an access review or audit events as CSV**
+feature settings, message wording, staff privileges, removing passkeys, "Make a backup now", and **downloading an access review or audit events as CSV**
 (added 2026-11-09, HIMS-SEC-015). Looking does not ask. Nothing is changed until the person has confirmed, and they
 then repeat what they were doing.
 
@@ -89,3 +90,7 @@ reason, and is audited. It is on by default and should stay on. Turning it off i
 action. The same setting is in the admin console.
 
 No database change: the time is kept in the person's session.
+
+## With a passkey (HIMS-IAM-014)
+
+People with a passkey can answer with their password and **Confirm with a passkey instead of the code**. The password is always needed. See [passkeys](passkeys.md).

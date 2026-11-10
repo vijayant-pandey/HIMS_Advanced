@@ -97,3 +97,9 @@ The console gained **Clinical privileges**, **Staff privileges**, **Staffing req
 file was checked, filters by it, blocks opening an infected one, and has the action "Check selected
 documents for viruses now". A file uploaded in the console (staff document, logo) is checked like one
 uploaded in the app, with the refusal on the form. A check of what #45 added found nothing missing.
+
+## Update (2026-11-10, passkeys)
+
+The console gained **Passkeys**: who has which, never the key itself, and the action "Remove selected
+passkeys" for a lost device (after "confirm it's you"). The console's own sign-in still asks for the
+authenticator code. A check of what #46 added found nothing missing.

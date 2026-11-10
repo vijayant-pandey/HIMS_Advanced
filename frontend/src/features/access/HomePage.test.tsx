@@ -28,7 +28,7 @@ const baseUser: CurrentUser = {
   staff_member_id: null,
   grants: [],
   organization: { display_name: "Synthetic Health", country: "IN" },
-  mfa: { enabled: false, required: false, verified: false, recovery_codes_remaining: 0 },
+  mfa: { enabled: false, required: false, verified: false, recovery_codes_remaining: 0, passkeys: 0 },
 };
 
 describe("HomePage", () => {

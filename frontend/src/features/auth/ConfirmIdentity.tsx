@@ -15,6 +15,7 @@ import { ApiError, api, isUnauthenticated, setIdentityConfirmer } from "../../ap
 import type { ConfirmIdentityStatus } from "../../api/types";
 import { FormDialog } from "../../components/FormDialog";
 import { confirmIdentityKey, useCurrentUser, useIdentityConfirmation } from "./api";
+import { answerWithPasskey, passkeyErrorText, passkeysSupported } from "./webauthn";
 
 function ConfirmIdentityDialog({ onDone }: { onDone: (confirmed: boolean) => void }) {
   const { data: user } = useCurrentUser();
@@ -23,8 +24,23 @@ function ConfirmIdentityDialog({ onDone }: { onDone: (confirmed: boolean) => voi
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const needsCode = status?.needs_code ?? user?.mfa.enabled ?? false;
-  const confirm = useMutation<ConfirmIdentityStatus, ApiError, void>({
-    mutationFn: () => api.post<ConfirmIdentityStatus>("/auth/confirm-identity/", { password, code }),
+  const canUsePasskey = needsCode && !!status?.passkey_available && passkeysSupported();
+  const [passkeyProblem, setPasskeyProblem] = useState<string | null>(null);
+  const confirm = useMutation<ConfirmIdentityStatus, ApiError, { withPasskey?: boolean } | void>({
+    mutationFn: async (how) => {
+      if (how && how.withPasskey) {
+        const options = await api.post<{ public_key: Record<string, unknown> }>("/auth/confirm-identity/passkey-options/");
+        let passkey: Record<string, unknown>;
+        try {
+          passkey = await answerWithPasskey(options.public_key);
+        } catch (error) {
+          setPasskeyProblem(passkeyErrorText(error) ?? "The passkey could not be used.");
+          throw error;
+        }
+        return api.post<ConfirmIdentityStatus>("/auth/confirm-identity/", { password, passkey });
+      }
+      return api.post<ConfirmIdentityStatus>("/auth/confirm-identity/", { password, code });
+    },
     onSuccess: (result) => {
       queryClient.setQueryData(confirmIdentityKey, result);
       onDone(true);
@@ -33,11 +49,12 @@ function ConfirmIdentityDialog({ onDone }: { onDone: (confirmed: boolean) => voi
       setCode(""); // a used or wrong code is no good for the next try
       if (isUnauthenticated(error)) onDone(false); // too many wrong tries: back to sign-in
     },
+    onMutate: () => setPasskeyProblem(null),
   });
   return (
     <FormDialog
       title="Confirm it's you"
-      error={confirm.error}
+      error={confirm.error instanceof ApiError ? confirm.error : null}
       fields={["password", "code"]}
       submitLabel="Confirm"
       submitDisabled={!password || (needsCode && !code)}
@@ -59,6 +76,16 @@ function ConfirmIdentityDialog({ onDone }: { onDone: (confirmed: boolean) => voi
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
+      {passkeyProblem && <Typography variant="body2" color="warning.main">{passkeyProblem}</Typography>}
+      {canUsePasskey && (
+        <Button
+          variant="outlined"
+          disabled={!password || confirm.isPending}
+          onClick={() => confirm.mutate({ withPasskey: true })}
+        >
+          Confirm with a passkey instead of the code
+        </Button>
+      )}
       {needsCode && (
         <TextField
           label="Authenticator code"

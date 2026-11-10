@@ -156,6 +156,11 @@ recognised (HIMS-SEC-013): [docs/workflows/virus-scanning.md](docs/workflows/vir
 Error text in traces gets the same filter as logs (HIMS-SEC-020):
 [docs/workflows/tracing.md](docs/workflows/tracing.md).
 
+## Passkeys
+
+After setting up the authenticator app, anyone can add a passkey on the Security page and use it
+instead of the code (HIMS-IAM-014): [docs/workflows/passkeys.md](docs/workflows/passkeys.md).
+
 ## Admin console: only from allowed addresses
 
 The admin console answers only the addresses in `HIMS_ADMIN_ALLOWED_NETWORKS`; anyone else gets

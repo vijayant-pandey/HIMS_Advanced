@@ -51,3 +51,20 @@
 Hospitals can now also require two-factor for everyone themselves, on the Features page
 ("Two-factor sign-in for all staff", ADR-019). The setting is audited and needs a reason. The
 server setting `HIMS_MFA_REQUIRED_FOR_ALL` still works and takes precedence.
+
+## Update (2026-11-10, HIMS-IAM-014: passkeys built)
+
+Passkeys are built as planned above: **an addition, not a replacement.**
+
+- A passkey can be added only once the authenticator app is on, and only on a session that passed
+  two-factor, after "confirm it's you". The app, the backup codes and the admin console's code stay.
+  Switching two-factor off, or an administrator's reset, removes the passkeys.
+- A passkey answers the second sign-in step and "confirm it's you" (always with the password). Wrong
+  tries count with wrong codes.
+- Checks use Duo Labs' `webauthn` library rather than code of our own: the format and signature rules
+  are subtle, and a maintained, widely used implementation is the safer choice for sign-in.
+  Attestation "none": HIMS does not ask which maker the device is from.
+- Only the public key is stored; challenges are single-use and expire after 5 minutes; the device's
+  counter must rise; the site is `HIMS_WEBAUTHN_RP_ID`, which follows `HIMS_APP_BASE_URL`.
+- Not done: passkey sign-in to the admin console (it would need scripts on the console's sign-in page),
+  and signing in with a passkey alone, without a password. Both can follow if the hospitals ask.

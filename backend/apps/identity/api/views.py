@@ -17,8 +17,8 @@ from apps.organizations.models import Organization
 from common.exceptions import DomainError
 from common.throttling import ScopedThrottle
 
-from .. import confirmation, invitations, mfa, password_reset, sessions
-from ..models import UserSession
+from .. import confirmation, invitations, mfa, passkeys, password_reset, sessions
+from ..models import Passkey, UserSession
 from .serializers import (
     ConfirmIdentitySerializer,
     ConfirmIdentityStatusSerializer,
@@ -35,6 +35,10 @@ from .serializers import (
     MySessionSerializer,
     NoAccessReferenceSerializer,
     NoAccessReportSerializer,
+    PasskeyAddSerializer,
+    PasskeyCredentialSerializer,
+    PasskeyOptionsSerializer,
+    PasskeySerializer,
     PasswordResetConfirmSerializer,
     PasswordResetDetailsSerializer,
     PasswordResetRequestedSerializer,
@@ -131,6 +135,7 @@ class LoginView(APIView):
             return Response(
                 {
                     "mfa_required": True,
+                    "passkey_available": passkeys.available(user),
                     "detail": "Enter the 6-digit code from your authenticator app.",
                 },
                 status=status.HTTP_202_ACCEPTED,
@@ -153,6 +158,36 @@ class LoginVerifyView(APIView):
         serializer.is_valid(raise_exception=True)
         user = mfa.verify_challenge(request, serializer.validated_data["code"])
         return _complete_login(request, user, via="password+mfa", mfa_verified=True)
+
+
+class LoginPasskeyOptionsView(APIView):
+    """Second sign-in step with a passkey (HIMS-IAM-014): the challenge for the device to sign."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedThrottle]
+    throttle_scope = "login"
+
+    @extend_schema(request=None, responses={200: PasskeyOptionsSerializer})
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        user, _pending = mfa.pending_challenge(request)
+        return Response({"public_key": passkeys.begin_assertion(request, user, passkeys.LOGIN)})
+
+
+class LoginPasskeyView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedThrottle]
+    throttle_scope = "login"
+
+    @extend_schema(request=PasskeyCredentialSerializer, responses={200: CurrentUserSerializer})
+    def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
+        serializer = PasskeyCredentialSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = passkeys.verify_login(request, serializer.validated_data["credential"])
+        return _complete_login(request, user, via="password+passkey", mfa_verified=True)
 
 
 class _PublicInvitationView(APIView):
@@ -332,6 +367,20 @@ class ConfirmIdentityView(APIView):
         return Response(ConfirmIdentityStatusSerializer(confirmation.status(request)).data)
 
 
+class ConfirmIdentityPasskeyOptionsView(APIView):
+    """The challenge for answering "confirm it's you" with a passkey (HIMS-IAM-014)."""
+
+    permission_classes = [IsAuthenticated]
+    throttle_scope = "confirm_identity"
+    throttle_classes = [ScopedThrottle]
+
+    @extend_schema(request=None, responses={200: PasskeyOptionsSerializer})
+    def post(self, request):
+        return Response(
+            {"public_key": passkeys.begin_assertion(request, request.user, passkeys.CONFIRM)}
+        )
+
+
 class EndIdentityConfirmationView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -446,3 +495,56 @@ class MySessionsEndOthersView(APIView):
             keep_session_key=request.session.session_key,
         )
         return Response({"sessions_ended": ended})
+
+
+class PasskeysView(APIView):
+    """Your passkeys (HIMS-IAM-014)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: PasskeySerializer(many=True)})
+    def get(self, request):
+        rows = Passkey.objects.filter(user=request.user)
+        return Response(PasskeySerializer(rows, many=True).data)
+
+
+class PasskeyAddOptionsView(APIView):
+    """Start adding a passkey. Sensitive: needs a recent "confirm it's you"."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={200: PasskeyOptionsSerializer})
+    def post(self, request):
+        confirmation.require(request)
+        return Response({"public_key": passkeys.begin_registration(request, request.user)})
+
+
+class PasskeyAddView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=PasskeyAddSerializer, responses={201: PasskeySerializer})
+    def post(self, request):
+        confirmation.require(request)
+        serializer = PasskeyAddSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        passkey = passkeys.finish_registration(
+            request,
+            request.user,
+            name=serializer.validated_data["name"],
+            credential=serializer.validated_data["credential"],
+        )
+        return Response(PasskeySerializer(passkey).data, status=status.HTTP_201_CREATED)
+
+
+class PasskeyRemoveView(APIView):
+    """Remove one of your passkeys. Sensitive: needs a recent "confirm it's you"."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=None, responses={204: None})
+    def post(self, request, passkey_id):
+        confirmation.require(request)
+        passkeys.remove(
+            actor=request.user, passkey_id=passkey_id, owner=request.user, request=request
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)

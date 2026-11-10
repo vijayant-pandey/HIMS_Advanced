@@ -494,6 +494,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/confirm-identity/passkey-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The challenge for answering "confirm it's you" with a passkey (HIMS-IAM-014). */
+        post: operations["auth_confirm_identity_passkey_options_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/csrf/": {
         parameters: {
             query?: never;
@@ -562,6 +579,39 @@ export interface paths {
         put?: never;
         /** @description 200 = signed in. 202 = password accepted; send the authenticator code to /auth/login/verify/ to finish signing in. */
         post: operations["auth_login_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login/passkey/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_login_passkey_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login/passkey-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Second sign-in step with a passkey (HIMS-IAM-014): the challenge for the device to sign. */
+        post: operations["auth_login_passkey_options_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -714,6 +764,73 @@ export interface paths {
          *     request ID), which the "no access yet" page shows so an administrator can find the event.
          */
         post: operations["auth_no_access_report_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Your passkeys (HIMS-IAM-014). */
+        get: operations["auth_passkeys_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/{passkey_id}/remove/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Remove one of your passkeys. Sensitive: needs a recent "confirm it's you". */
+        post: operations["auth_passkeys_remove_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/add/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_passkeys_add_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/add-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Start adding a passkey. Sensitive: needs a recent "confirm it's you". */
+        post: operations["auth_passkeys_add_options_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3829,6 +3946,8 @@ export interface components {
              * @default
              */
             code: string;
+            /** @description Instead of the code: the passkey's answer to /confirm-identity/passkey-options/. */
+            passkey?: unknown;
         };
         ConfirmIdentityStatus: {
             /** @description Off if the hospital turned the feature off. */
@@ -3839,6 +3958,7 @@ export interface components {
             confirmed_until: string | null;
             window_minutes: number;
             needs_code: boolean;
+            passkey_available: boolean;
         };
         ConsoleAccess: {
             /** @description The admin console is switched on here. */
@@ -4844,6 +4964,8 @@ export interface components {
         };
         MfaChallenge: {
             mfa_required: boolean;
+            /** @description The person may answer with a passkey instead of a code (HIMS-IAM-014). */
+            passkey_available: boolean;
             detail: string;
         };
         MfaCodeRequest: {
@@ -4867,6 +4989,8 @@ export interface components {
             /** @description This session passed two-factor. */
             verified: boolean;
             recovery_codes_remaining: number;
+            /** @description Passkeys added as a second factor. */
+            passkeys: number;
         };
         MyPosting: {
             /** Format: uuid */
@@ -5353,6 +5477,31 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Ward"][];
+        };
+        /** @description One of the person's passkeys (HIMS-IAM-014). The key itself is never sent. */
+        Passkey: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            backed_up: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_used_at: string | null;
+        };
+        PasskeyAddRequest: {
+            /** @description The browser's answer, binary values as base64url. */
+            credential: unknown;
+            /** @description e.g. "Work laptop". */
+            name: string;
+        };
+        PasskeyCredentialRequest: {
+            /** @description The browser's answer, binary values as base64url. */
+            credential: unknown;
+        };
+        PasskeyOptions: {
+            /** @description WebAuthn options for navigator.credentials (binary values as base64url). */
+            public_key: unknown;
         };
         PasswordResetConfirmRequest: {
             token: string;
@@ -7502,6 +7651,25 @@ export interface operations {
             };
         };
     };
+    auth_confirm_identity_passkey_options_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptions"];
+                };
+            };
+        };
+    };
     auth_csrf_retrieve: {
         parameters: {
             query?: never;
@@ -7593,6 +7761,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MfaChallenge"];
+                };
+            };
+        };
+    };
+    auth_login_passkey_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyCredentialRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentUser"];
+                };
+            };
+        };
+    };
+    auth_login_passkey_options_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptions"];
                 };
             };
         };
@@ -7782,6 +7992,87 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NoAccessReference"];
+                };
+            };
+        };
+    };
+    auth_passkeys_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Passkey"][];
+                };
+            };
+        };
+    };
+    auth_passkeys_remove_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_passkeys_add_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyAddRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Passkey"];
+                };
+            };
+        };
+    };
+    auth_passkeys_add_options_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptions"];
                 };
             };
         };

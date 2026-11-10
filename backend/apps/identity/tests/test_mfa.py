@@ -141,6 +141,7 @@ def test_setup_returns_qr_data_and_wrong_first_code_is_rejected(client_for, nurs
         "required": False,
         "verified": True,
         "recovery_codes_remaining": 10,
+        "passkeys": 0,
     }
     assert AuditEvent.objects.filter(
         actor_id=nurse.pk, action=AuditAction.AUTH_MFA_ENABLED
@@ -253,6 +254,7 @@ def test_privileged_user_must_set_up_two_factor_before_using_the_api(client_for,
         "required": True,
         "verified": False,
         "recovery_codes_remaining": 0,
+        "passkeys": 0,
     }
 
     enable_mfa(client, admin)

@@ -298,4 +298,47 @@ test.describe("administrator", () => {
     await expect(page).toHaveURL(/\/facilities$/);
     await expect(page.getByRole("heading", { name: "Facilities", level: 1 })).toBeVisible();
   });
+
+  test("passkeys: add one on the Security page, then sign in with it instead of the code", async ({ page }) => {
+    // HIMS-IAM-014. Chrome's built-in virtual passkey device stands in for a phone or laptop.
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("WebAuthn.enable");
+    await cdp.send("WebAuthn.addVirtualAuthenticator", {
+      options: {
+        protocol: "ctap2",
+        transport: "internal",
+        hasResidentKey: true,
+        hasUserVerification: true,
+        isUserVerified: true,
+        automaticPresenceSimulation: true,
+      },
+    });
+
+    await page.goto("/security");
+    await expect(page.getByRole("heading", { name: "Passkeys" })).toBeVisible();
+    await page.getByLabel("Name for this passkey").fill("Browser test device");
+    await page.getByRole("button", { name: "Add a passkey" }).click();
+    const confirm = page.getByRole("dialog", { name: "Confirm it's you" });
+    const added = page.getByText(/Passkey added/);
+    await expect(confirm.or(added)).toBeVisible();
+    if (await confirm.isVisible()) {
+      await confirm.getByLabel("Your password").fill(ADMIN.password);
+      await confirm.getByLabel("Authenticator code").fill(await freshCode(recall("admin-secret")));
+      await confirm.getByRole("button", { name: "Confirm" }).click();
+    }
+    await expect(added).toBeVisible();
+    await expect(page.getByRole("list", { name: "Your passkeys" })).toContainText("Browser test device");
+    await expectAccessible(page, "Security with a passkey");
+
+    // Forget this browser's sign-in (the saved session stays valid for other tests) and sign in again.
+    await page.context().clearCookies();
+    await page.goto("/login");
+    await page.getByLabel("Email").fill(ADMIN.email);
+    await page.getByLabel("Password", { exact: true }).fill(ADMIN.password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page.getByRole("button", { name: "Use a passkey" })).toBeVisible();
+    await expectAccessible(page, "Two-factor sign-in with a passkey");
+    await page.getByRole("button", { name: "Use a passkey" }).click();
+    await expect(page.getByRole("navigation")).toBeVisible();
+  });
 });

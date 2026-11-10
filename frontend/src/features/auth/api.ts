@@ -15,8 +15,11 @@ import type {
   MfaSetup,
   MySession,
   NoAccessReference,
+  Passkey,
+  PasskeyOptions,
   SessionsEnded,
 } from "../../api/types";
+import { answerWithPasskey, createPasskey } from "./webauthn";
 
 export const currentUserKey = ["auth", "me"] as const;
 
@@ -61,6 +64,22 @@ export function useVerifyLogin() {
   const queryClient = useQueryClient();
   return useMutation<CurrentUser, ApiError, { code: string }>({
     mutationFn: (body) => api.post<CurrentUser>("/auth/login/verify/", body),
+    onSuccess: (user) => {
+      queryClient.clear();
+      queryClient.setQueryData(currentUserKey, user);
+    },
+  });
+}
+
+/** Second sign-in step with a passkey instead of the code (HIMS-IAM-014). */
+export function usePasskeyLogin() {
+  const queryClient = useQueryClient();
+  return useMutation<CurrentUser, unknown, void>({
+    mutationFn: async () => {
+      const options = await api.post<PasskeyOptions>("/auth/login/passkey-options/");
+      const credential = await answerWithPasskey(options.public_key as Record<string, unknown>);
+      return api.post<CurrentUser>("/auth/login/passkey/", { credential });
+    },
     onSuccess: (user) => {
       queryClient.clear();
       queryClient.setQueryData(currentUserKey, user);
@@ -186,6 +205,43 @@ export function useDisableMfa() {
   return useMutation<void, ApiError, { code: string }>({
     mutationFn: (body) => api.post<void>("/auth/mfa/disable/", body),
     onSuccess: () => refresh(),
+  });
+}
+
+const passkeysKey = ["auth", "passkeys"] as const;
+
+/** Your passkeys (HIMS-IAM-014). */
+export function usePasskeys() {
+  return useQuery<Passkey[], ApiError>({
+    queryKey: passkeysKey,
+    queryFn: ({ signal }) => api.get<Passkey[]>("/auth/passkeys/", { signal }),
+  });
+}
+
+/** Adding one is sensitive: the API client asks "confirm it's you" first if needed. */
+export function useAddPasskey() {
+  const queryClient = useQueryClient();
+  return useMutation<Passkey, unknown, string>({
+    mutationFn: async (name) => {
+      const options = await api.post<PasskeyOptions>("/auth/passkeys/add-options/");
+      const credential = await createPasskey(options.public_key as Record<string, unknown>);
+      return api.post<Passkey>("/auth/passkeys/add/", { name, credential });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: passkeysKey });
+      void queryClient.invalidateQueries({ queryKey: currentUserKey });
+    },
+  });
+}
+
+export function useRemovePasskey() {
+  const queryClient = useQueryClient();
+  return useMutation<void, ApiError, string>({
+    mutationFn: (id) => api.post<void>(`/auth/passkeys/${id}/remove/`),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: passkeysKey });
+      void queryClient.invalidateQueries({ queryKey: currentUserKey });
+    },
   });
 }
 

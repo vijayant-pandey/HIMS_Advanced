@@ -24,7 +24,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Equipment register**: [`equipment`](#equipment), [`equipment_service_records`](#equipment_service_records)
 - **Numbering (MRN, visit, invoice, claim numbers)**: [`numbering_schemes`](#numbering_schemes), [`numbering_counters`](#numbering_counters), [`issued_numbers`](#issued_numbers)
 - **Feature settings**: [`feature_flags`](#feature_flags)
-- **Identity: accounts, sign-in, two-factor**: [`users`](#users), [`user_invitations`](#user_invitations), [`user_password_resets`](#user_password_resets), [`user_sessions`](#user_sessions), [`user_mfa_devices`](#user_mfa_devices), [`user_mfa_recovery_codes`](#user_mfa_recovery_codes)
+- **Identity: accounts, sign-in, two-factor**: [`users`](#users), [`user_invitations`](#user_invitations), [`user_password_resets`](#user_password_resets), [`user_sessions`](#user_sessions), [`user_mfa_devices`](#user_mfa_devices), [`user_mfa_recovery_codes`](#user_mfa_recovery_codes), [`user_passkeys`](#user_passkeys)
 - **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations)
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts), [`clinical_privileges`](#clinical_privileges), [`staff_privileges`](#staff_privileges)
 - **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests), [`staffing_requirements`](#staffing_requirements), [`staffing_gap_alerts`](#staffing_gap_alerts), [`leave_entitlements`](#leave_entitlements), [`leave_balance_adjustments`](#leave_balance_adjustments)
@@ -585,6 +585,27 @@ One-time backup code for a lost phone. Only a SHA-256 fingerprint is stored.
 | `code_hash` | varchar(64) | no | — | up to 64 characters | System | Secret: Credential (hashed) | Code hash |
 | `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
 | `used_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Used at |
+
+<a id="user_passkeys"></a>
+### `user_passkeys`
+
+A passkey a person added as a second factor (HIMS-IAM-014; spec 13.1). Only the public key is stored: the private key never leaves the person's device. ``sign_count`` must go up at each use, so a copied key is refused.
+
+- **Model:** `identity.Passkey`
+- **Lifecycle:** Deleted when the person or an administrator removes it, or when two-factor is switched off or reset. Public keys only (HIMS-IAM-014).
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `user_id` | uuid → users.id | no | — | on delete PROTECT | Person | Internal: Person reference (id only) | User |
+| `name` | varchar(60) | no | — | up to 60 characters | Person | Restricted: Device label chosen by the person | Chosen by the person, e.g. "Work laptop". |
+| `credential_id` | varchar(1024) | no | — | up to 1024 characters; unique | Person | Restricted: Credential identifier | Credential id |
+| `public_key` | bytea | no | — | — | System | Restricted: Credential (public key, not secret) | Public key |
+| `sign_count` | bigint | no | `0` | — | Person | Internal: Business data | Sign count |
+| `transports` | jsonb | no | list() | — | Person | Internal: Business data | Transports |
+| `backed_up` | boolean | no | `False` | — | Person | Internal: Business data | Synced to the person's cloud account (e.g. on their phone). |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `last_used_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Last used at |
 
 ## Access control: roles, access, reviews, cover
 

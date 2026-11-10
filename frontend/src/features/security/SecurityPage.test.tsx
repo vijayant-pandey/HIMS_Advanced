@@ -18,7 +18,7 @@ const admin: CurrentUser = {
   staff_member_id: null,
   grants: [{ permission: "platform.admin_console", facility_id: null, department_id: null }],
   organization: { display_name: "Synthetic Health", country: "IN" },
-  mfa: { enabled: false, required: true, verified: false, recovery_codes_remaining: 0 },
+  mfa: { enabled: false, required: true, verified: false, recovery_codes_remaining: 0, passkeys: 0 },
 };
 
 function json(status: number, body: unknown) {
@@ -87,7 +87,7 @@ describe("two-factor sign-in (HIMS-IAM-005)", () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) =>
       String(input).endsWith("/auth/csrf/")
         ? new Response(null, { status: 204 })
-        : json(202, { mfa_required: true, detail: "Enter the 6-digit code" }),
+        : json(202, { mfa_required: true, passkey_available: false, detail: "Enter the 6-digit code" }),
     );
     renderAt("/login", null, <Route path="/login" element={<LoginPage />} />);
 
@@ -105,7 +105,7 @@ describe("two-factor sign-in (HIMS-IAM-005)", () => {
 describe("My sign-ins (HIMS-IAM-016)", () => {
   const signedIn: CurrentUser = {
     ...admin,
-    mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 8 },
+    mfa: { enabled: true, required: true, verified: true, recovery_codes_remaining: 8, passkeys: 0 },
   };
   const SESSIONS = [
     {
