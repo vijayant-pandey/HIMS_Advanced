@@ -21,7 +21,7 @@ financial domains are added here as they are built.
 | 2 | Physical ERD, all tables and cardinalities | [erd.md](erd.md), "All tables" | ✅ |
 | 3 | Data dictionary (type, nullability, default, allowed values, source, sensitivity) | [data-dictionary.md](data-dictionary.md) | ✅ |
 | 4 | Index and uniqueness specification tied to query patterns | Per table in the dictionary; patterns in [section 4](#4-indexes-and-the-queries-they-serve) | ✅ (volume test: HIMS-DATA-002) |
-| 5 | Lifecycle, retention, archive and correction rules | "Lifecycle" per table in the dictionary; [section 3](#3-lifecycle-and-correction) | ✅ (legal retention periods 🔒 LEGAL) |
+| 5 | Lifecycle, retention, archive and correction rules | "Lifecycle" per table in the dictionary; [section 3](#3-lifecycle-and-correction) | ✅ (purge of housekeeping tables by periods the hospital sets, with legal hold: HIMS-COMP-006) |
 | 6 | Transaction boundaries and concurrency rules | [section 5](#5-transactions-and-concurrency) | ✅ |
 | 7 | Data classification and access matrix | "Sensitivity" per column; [section 2](#2-classification-and-access) | ✅ |
 | 8 | Historical/version model for clinical and financial facts | [section 6](#6-history-and-versions) | 🟡 rules set; clinical/financial tables come with Phases 2–5 |
@@ -111,6 +111,7 @@ Every person also sees their own account, sign-ins and cover arrangements.
   amendments and reversals instead (section 6).
 - **Retention periods** for audit and personal data are a legal decision (🔒 LEGAL, ADR-013).
   Until then nothing is purged except the technical records listed above.
+- **Retention purge (HIMS-COMP-006, 2026-11-10):** the hospital sets periods for six housekeeping tables (`user_sessions`, `notifications`, `user_invitations`, `user_password_resets`, `browser_security_reports`, `console_access_blocks`); nothing goes until a period is set, shorter periods wait 7 days, legal holds win, and each run is kept in `retention_purge_runs` (append-only). Each table's "Lifecycle" in the dictionary says what goes. The audit log is not purged (HIMS-COMP-007). [How-to](../../workflows/retention-purge.md).
 
 ## 4. Indexes and the queries they serve
 
@@ -130,6 +131,7 @@ volumes and query plans (spec 28.6). Foreign keys are always indexed.
 | Numbers issued per document type, newest first | `issued_numbers_type_idx` |
 | Outbox events waiting to be sent | `outbox_pending_idx` (partial: pending only) |
 | Expired idempotency records (hourly purge) | `idempotency_expiry_idx` |
+| Retention purge: ended sign-ins and messages older than the cut-off | `user_session_open_idx` (user, ended_at), `notification_created_idx` |
 | Integrity check history | `audit_check_finished_idx` |
 | Codes unique within their scope (facility, department, ward, room, bed, role, catalog) | unique constraints listed per table in the dictionary |
 

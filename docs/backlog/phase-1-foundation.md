@@ -156,7 +156,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-COMP-003 | India: ABDM Health Data Management Policy and IT Act security practices assessment | Drafted + built; counsel/hospital review pending |
 | HIMS-COMP-004 | Both: data retention schedule, incident response runbook, access-control policy, vendor list | Drafted + built; counsel/hospital review pending |
 | HIMS-COMP-005 | Threat model and risk register (spec 23) | Drafted + built; counsel/hospital review pending |
-| HIMS-COMP-006 | Retention purge job with legal hold, once periods are set | To do (🔓 unblocked 2026-11-08: the hospital sets the periods; nothing deleted until set) |
+| HIMS-COMP-006 | Retention purge job with legal hold, once periods are set | Done 2026-11-10 (unblocked 2026-11-08: the hospital sets the periods; nothing deleted until set; [how-to](../workflows/retention-purge.md)) |
+| HIMS-COMP-007 | Archive the audit log outside the database with an "archived up to link N" marker, then purge it by its period (gap found in HIMS-COMP-006) | To do (hosting stage: needs write-once storage) |
 
 ## EPIC HIMS-OPS — Delivery and operations
 

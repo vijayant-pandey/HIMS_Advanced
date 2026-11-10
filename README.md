@@ -161,6 +161,13 @@ Error text in traces gets the same filter as logs (HIMS-SEC-020):
 After setting up the authenticator app, anyone can add a passkey on the Security page and use it
 instead of the code (HIMS-IAM-014): [docs/workflows/passkeys.md](docs/workflows/passkeys.md).
 
+## Retention purge and legal hold
+
+Compliance → **Retention** sets how long housekeeping records (ended sign-ins, sent messages, closed
+invitations and resets, security logs) are kept; nothing is deleted until a period is set, and a legal
+hold stops the purge (HIMS-COMP-006): [docs/workflows/retention-purge.md](docs/workflows/retention-purge.md).
+On your PC: `python manage.py purge_expired_records --dry-run`.
+
 ## Admin console: only from allowed addresses
 
 The admin console answers only the addresses in `HIMS_ADMIN_ALLOWED_NETWORKS`; anyone else gets

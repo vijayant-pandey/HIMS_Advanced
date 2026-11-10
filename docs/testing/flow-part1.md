@@ -50,6 +50,7 @@
 22m. [Part 18m: leave balances](#part-18m-leave-balances)
 22n. [Part 18n: virus scanning and traces](#part-18n-virus-scanning-and-traces)
 22o. [Part 18o: passkeys](#part-18o-passkeys)
+22p. [Part 18p: retention purge and legal hold](#part-18p-retention-purge-and-legal-hold)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1350,6 +1351,27 @@ is enough), or a phone. Sign in as the administrator, with your code.
 | 18o.7 | Admin console → **Passkeys** | "My PC" is listed, with no key shown; the action "Remove selected passkeys" |
 | 18o.8 | Security → **Remove** "My PC" | Gone; sign-in offers only the code again |
 | 18o.9 | **Audit log** (as the auditor) | "Passkey added", "Passkey removed", and sign-ins with method "passkey" |
+
+---
+
+## Part 18p: retention purge and legal hold
+
+Needs the retention PR and its migrate step (India and US). Sign in as the administrator. Nothing is
+deleted in these steps: the first period only applies after 7 days, and you cancel it.
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18p.1 | Menu → **Compliance** → **Retention** tab | Six kinds; each "For ever" and "No period set: kept for ever." |
+| 18p.2 | **Change** next to Sign-in register; type 30 | Save is greyed out: "At least 365 days" |
+| 18p.3 | Type 400 and **Save** (confirm it's you if asked) | Still "For ever", with a chip "400 days from <a date 7 days away>" |
+| 18p.4 | **Change** again → **Cancel it** | The chip is gone |
+| 18p.5 | **Place a legal hold**: reference "Test matter 1", reason "Manual test", tick Message log, email of the nurse account | Listed under Legal holds as Active, about the nurse |
+| 18p.6 | **Run the purge now** | "Purge run: 0 record(s) deleted."; a row under Purge runs with your name |
+| 18p.7 | **Release** the hold with the reason "Test finished" | "Released by …: Test finished" |
+| 18p.8 | Sign in as the **auditor**, open the same tab | Everything visible; no Change, Place, Release or Run buttons |
+| 18p.9 | Admin console → Compliance → **Retention rules**, **Legal holds**, **Retention purge runs** | The same periods, the released hold, the run; **Run the purge now** at the top of the runs page |
+| 18p.10 | Launcher window: `python manage.py purge_expired_records --dry-run` (in `backend`, venv active) | One line per kind: "No period set: kept for ever." |
+| 18p.11 | **Audit log** (as the auditor), area Compliance | "Retention period changed" (twice), "Legal hold placed", "Legal hold released", "Retention purge run" |
 
 ---
 

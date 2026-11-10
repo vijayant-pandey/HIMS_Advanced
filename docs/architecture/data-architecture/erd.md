@@ -67,6 +67,9 @@ erDiagram
     browser_security_reports
     console_access_blocks
     security_incident_notifications
+    retention_rules
+    legal_holds
+    retention_purge_runs
     notifications
     message_templates
     recovery_backups
@@ -211,6 +214,11 @@ erDiagram
     users |o--o{ console_access_blocks : "reviewed_by_id"
     security_incidents ||--o{ security_incident_notifications : "incident_id"
     users |o--o{ security_incident_notifications : "done_by_id"
+    users |o--o{ retention_rules : "updated_by_id"
+    users |o--o{ legal_holds : "subject_user_id"
+    users |o--o{ legal_holds : "placed_by_id"
+    users |o--o{ legal_holds : "released_by_id"
+    users |o--o{ retention_purge_runs : "run_by_id"
     users |o--o{ message_templates : "updated_by_id"
     recovery_backups ||--o{ recovery_restore_drills : "backup_id"
 ```
@@ -1159,7 +1167,7 @@ erDiagram
     audit_events ||--o| audit_chain_entries : "event_id"
 ```
 
-## Compliance: requirements, risks, security incidents (logical)
+## Compliance: requirements, risks, security incidents, retention and legal holds (logical)
 
 ```mermaid
 erDiagram
@@ -1265,6 +1273,41 @@ erDiagram
         timestamptz soon_alert_sent_at
         timestamptz overdue_alert_sent_at
     }
+    retention_rules {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        varchar category UK
+        integer keep_days
+        integer pending_keep_days
+        timestamptz pending_from
+        uuid updated_by_id FK
+    }
+    legal_holds {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        varchar reference
+        text reason
+        jsonb categories
+        uuid subject_user_id FK
+        uuid placed_by_id FK
+        timestamptz placed_at
+        uuid released_by_id FK
+        timestamptz released_at
+        text release_reason
+    }
+    retention_purge_runs {
+        uuid id PK
+        timestamptz started_at
+        timestamptz finished_at
+        varchar trigger
+        uuid run_by_id FK
+        integer deleted_total
+        jsonb details
+    }
     users
     users |o--o{ compliance_requirements : "reviewed_by_id"
     users |o--o{ compliance_risks : "updated_by_id"
@@ -1274,6 +1317,11 @@ erDiagram
     users |o--o{ console_access_blocks : "reviewed_by_id"
     security_incidents ||--o{ security_incident_notifications : "incident_id"
     users |o--o{ security_incident_notifications : "done_by_id"
+    users |o--o{ retention_rules : "updated_by_id"
+    users |o--o{ legal_holds : "subject_user_id"
+    users |o--o{ legal_holds : "placed_by_id"
+    users |o--o{ legal_holds : "released_by_id"
+    users |o--o{ retention_purge_runs : "run_by_id"
 ```
 
 Tables from other domains are shown without columns: `users`.

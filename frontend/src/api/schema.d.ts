@@ -1979,6 +1979,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/legal-holds/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["legal_holds_list"];
+        put?: never;
+        post: operations["legal_holds_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/legal-holds/{id}/release/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["legal_holds_release_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/message-templates/": {
         parameters: {
             query?: never;
@@ -2436,6 +2468,77 @@ export interface paths {
         get: operations["restore_drills_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/retention/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["retention_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/retention-runs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The latest purge runs, newest first. */
+        get: operations["retention_runs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/retention/periods/{category}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Set how long one kind of record is kept. A shorter period waits before it applies. */
+        post: operations["retention_period_set"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/retention/run/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Run the purge now instead of waiting for the daily job. Repeating it is harmless (the
+         *     second run finds nothing new), so it is not wrapped in one idempotent transaction: deleting
+         *     in small batches keeps the tables free for everyone else.
+         */
+        post: operations["retention_run"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4891,6 +4994,40 @@ export interface components {
          * @enum {string}
          */
         LeaveTypeEnum: "annual" | "casual" | "sick" | "maternity" | "paternity" | "study" | "compensatory" | "unpaid" | "other";
+        LegalHold: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description e.g. the case or matter number. */
+            readonly reference: string;
+            /** @description Why the records must be kept. No patient details. */
+            readonly reason: string;
+            readonly categories: string[];
+            readonly subject_name: string | null;
+            readonly subject_email: string | null;
+            readonly is_active: boolean;
+            readonly placed_by_name: string | null;
+            /** Format: date-time */
+            readonly placed_at: string;
+            readonly released_by_name: string | null;
+            /** Format: date-time */
+            readonly released_at: string | null;
+            readonly release_reason: string;
+            readonly version: number;
+        };
+        LegalHoldPlaceRequest: {
+            reference: string;
+            /** @description Why the records must be kept. No patient details. */
+            reason: string;
+            /** @description Kinds of record held; empty = every kind. */
+            categories?: components["schemas"]["RetentionCategoryEnum"][];
+            /** @description Only records about this account; empty = everyone's. */
+            subject_email?: string;
+        };
+        LegalHoldReleaseRequest: {
+            version: number;
+            /** @description Why the records may now follow the normal periods. */
+            reason: string;
+        };
         /** @description One copy of the covered person's access lent to the covering person. */
         LentAccess: {
             /** Format: uuid */
@@ -5931,6 +6068,88 @@ export interface components {
          * @enum {string}
          */
         RestoreDrillTriggerEnum: "on_demand" | "command";
+        RetentionCategory: {
+            category: string;
+            label: string;
+            table: string;
+            /** @description Which rows go, in plain words. */
+            what: string;
+            minimum_days: number;
+            /** @description Empty = kept for ever. */
+            keep_days: number | null;
+            pending_keep_days: number | null;
+            /** Format: date-time */
+            pending_from: string | null;
+            updated_by_name: string | null;
+            /** Format: date-time */
+            updated_at: string;
+            version: number;
+            /** @description Rows the purge would delete now. */
+            would_delete: number;
+            /** @description Rows past the period kept by a legal hold. */
+            held: number;
+            /** @description Why nothing of this kind would be deleted. */
+            skipped: string;
+        };
+        /**
+         * @description * `sign_ins` - Sign-in register
+         *     * `messages` - Message log (emails and SMS)
+         *     * `invitations` - Account invitations
+         *     * `password_resets` - Password-reset requests
+         *     * `browser_reports` - Browser block reports
+         *     * `console_refusals` - Refused console addresses
+         * @enum {string}
+         */
+        RetentionCategoryEnum: "sign_ins" | "messages" | "invitations" | "password_resets" | "browser_reports" | "console_refusals";
+        RetentionPeriodRequest: {
+            /** @description Days to keep; null = keep for ever. */
+            keep_days: number | null;
+            version: number;
+        };
+        RetentionPurgeRun: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly started_at: string;
+            /** Format: date-time */
+            readonly finished_at: string;
+            readonly trigger: components["schemas"]["RetentionPurgeRunTriggerEnum"];
+            readonly trigger_label: string;
+            readonly run_by_name: string | null;
+            readonly deleted_total: number;
+            readonly details: {
+                [key: string]: components["schemas"]["RetentionRunKind"];
+            };
+        };
+        /**
+         * @description * `scheduled` - Daily job
+         *     * `manual` - Run by a person
+         *     * `command` - Server command
+         * @enum {string}
+         */
+        RetentionPurgeRunTriggerEnum: "scheduled" | "manual" | "command";
+        /** @description What one run did for one kind of record. */
+        RetentionRunKind: {
+            keep_days: number | null;
+            /** @description The cut-off used. */
+            older_than: string | null;
+            /** @description Why nothing of this kind was deleted. */
+            skipped: string;
+            deleted: number;
+            /** @description Past the period but kept by a legal hold. */
+            held: number;
+            /** @description The limit per run was reached. */
+            more_left: boolean;
+            /** @description A shorter period took effect at the start of this run. */
+            period_applied_now: boolean;
+        };
+        RetentionStatus: {
+            categories: components["schemas"]["RetentionCategory"][];
+            active_holds: number;
+            /** @description Days a shorter period waits before it applies. */
+            wait_days: number;
+            last_run: components["schemas"]["RetentionPurgeRun"] | null;
+        };
         RevokeRequest: {
             reason: string;
         };
@@ -10060,6 +10279,77 @@ export interface operations {
             };
         };
     };
+    legal_holds_list: {
+        parameters: {
+            query?: {
+                /** @description 'true' = not released yet */
+                active?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalHold"][];
+                };
+            };
+        };
+    };
+    legal_holds_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalHoldPlaceRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalHold"];
+                };
+            };
+        };
+    };
+    legal_holds_release_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this legal hold. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalHoldReleaseRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalHold"];
+                };
+            };
+        };
+    };
     message_templates_list: {
         parameters: {
             query?: never;
@@ -10774,6 +11064,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RestoreDrillDetail"];
+                };
+            };
+        };
+    };
+    retention_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionStatus"];
+                };
+            };
+        };
+    };
+    retention_runs_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionPurgeRun"][];
+                };
+            };
+        };
+    };
+    retention_period_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetentionPeriodRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionStatus"];
+                };
+            };
+        };
+    };
+    retention_run: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionPurgeRun"];
                 };
             };
         };

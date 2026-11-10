@@ -300,8 +300,9 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "Section 8(7); Rule 8",
         "Erase data when no longer needed",
         "Erase personal data once the purpose is over, unless another law requires keeping it.",
-        "Retention schedule drafted in docs/compliance/retention-schedule.md; periods need "
-        "counsel.",
+        "Retention schedule drafted in docs/compliance/retention-schedule.md. Daily purge of "
+        "sign-ins, messages, invitations, resets and security logs once the hospital sets "
+        "periods, with legal hold (Compliance, Retention tab); periods need counsel.",
         NS,
     ),
     (
@@ -433,7 +434,8 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "Spec 13.3, 13.4, 23",
         "Retention and legal hold",
         "Documented retention, deletion and legal-hold rules.",
-        "docs/compliance/retention-schedule.md; periods need counsel.",
+        "docs/compliance/retention-schedule.md; retention periods, legal holds and a recorded "
+        "daily purge (Compliance, Retention tab); periods need counsel.",
         IP,
     ),
     (
@@ -609,5 +611,16 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         2,
         5,
         "This register; spec 27.5 go/no-go; legal items closed first.",
+    ),
+    (
+        "R-016",
+        "Records deleted too early or kept too long",
+        "The purge removes records still needed, or personal data is kept past its purpose.",
+        "compliance",
+        2,
+        4,
+        "Purge limited to housekeeping records; nothing deleted until a period is set; "
+        "minimum periods; shorter periods wait 7 days; legal holds always win; every run "
+        "recorded. Clinical, financial and audit records are never purged.",
     ),
 ]

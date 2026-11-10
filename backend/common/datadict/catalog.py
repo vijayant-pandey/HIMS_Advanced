@@ -71,7 +71,7 @@ DOMAINS: dict[str, dict] = {
         "docs": ["audit-integrity.md", "../../decisions/ADR-013-audit-log-storage.md"],
     },
     "compliance": {
-        "name": "Compliance: requirements, risks, security incidents",
+        "name": "Compliance: requirements, risks, security incidents, retention and legal holds",
         "owner": "Compliance / security officer",
         "docs": ["../../compliance/README.md"],
     },
@@ -127,11 +127,14 @@ LIFECYCLE: dict[str, str] = {
     "feature_flags": "One per feature and scope; every change audited with a reason.",
     "users": "Never deleted; switched off (`is_active`), which ends every session.",
     "user_invitations": "Single use, valid 72 hours (`HIMS_INVITATION_TTL_HOURS`); kept as "
-    "history (accepted, revoked or expired).",
+    "history (accepted, revoked or expired). Closed ones purged after the period the hospital "
+    "sets, unless on legal hold (HIMS-COMP-006).",
     "user_password_resets": "Single use, valid 60 minutes (`HIMS_PASSWORD_RESET_TTL_MINUTES`); "
-    "kept as history.",
+    "kept as history. Closed ones purged after the period the hospital sets, unless on legal "
+    "hold (HIMS-COMP-006).",
     "user_sessions": "Register of sign-ins; closed (`ended_at`, reason) on sign-out, expiry or "
-    "switch-off; kept as history.",
+    "switch-off; kept as history. Ended ones purged after the period the hospital sets (at "
+    "least 365 days), unless on legal hold (HIMS-COMP-006).",
     "user_mfa_devices": "One per person; deleted when two-factor is switched off or reset "
     "(audited).",
     "user_mfa_recovery_codes": "Single use; replaced as a set when regenerated or reset.",
@@ -183,16 +186,23 @@ LIFECYCLE: dict[str, str] = {
     "compliance_requirements": "Wording synced from code; removed items switched off, never "
     "deleted. Status changes audited.",
     "compliance_risks": "Never deleted; closed with a status. Changes audited.",
-    "browser_security_reports": "One row per day and kind of block, at most 500 a day. Purge "
-    "comes with the retention job (HIMS-COMP-006).",
+    "browser_security_reports": "One row per day and kind of block, at most 500 a day. Purged "
+    "after the period the hospital sets, unless on legal hold (HIMS-COMP-006).",
     "console_access_blocks": "One row per day and refused address, at most 500 a day; reviewed, "
-    "never edited otherwise. Purge comes with the retention job (HIMS-COMP-006).",
+    "never edited otherwise. Reviewed ones purged after the period the hospital sets (at least "
+    "365 days), unless on legal hold (HIMS-COMP-006).",
     "security_incidents": "Never deleted; closed with a summary. Keep at least 6 years (US "
     "HIPAA documentation rule); counsel sets the rest.",
     "security_incident_notifications": "Never deleted; the evidence that each legal notice was "
     "made, with its reference.",
     "notifications": "Kept as the delivery log; the real (secret-bearing) text is erased once "
-    "delivered. Retention period: decision pending with the other records (🔒 LEGAL).",
+    "delivered. Sent, given-up and not-sent ones purged after the period the hospital sets, "
+    "unless on legal hold (HIMS-COMP-006); waiting ones never.",
+    "retention_rules": "One per kind of purgeable record, created on migrate; never deleted. "
+    "Empty period = kept for ever. Every change audited (HIMS-COMP-006).",
+    "legal_holds": "Never deleted; released with who, when and why. Audited (HIMS-COMP-006).",
+    "retention_purge_runs": "Append-only (database trigger); one row per purge run with counts "
+    "only, the evidence that deletion followed the rules (HIMS-COMP-006).",
     "recovery_backups": "Append-only (database trigger); one row per backup made on a developer "
     "PC. The backup files live outside the database (`HIMS_BACKUP_DIR`).",
     "recovery_restore_drills": "Append-only (database trigger); one row per restore drill, the "
@@ -240,6 +250,10 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "staff_documents.sha256": (INTERNAL, "Checksum"),
     "browser_security_reports.review_note": (RESTRICTED, "Reviewer note (no patient details)"),
     "console_access_blocks.review_note": (RESTRICTED, "Reviewer note (no patient details)"),
+    "legal_holds.reference": (RESTRICTED, "Legal matter"),
+    "legal_holds.reason": (RESTRICTED, "Legal matter (no patient details)"),
+    "legal_holds.release_reason": (RESTRICTED, "Legal matter"),
+    "retention_purge_runs.details": (INTERNAL, "Counts per kind of record"),
     "console_access_blocks.last_path": (INTERNAL, "Console page (ids removed)"),
     "security_incidents.title": (RESTRICTED, "Incident record"),
     "security_incidents.description": (RESTRICTED, "Incident record (no patient details)"),

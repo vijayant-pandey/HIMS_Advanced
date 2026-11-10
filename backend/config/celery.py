@@ -79,6 +79,10 @@ def _configure_queues_and_schedule(sender, **kwargs):
             "task": "notifications.access_review_reminders",
             "schedule": timedelta(hours=24),
         },
+        "retention-purge": {
+            "task": "platform.retention_purge",
+            "schedule": timedelta(hours=24),
+        },
         "incident-deadline-alerts": {
             "task": "notifications.incident_deadline_alerts",
             "schedule": timedelta(hours=1),

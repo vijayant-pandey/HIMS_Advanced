@@ -10,6 +10,10 @@ def _sync(sender, **kwargs):
     from .services import sync_catalog
 
     sync_catalog()
+    if "retention_rules" in connection.introspection.table_names():
+        from .retention import sync_rules
+
+        sync_rules()
 
 
 class ComplianceConfig(AppConfig):

@@ -4,7 +4,7 @@ Built from [HIMS_Architecture_Specification_v2.MD](../../HIMS_Architecture_Speci
 section 20 (phases), 4 (domains), 21 (vertical slice), 26–27 (P0/P1), 36 (decisions), and from the
 [tracker](spec-status.md) and backlogs ([Phase 1](../backlog/phase-1-foundation.md),
 [Phase 2](../backlog/phase-2-patients.md)). The tracker stays the detailed record; this page is the
-ordered plan. **Last updated:** 2026-11-10 (after PR #46, with passkeys built).
+ordered plan. **Last updated:** 2026-11-10 (after PR #47, with the retention purge built).
 
 **2026-11-08 decisions** ([decisions log](decisions-log.md)): CLIN, LEGAL and PO approved the pending documents
 **for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
@@ -27,7 +27,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
-| Phase 1 tickets | 120: ✅ 93 done or approved · 27 left: 9 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 13 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 1 tickets | 121: ✅ 94 done or approved · 27 left: 8 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 14 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
@@ -38,7 +38,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 93 (PR #1–#46 and #30, passkeys, 2 approvals) | 9 buildable items (section 4a), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 94 (PR #1–#47 and #30, retention purge, 2 approvals) | 8 buildable items (section 4a), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -76,7 +76,7 @@ PACS/LIS/drug database/SMS.
 | 25 | Delivery standard | 🟡 | Formal requirement records for built features | 🔓 |
 | 26 | P0 before each domain | 🟡 | P0 for Phases 3–6 (Phase 2 approved for now, 2026-11-08) | PO, CLIN |
 | 27 | P1 before production | ⬜ | Cloud disaster recovery (local restore drills done, HIMS-OPS-009), runbooks, load tests, UAT | AWS, CLIN |
-| 28 | Artifact A (data) | 🟡 70% | Volume index check; P0 domains | 🔓 partly; P0 |
+| 28 | Artifact A (data) | 🟡 75% | Volume index check; P0 domains | 🔓 partly; P0 |
 | 29 | Artifact B (API) | 🟡 60% | Per-endpoint contract docs; webhooks/adapters | 🔓 partly; PAYER |
 | 30 | Artifact C (AWS) | 🟡 8% | Terraform, network, KMS, cloud backups (30.5 separate database users done, HIMS-OPS-007) | Hosting stage (Oracle Cloud, ADR-027) |
 | 31 | Environments | 🟡 | Hosted Dev/QA/Staging/Production | PO (hosting accounts) |
@@ -102,8 +102,8 @@ fit, so nothing is forgotten.
 | 2 | Staff | HIMS-STAFF-016, HIMS-STAFF-015, HIMS-STAFF-013 | 4.3 | ✅ done |
 | 3 | Security filters | HIMS-SEC-020, HIMS-SEC-013 | 13.3, 18, 4.22 | ✅ done |
 | 4 | Passkeys (alone: changes sign-in) | HIMS-IAM-014 | 13.1 | ✅ done |
-| 5 | Retention purge (alone: deletes data) | HIMS-COMP-006 | 4.25, 28 | ⬜ **next** |
-| 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ⬜ |
+| 5 | Retention purge (alone: deletes data) | HIMS-COMP-006 | 4.25, 28 | ✅ done |
+| 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ⬜ **next** |
 | 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ⬜ |
 
 Then the security review (HIMS-SEC-011). The table below keeps each task's own row.
@@ -132,7 +132,7 @@ Then the security review (HIMS-SEC-011). The table below keeps each task's own r
 | 19a | 4.3 | HIMS-STAFF-016 | Clinical privileges: what each doctor may perform (the hospital keeps the list) | ✅ done (group 2) | Unblocked 2026-11-08 (CLIN: fine for now) |
 | 19b | 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts (the hospital sets the numbers) | ✅ done (group 2) | Unblocked 2026-11-08 (CLIN) |
 | 19c | 4.3 | HIMS-STAFF-013 | Leave balances and entitlements (the hospital sets them) | ✅ done (group 2) | Unblocked 2026-11-08 (PO) |
-| 19d | 4.25, 28 | HIMS-COMP-006 | Retention purge with legal hold (the hospital sets the periods; nothing deleted until set) | ⬜ | Unblocked 2026-11-08 (LEGAL) |
+| 19d | 4.25, 28 | HIMS-COMP-006 | Retention purge with legal hold (the hospital sets the periods; nothing deleted until set) | ✅ done (group 5) | Unblocked 2026-11-08 (LEGAL) |
 | 19e | 13 | HIMS-SEC-011 | Security review of the threat model | ⬜ last | PO: when the whole of Phase 1 is complete |
 | — | 4.4 | HIMS-IAM-019 | Self-service cover requests | ⬜ optional | When hospitals ask |
 | — | 4.3 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head | ⬜ optional | When hospitals ask |
@@ -153,6 +153,7 @@ Then the security review (HIMS-SEC-011). The table below keeps each task's own r
 | 4.23 | HIMS-OPS-011 | Real email provider per hosted environment | AWS / hosting |
 | 4.22 | HIMS-OPS-015 | S3 document storage (KMS, versioning) | AWS |
 | 13.4 | HIMS-SEC-016 | Copy the audit chain head to write-once storage | AWS |
+| 4.25, 13.4 | HIMS-COMP-007 | Archive the audit log outside the database (with an "archived up to link N" marker), then purge it by its period (gap found in HIMS-COMP-006) | AWS / hosting |
 | 17.3, 27.1 | HIMS-OPS-018 | Restore drill of a cloud snapshot with the same checks (gap found in HIMS-OPS-009) | AWS |
 | 13.3 | HIMS-SEC-018 | Send the screens' protection headers at hosting | AWS |
 | 18 | HIMS-PLAT-019 | Send traces to AWS | AWS |
@@ -163,7 +164,7 @@ Then the security review (HIMS-SEC-011). The table below keeps each task's own r
 | 4.3 | HIMS-STAFF-013 | Leave balances and entitlements | ✅ unblocked 2026-11-08: step 19c |
 | 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts | ✅ unblocked 2026-11-08: step 19b |
 | 3 | — | Approve the RBAC document, clinical role permissions | ✅ approved for now 2026-11-08 |
-| 4.25 | HIMS-COMP-006 | Retention purge with legal hold | ✅ unblocked 2026-11-08: step 19d |
+| 4.25 | HIMS-COMP-006 | Retention purge with legal hold | ✅ unblocked 2026-11-08: step 19d, built (group 5) |
 | 23 | HIMS-COMP-001…005 | Counsel and hospital review of the compliance pack | ✅ approved for now 2026-11-08 |
 | 23 | HIMS-SEC-011 | Security reviewer for the threat model | Scheduled: last step of Phase 1 (19e) |
 | 4.1 | — | Tax rules | Moves to Phase 5 (billing) |
@@ -229,7 +230,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 | 4.22 | Documents and consent | 1, 2 | 🟡 30% | virus scanning done (HIMS-SEC-013) · 🔒 S3 (AWS), ClamAV at hosting, consent forms (LEGAL) |
 | 4.23 | Notifications | 1, 2 | 🟡 70% | editable wording done (HIMS-NOTIF-003) · per-patient opt-out with Phase 2 (HIMS-NOTIF-004) · 🔒 SMS (VENDOR) |
 | 4.24 | Reporting | 2–6 | ⬜ | 🔒 needs domains |
-| 4.25 | Audit and governance | 1 | 🟡 90% | 🔒 retention periods (LEGAL), write-once copy (AWS) |
+| 4.25 | Audit and governance | 1 | 🟡 95% | retention periods and legal holds done (HIMS-COMP-006; periods set by the hospital, LEGAL approved for now) · 🔒 write-once copy and audit log archive (AWS, HIMS-SEC-016, HIMS-COMP-007) |
 
 ## 6. Done so far
 
