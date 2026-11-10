@@ -34,3 +34,10 @@ traces), 17 (AWS observability services).
 - Vendor agents (Datadog, New Relic): rejected for now; OpenTelemetry keeps the choice open and
   works with AWS X-Ray through the ADOT collector.
 - Always-on tracing to the console: rejected; noisy and slower for local work.
+
+## Update (2026-11-10, HIMS-SEC-020)
+
+Spans are made safe on their way out of the process (`ScrubbingSpanExporter` wraps every exporter):
+the error's message and stack, the status, the name and every text attribute get the log rules of
+HIMS-SEC-019. This is done at export, not when a span is recorded, so instrumentation added later is
+covered without changes. Unexpected API errors are now recorded on the trace (`record_error`).

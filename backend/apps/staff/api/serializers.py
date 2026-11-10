@@ -328,6 +328,9 @@ class StaffDocumentSerializer(serializers.ModelSerializer):
             "is_archived",
             "archived_at",
             "archive_reason",
+            "scan_status",
+            "scanned_by",
+            "scanned_at",
         ]
         read_only_fields = fields
 

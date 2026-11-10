@@ -4,7 +4,7 @@ Built from [HIMS_Architecture_Specification_v2.MD](../../HIMS_Architecture_Speci
 section 20 (phases), 4 (domains), 21 (vertical slice), 26–27 (P0/P1), 36 (decisions), and from the
 [tracker](spec-status.md) and backlogs ([Phase 1](../backlog/phase-1-foundation.md),
 [Phase 2](../backlog/phase-2-patients.md)). The tracker stays the detailed record; this page is the
-ordered plan. **Last updated:** 2026-11-09 (after PR #44, with the Staff group built).
+ordered plan. **Last updated:** 2026-11-10 (after PR #45, with the Security filters group built).
 
 **2026-11-08 decisions** ([decisions log](decisions-log.md)): CLIN, LEGAL and PO approved the pending documents
 **for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
@@ -27,7 +27,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
-| Phase 1 tickets | 120: ✅ 90 done or approved · 30 left: 12 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 13 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 1 tickets | 120: ✅ 92 done or approved · 28 left: 10 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 13 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
@@ -38,7 +38,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 90 (PR #1–#44 and #30, the Staff group, 2 approvals) | 12 buildable items (section 4a), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 92 (PR #1–#45 and #30, the Security filters group, 2 approvals) | 10 buildable items (section 4a), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -61,7 +61,7 @@ PACS/LIS/drug database/SMS.
 | 10 | Concurrency | 🟡 | Bed allocation race; domain duplicates | P0 ADT, domains |
 | 11 | Insurance and Stedi | ⬜ | All | PAYER |
 | 12 | Interoperability (FHIR, ABDM) | ⬜ | All | Partners, LEGAL |
-| 13 | Security and privacy | 🟡 | Passkeys; error text in traces (HIMS-SEC-020); patient scope; break-glass (console allow-list: done, HIMS-SEC-015) | 🔓 partly; CLIN; AWS |
+| 13 | Security and privacy | 🟡 | Passkeys; patient scope (error text in traces: done, HIMS-SEC-020; virus scanning: done, HIMS-SEC-013); break-glass (console allow-list: done, HIMS-SEC-015) | 🔓 partly; CLIN; AWS |
 | 14 | Redis/Celery | 🟡 | Alarms on queue health (monitoring and clean-up built, HIMS-PLAT-014) | Hosting stage |
 | 15 | React frontend | 🟡 1 of 7 workspaces | Clinical workspaces; patient chart | Domains |
 | 16 | REST API | 🟡 4 of 18 endpoint groups | Domain endpoints | Domains |
@@ -100,8 +100,8 @@ fit, so nothing is forgotten.
 |---|---|---|---|---|
 | 1 | Hospital setup | HIMS-FAC-009, HIMS-ORG-006, HIMS-NOTIF-003 | 4.12, 4.1, 4.23 | ✅ done |
 | 2 | Staff | HIMS-STAFF-016, HIMS-STAFF-015, HIMS-STAFF-013 | 4.3 | ✅ done |
-| 3 | Security filters | HIMS-SEC-020, HIMS-SEC-013 | 13.3, 18, 4.22 | ⬜ **next** |
-| 4 | Passkeys (alone: changes sign-in) | HIMS-IAM-014 | 13.1 | ⬜ |
+| 3 | Security filters | HIMS-SEC-020, HIMS-SEC-013 | 13.3, 18, 4.22 | ✅ done |
+| 4 | Passkeys (alone: changes sign-in) | HIMS-IAM-014 | 13.1 | ⬜ **next** |
 | 5 | Retention purge (alone: deletes data) | HIMS-COMP-006 | 4.25, 28 | ⬜ |
 | 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ⬜ |
 | 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ⬜ |
@@ -127,8 +127,8 @@ Then the security review (HIMS-SEC-011). The table below keeps each task's own r
 | 15 | 13.1 | HIMS-IAM-014 | Passkeys as a second factor | ⬜ | Optional upgrade over authenticator codes |
 | 16 | 25, 29 | HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features | ⬜ | Traceability (spec 25.3, 29) |
 | 17 | 18 | HIMS-OPS-017 | Response-time targets (SLOs) measured locally | ⬜ | Baseline before hosting |
-| 18 | 4.22, 13.3 | HIMS-SEC-013 | Virus scanning of uploaded documents | ⬜ | Before patient documents |
-| 19 | 13.3, 18 | HIMS-SEC-020 | Filter the error text kept in traces with the same rules as logs | ⬜ | Gap found by HIMS-SEC-019; needed before traces are sent anywhere (HIMS-PLAT-019) |
+| 18 | 4.22, 13.3 | HIMS-SEC-013 | Virus scanning of uploaded documents | ✅ done (group 3) | Before patient documents |
+| 19 | 13.3, 18 | HIMS-SEC-020 | Filter the error text kept in traces with the same rules as logs | ✅ done (group 3) | Gap found by HIMS-SEC-019; needed before traces are sent anywhere (HIMS-PLAT-019) |
 | 19a | 4.3 | HIMS-STAFF-016 | Clinical privileges: what each doctor may perform (the hospital keeps the list) | ✅ done (group 2) | Unblocked 2026-11-08 (CLIN: fine for now) |
 | 19b | 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts (the hospital sets the numbers) | ✅ done (group 2) | Unblocked 2026-11-08 (CLIN) |
 | 19c | 4.3 | HIMS-STAFF-013 | Leave balances and entitlements (the hospital sets them) | ✅ done (group 2) | Unblocked 2026-11-08 (PO) |
@@ -226,14 +226,14 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 | 4.19 | Billing and revenue cycle | 5 | ⬜ | 🔒 LEGAL, PAYER |
 | 4.20 | Procurement, inventory, accounting | 4, 5 | ⬜ | 🔒 PO (finance rules) |
 | 4.21 | Patient portal | 6 | ⬜ | 🔒 needs 4.5+ |
-| 4.22 | Documents and consent | 1, 2 | 🟡 20% | 🔓 virus scanning · 🔒 S3 (AWS), consent forms (LEGAL) |
+| 4.22 | Documents and consent | 1, 2 | 🟡 30% | virus scanning done (HIMS-SEC-013) · 🔒 S3 (AWS), ClamAV at hosting, consent forms (LEGAL) |
 | 4.23 | Notifications | 1, 2 | 🟡 70% | editable wording done (HIMS-NOTIF-003) · per-patient opt-out with Phase 2 (HIMS-NOTIF-004) · 🔒 SMS (VENDOR) |
 | 4.24 | Reporting | 2–6 | ⬜ | 🔒 needs domains |
 | 4.25 | Audit and governance | 1 | 🟡 90% | 🔒 retention periods (LEGAL), write-once copy (AWS) |
 
 ## 6. Done so far
 
-90 Phase 1 items: tickets delivered in PR #1–#44 (and #30) and the Staff group PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
+92 Phase 1 items: tickets delivered in PR #1–#45 (and #30) and the Security filters group PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
 tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and
 [work queue](spec-status.md#next-work-queue-dependency-free-in-recommended-order).
 

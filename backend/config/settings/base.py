@@ -232,6 +232,15 @@ HIMS_UPLOAD_MAX_BYTES = env.int("HIMS_UPLOAD_MAX_BYTES", default=10 * 1024 * 102
 # Only for throw-away runs (CI image smoke test, short demos): accept that uploaded files on the
 # server's own disk are lost on the next deploy. Never set this for a real hospital.
 HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE = env.bool("HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE", default=False)
+# Virus scanning of uploads (HIMS-SEC-013; docs/workflows/virus-scanning.md): clamd when hosted.
+HIMS_VIRUS_SCANNER = env.str("HIMS_VIRUS_SCANNER", default="test-file").strip().lower()
+if HIMS_VIRUS_SCANNER not in ("clamd", "test-file", "none"):
+    raise ImproperlyConfigured("HIMS_VIRUS_SCANNER must be clamd, test-file or none.")
+HIMS_CLAMD_HOST = env.str("HIMS_CLAMD_HOST", default="localhost")
+HIMS_CLAMD_PORT = env.int("HIMS_CLAMD_PORT", default=3310)
+HIMS_CLAMD_TIMEOUT = env.float("HIMS_CLAMD_TIMEOUT", default=30.0)
+# Throw-away runs only (the CI image check): hosted without a real scanner, on purpose.
+HIMS_ACCEPT_UNSCANNED_UPLOADS = env.bool("HIMS_ACCEPT_UNSCANNED_UPLOADS", default=False)
 # Days before expiry at which HR and the person are warned (and again once expired).
 HIMS_CREDENTIAL_ALERT_DAYS = env.list("HIMS_CREDENTIAL_ALERT_DAYS", cast=int, default=[60, 30, 7])
 # Periodic access review (HIMS-IAM-012): how often a full review is due, and how long one runs.

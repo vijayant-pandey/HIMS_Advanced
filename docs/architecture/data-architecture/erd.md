@@ -882,6 +882,10 @@ erDiagram
         timestamptz archived_at
         uuid archived_by_id FK
         varchar archive_reason
+        varchar scan_status
+        varchar scanned_by
+        timestamptz scanned_at
+        varchar scan_threat
     }
     staff_credential_expiry_alerts {
         bigint id PK

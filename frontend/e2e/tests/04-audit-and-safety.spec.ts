@@ -184,6 +184,16 @@ test.describe("administrator", () => {
     await expect(page.getByRole("button", { name: /^Mark reviewed/ })).toHaveCount(0);
   });
 
+  test("scanning and traces: the upload check and the trace filter are shown", async ({ page }) => {
+    // HIMS-SEC-013, HIMS-SEC-020. On this computer only the anti-virus test file is recognised.
+    await page.goto("/");
+    await openMenu(page, "Compliance");
+    await page.getByRole("tab", { name: "Scanning and traces" }).click();
+    await expect(page.getByText(/only the standard anti-virus test file is recognised/)).toBeVisible();
+    await expect(page.getByText(/Filtered with the same rules as the logs/)).toBeVisible();
+    await expectAccessible(page, "Scanning and traces");
+  });
+
   test("console access: the admin console answers this computer, and the list is shown", async ({ page }) => {
     // HIMS-SEC-015: the list is a server setting; on a developer PC it is this computer only.
     await page.goto("/compliance");

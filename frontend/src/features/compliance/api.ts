@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api } from "../../api/client";
 import type {
+  ScanResult,
+  ScanningStatus,
   BrowserSecurityReport,
   ComplianceRequirement,
   ComplianceSummary,
@@ -50,6 +52,21 @@ export function useDatabaseAccess() {
   return useQuery<DatabaseAccess, ApiError>({
     queryKey: [...key, "database-access"],
     queryFn: ({ signal }) => api.get<DatabaseAccess>("/security/database-access/", { signal }),
+  });
+}
+
+export function useScanningStatus() {
+  return useQuery<ScanningStatus, ApiError>({
+    queryKey: [...key, "upload-scanning"],
+    queryFn: ({ signal }) => api.get<ScanningStatus>("/security/upload-scanning/", { signal }),
+  });
+}
+
+export function useScanDocuments() {
+  const queryClient = useQueryClient();
+  return useMutation<ScanResult, ApiError, void>({
+    mutationFn: () => api.post<ScanResult>("/security/upload-scanning/scan/"),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [...key, "upload-scanning"] }),
   });
 }
 

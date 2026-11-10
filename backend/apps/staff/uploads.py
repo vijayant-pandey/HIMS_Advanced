@@ -1,8 +1,8 @@
 """Checks for uploaded staff documents (HIMS-STAFF-005, spec 4.22, 13.3).
 
 The real type is read from the first bytes of the file, never trusted from its name or the
-browser. Only PDF, JPEG and PNG are accepted. Malware scanning is a separate service
-(HIMS-SEC-013) that will plug in here.
+browser. Only PDF, JPEG and PNG are accepted. Every file is also checked for viruses
+(``check_upload``, HIMS-SEC-013) before it is stored.
 """
 
 import hashlib
@@ -43,6 +43,22 @@ def validate_upload(upload) -> tuple[str, str]:
     if kind is None:
         raise ValidationError(f"Only {ALLOWED_DESCRIPTION} files can be uploaded.")
     return kind
+
+
+def check_upload(upload, *, actor=None, request=None):
+    """Size, then viruses, then type, for a new staff document. Returns
+    (content_type, extension, scan result). Call outside a transaction: a refusal is audited."""
+    from common.virus_scan import check_upload as scan_upload
+
+    limit = settings.HIMS_UPLOAD_MAX_BYTES
+    if 0 < upload.size <= limit:  # the size messages come from validate_upload below
+        result = scan_upload(
+            upload, where="uploaded as a staff document", actor=actor, request=request
+        )
+    else:
+        result = None
+    content_type, extension = validate_upload(upload)
+    return content_type, extension, result
 
 
 def sha256_of(upload) -> str:

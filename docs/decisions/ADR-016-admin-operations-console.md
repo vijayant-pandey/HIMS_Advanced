@@ -90,3 +90,10 @@ The console gained **Equipment** and **Equipment service records** (status and v
 ## Update (2026-11-09, Staff group)
 
 The console gained **Clinical privileges**, **Staff privileges**, **Staffing requirements** with a **Staffing gaps** page, **Staffing gap alerts**, **Leave entitlements** and **Leave balance adjustments**, an action to approve leave over the balance, the leave year on the hospital's page, and read-only privilege and balance sections on the staff page. These sections are read-only fields rather than inlines, so saving the staff page needs nothing extra. Everything goes through the app's rules; a refusal shows on the form.
+
+## Update (2026-11-10, Security filters group)
+
+**Security status** gained "Virus scanning of uploads" and "Traces". **Staff documents** shows how each
+file was checked, filters by it, blocks opening an infected one, and has the action "Check selected
+documents for viruses now". A file uploaded in the console (staff document, logo) is checked like one
+uploaded in the app, with the refusal on the form. A check of what #45 added found nothing missing.

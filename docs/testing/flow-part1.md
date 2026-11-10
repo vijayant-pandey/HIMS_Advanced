@@ -48,6 +48,7 @@
 22k. [Part 18k: clinical privileges](#part-18k-clinical-privileges)
 22l. [Part 18l: minimum staffing](#part-18l-minimum-staffing)
 22m. [Part 18m: leave balances](#part-18m-leave-balances)
+22n. [Part 18n: virus scanning and traces](#part-18n-virus-scanning-and-traces)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1248,7 +1249,7 @@ Sign in as the administrator.
 
 | Step | Do this | Expected result |
 |---|---|---|
-| 18j.1 | Menu → **Message wording** | 19 messages, all **Standard** |
+| 18j.1 | Menu → **Message wording** | 20 messages, all **Standard** |
 | 18j.2 | Select **Account invitation** → delete `{{link}}` from the message → Save | Refused: the message must keep `{{link}}` |
 | 18j.3 | Type `{{patient_name}}` into the message → **Preview** | Refused: not available in this message |
 | 18j.4 | Remove that, change the greeting to "Welcome {{name}}", keep `{{link}}` → **Preview** | Shows it with made-up details. Nothing is sent |
@@ -1309,6 +1310,26 @@ Needs a department with someone posted in it (Part 10) and the Rota page (Part 1
 | 18m.9 | **Approve** | Greyed out until you tick **Approve anyway** and give a reason |
 | 18m.10 | **Audit log** (as the auditor) | The approval, with the days over the balance |
 | 18m.11 | Admin console → **Leave entitlements**, **Leave balance adjustments**, a staff member | The same rows; a **Leave balance this year** section on the staff page |
+
+---
+
+## Part 18n: virus scanning and traces
+
+Needs the Security filters PR and its migrate step (India and US). Sign in as the administrator.
+On your PC only the standard anti-virus test file is recognised: see
+[virus scanning](../workflows/virus-scanning.md), "Trying it on your PC".
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18n.1 | **Compliance** → **Scanning and traces** | "No real virus scanner on this computer…"; document counts; Tracing "Off"; error text "Filtered with the same rules as the logs" |
+| 18n.2 | Make the test file (the guide's step 1) and upload it as a staff document (Part 7) | Refused: "This file contains a virus or harmful content (EICAR test file)…". Nothing is added to the person. If Windows removed the file first, that also shows it works: skip to 18n.5 |
+| 18n.3 | The launcher window | An email to the compliance team: "a file with a virus was blocked", with no file name |
+| 18n.4 | **Audit log** (as the auditor) | "Upload refused: a virus was found", with who, when and the file's fingerprint |
+| 18n.5 | Upload a normal PDF | Saved. On the Licences tab it says "not checked for viruses", which is true on a PC without ClamAV |
+| 18n.6 | The same test file as the hospital logo (Part 18i) | Refused the same way |
+| 18n.7 | Admin console → **Security status** | "Virus scanning of uploads" and "Traces" sections |
+| 18n.8 | Admin console → **Staff documents** | A scan status column and filter, and the action "Check selected documents for viruses now" |
+| 18n.9 | Optional, with Docker Desktop: `docker compose --profile scanning up -d clamav`, set `HIMS_VIRUS_SCANNER=clamd`, restart; **Check documents not checked yet** | The PDF from 18n.5 becomes "checked" |
 
 ---
 
@@ -1474,6 +1495,7 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 18k | Clinical privileges | | | |
 | 18l | Minimum staffing | | | |
 | 18m | Leave balances | | | |
+| 18n | Virus scanning and traces | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 

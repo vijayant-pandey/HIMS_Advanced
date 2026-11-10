@@ -29,6 +29,24 @@
   </div>
 
   <div class="module">
+    <h2>Virus scanning of uploads</h2>
+    <table>
+      <tr><th scope="row">Scanner</th><td>{{ scanning.label }}{% if scanning.protects %} ({% if scanning.reachable %}reachable{% else %}<strong>not reachable: uploads are refused until it is back</strong>{% endif %}){% endif %}</td></tr>
+      <tr><th scope="row">Staff documents</th><td>{{ scanning.documents.clean }} checked, {{ scanning.documents.not_scanned }} not checked, {{ scanning.documents.infected }} blocked</td></tr>
+      <tr><th scope="row">Viruses blocked in the last 30 days</th><td>{{ scanning.blocked_last_30_days }}</td></tr>
+    </table>
+    <p class="help">Set at hosting with HIMS_VIRUS_SCANNER. To check stored documents: Staff documents, action "Check selected documents for viruses now".</p>
+  </div>
+
+  <div class="module">
+    <h2>Traces</h2>
+    <table>
+      <tr><th scope="row">Tracing</th><td>{% if scanning.traces.exporter == "none" %}Off: nothing is recorded{% elif scanning.traces.exporter == "console" %}Printed on this server only{% else %}Sent to the trace collector{% endif %}</td></tr>
+      <tr><th scope="row">Error text in traces</th><td>Filtered with the same rules as the logs</td></tr>
+    </table>
+  </div>
+
+  <div class="module">
     <h2>Database users</h2>
     <p>{% if database_separated %}Separated: the app runs with its own limited database user.{% elif not database.set_up %}Not set up yet (allowed on a developer PC; required when hosted).{% else %}A check failed: see below.{% endif %} The app connects as <strong>{{ database.current_user }}</strong>.</p>
     <table>

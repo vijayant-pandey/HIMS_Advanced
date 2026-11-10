@@ -42,6 +42,7 @@ import {
 import { BrowserProtectionTab } from "./BrowserProtectionTab";
 import { ConsoleAccessTab } from "./ConsoleAccessTab";
 import { DatabaseAccessTab } from "./DatabaseAccessTab";
+import { ScanningTab } from "./ScanningTab";
 import { ReportIncidentDialog, SEVERITIES } from "./ReportIncidentDialog";
 
 const when = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -572,6 +573,7 @@ export function CompliancePage() {
         <Tab value="browser" label="Browser protection" />
         <Tab value="console" label="Console access" />
         <Tab value="database" label="Database access" />
+        <Tab value="scanning" label="Scanning and traces" />
       </Tabs>
       {tab === "requirements" && <RequirementsTab canManage={canManage} />}
       {tab === "risks" && <RisksTab canManage={canManage} />}
@@ -579,6 +581,7 @@ export function CompliancePage() {
       {tab === "browser" && <BrowserProtectionTab canManage={canManage} />}
       {tab === "console" && <ConsoleAccessTab canManage={canManage} />}
       {tab === "database" && <DatabaseAccessTab />}
+      {tab === "scanning" && <ScanningTab canManage={canManage} />}
     </Stack>
   );
 }

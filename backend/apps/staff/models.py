@@ -275,6 +275,12 @@ def _document_path(instance, filename):
     return stored_name(instance, filename)
 
 
+class ScanStatus(models.TextChoices):
+    CLEAN = "clean", "Checked: no virus"
+    NOT_SCANNED = "not_scanned", "Not checked for viruses"
+    INFECTED = "infected", "Virus found: blocked"
+
+
 class StaffDocument(OrganizationOwnedModel):
     """A scanned certificate for a licence or qualification (HIMS-STAFF-005).
 
@@ -311,6 +317,15 @@ class StaffDocument(OrganizationOwnedModel):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
     archive_reason = models.CharField(max_length=255, blank=True)
+    # Virus scanning (HIMS-SEC-013). Files stored before scanning existed are "not checked".
+    scan_status = models.CharField(
+        max_length=12, choices=ScanStatus.choices, default=ScanStatus.NOT_SCANNED
+    )
+    scanned_by = models.CharField(
+        max_length=20, blank=True, help_text="Which scanner: clamd, test-file or none."
+    )
+    scanned_at = models.DateTimeField(null=True, blank=True)
+    scan_threat = models.CharField(max_length=120, blank=True)
 
     class Meta:
         db_table = "staff_documents"

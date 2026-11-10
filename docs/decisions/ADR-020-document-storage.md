@@ -56,3 +56,12 @@ photos), so they must not be reachable by anyone who merely guesses a link.
 - Documents work locally today. Hosted environments need the S3 step before uploads can be
   relied on, and the deploy check makes sure this cannot be forgotten.
 - Backups must include the document storage as well as the database (HIMS-OPS-009).
+
+## Update (2026-11-10, HIMS-SEC-013)
+
+Point 6 is built: every upload is checked for viruses before it is stored (`common/virus_scan.py`,
+ClamAV over its INSTREAM protocol, no extra library). Uploads are refused while the scanner is down
+(fail closed), and a refusal is audited and reported. Documents record how they were checked, and
+stored ones can be checked again and blocked. Hosted environments must use ClamAV: deploy check
+`hims.W002`, the same way `hims.W001` guards local storage. See
+[virus scanning](../workflows/virus-scanning.md).

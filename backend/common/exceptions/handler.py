@@ -140,6 +140,9 @@ def problem_details_exception_handler(exc, context):
 
     # Unexpected failure: log with the correlation ID; never leak internals to the caller.
     logger.exception("Unhandled API exception", extra={"view": type(context.get("view")).__name__})
+    from common.tracing import record_error
+
+    record_error(exc)  # its text is filtered before the trace leaves (HIMS-SEC-020)
     return _problem(
         status=500,
         code="INTERNAL_ERROR",

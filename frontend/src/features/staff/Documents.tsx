@@ -41,8 +41,8 @@ export function UploadDocumentDialog({
       onSubmit={() => file && upload.mutate({ file, ...target }, { onSuccess: onClose })}
     >
       <Typography variant="body2">
-        A clear scan or photo of the certificate: PDF, JPG or PNG, up to 10 MB. Only people who can
-        see staff records can open it, and every opening is recorded in the audit log.
+        A clear scan or photo of the certificate: PDF, JPG or PNG, up to 10 MB. It is checked for viruses before it is
+        saved. Only people who can see staff records can open it, and every opening is recorded in the audit log.
       </Typography>
       <Button variant="outlined" component="label">
         Choose file
@@ -114,8 +114,9 @@ export function DocumentCell({
 }) {
   const [uploading, setUploading] = useState(false);
   const [archiving, setArchiving] = useState<StaffDocument>();
-  const current = documents.filter((d) => !d.is_archived);
-  const archived = documents.length - current.length;
+  const blocked = documents.filter((d) => d.scan_status === "infected");
+  const current = documents.filter((d) => !d.is_archived && d.scan_status !== "infected");
+  const archived = documents.filter((d) => d.is_archived && d.scan_status !== "infected").length;
   return (
     <Box>
       <Stack spacing={0.5}>
@@ -125,7 +126,8 @@ export function DocumentCell({
               {d.original_name}
             </Link>{" "}
             <Typography component="span" variant="caption">
-              ({size(d.size_bytes)}) ·{" "}
+              ({size(d.size_bytes)}
+              {d.scan_status === "not_scanned" ? ", not checked for viruses" : ""}) ·{" "}
               <Link href={documentUrl(d.id, false)} variant="caption">
                 download
               </Link>
@@ -140,7 +142,12 @@ export function DocumentCell({
             </Typography>
           </Box>
         ))}
-        {current.length === 0 && <Typography variant="caption">No document</Typography>}
+        {blocked.map((d) => (
+          <Typography key={d.id} variant="caption" color="error" component="p">
+            {d.original_name}: a virus was found, so it cannot be opened
+          </Typography>
+        ))}
+        {current.length === 0 && blocked.length === 0 && <Typography variant="caption">No document</Typography>}
         {archived > 0 && <Typography variant="caption">{archived} archived</Typography>}
       </Stack>
       {canManage && (

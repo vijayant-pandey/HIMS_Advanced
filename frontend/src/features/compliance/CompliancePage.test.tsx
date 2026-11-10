@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import type { CurrentUser } from "../../api/types";
@@ -124,6 +124,16 @@ const CONSOLE_REFUSAL = {
   review_note: "",
   version: 1,
 };
+let scanning: Record<string, unknown> = {
+  scanner: "clamd",
+  label: "ClamAV",
+  protects: true,
+  reachable: true,
+  developer_pc: false,
+  documents: { clean: 12, not_scanned: 3, infected: 1 },
+  blocked_last_30_days: 2,
+  traces: { exporter: "otlp", sent_elsewhere: true, error_text_filtered: true },
+};
 let consoleAccess: unknown = {
   enabled: true,
   allowed_networks: ["127.0.0.1", "::1"],
@@ -138,6 +148,8 @@ function renderIt(ui: React.ReactElement, grants: string[], entry = "/compliance
     const url = String(input);
     if (init?.method === "POST" && url.endsWith("/security-incidents/"))
       return json({ id: "new-ref", title: "x", detected_at: "2026-11-04T10:00:00Z" }, 201);
+    if (init?.method === "POST" && url.endsWith("/security/upload-scanning/scan/"))
+      return json({ checked: 3, clean: 3, infected: 0, not_checked: 0, missing: 0 });
     if (init?.method === "POST") return json(INCIDENT);
     if (init?.method === "PATCH") return json(REQUIREMENT);
     if (url.includes("/compliance-summary/"))
@@ -153,6 +165,7 @@ function renderIt(ui: React.ReactElement, grants: string[], entry = "/compliance
     if (url.includes("/compliance-requirements/")) return json([REQUIREMENT]);
     if (url.includes("/compliance-risks/")) return json([RISK]);
     if (url.includes("/security-incidents/")) return json([INCIDENT]);
+    if (url.includes("/security/upload-scanning/")) return json(scanning);
     if (url.includes("/security/database-access/")) return json(databaseAccess);
     if (url.includes("/security/console-access/")) return json(consoleAccess);
     if (url.includes("/console-access-blocks/")) return json([CONSOLE_REFUSAL]);
@@ -338,5 +351,53 @@ describe("Console access tab (HIMS-SEC-015)", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "Console access" }));
     expect(await screen.findByText("The admin console is switched off on this server.")).toBeInTheDocument();
     expect(screen.getByText("None: nobody can use the console")).toBeInTheDocument();
+  });
+});
+
+describe("Scanning and traces tab (HIMS-SEC-013, HIMS-SEC-020)", () => {
+  const BASE = { ...scanning };
+  afterEach(() => {
+    vi.restoreAllMocks();
+    scanning = { ...BASE };
+  });
+  const open = async () => fireEvent.click(await screen.findByRole("tab", { name: "Scanning and traces" }));
+
+  it("shows the scanner, the documents and that trace error text is filtered", async () => {
+    renderIt(<CompliancePage />, ["compliance.view"]);
+    await open();
+    expect(await screen.findByText("Uploads are checked by ClamAV.")).toBeInTheDocument();
+    expect(screen.getByText("12 checked")).toBeInTheDocument();
+    expect(screen.getByText("1 blocked")).toBeInTheDocument();
+    expect(screen.getByText("Sent to the trace collector")).toBeInTheDocument();
+    expect(screen.getByText(/Filtered with the same rules as the logs/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Check documents not checked yet" })).toBeNull();
+  });
+
+  it("lets the compliance team check stored documents", async () => {
+    const fetchMock = renderIt(<CompliancePage />, ["compliance.view", "compliance.manage"]);
+    await open();
+    fireEvent.click(await screen.findByRole("button", { name: "Check documents not checked yet" }));
+    expect(await screen.findByText(/Checked 3: 3 without a virus/)).toBeInTheDocument();
+    expect(sent(fetchMock, "POST", "/security/upload-scanning/scan/")).toBeTruthy();
+  });
+
+  it("says uploads are paused when the scanner cannot be reached", async () => {
+    scanning = { ...BASE, reachable: false };
+    renderIt(<CompliancePage />, ["compliance.view", "compliance.manage"]);
+    await open();
+    expect(await screen.findByText(/uploads are refused until it is back/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Check documents not checked yet" })).toBeDisabled();
+  });
+
+  it("explains the test-file check on a developer PC, and flags it when hosted", async () => {
+    scanning = { ...BASE, scanner: "test-file", label: "Test file only (not real protection)", protects: false, reachable: null, developer_pc: true };
+    renderIt(<CompliancePage />, ["compliance.view"]);
+    await open();
+    expect(await screen.findByText(/only the standard anti-virus test file is recognised/)).toBeInTheDocument();
+    cleanup();
+    scanning = { ...scanning, developer_pc: false };
+    renderIt(<CompliancePage />, ["compliance.view"]);
+    await open();
+    expect(await screen.findByText(/Treat this as a security finding/)).toBeInTheDocument();
   });
 });

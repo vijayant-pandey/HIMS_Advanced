@@ -6,7 +6,7 @@ from apps.audit.services import AuditAction, model_changes, record_audit_event, 
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
-from .logo import logo_type, validate_logo
+from .logo import LOGO_MAX_BYTES, logo_type, validate_logo
 from .models import Organization
 
 UPDATABLE_FIELDS = (
@@ -85,13 +85,24 @@ def _delete_old_logo(name: str) -> None:
     transaction.on_commit(lambda: storage.delete(name))
 
 
-@transaction.atomic
 def set_logo(*, actor, organization_id, upload, request=None) -> Organization:
-    """Replace the hospital's logo. A picture is whole, so there is no version to compare."""
+    """Replace the hospital's logo. A picture is whole, so there is no version to compare.
+    Checked for viruses first, outside the transaction, so a refusal stays in the audit log."""
+    from common.virus_scan import check_upload
+
     try:
+        if 0 < upload.size <= LOGO_MAX_BYTES:
+            check_upload(
+                upload, where="uploaded as the hospital logo", actor=actor, request=request
+            )
         validate_logo(upload)
     except ValidationError as exc:
         raise ValidationError({"file": exc.messages}) from exc
+    return _store_logo(actor=actor, organization_id=organization_id, upload=upload, request=request)
+
+
+@transaction.atomic
+def _store_logo(*, actor, organization_id, upload, request) -> Organization:
     organization = Organization.objects.select_for_update().get(pk=organization_id)
     old_name = organization.logo.name
     content_type = logo_type(upload)

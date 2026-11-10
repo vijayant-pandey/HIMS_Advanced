@@ -115,12 +115,12 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-SEC-010 | Audit tamper evidence: keyed hash chain over every audit event, sealed every minute, daily + on-demand integrity check, alerts to auditors, Audit integrity screen and admin console ([design](../architecture/data-architecture/audit-integrity.md)) | Done |
 | HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Drafted with HIMS-COMP-005 ([threat model](../compliance/threat-model.md)); security review scheduled as the last Phase 1 step (PO 2026-11-08) |
 | HIMS-SEC-012 | Security headers/CSP for the screens, admin console and API; reports of anything blocked ([how-to](../workflows/security-headers.md)) | Done (hosting must send the screens' headers: HIMS-SEC-018) |
-| HIMS-SEC-013 | Upload validation/malware scanning service | To do |
+| HIMS-SEC-013 | Upload validation/malware scanning service | Done ([virus scanning](../workflows/virus-scanning.md)); ClamAV itself is set up in the hosting stage |
 | HIMS-SEC-014 | Trust `X-Forwarded-For` only from our own proxies, for audit addresses, sign-in register, rate limits and the console lock-out | Done |
 | HIMS-SEC-018 | Send `frontend/security-headers.json` as response headers at hosting (CloudFront response headers policy) and check them from outside (gap found in HIMS-SEC-012) | To do (🔒 AWS) |
 | HIMS-SEC-016 | Copy each passed check's audit chain head to write-once storage (S3 Object Lock) as an independent anchor (gap found in HIMS-SEC-010) | To do (🔒 AWS) |
 | HIMS-SEC-019 | Secret-in-logs test: no password, token, code or key ever reaches a log line (spec 13.5) | Done ([how-to](../workflows/log-safety.md): security test of the real flows; filter for every log line, stored provider errors and printed messages) |
-| HIMS-SEC-020 | Filter the error text that traces keep (`exception.message`, stack) with the same rules as logs, before traces are sent anywhere (gap found in HIMS-SEC-019) | To do (🔓; before HIMS-PLAT-019) |
+| HIMS-SEC-020 | Filter the error text that traces keep (`exception.message`, stack) with the same rules as logs, before traces are sent anywhere (gap found in HIMS-SEC-019) | Done ([tracing](../workflows/tracing.md)) |
 | HIMS-SEC-017 | Run the on-demand audit integrity check as a background job with progress once the audit log nears ~1 million records (gap found in HIMS-SEC-010) | To do (when volume is near) |
 
 ## EPIC HIMS-DATA — Data architecture (Artifact A, spec 28)
