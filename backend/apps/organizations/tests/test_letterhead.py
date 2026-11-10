@@ -228,6 +228,7 @@ def test_console_shows_and_changes_the_letterhead(admin_user, client, organizati
         "legal_name": organization.legal_name,
         "display_name": organization.display_name,
         "default_timezone": organization.default_timezone,
+        "leave_year_start_month": 1,
         "letterhead_address": "2 Synthetic Road",
     }
     assert page.post(url, data).status_code == 302

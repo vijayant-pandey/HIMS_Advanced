@@ -26,8 +26,8 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Feature settings**: [`feature_flags`](#feature_flags)
 - **Identity: accounts, sign-in, two-factor**: [`users`](#users), [`user_invitations`](#user_invitations), [`user_password_resets`](#user_password_resets), [`user_sessions`](#user_sessions), [`user_mfa_devices`](#user_mfa_devices), [`user_mfa_recovery_codes`](#user_mfa_recovery_codes)
 - **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations)
-- **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts)
-- **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests)
+- **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts), [`clinical_privileges`](#clinical_privileges), [`staff_privileges`](#staff_privileges)
+- **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests), [`staffing_requirements`](#staffing_requirements), [`staffing_gap_alerts`](#staffing_gap_alerts), [`leave_entitlements`](#leave_entitlements), [`leave_balance_adjustments`](#leave_balance_adjustments)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
 - **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`console_access_blocks`](#console_access_blocks), [`security_incident_notifications`](#security_incident_notifications)
 - **Notifications: emails and SMS**: [`notifications`](#notifications), [`message_templates`](#message_templates)
@@ -62,6 +62,7 @@ The hospital organization served by this dedicated deployment (ADR-003, ADR-009)
 | `default_currency` | varchar(3) | no | — | `USD` (US Dollar), `INR` (Indian Rupee) | Person | Internal: Business data | Default currency |
 | `status` | varchar(16) | no | `Organization.Status.ACTIVE` | `active` (Active), `suspended` (Suspended) | Person | Internal: Business data | Status |
 | `singleton` | boolean | no | `True` | — | System | Internal: Business data | Singleton |
+| `leave_year_start_month` | smallint | no | `1` | — | Person | Internal: Business data | The month the leave year starts: 1 is January, 4 is April (HIMS-STAFF-013). |
 | `logo` | varchar(120) | no | — | — | Person | Internal: Hospital logo | PNG or JPG, up to 2 MB. |
 | `letterhead_address` | text | no | — | — | Person | Internal: Business data | Letterhead address |
 | `letterhead_phone` | varchar(40) | no | — | up to 40 characters | Person | Internal: Business data | Letterhead phone |
@@ -972,6 +973,55 @@ One alert sent for one licence at one stage (60/30/7 days before, or expired).
 | `sent_at` | timestamp with time zone | no | now (on create) | — | System | Internal: Business data | Sent at |
 | `recipients` | smallint | no | `0` | — | Person | Internal: Business data | Recipients |
 
+<a id="clinical_privileges"></a>
+### `clinical_privileges`
+
+Something the hospital lets people perform (HIMS-STAFF-016; spec 4.3). The hospital writes this list: HIMS ships none, because what is privileged is a clinical decision.
+
+- **Model:** `staff.ClinicalPrivilege`
+- **Lifecycle:** Catalog the hospital writes: never deleted; switched off (`is_active`).
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `code` | varchar(64) | no | — | up to 64 characters; unique | Person | Internal: Business data | Code |
+| `name` | varchar(255) | no | — | up to 255 characters | Person | Internal: Business data | Name |
+| `description` | text | no | — | — | Person | Internal: Business data | Description |
+| `is_active` | boolean | no | `True` | — | Person | Internal: Business data | Switched on (true) or off (false); rows are switched off, not deleted |
+| `is_custom` | boolean | no | `True` | — | Person | Internal: Business data | Added by this hospital. |
+
+<a id="staff_privileges"></a>
+### `staff_privileges`
+
+One person holding one privilege, from a day and perhaps until a review date. Separate from degree, designation and specialty (spec 4.3). Never edited or deleted: ended with a reason.
+
+- **Model:** `staff.StaffPrivilege`
+- **Lifecycle:** Never edited or deleted; ended with who, when and why, so the record shows who could perform what on any past day.
+- **Rules:** `staff_privilege_one_active`: Unique: staff, privilege, department where status = 'active' (empty values count as equal); `staff_privilege_dates_in_order`: Check: (valid_until is empty OR valid_until ≥ valid_from)
+- **Extra indexes:** `staff_privilege_person_idx`: staff, status
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `staff_id` | uuid → staff_members.id | no | — | on delete PROTECT | Person | Internal: Reference | Staff |
+| `privilege_id` | uuid → clinical_privileges.id | no | — | on delete PROTECT | Person | Internal: Reference | Privilege |
+| `department_id` | uuid → departments.id | yes | — | on delete PROTECT | Person | Internal: Reference | Only in this department. Empty means wherever the person works. |
+| `valid_from` | date | no | — | — | Person | Internal: Business data | Valid from |
+| `valid_until` | date | yes | — | — | Person | Internal: Business data | Review date. Empty means until it is ended. |
+| `note` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Staff record note (no patient details) | No patient details. |
+| `status` | varchar(8) | no | `StaffPrivilege.Status.ACTIVE` | `active` (Active), `ended` (Ended) | Person | Internal: Business data | Status |
+| `granted_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Granted by |
+| `ended_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Ended at |
+| `ended_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Ended by |
+| `end_reason` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Staff record note (no patient details) | End reason |
+
 ## Rotas, on-call and leave
 
 **Owner (source of truth):** Staff/credential domain (heads of department plan; approvers decide leave). **Design:** [rotas-and-leave](rotas-and-leave.md).
@@ -1061,6 +1111,92 @@ Time away asked for by a staff member (or recorded for them), and its decision.
 | `cancelled_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Cancelled at |
 | `cancelled_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Cancelled by |
 | `cancel_reason` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Personal note | Cancel reason |
+
+<a id="staffing_requirements"></a>
+### `staffing_requirements`
+
+The hospital's minimum people on one shift in one department (HIMS-STAFF-015). HIMS has no numbers of its own. A gap warns and never blocks planning.
+
+- **Model:** `rosters.StaffingRequirement`
+- **Lifecycle:** Never deleted; switched off (`is_active`). Changes in the audit log.
+- **Rules:** `staffing_requirement_unique`: Unique: department, shift_type, staff_type, applies_on; `staffing_minimum_positive`: Check: minimum ≥ 1
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Facility |
+| `department_id` | uuid → departments.id | no | — | on delete PROTECT | Person | Internal: Reference | Department |
+| `shift_type_id` | uuid → shift_types.id | no | — | on delete PROTECT | Person | Internal: Reference | Shift type |
+| `staff_type` | varchar(32) | no | — | `doctor` (Doctor), `nurse` (Nurse), `pharmacist` (Pharmacist), `lab_technician` (Laboratory technician), `radiologist` (Radiologist), `dietitian` (Dietitian), `administrator` (Administrator), `support` (Support staff) | Person | Internal: Business data | Who counts. Empty means anyone on the shift. |
+| `applies_on` | varchar(10) | no | `StaffingRequirement.AppliesOn.EVERY_DAY` | `every_day` (Every day), `weekdays` (Monday to Friday), `weekends` (Saturday and Sunday) | Person | Internal: Business data | Applies on |
+| `minimum` | smallint | no | — | — | Person | Internal: Business data | Minimum |
+| `is_active` | boolean | no | `True` | — | Person | Internal: Business data | Switched on (true) or off (false); rows are switched off, not deleted |
+
+<a id="staffing_gap_alerts"></a>
+### `staffing_gap_alerts`
+
+A gap already emailed to the planners, so it is told once.
+
+- **Model:** `rosters.StaffingGapAlert`
+- **Lifecycle:** One row per gap emailed, so each is told once. Holds no names.
+- **Rules:** `staffing_gap_alert_once`: Unique: department, shift_type, staff_type, on_date
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | bigint | no | — | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `department_id` | uuid → departments.id | no | — | on delete PROTECT | Person | Internal: Reference | Department |
+| `shift_type_id` | uuid → shift_types.id | no | — | on delete PROTECT | Person | Internal: Reference | Shift type |
+| `staff_type` | varchar(32) | no | — | up to 32 characters | Person | Internal: Business data | Staff type |
+| `on_date` | date | no | — | — | Person | Internal: Business data | On date |
+| `sent_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Sent at |
+
+<a id="leave_entitlements"></a>
+### `leave_entitlements`
+
+Days per leave year for one kind of leave, set by the hospital (HIMS-STAFF-013). It applies from its year until a later row replaces it. A kind of leave with no row is not tracked.
+
+- **Model:** `rosters.LeaveEntitlement`
+- **Lifecycle:** Never deleted; rows started in an earlier year cannot change, so past balances stay as they were.
+- **Rules:** `leave_entitlement_one_per_year`: Unique: leave_type, from_year
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `leave_type` | varchar(16) | no | — | `annual` (Annual / earned leave), `casual` (Casual leave), `sick` (Sick leave), `maternity` (Maternity leave), `paternity` (Paternity leave), `study` (Study or conference leave), `compensatory` (Compensatory off), `unpaid` (Unpaid leave), `other` (Other) | Person | Internal: Business data | Leave type |
+| `from_year` | smallint | no | — | — | Person | Internal: Business data | The leave year it starts in |
+| `days` | smallint | no | — | — | Person | Internal: Business data | Days for a full leave year |
+| `max_carry_over` | smallint | no | `0` | — | Person | Internal: Business data | Most unused days taken into the next leave year |
+| `prorate_on_joining` | boolean | no | `True` | — | Person | Internal: Business data | Someone joining during the year gets a share by whole months |
+| `tracked` | boolean | no | `True` | — | Person | Internal: Business data | Off: from this year, this kind of leave has no balance |
+| `updated_by_id` | uuid → users.id | yes | — | on delete PROTECT | System | Internal: Person reference (id only) | Updated by |
+
+<a id="leave_balance_adjustments"></a>
+### `leave_balance_adjustments`
+
+Days added to or taken from one person's balance, e.g. a balance brought from before HIMS. Append-only (database trigger): a wrong one is corrected by another.
+
+- **Model:** `rosters.LeaveBalanceAdjustment`
+- **Lifecycle:** Append-only (database trigger); a wrong one is corrected by another.
+- **Rules:** `leave_adjustment_not_zero`: Check: NOT days = 0
+- **Extra indexes:** `leave_adjustment_person_idx`: staff, leave_year
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `staff_id` | uuid → staff_members.id | no | — | on delete PROTECT | Person | Internal: Reference | Staff |
+| `leave_type` | varchar(16) | no | — | `annual` (Annual / earned leave), `casual` (Casual leave), `sick` (Sick leave), `maternity` (Maternity leave), `paternity` (Paternity leave), `study` (Study or conference leave), `compensatory` (Compensatory off), `unpaid` (Unpaid leave), `other` (Other) | Person | Internal: Business data | Leave type |
+| `leave_year` | smallint | no | — | — | Person | Internal: Business data | Leave year |
+| `days` | smallint | no | — | — | Person | Internal: Business data | Plus adds days, minus takes them away |
+| `reason` | varchar(255) | no | — | up to 255 characters | Person | Restricted: HR note (no medical details) | No medical details. |
+| `created_by_id` | uuid → users.id | yes | — | on delete PROTECT | System | Internal: Person reference (id only) | Created by |
+| `created_at` | timestamp with time zone | no | now() | — | System | Internal: System metadata | When the row was created (UTC) |
 
 ## Audit log and tamper evidence
 

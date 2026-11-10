@@ -4,7 +4,7 @@ Built from [HIMS_Architecture_Specification_v2.MD](../../HIMS_Architecture_Speci
 section 20 (phases), 4 (domains), 21 (vertical slice), 26–27 (P0/P1), 36 (decisions), and from the
 [tracker](spec-status.md) and backlogs ([Phase 1](../backlog/phase-1-foundation.md),
 [Phase 2](../backlog/phase-2-patients.md)). The tracker stays the detailed record; this page is the
-ordered plan. **Last updated:** 2026-11-09 (after PR #43, with the Hospital setup group built).
+ordered plan. **Last updated:** 2026-11-09 (after PR #44, with the Staff group built).
 
 **2026-11-08 decisions** ([decisions log](decisions-log.md)): CLIN, LEGAL and PO approved the pending documents
 **for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
@@ -27,8 +27,8 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
-| Phase 1 tickets | 120: ✅ 87 done or approved · 33 left: 15 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 13 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
-| Phase 2 tickets (already written) | 21: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
+| Phase 1 tickets | 120: ✅ 90 done or approved · 30 left: 12 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 13 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
 | Open decisions (section 36) | 19: 0 closed |
@@ -38,7 +38,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 87 (PR #1–#43 and #30, the Hospital setup group, 2 approvals) | 15 buildable items (section 4a), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 90 (PR #1–#44 and #30, the Staff group, 2 approvals) | 12 buildable items (section 4a), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -99,8 +99,8 @@ fit, so nothing is forgotten.
 | PR | Group | Tasks | Spec § | Status |
 |---|---|---|---|---|
 | 1 | Hospital setup | HIMS-FAC-009, HIMS-ORG-006, HIMS-NOTIF-003 | 4.12, 4.1, 4.23 | ✅ done |
-| 2 | Staff | HIMS-STAFF-016, HIMS-STAFF-015, HIMS-STAFF-013 | 4.3 | ⬜ **next** |
-| 3 | Security filters | HIMS-SEC-020, HIMS-SEC-013 | 13.3, 18, 4.22 | ⬜ |
+| 2 | Staff | HIMS-STAFF-016, HIMS-STAFF-015, HIMS-STAFF-013 | 4.3 | ✅ done |
+| 3 | Security filters | HIMS-SEC-020, HIMS-SEC-013 | 13.3, 18, 4.22 | ⬜ **next** |
 | 4 | Passkeys (alone: changes sign-in) | HIMS-IAM-014 | 13.1 | ⬜ |
 | 5 | Retention purge (alone: deletes data) | HIMS-COMP-006 | 4.25, 28 | ⬜ |
 | 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ⬜ |
@@ -129,9 +129,9 @@ Then the security review (HIMS-SEC-011). The table below keeps each task's own r
 | 17 | 18 | HIMS-OPS-017 | Response-time targets (SLOs) measured locally | ⬜ | Baseline before hosting |
 | 18 | 4.22, 13.3 | HIMS-SEC-013 | Virus scanning of uploaded documents | ⬜ | Before patient documents |
 | 19 | 13.3, 18 | HIMS-SEC-020 | Filter the error text kept in traces with the same rules as logs | ⬜ | Gap found by HIMS-SEC-019; needed before traces are sent anywhere (HIMS-PLAT-019) |
-| 19a | 4.3 | HIMS-STAFF-016 | Clinical privileges: what each doctor may perform (the hospital keeps the list) | ⬜ | Unblocked 2026-11-08 (CLIN: fine for now) |
-| 19b | 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts (the hospital sets the numbers) | ⬜ | Unblocked 2026-11-08 (CLIN) |
-| 19c | 4.3 | HIMS-STAFF-013 | Leave balances and entitlements (the hospital sets them) | ⬜ | Unblocked 2026-11-08 (PO) |
+| 19a | 4.3 | HIMS-STAFF-016 | Clinical privileges: what each doctor may perform (the hospital keeps the list) | ✅ done (group 2) | Unblocked 2026-11-08 (CLIN: fine for now) |
+| 19b | 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts (the hospital sets the numbers) | ✅ done (group 2) | Unblocked 2026-11-08 (CLIN) |
+| 19c | 4.3 | HIMS-STAFF-013 | Leave balances and entitlements (the hospital sets them) | ✅ done (group 2) | Unblocked 2026-11-08 (PO) |
 | 19d | 4.25, 28 | HIMS-COMP-006 | Retention purge with legal hold (the hospital sets the periods; nothing deleted until set) | ⬜ | Unblocked 2026-11-08 (LEGAL) |
 | 19e | 13 | HIMS-SEC-011 | Security review of the threat model | ⬜ last | PO: when the whole of Phase 1 is complete |
 | — | 4.4 | HIMS-IAM-019 | Self-service cover requests | ⬜ optional | When hospitals ask |
@@ -207,7 +207,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 |---|---|---|---|---|
 | 4.1 | Hospital and branches | 1 | 🟡 97% | logo and letterhead done (HIMS-ORG-006) · 🔒 tax rules (LEGAL) |
 | 4.2 | Departments | 1 | 🟡 85% | 🔒 pricing, slots, escalation (CLIN) |
-| 4.3 | Staff and credentials | 1 | 🟡 99% | ✅ shifts, leave, on-call · 🔒 clinical privileges (CLIN), leave balances (PO), minimum staffing (CLIN) |
+| 4.3 | Staff and credentials | 1 | ✅ 100% | ✅ shifts, leave, on-call, clinical privileges, leave balances, minimum staffing · optional: shift swaps · enforcing privileges with clinical actions (Phase 2) |
 | 4.4 | Identity and access | 1 | 🟡 99% (department-level staff view done) | 🔒 SSO (PO), break-glass (Phase 2) |
 | 4.5 | Patient registration and MPI | 2 | ⬜ designed | 🔒 sign-off |
 | 4.6 | Appointments and OPD | 2 | ⬜ designed | 🔒 sign-off |
@@ -233,7 +233,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 
 ## 6. Done so far
 
-87 Phase 1 items: tickets delivered in PR #1–#43 (and #30) and the Hospital setup group PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
+90 Phase 1 items: tickets delivered in PR #1–#44 (and #30) and the Staff group PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
 tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and
 [work queue](spec-status.md#next-work-queue-dependency-free-in-recommended-order).
 

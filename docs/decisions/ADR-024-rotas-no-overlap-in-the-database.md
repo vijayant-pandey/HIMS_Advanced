@@ -34,3 +34,7 @@ Design: [rotas-and-leave.md](../architecture/data-architecture/rotas-and-leave.m
 - Hosted databases must allow `btree_gist` (it does on RDS and on the local PostgreSQL 17/18).
 - Phase 2 appointments can use the same pattern (spec 4.6 "without double booking").
 - Leave balances, shift swaps and minimum staffing are later tickets (HIMS-STAFF-013 to 015).
+
+## Update (2026-11-09)
+
+Leave balances (HIMS-STAFF-013, [ADR-029](ADR-029-leave-balances-worked-out.md)) and minimum staffing (HIMS-STAFF-015) are built. Shift swaps (HIMS-STAFF-014) stay optional.

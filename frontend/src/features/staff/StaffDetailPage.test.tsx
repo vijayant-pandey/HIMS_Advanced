@@ -62,6 +62,7 @@ const STAFF: StaffMemberDetail = {
       specialty_name: null,
     },
   ],
+  privileges: [],
   credentials: [
     {
       id: "c1",
@@ -390,5 +391,97 @@ describe("Staff seen through a department grant (HIMS-STAFF-008)", () => {
     expect(screen.queryByRole("link", { name: /\.pdf/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Verify/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("Clinical privileges (HIMS-STAFF-016)", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const GRANT = {
+    id: "g1",
+    privilege: "p1",
+    privilege_name: "Central line insertion",
+    department: null,
+    department_name: null,
+    valid_from: "2026-01-05",
+    valid_until: null,
+    note: "Approved by the medical director",
+    status: "active",
+    is_current: true,
+    granted_by_name: "Synthetic Admin",
+    created_at: "2026-01-05T10:00:00Z",
+    ended_at: null,
+    ended_by_name: null,
+    end_reason: "",
+    version: 2,
+  };
+
+  function mockPrivileges(privileges: unknown[], catalog: unknown[] = [{ id: "p1", code: "c", name: "Central line insertion", description: "", is_active: true, is_custom: true, version: 1 }]) {
+    const base = mockApi();
+    const answer = base.getMockImplementation()!;
+    base.mockImplementation(async (input, init) => {
+      const url = String(input);
+      const method = init?.method ?? "GET";
+      if (method === "GET" && url.includes("/clinical-privileges/")) return json(catalog);
+      if (method === "GET" && url.includes("/staff/s1/")) return json({ ...STAFF, privileges });
+      return answer(input, init);
+    });
+    return base;
+  }
+
+  const openTab = async (name: RegExp) => fireEvent.click(await screen.findByRole("tab", { name }));
+
+  it("lists what the person holds and counts only active ones on the tab", async () => {
+    mockPrivileges([GRANT, { ...GRANT, id: "g2", status: "ended", is_current: false, end_reason: "Moved to teaching" }]);
+    renderAt("/staff/s1", ["staff.view"]);
+    await openTab(/Privileges \(1\)/);
+    const table = await screen.findByRole("table", { name: "Clinical privileges" });
+    expect(table).toHaveTextContent("Central line insertion");
+    expect(table).toHaveTextContent("Approved by the medical director");
+    expect(table).toHaveTextContent("Moved to teaching");
+    expect(screen.queryByRole("button", { name: "Give a privilege" })).toBeNull();
+    expect(within(table).queryByRole("button", { name: /End / })).toBeNull();
+  });
+
+  it("gives a privilege", async () => {
+    const fetchMock = mockPrivileges([]);
+    renderAt("/staff/s1", ["staff.view", "staff.privileges.manage"]);
+    await openTab(/Privileges \(0\)/);
+    fireEvent.click(await screen.findByRole("button", { name: "Give a privilege" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Give" })).toBeDisabled();
+    fireEvent.mouseDown(within(dialog).getByRole("combobox", { name: /Privilege/ }));
+    fireEvent.click(await screen.findByRole("option", { name: "Central line insertion" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Give" }));
+    await vi.waitFor(() => expect(bodyOf(fetchMock, "/staff/s1/privileges/")).toMatchObject({ privilege: "p1", department: null, valid_until: null }), { timeout: 4000 });
+  });
+
+  it("says where to add privileges when the hospital's list is empty", async () => {
+    mockPrivileges([], []);
+    renderAt("/staff/s1", ["staff.view", "staff.privileges.manage"]);
+    await openTab(/Privileges \(0\)/);
+    fireEvent.click(await screen.findByRole("button", { name: "Give a privilege" }));
+    expect(await screen.findByText(/The list is empty/)).toBeInTheDocument();
+  });
+
+  it("ends a privilege with a reason and its version", async () => {
+    const fetchMock = mockPrivileges([GRANT]);
+    renderAt("/staff/s1", ["staff.view", "staff.privileges.manage"]);
+    await openTab(/Privileges \(1\)/);
+    fireEvent.click(await screen.findByRole("button", { name: "End Central line insertion" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "End privilege" })).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText(/Why/), { target: { value: "Moved to teaching" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "End privilege" }));
+    await vi.waitFor(() => expect(bodyOf(fetchMock, "/staff-privileges/g1/end/")).toEqual({ version: 2, reason: "Moved to teaching" }), { timeout: 4000 });
+  });
+
+  it("nobody sees buttons to change their own privileges", async () => {
+    mockPrivileges([GRANT]);
+    renderAt("/staff/s1", ["staff.view", "staff.privileges.manage"], "u-nurse");
+    await openTab(/Privileges \(1\)/);
+    const table = await screen.findByRole("table", { name: "Clinical privileges" });
+    expect(screen.queryByRole("button", { name: "Give a privilege" })).toBeNull();
+    expect(within(table).queryByRole("button", { name: /End / })).toBeNull();
   });
 });

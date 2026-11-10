@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib import admin, messages
+from django.forms.models import construct_instance
+from django.utils.html import format_html, format_html_join
 
 from apps.identity.admin import send_invitations
 from common.admin.options import (
@@ -10,7 +12,9 @@ from common.admin.options import (
 )
 from common.exceptions import DomainError
 
+from . import privileges
 from .models import (
+    ClinicalPrivilege,
     CredentialExpiryAlert,
     Designation,
     QualificationType,
@@ -19,6 +23,7 @@ from .models import (
     StaffDepartmentAssignment,
     StaffDocument,
     StaffMember,
+    StaffPrivilege,
     StaffQualification,
 )
 from .services import apply_employment_status_change, emit_staff_created, verify_credential
@@ -103,10 +108,13 @@ class StaffMemberAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
         "employment_status",
         "joined_on",
         "left_on",
+        "clinical_privileges",
+        "leave_balances",
         "version",
         "created_at",
         "updated_at",
     )
+    readonly_fields = ("clinical_privileges", "leave_balances")
     inlines = [StaffDepartmentAssignmentInline, StaffQualificationInline, StaffCredentialInline]
     actions = ["send_invitation"]
 
@@ -121,6 +129,45 @@ class StaffMemberAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
         send_invitations(self, request, users)
 
     form = StaffMemberForm
+
+    @admin.display(description="Clinical privileges")
+    def clinical_privileges(self, obj):
+        """Read-only here: give and end them under Staff privileges, with the app's rules."""
+        grants = obj.privileges.select_related("privilege") if obj and obj.pk else []
+        if not grants:
+            return "None."
+        return format_html(
+            "<table><tr><th>Privilege</th><th>From</th><th>Until</th><th>Status</th></tr>{}</table>",
+            format_html_join(
+                "",
+                "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                (
+                    (g.privilege.name, g.valid_from, g.valid_until or "-", g.get_status_display())
+                    for g in grants
+                ),
+            ),
+        )
+
+    @admin.display(description="Leave balance this year")
+    def leave_balances(self, obj):
+        """Worked out, not stored (HIMS-STAFF-013). Kinds of leave with no entitlement have none."""
+        from apps.rosters.balances import balances_for
+
+        rows = balances_for([obj])[obj.pk] if obj and obj.pk else []
+        if not rows:
+            return "No leave entitlements apply."
+        return format_html(
+            "<table><tr><th>Leave</th><th>Entitled</th><th>Carried in</th><th>Adjusted</th>"
+            "<th>Taken</th><th>Waiting</th><th>Left</th></tr>{}</table>",
+            format_html_join(
+                "",
+                "<tr>" + "<td>{}</td>" * 7 + "</tr>",
+                (
+                    (b.label, b.entitled, b.carried_in, b.adjusted, b.taken, b.waiting, b.remaining)
+                    for b in rows
+                ),
+            ),
+        )
 
     def save_model(self, request, obj, form, change):
         status_changed = change and "employment_status" in form.changed_data
@@ -203,6 +250,116 @@ class SpecialtyAdmin(_CatalogAdmin):
     list_display = ("code", "name", "is_custom", "is_active")
     list_filter = ("is_active",)
     search_fields = ("code", "name")
+
+
+@admin.register(ClinicalPrivilege)
+class ClinicalPrivilegeAdmin(_CatalogAdmin):
+    """The hospital writes this list (HIMS-STAFF-016). Give it to people under Staff privileges."""
+
+    list_display = ("name", "code", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("code", "name")
+
+
+class StaffPrivilegeForm(forms.ModelForm):
+    actor = None  # set by the admin for this request
+
+    class Meta:
+        model = StaffPrivilege
+        fields = ("staff", "privilege", "department", "valid_from", "valid_until", "note")
+
+    def _post_clean(self):
+        # Only copy the values: privileges.check_grant (below) applies every rule, and the
+        # database refuses a second active grant. Django cannot pre-check that from a form.
+        self.instance = construct_instance(self, self.instance, self._meta.fields)
+
+    def clean(self):
+        data = super().clean()
+        if self.errors:
+            return data
+        try:
+            privileges.check_grant(
+                actor=self.actor,
+                staff=data["staff"],
+                privilege=data["privilege"],
+                department=data.get("department"),
+                valid_from=data["valid_from"],
+                valid_until=data.get("valid_until"),
+            )
+        except DomainError as exc:
+            raise forms.ValidationError(str(exc.detail)) from exc
+        return data
+
+
+@admin.register(StaffPrivilege)
+class StaffPrivilegeAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
+    """Same rules and audit as the Staff page. Never edited: end one with the action."""
+
+    list_display = ("staff", "privilege", "department", "valid_from", "valid_until", "status")
+    list_filter = ("status", "privilege")
+    search_fields = ("staff__given_name", "staff__family_name", "staff__employee_number")
+    autocomplete_fields = ("staff",)
+    actions = ["end_selected"]
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        if obj is None:
+            kwargs["form"] = StaffPrivilegeForm
+        form = super().get_form(request, obj, change=change, **kwargs)
+        form.actor = request.user
+        return form
+
+    def get_fields(self, request, obj=None):
+        if obj is None:
+            return list(StaffPrivilegeForm.Meta.fields)
+        return [
+            *StaffPrivilegeForm.Meta.fields,
+            "status",
+            "granted_by",
+            "created_at",
+            "ended_by",
+            "ended_at",
+            "end_reason",
+            "version",
+        ]
+
+    def get_readonly_fields(self, request, obj=None):
+        return self.get_fields(request, obj) if obj is not None else []
+
+    def has_change_permission(self, request, obj=None):
+        return obj is None and super().has_change_permission(request, obj)
+
+    def save_model(self, request, obj, form, change):
+        data = form.cleaned_data
+        try:
+            grant = privileges.grant_privilege(
+                actor=request.user,
+                staff=data["staff"],
+                privilege=data["privilege"],
+                department=data.get("department"),
+                valid_from=data["valid_from"],
+                valid_until=data.get("valid_until"),
+                note=data.get("note", ""),
+                request=request,
+            )
+        except DomainError as exc:
+            raise forms.ValidationError(str(exc.detail)) from exc
+        obj.pk = grant.pk
+        obj._state.adding = False
+
+    @admin.action(description="End selected privileges")
+    def end_selected(self, request, queryset):
+        for grant in queryset:
+            try:
+                privileges.end_privilege(
+                    actor=request.user,
+                    grant_id=grant.pk,
+                    version=grant.version,
+                    reason="Ended in the admin console",
+                    request=request,
+                )
+                self.message_user(request, f"{grant}: ended.")
+            except DomainError as exc:
+                self.message_user(request, f"{grant}: {exc.detail}", messages.ERROR)
 
 
 @admin.register(QualificationType)

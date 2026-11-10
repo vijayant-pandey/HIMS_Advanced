@@ -68,7 +68,8 @@ planned and lists them with the reason, so one problem day does not block the re
 |---|---|---|
 | `rota.view` | See a department's rota and who is on call or working now | Basic staff, head of department, HR officer, administrator |
 | `rota.manage` | Plan, copy and cancel shifts; with a hospital-wide grant, keep the shift types | Head of department, administrator |
-| `leave.approve` | See, approve, refuse, cancel and record leave | Head of department, HR officer, administrator |
+| `leave.approve` | See, approve, refuse, cancel and record leave; see balances and entitlements | Head of department, HR officer, administrator |
+| `leave.policy.manage` | Set entitlements and adjust a person's balance (hospital-wide) | HR officer, administrator |
 
 All three follow the grant's scope: a head of department's grant covers only their department.
 **Privacy:** the rota shows that someone is away, not why. The kind of leave (e.g. sick leave) is
@@ -94,14 +95,14 @@ A night shift that crosses a daylight-saving change gets its real length (stored
 
 `rota.shift_type.created`, `rota.shift_type.updated`, `rota.shift.added`,
 `rota.shift.cancelled`, `leave.requested`, `leave.approved`, `leave.rejected`,
-`leave.cancelled`. Automatic cancellations are recorded with no actor and the reason.
+`leave.cancelled`, `rota.staffing_requirement.created`, `rota.staffing_requirement.updated`, `rota.staffing_gap_alert.sent`, `leave.entitlement.created`, `leave.entitlement.updated`, `leave.balance.adjusted`. Automatic cancellations are recorded with no actor and the reason.
 
 ## 8. Not included yet (backlog)
 
 | Ticket | What | Why later |
 |---|---|---|
-| HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) | Each hospital's HR policy (🔒 PO) |
+| HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) | ✅ Built 2026-11-09: [leave balances](../../workflows/leave-balances.md) |
 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head | When hospitals ask |
-| HIMS-STAFF-015 | Minimum staffing per shift and alerts for gaps | Needs nurse-to-patient rules (🔒 CLIN) |
+| HIMS-STAFF-015 | Minimum staffing per shift and alerts for gaps | ✅ Built 2026-11-09 with numbers the hospital sets: [minimum staffing](../../workflows/minimum-staffing.md). Nurse-to-patient ratios wait for Phase 3 |
 | Phase 2 | Doctor clinic schedules for appointments | Built on these rotas with the OPD slice (2B) |
 | Phase 3 | Nursing shift handover | With nursing (spec 4.9) |

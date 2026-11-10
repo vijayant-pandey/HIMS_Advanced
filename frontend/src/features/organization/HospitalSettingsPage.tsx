@@ -13,6 +13,20 @@ import { LetterheadSection } from "./LetterheadSection";
 
 const organizationKey = ["organization"] as const;
 
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 const COUNTRY: Record<string, string> = { IN: "India", US: "United States" };
 const TIME_ZONES: Record<string, string[]> = {
   IN: ["Asia/Kolkata"],
@@ -47,6 +61,7 @@ function EditDialog({ organization, onClose }: { organization: Organization; onC
     display_name: organization.display_name,
     legal_name: organization.legal_name,
     default_timezone: organization.default_timezone,
+    leave_year_start_month: organization.leave_year_start_month,
   });
   const errors = fieldErrors(update.error);
   const zones = [...new Set([...(TIME_ZONES[organization.country] ?? []), organization.default_timezone])];
@@ -91,6 +106,20 @@ function EditDialog({ organization, onClose }: { organization: Organization; onC
         {zones.map((zone) => (
           <MenuItem key={zone} value={zone}>
             {zone}
+          </MenuItem>
+        ))}
+      </TextField>
+      <TextField
+        select
+        label="Leave year starts in"
+        value={values.leave_year_start_month}
+        onChange={(e) => setValues({ ...values, leave_year_start_month: Number(e.target.value) })}
+        error={!!errors.leave_year_start_month}
+        helperText={errors.leave_year_start_month ?? "Leave balances and carry-over run from this month"}
+      >
+        {MONTHS.map((month, index) => (
+          <MenuItem key={month} value={index + 1}>
+            {month}
           </MenuItem>
         ))}
       </TextField>
@@ -140,6 +169,7 @@ export function HospitalSettingsPage() {
           <Row label="Country" value={COUNTRY[organization.country] ?? organization.country} />
           <Row label="Currency" value={organization.default_currency} />
           <Row label="Default time zone" value={organization.default_timezone} />
+          <Row label="Leave year starts in" value={MONTHS[organization.leave_year_start_month - 1] ?? ""} />
           <Row label="Status" value={organization.status === "active" ? "Active" : "Suspended"} />
           <Typography variant="caption" component="p" sx={{ mt: 1 }}>
             Branch details are on the Facilities page; numbering and features have their own pages.

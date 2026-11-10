@@ -24,6 +24,7 @@ import { ErrorAlert } from "../../components/ErrorAlert";
 import { FormDialog } from "../../components/FormDialog";
 import { useAskForLeave, useMySchedule, useWithdrawLeave } from "./api";
 import { LEAVE_STATUS, formatDay, leavePeriod } from "./labels";
+import { balanceText } from "./LeaveBalances";
 import { LeaveFields } from "./LeaveFields";
 
 /** HIMS-STAFF-012: your own shifts, on-call and leave; ask for leave here. */
@@ -102,6 +103,31 @@ export function MySchedulePage() {
           </TableBody>
         </Table>
       </TableContainer>
+      {data.leave_balances.length > 0 && (
+        <>
+          <Typography variant="h6" component="h2">
+            My leave balance, {data.leave_balances[0]!.year_label}
+          </Typography>
+          <TableContainer component={Paper}>
+            <Table size="small" aria-label="My leave balance">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Leave</TableCell>
+                  <TableCell>Balance</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {data.leave_balances.map((balance) => (
+                  <TableRow key={balance.leave_type}>
+                    <TableCell>{balance.label}</TableCell>
+                    <TableCell>{balanceText(balance)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
+      )}
       <Typography variant="h6" component="h2">
         My leave
       </Typography>

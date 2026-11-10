@@ -244,3 +244,90 @@ test("rota and leave: a night shift for the nurse, she asks for that day off, th
   await expect(nurse.getByRole("table", { name: "My coming shifts" })).toContainText("No shifts planned");
   expect(subjectsFor(NURSE.email).some((s) => s.startsWith("Leave approved"))).toBe(true);
 });
+
+test("staff group: a clinical privilege, a minimum for a shift, and leave over the balance", async ({ browser }) => {
+  // Spec 4.3: HIMS-STAFF-016, HIMS-STAFF-015, HIMS-STAFF-013. The hospital sets every value.
+  const admin = await asAdmin(browser);
+  await admin.goto("/");
+  await openMenu(admin, "Job titles & catalogs");
+  await admin.getByRole("tab", { name: "Clinical privileges" }).click();
+  await admin.getByRole("button", { name: "Add clinical privilege" }).click();
+  const newPrivilege = admin.getByRole("dialog");
+  await newPrivilege.getByRole("textbox", { name: "Name" }).fill("Central line insertion");
+  await expectAccessible(admin, "Add clinical privilege dialog");
+  await newPrivilege.getByRole("button", { name: "Save" }).click();
+  await expect(newPrivilege).toBeHidden();
+
+  await admin.goto(new URL(recall("nurse-staff-url")).pathname);
+  await admin.getByRole("tab", { name: /^Privileges/ }).click();
+  await admin.getByRole("button", { name: "Give a privilege" }).click();
+  const give = admin.getByRole("dialog");
+  await give.getByRole("combobox", { name: /Privilege/ }).click();
+  await admin.getByRole("option", { name: "Central line insertion" }).click();
+  await expect(admin.locator(".MuiMenu-root")).toHaveCount(0);
+  await expectAccessible(admin, "Give a privilege dialog");
+  await give.getByRole("button", { name: "Give" }).click();
+  await expect(give).toBeHidden();
+  const held = admin.getByRole("table", { name: "Clinical privileges" });
+  await expect(held).toContainText("Central line insertion");
+  await expect(held).toContainText("Current");
+  await expectAccessible(admin, "Clinical privileges");
+
+  await openMenu(admin, "Rota");
+  await expect(admin.getByRole("table", { name: "Rota for Cardiology" })).toBeVisible();
+  await admin.getByRole("button", { name: "Minimum staffing" }).click();
+  const minimums = admin.getByRole("dialog");
+  const addMinimum = minimums.getByRole("region", { name: "Add a minimum" });
+  await addMinimum.getByRole("combobox", { name: "Shift" }).click();
+  await admin.getByRole("option", { name: /^Night ·/ }).click();
+  await expect(admin.locator(".MuiMenu-root")).toHaveCount(0);
+  await addMinimum.getByLabel("At least").fill("2");
+  await addMinimum.getByRole("button", { name: "Add" }).click();
+  await expect(minimums.getByRole("table", { name: "Minimum staffing" })).toContainText("Night");
+  await expectAccessible(admin, "Minimum staffing dialog");
+  await minimums.getByRole("button", { name: "Close" }).click();
+  await admin.getByRole("button", { name: "Next week" }).click();
+  await expect(admin.getByRole("region", { name: "Staffing gaps" })).toContainText("below the minimum");
+  await expectAccessible(admin, "Rota with staffing gaps");
+
+  await openMenu(admin, "Leave");
+  await admin.getByRole("tab", { name: "Entitlements" }).click();
+  await admin.getByRole("button", { name: "Add an entitlement" }).click();
+  const entitlement = admin.getByRole("dialog");
+  await entitlement.getByLabel("Days per leave year").fill("1");
+  await expectAccessible(admin, "Add an entitlement dialog");
+  await entitlement.getByRole("button", { name: "Save" }).click();
+  await expect(entitlement).toBeHidden();
+  await expect(admin.getByRole("table", { name: "Leave entitlements" })).toContainText("Annual / earned leave");
+  await expectAccessible(admin, "Leave entitlements");
+  await admin.getByRole("tab", { name: "Balances" }).click();
+  await expect(admin.getByRole("table", { name: /^Leave balances/ })).toContainText("Asha Nurse");
+  await expectAccessible(admin, "Leave balances");
+
+  const nurse = await (await browser.newContext()).newPage();
+  await signIn(nurse, NURSE.email, NURSE_PASSWORD);
+  await nurse.getByRole("link", { name: "My schedule" }).click();
+  await expect(nurse.getByRole("table", { name: "My leave balance" })).toContainText("Annual / earned leave");
+  const first = localDate(new Date(Date.now() + 20 * 86_400_000));
+  const last = localDate(new Date(Date.now() + 22 * 86_400_000));
+  await nurse.getByRole("button", { name: "Ask for leave" }).click();
+  const ask = nurse.getByRole("dialog");
+  await ask.getByLabel("First day").fill(first);
+  await ask.getByLabel("Last day").fill(last);
+  await ask.getByRole("button", { name: "Send" }).click();
+  await expect(ask).toBeHidden();
+
+  await admin.getByRole("tab", { name: "To decide" }).click();
+  await admin.reload();
+  await admin.getByRole("button", { name: "Approve leave for Asha Nurse" }).click();
+  const approve = admin.getByRole("dialog");
+  await expect(approve).toContainText("over Asha Nurse's balance");
+  await expect(approve.getByRole("button", { name: "Approve leave" })).toBeDisabled();
+  await approve.getByRole("checkbox", { name: /Approve anyway/ }).check();
+  await approve.getByRole("textbox", { name: /Reason/ }).fill("Family emergency");
+  await expectAccessible(admin, "Approve over the balance dialog");
+  await approve.getByRole("button", { name: "Approve leave" }).click();
+  await expect(approve).toBeHidden();
+  await nurse.reload();
+  await expect(nurse.getByRole("table", { name: "My leave", exact: true })).toContainText("Approved");
+});

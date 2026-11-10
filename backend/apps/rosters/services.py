@@ -18,6 +18,7 @@ from apps.staff.models import StaffDepartmentAssignment, StaffMember
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
+from .balances import balance_after
 from .models import LeaveRequest, Shift, ShiftType
 
 # Most days one "add shifts" request may cover (a month and a bit), and the longest leave.
@@ -359,6 +360,11 @@ def on_employment_status_changed(staff: StaffMember) -> None:
 
 def leave_approver_emails(department, *, exclude=()) -> list[str]:
     """Active people whose leave-approval grant covers this department."""
+    return planner_emails(department, P.LEAVE_APPROVE, exclude=exclude)
+
+
+def planner_emails(department, codename: str, *, exclude=()) -> list[str]:
+    """Active people whose grant of this permission covers this department."""
     from apps.access_control.models import RoleAssignment
 
     now = timezone.now()
@@ -370,7 +376,7 @@ def leave_approver_emails(department, *, exclude=()) -> list[str]:
         revoked_at__isnull=True,
         valid_from__lte=now,
         user__is_active=True,
-        role__role_permissions__permission__codename=P.LEAVE_APPROVE,
+        role__role_permissions__permission__codename=codename,
     ).exclude(user_id__in=[u for u in exclude if u])
     return sorted(set(rows.values_list("user__email", flat=True)))
 
@@ -497,7 +503,7 @@ def conflicting_shifts(leave: LeaveRequest):
     )
 
 
-def _close_leave(leave, *, status, actor, note, action, request=None) -> None:
+def _close_leave(leave, *, status, actor, note, action, request=None, metadata=None) -> None:
     before = snapshot(leave, ["status"])
     leave.status = status
     if status == LeaveRequest.Status.CANCELLED:
@@ -519,6 +525,7 @@ def _close_leave(leave, *, status, actor, note, action, request=None) -> None:
         request=request,
         reason=note,
         changes={"before": before, "after": {"status": status}},
+        metadata=metadata,
     )
 
 
@@ -531,13 +538,33 @@ def _not_own(leave: LeaveRequest, actor) -> None:
 
 @transaction.atomic
 def approve_leave(
-    *, actor, leave_id, version: int, note: str = "", cancel_shifts: bool = False, request=None
+    *,
+    actor,
+    leave_id,
+    version: int,
+    note: str = "",
+    cancel_shifts: bool = False,
+    allow_over_balance: bool = False,
+    request=None,
 ) -> LeaveRequest:
     leave = lock_for_update(LeaveRequest, pk=leave_id, expected_version=version)
     _require_rotas(leave.department, request)
     _not_own(leave, actor)
     if leave.status != LeaveRequest.Status.REQUESTED:
         raise ConflictError("This leave has already been decided.", code="ALREADY_DECIDED")
+    # One decision at a time for one person: two approvals cannot both spend the same days.
+    StaffMember.objects.select_for_update().filter(pk=leave.staff_id).first()
+    after = balance_after(leave)
+    over_balance = after is not None and after < 0
+    if over_balance and not allow_over_balance:
+        raise ConflictError(
+            f"This leave would leave {_name(leave.staff)} {-after} day(s) over their "
+            f"{leave.get_leave_type_display().lower()} balance. Approve anyway only if the "
+            "hospital allows it, and say why.",
+            code="LEAVE_OVER_BALANCE",
+        )
+    if over_balance and not note.strip():
+        raise ConflictError("Say why this leave goes over the balance.", code="REASON_REQUIRED")
     clashes = list(conflicting_shifts(leave))
     if clashes and not cancel_shifts:
         listed = "; ".join(
@@ -559,6 +586,7 @@ def approve_leave(
         note=note.strip(),
         action=AuditAction.LEAVE_APPROVED,
         request=request,
+        metadata={"over_balance_by": -after} if over_balance else None,
     )
     _notify(
         leave,

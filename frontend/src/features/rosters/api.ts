@@ -5,8 +5,12 @@ import type {
   AddShiftsRequest,
   AddShiftsResult,
   CopyWeekRequest,
+  DepartmentBalances,
+  LeaveAdjustment,
+  LeaveAdjustmentCreateRequest,
   LeaveCreateRequest,
   LeaveDecisionRequest,
+  LeaveEntitlement,
   LeaveRequest,
   MySchedule,
   RotaNow,
@@ -15,6 +19,7 @@ import type {
   ShiftType,
   ShiftTypeCreateRequest,
   ShiftTypeUpdateRequest,
+  StaffingRequirement,
 } from "../../api/types";
 
 // One key for everything here: a shift or leave change can show up on every rota screen.
@@ -98,9 +103,58 @@ export const useWithdrawLeave = (id: string) =>
 export const useRecordLeave = (idempotencyKey: string) =>
   useRotaMutation((body: LeaveCreateRequest) => api.post<LeaveRequest>("/leave-requests/", body, { idempotencyKey }));
 
+export function useStaffingRequirements(department: string) {
+  return useQuery<StaffingRequirement[], ApiError>({
+    queryKey: [...rotaKey, "minimums", department],
+    queryFn: ({ signal }) =>
+      api.get<StaffingRequirement[]>("/staffing-requirements/", { query: { department }, signal }),
+  });
+}
+
+export const useSaveRequirement = (id: string | undefined, idempotencyKey: string) =>
+  useRotaMutation((body: Record<string, unknown>) =>
+    id
+      ? api.patch<StaffingRequirement>(`/staffing-requirements/${id}/`, body)
+      : api.post<StaffingRequirement>("/staffing-requirements/", body, { idempotencyKey }),
+  );
+
+export function useLeaveBalances(department: string) {
+  return useQuery<DepartmentBalances, ApiError>({
+    queryKey: [...rotaKey, "balances", department],
+    queryFn: ({ signal }) => api.get<DepartmentBalances>("/leave-balances/", { query: { department }, signal }),
+    enabled: !!department,
+  });
+}
+
+export function useLeaveEntitlements() {
+  return useQuery<LeaveEntitlement[], ApiError>({
+    queryKey: [...rotaKey, "entitlements"],
+    queryFn: ({ signal }) => api.get<LeaveEntitlement[]>("/leave-entitlements/", { signal }),
+  });
+}
+
+export const useSaveEntitlement = (id: string | undefined, idempotencyKey: string) =>
+  useRotaMutation((body: Record<string, unknown>) =>
+    id
+      ? api.patch<LeaveEntitlement>(`/leave-entitlements/${id}/`, body)
+      : api.post<LeaveEntitlement>("/leave-entitlements/", body, { idempotencyKey }),
+  );
+
+export function useAdjustments(person: string) {
+  return useQuery<LeaveAdjustment[], ApiError>({
+    queryKey: [...rotaKey, "adjustments", person],
+    queryFn: ({ signal }) => api.get<LeaveAdjustment[]>("/leave-adjustments/", { query: { person }, signal }),
+  });
+}
+
+export const useAdjustBalance = (idempotencyKey: string) =>
+  useRotaMutation((body: LeaveAdjustmentCreateRequest) =>
+    api.post<LeaveAdjustment>("/leave-adjustments/", body, { idempotencyKey }),
+  );
+
 export type LeaveDecision = "approve" | "reject" | "cancel";
 
 export const useDecideLeave = (id: string, decision: LeaveDecision) =>
-  useRotaMutation((body: LeaveDecisionRequest | { version: number; reason: string }) =>
+  useRotaMutation((body: Pick<LeaveDecisionRequest, "version" | "note" | "cancel_shifts"> & { allow_over_balance?: boolean } | { version: number; reason: string }) =>
     api.post<LeaveRequest>(`/leave-requests/${id}/${decision}/`, body),
   );

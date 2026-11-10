@@ -1131,6 +1131,41 @@ export interface paths {
         patch: operations["buildings_partial_update"];
         trace?: never;
     };
+    "/api/v1/clinical-privileges/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What the hospital lets people perform (HIMS-STAFF-016). The hospital writes the list. */
+        get: operations["clinical_privileges_list"];
+        put?: never;
+        /** @description What the hospital lets people perform (HIMS-STAFF-016). The hospital writes the list. */
+        post: operations["clinical_privileges_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-privileges/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description What the hospital lets people perform (HIMS-STAFF-016). The hospital writes the list. */
+        patch: operations["clinical_privileges_partial_update"];
+        trace?: never;
+    };
     "/api/v1/compliance-requirements/": {
         parameters: {
             query?: never;
@@ -1648,6 +1683,94 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leave-adjustments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Days added to or taken from a balance. Append-only. Reading follows ``leave.approve``;
+         *     adding needs ``leave.policy.manage``.
+         */
+        get: operations["leave_adjustments_list"];
+        put?: never;
+        /**
+         * @description Days added to or taken from a balance. Append-only. Reading follows ``leave.approve``;
+         *     adding needs ``leave.policy.manage``.
+         */
+        post: operations["leave_adjustments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leave-balances/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Everyone working in a department and what is left of each kind of leave. For people who
+         *     decide leave there, who already see the kinds of leave.
+         */
+        get: operations["leave_balances_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leave-entitlements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Days per year for each kind of leave. Approvers read them; ``leave.policy.manage``
+         *     (hospital-wide) sets them.
+         */
+        get: operations["leave_entitlements_list"];
+        put?: never;
+        /**
+         * @description Days per year for each kind of leave. Approvers read them; ``leave.policy.manage``
+         *     (hospital-wide) sets them.
+         */
+        post: operations["leave_entitlements_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leave-entitlements/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Days per year for each kind of leave. Approvers read them; ``leave.policy.manage``
+         *     (hospital-wide) sets them.
+         */
+        patch: operations["leave_entitlements_partial_update"];
         trace?: never;
     };
     "/api/v1/leave-requests/": {
@@ -2749,6 +2872,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/staff-privileges/{id}/end/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End a clinical privilege, with a reason. It stays on record. */
+        post: operations["staff_privileges_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff/{id}/": {
         parameters: {
             query?: never;
@@ -2849,6 +2989,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/staff/{id}/privileges/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Give this person a clinical privilege. Nobody gives one to themselves. */
+        post: operations["staff_privileges_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff/{id}/qualifications/": {
         parameters: {
             query?: never;
@@ -2880,6 +3037,50 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staffing-requirements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The hospital's minimum people per shift. Seeing needs ``rota.view``, setting ``rota.manage``,
+         *     both for the department.
+         */
+        get: operations["staffing_requirements_list"];
+        put?: never;
+        /**
+         * @description The hospital's minimum people per shift. Seeing needs ``rota.view``, setting ``rota.manage``,
+         *     both for the department.
+         */
+        post: operations["staffing_requirements_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staffing-requirements/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description The hospital's minimum people per shift. Seeing needs ``rota.view``, setting ``rota.manage``,
+         *     both for the department.
+         */
+        patch: operations["staffing_requirements_partial_update"];
         trace?: never;
     };
     "/api/v1/wards/": {
@@ -3194,6 +3395,13 @@ export interface components {
          * @enum {string}
          */
         AgeGroupEnum: "any" | "adult" | "pediatric" | "neonatal";
+        /**
+         * @description * `every_day` - Every day
+         *     * `weekdays` - Monday to Friday
+         *     * `weekends` - Saturday and Sunday
+         * @enum {string}
+         */
+        AppliesOnEnum: "every_day" | "weekdays" | "weekends";
         ArchiveRequest: {
             reason: string;
         };
@@ -3520,6 +3728,21 @@ export interface components {
          * @enum {string}
          */
         ChannelEnum: "email" | "sms";
+        ClinicalPrivilege: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly name: string;
+            readonly description: string;
+            readonly is_active: boolean;
+            /** @description Added by this hospital. */
+            readonly is_custom: boolean;
+            readonly version: number;
+        };
+        ClinicalPrivilegeCreateRequest: {
+            name: string;
+            description?: string;
+        };
         ComplianceRequirement: {
             /** Format: uuid */
             readonly id: string;
@@ -3740,6 +3963,11 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        DepartmentBalances: {
+            year: number;
+            year_label: string;
+            people: components["schemas"]["PersonBalances"][];
         };
         DepartmentCreateRequest: {
             /** Format: uuid */
@@ -4342,6 +4570,44 @@ export interface components {
             events_deleted: number;
             markers_deleted: number;
         };
+        LeaveAdjustment: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly staff: string;
+            readonly leave_type: components["schemas"]["LeaveTypeEnum"];
+            readonly leave_type_label: string;
+            readonly leave_year: number;
+            /** @description Plus adds days, minus takes them away */
+            readonly days: number;
+            /** @description No medical details. */
+            readonly reason: string;
+            readonly created_by_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        LeaveAdjustmentCreateRequest: {
+            /** Format: uuid */
+            staff: string;
+            leave_type: components["schemas"]["LeaveTypeEnum"];
+            leave_year: number;
+            /** @description Plus adds days, minus takes them away */
+            days: number;
+            reason: string;
+        };
+        LeaveBalance: {
+            leave_type: string;
+            label: string;
+            year: number;
+            year_label: string;
+            entitled: number;
+            carried_in: number;
+            adjusted: number;
+            taken: number;
+            /** @description Asked for, not decided yet: not taken off */
+            waiting: number;
+            remaining: number;
+        };
         LeaveCreateRequest: {
             /**
              * Format: uuid
@@ -4370,6 +4636,42 @@ export interface components {
              * @default false
              */
             cancel_shifts: boolean;
+            /**
+             * @description Approve even if it goes over the balance
+             * @default false
+             */
+            allow_over_balance: boolean;
+        };
+        LeaveEntitlement: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly leave_type: components["schemas"]["LeaveTypeEnum"];
+            readonly leave_type_label: string;
+            /** @description The leave year it starts in */
+            readonly from_year: number;
+            readonly year_label: string;
+            /** @description Days for a full leave year */
+            readonly days: number;
+            /** @description Most unused days taken into the next leave year */
+            readonly max_carry_over: number;
+            /** @description Someone joining during the year gets a share by whole months */
+            readonly prorate_on_joining: boolean;
+            /** @description Off: from this year, this kind of leave has no balance */
+            readonly tracked: boolean;
+            /** @description False for a row started in an earlier year: add a new one instead */
+            readonly can_change: boolean;
+            readonly version: number;
+        };
+        LeaveEntitlementCreateRequest: {
+            leave_type: components["schemas"]["LeaveTypeEnum"];
+            from_year: number;
+            days: number;
+            /** @default 0 */
+            max_carry_over: number;
+            /** @default true */
+            prorate_on_joining: boolean;
+            /** @default true */
+            tracked: boolean;
         };
         LeaveRequest: {
             /** Format: uuid */
@@ -4407,6 +4709,7 @@ export interface components {
             readonly cancel_reason: string;
             /** @description Planned shifts the person would miss (only while waiting for a decision) */
             readonly conflicting_shifts: components["schemas"]["Shift"][];
+            readonly balance_after: number | null;
             readonly version: number;
         };
         /**
@@ -4540,6 +4843,7 @@ export interface components {
             postings: components["schemas"]["MyPosting"][];
             shifts: components["schemas"]["Shift"][];
             leave: components["schemas"]["LeaveRequest"][];
+            leave_balances: components["schemas"]["LeaveBalance"][];
         };
         /** @description One of the person's own sign-ins (HIMS-IAM-016). The session key is never sent. */
         MySession: {
@@ -4695,6 +4999,8 @@ export interface components {
             readonly default_timezone: string;
             readonly default_currency: components["schemas"]["DefaultCurrencyEnum"];
             readonly status: components["schemas"]["OrganizationStatusEnum"];
+            /** @description The month the leave year starts: 1 is January, 4 is April (HIMS-STAFF-013). */
+            readonly leave_year_start_month: number;
             readonly has_logo: boolean;
             readonly letterhead_address: string;
             readonly letterhead_phone: string;
@@ -5040,6 +5346,12 @@ export interface components {
             name?: string;
             is_active?: boolean;
         };
+        PatchedClinicalPrivilegeUpdateRequest: {
+            version?: number;
+            name?: string;
+            description?: string;
+            is_active?: boolean;
+        };
         PatchedDepartmentServiceUpdateRequest: {
             version?: number;
             name?: string;
@@ -5127,6 +5439,13 @@ export interface components {
             actions_taken?: string;
             closure_summary?: string;
         };
+        PatchedLeaveEntitlementUpdateRequest: {
+            version?: number;
+            days?: number;
+            max_carry_over?: number;
+            prorate_on_joining?: boolean;
+            tracked?: boolean;
+        };
         PatchedMessageTemplateUpdateRequest: {
             subject?: string;
             body?: string;
@@ -5149,6 +5468,7 @@ export interface components {
             legal_name?: string;
             display_name?: string;
             default_timezone?: string;
+            leave_year_start_month?: number;
             letterhead_address?: string;
             letterhead_phone?: string;
             letterhead_email?: string;
@@ -5224,6 +5544,11 @@ export interface components {
             /** Format: date */
             left_on?: string | null;
         };
+        PatchedStaffingRequirementUpdateRequest: {
+            version?: number;
+            minimum?: number;
+            is_active?: boolean;
+        };
         PatchedWardUpdateRequest: {
             version?: number;
             name?: string;
@@ -5267,6 +5592,7 @@ export interface components {
          *     * `features.manage` - features.manage
          *     * `features.view` - features.view
          *     * `leave.approve` - leave.approve
+         *     * `leave.policy.manage` - leave.policy.manage
          *     * `locations.manage` - locations.manage
          *     * `locations.view` - locations.view
          *     * `notifications.manage` - notifications.manage
@@ -5286,16 +5612,23 @@ export interface components {
          *     * `staff.credentials.verify` - staff.credentials.verify
          *     * `staff.documents.view` - staff.documents.view
          *     * `staff.manage` - staff.manage
+         *     * `staff.privileges.manage` - staff.privileges.manage
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view";
         Person: {
             /** Format: uuid */
             id: string;
             display_name: string;
             /** Format: email */
             email: string;
+        };
+        PersonBalances: {
+            /** Format: uuid */
+            staff_id: string;
+            name: string;
+            balances: components["schemas"]["LeaveBalance"][];
         };
         /**
          * @description * `enforcing` - enforcing
@@ -5619,6 +5952,7 @@ export interface components {
             can_manage: boolean;
             leave_details: boolean;
             people: components["schemas"]["RotaPerson"][];
+            staffing_gaps: components["schemas"]["StaffingGap"][];
         };
         /**
          * @description * `organization` - Whole hospital
@@ -6003,10 +6337,59 @@ export interface components {
             readonly department_assignments: components["schemas"]["StaffDepartmentAssignment"][];
             readonly qualifications: components["schemas"]["StaffQualification"][];
             readonly credentials: components["schemas"]["StaffCredential"][];
+            readonly privileges: components["schemas"]["StaffPrivilege"][];
             /** @description Licence and qualification documents, newest first (archived ones included). Empty unless documents_visible. */
             readonly documents: components["schemas"]["StaffDocument"][];
             /** @description Whether you may open this person's documents (staff.documents.view) */
             readonly documents_visible: boolean;
+        };
+        StaffPrivilege: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly privilege: string;
+            readonly privilege_name: string;
+            /**
+             * Format: uuid
+             * @description Only in this department. Empty means wherever the person works.
+             */
+            readonly department: string | null;
+            readonly department_name: string | null;
+            /** Format: date */
+            readonly valid_from: string;
+            /**
+             * Format: date
+             * @description Review date. Empty means until it is ended.
+             */
+            readonly valid_until: string | null;
+            /** @description No patient details. */
+            readonly note: string;
+            readonly status: string;
+            /** @description Active, and today is within its dates */
+            readonly is_current: boolean;
+            readonly granted_by_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly ended_at: string | null;
+            readonly ended_by_name: string | null;
+            readonly end_reason: string;
+            readonly version: number;
+        };
+        StaffPrivilegeEndRequest: {
+            version: number;
+            reason: string;
+        };
+        StaffPrivilegeGrantRequest: {
+            /** Format: uuid */
+            privilege: string;
+            /** Format: uuid */
+            department?: string | null;
+            /** Format: date */
+            valid_from?: string | null;
+            /** Format: date */
+            valid_until?: string | null;
+            note?: string;
         };
         StaffQualification: {
             /** Format: uuid */
@@ -6046,6 +6429,72 @@ export interface components {
          * @enum {string}
          */
         StaffTypeEnum: "doctor" | "nurse" | "pharmacist" | "lab_technician" | "radiologist" | "dietitian" | "administrator" | "support";
+        StaffingGap: {
+            /** Format: date */
+            on_date: string;
+            /** Format: uuid */
+            shift_type_id: string;
+            shift_type_name: string;
+            staff_type: string;
+            staff_type_label: string;
+            minimum: number;
+            planned: number;
+            short_by: number;
+        };
+        StaffingRequirement: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly department: string;
+            readonly department_name: string;
+            /** Format: uuid */
+            readonly shift_type: string;
+            readonly shift_type_name: string;
+            /**
+             * @description Who counts. Empty means anyone on the shift.
+             *
+             *     * `doctor` - Doctor
+             *     * `nurse` - Nurse
+             *     * `pharmacist` - Pharmacist
+             *     * `lab_technician` - Laboratory technician
+             *     * `radiologist` - Radiologist
+             *     * `dietitian` - Dietitian
+             *     * `administrator` - Administrator
+             *     * `support` - Support staff
+             * @default
+             */
+            readonly staff_type: components["schemas"]["StaffTypeEnum"];
+            readonly staff_type_label: string;
+            /** @default every_day */
+            readonly applies_on: components["schemas"]["AppliesOnEnum"];
+            readonly applies_on_label: string;
+            readonly minimum: number;
+            readonly is_active: boolean;
+            readonly version: number;
+        };
+        StaffingRequirementCreateRequest: {
+            /** Format: uuid */
+            department: string;
+            /** Format: uuid */
+            shift_type: string;
+            minimum: number;
+            /**
+             * @description Blank means anyone on the shift counts
+             *
+             *     * `doctor` - Doctor
+             *     * `nurse` - Nurse
+             *     * `pharmacist` - Pharmacist
+             *     * `lab_technician` - Laboratory technician
+             *     * `radiologist` - Radiologist
+             *     * `dietitian` - Dietitian
+             *     * `administrator` - Administrator
+             *     * `support` - Support staff
+             * @default
+             */
+            staff_type: components["schemas"]["StaffTypeEnum"] | components["schemas"]["BlankEnum"];
+            /** @default every_day */
+            applies_on: components["schemas"]["AppliesOnEnum"];
+        };
         StartDrillRequest: {
             /**
              * Format: uuid
@@ -7902,6 +8351,77 @@ export interface operations {
             };
         };
     };
+    clinical_privileges_list: {
+        parameters: {
+            query?: {
+                /** @description 'true' = also switched-off entries */
+                include_inactive?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicalPrivilege"][];
+                };
+            };
+        };
+    };
+    clinical_privileges_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClinicalPrivilegeCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicalPrivilege"];
+                };
+            };
+        };
+    };
+    clinical_privileges_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this clinical privilege. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedClinicalPrivilegeUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicalPrivilege"];
+                };
+            };
+        };
+    };
     compliance_requirements_list: {
         parameters: {
             query?: {
@@ -8885,6 +9405,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedIssuedNumberList"];
+                };
+            };
+        };
+    };
+    leave_adjustments_list: {
+        parameters: {
+            query?: {
+                /** @description Staff member id */
+                person?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveAdjustment"][];
+                };
+            };
+        };
+    };
+    leave_adjustments_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveAdjustmentCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveAdjustment"];
+                };
+            };
+        };
+    };
+    leave_balances_retrieve: {
+        parameters: {
+            query: {
+                department: string;
+                /** @description Leave year (default: this one) */
+                year?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentBalances"];
+                };
+            };
+        };
+    };
+    leave_entitlements_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveEntitlement"][];
+                };
+            };
+        };
+    };
+    leave_entitlements_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeaveEntitlementCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveEntitlement"];
+                };
+            };
+        };
+    };
+    leave_entitlements_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this leave entitlement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedLeaveEntitlementUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveEntitlement"];
                 };
             };
         };
@@ -10683,6 +11339,32 @@ export interface operations {
             };
         };
     };
+    staff_privileges_end_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this staff privilege. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffPrivilegeEndRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffPrivilege"];
+                };
+            };
+        };
+    };
     staff_retrieve: {
         parameters: {
             query?: never;
@@ -10885,6 +11567,32 @@ export interface operations {
             };
         };
     };
+    staff_privileges_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this staff member. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffPrivilegeGrantRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffPrivilege"];
+                };
+            };
+        };
+    };
     staff_qualifications_create: {
         parameters: {
             query?: never;
@@ -10934,6 +11642,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffQualification"];
+                };
+            };
+        };
+    };
+    staffing_requirements_list: {
+        parameters: {
+            query?: {
+                department?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffingRequirement"][];
+                };
+            };
+        };
+    };
+    staffing_requirements_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffingRequirementCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffingRequirement"];
+                };
+            };
+        };
+    };
+    staffing_requirements_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this staffing requirement. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedStaffingRequirementUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffingRequirement"];
                 };
             };
         };

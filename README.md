@@ -138,6 +138,17 @@ seconds, with each bed's status history (HIMS-FAC-008):
 - Menu **Message wording**: change the words of every email HIMS sends (HIMS-NOTIF-003):
   [docs/workflows/message-wording.md](docs/workflows/message-wording.md).
 
+## Clinical privileges, minimum staffing and leave balances
+
+The hospital sets every value; HIMS ships no clinical rules or numbers.
+
+- **Staff → Privileges**: what each person may perform (HIMS-STAFF-016):
+  [docs/workflows/clinical-privileges.md](docs/workflows/clinical-privileges.md).
+- **Rota → Minimum staffing**: the fewest people per shift, with warnings and alerts (HIMS-STAFF-015):
+  [docs/workflows/minimum-staffing.md](docs/workflows/minimum-staffing.md).
+- **Leave → Entitlements and Balances**: days per year, carry-over, balances (HIMS-STAFF-013):
+  [docs/workflows/leave-balances.md](docs/workflows/leave-balances.md).
+
 ## Admin console: only from allowed addresses
 
 The admin console answers only the addresses in `HIMS_ADMIN_ALLOWED_NETWORKS`; anyone else gets

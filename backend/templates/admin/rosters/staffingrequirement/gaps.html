@@ -1,0 +1,37 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{# Shifts below the hospital's minimum in the next two weeks (HIMS-STAFF-015). #}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:rosters_staffingrequirement_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; {{ title }}
+</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  {% if rows %}
+  <table>
+    <thead>
+      <tr><th>Day</th><th>Department</th><th>Shift</th><th>Who counts</th><th>Planned</th><th>Minimum</th><th>Short by</th></tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.on_date|date:"D j M" }}</td>
+        <td>{{ row.department }}</td>
+        <td>{{ row.shift_type_name }}</td>
+        <td>{{ row.staff_type_label }}</td>
+        <td>{{ row.planned }}</td>
+        <td>{{ row.minimum }}</td>
+        <td>{{ row.short_by }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No gaps: every shift with a minimum has enough people planned.</p>
+  {% endif %}
+  <p class="help">Planning happens on the Rota page in the app.</p>
+</div>
+{% endblock %}

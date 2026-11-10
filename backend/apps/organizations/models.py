@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 
@@ -36,6 +37,11 @@ class Organization(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
     default_currency = models.CharField(max_length=3, choices=Currency.choices)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
     singleton = models.BooleanField(default=True, editable=False)
+    leave_year_start_month = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+        help_text="The month the leave year starts: 1 is January, 4 is April (HIMS-STAFF-013).",
+    )
     # Letterhead on printouts and emails (HIMS-ORG-006; spec 4.1). All optional.
     logo = models.FileField(
         upload_to=logo_path,

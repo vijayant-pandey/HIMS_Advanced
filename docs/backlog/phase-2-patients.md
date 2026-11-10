@@ -48,3 +48,9 @@ doctor sign-off** (spec 26). Legal items must close before real patient data.
 | ID | Ticket | Status |
 |---|---|---|
 | HIMS-NOTIF-004 | Per-patient opt-out of messages, with consent (spec 4.23; split from HIMS-NOTIF-003 because it needs patients) | To do |
+
+## EPIC HIMS-STAFF: Privileges in clinical work
+
+| ID | Ticket | Status |
+|---|---|---|
+| HIMS-STAFF-017 | Check clinical privileges in clinical actions with `holds_privilege`, and remind HR before a privilege's review date (spec 4.3; gap found in HIMS-STAFF-016, which keeps the record) | To do |

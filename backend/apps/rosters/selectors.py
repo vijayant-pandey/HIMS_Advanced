@@ -9,8 +9,10 @@ from django.utils import timezone
 from apps.access_control.selectors import get_permission_scope
 from apps.features.catalog import F
 from apps.features.services import disabled_facility_ids
+from apps.organizations.dates import hospital_today
 from apps.staff.models import StaffDepartmentAssignment, StaffMember
 
+from . import balances, staffing
 from .models import LeaveRequest, Shift, ShiftType
 
 WORKING = (StaffMember.EmploymentStatus.ACTIVE, StaffMember.EmploymentStatus.ON_LEAVE)
@@ -92,7 +94,10 @@ def rota_week(department, start: date, *, leave_details: bool) -> dict:
                 ],
             }
         )
+    today = hospital_today(department.facility)
     return {
+        # Only from today on: a past gap cannot be filled any more.
+        "staffing_gaps": staffing.gaps(department, max(start, today), end),
         "department_id": department.pk,
         "department_name": department.name,
         "facility_id": department.facility_id,
@@ -129,9 +134,13 @@ def my_schedule(user) -> dict:
     """The signed-in person's own postings, shifts (last week to six weeks ahead) and leave."""
     staff = StaffMember.objects.filter(user=user).first()
     if staff is None:
-        return {"has_staff_record": False, "postings": [], "shifts": [], "leave": []}
-    from apps.organizations.dates import hospital_today
-
+        return {
+            "has_staff_record": False,
+            "postings": [],
+            "shifts": [],
+            "leave": [],
+            "leave_balances": [],
+        }
     today = hospital_today()
     postings = (
         StaffDepartmentAssignment.objects.filter(
@@ -145,6 +154,7 @@ def my_schedule(user) -> dict:
     return {
         "has_staff_record": True,
         "name": f"{staff.given_name} {staff.family_name}",
+        "leave_balances": balances.balances_for([staff])[staff.pk],
         "postings": [
             {
                 "department_id": p.department_id,

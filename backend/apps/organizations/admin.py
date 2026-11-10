@@ -24,6 +24,7 @@ class OrganizationAdmin(HimsModelAdmin):
                     "default_timezone",
                     "default_currency",
                     "status",
+                    "leave_year_start_month",
                 )
             },
         ),

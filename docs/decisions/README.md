@@ -34,3 +34,4 @@ default, awaiting the named approver), **Superseded**.
 | [026](ADR-026-separate-database-users.md) | Separate database users, with rights derived from the database and the data dictionary | Proposed |
 | [027](ADR-027-hosting-on-oracle-cloud.md) | Host on Oracle Cloud (free offering) at the end of the build, instead of AWS | Proposed (PO direction) |
 | [028](ADR-028-message-wording-and-letterhead.md) | Editable message wording with fixed placeholders; letterhead added at delivery | Proposed |
+| [029](ADR-029-leave-balances-worked-out.md) | Leave balances are worked out, never stored | Proposed |

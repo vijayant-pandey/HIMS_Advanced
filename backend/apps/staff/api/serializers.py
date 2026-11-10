@@ -8,6 +8,7 @@ from apps.facilities.models import Department
 from apps.organizations.dates import hospital_today
 
 from ..models import (
+    ClinicalPrivilege,
     Designation,
     QualificationType,
     Specialty,
@@ -15,6 +16,7 @@ from ..models import (
     StaffDepartmentAssignment,
     StaffDocument,
     StaffMember,
+    StaffPrivilege,
     StaffQualification,
 )
 
@@ -62,6 +64,25 @@ class DesignationSerializer(serializers.ModelSerializer):
 
 
 # Add / change catalog entries (HIMS-STAFF-010). Codes are created automatically and never change.
+
+
+class ClinicalPrivilegeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClinicalPrivilege
+        fields = ["id", "code", "name", "description", *CATALOG_FIELDS]
+        read_only_fields = fields
+
+
+class ClinicalPrivilegeCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    description = serializers.CharField(max_length=1000, required=False, allow_blank=True)
+
+
+class ClinicalPrivilegeUpdateSerializer(serializers.Serializer):
+    version = serializers.IntegerField(min_value=1)
+    name = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(max_length=1000, required=False, allow_blank=True)
+    is_active = serializers.BooleanField(required=False)
 
 
 class SpecialtyCreateSerializer(serializers.Serializer):
@@ -324,10 +345,73 @@ class StaffAccountSerializer(serializers.Serializer):
     two_factor_enabled = serializers.BooleanField()
 
 
+class StaffPrivilegeSerializer(serializers.ModelSerializer):
+    privilege_name = serializers.CharField(source="privilege.name", read_only=True)
+    department_name = serializers.CharField(
+        source="department.name", read_only=True, allow_null=True, default=None
+    )
+    status = serializers.CharField(read_only=True)
+    is_current = serializers.SerializerMethodField(
+        help_text="Active, and today is within its dates"
+    )
+    granted_by_name = serializers.CharField(
+        source="granted_by.display_name", read_only=True, allow_null=True, default=None
+    )
+    ended_by_name = serializers.CharField(
+        source="ended_by.display_name", read_only=True, allow_null=True, default=None
+    )
+
+    def get_is_current(self, grant) -> bool:
+        today = hospital_today()
+        return (
+            grant.status == StaffPrivilege.Status.ACTIVE
+            and grant.valid_from <= today
+            and (grant.valid_until is None or grant.valid_until >= today)
+        )
+
+    class Meta:
+        model = StaffPrivilege
+        fields = [
+            "id",
+            "privilege",
+            "privilege_name",
+            "department",
+            "department_name",
+            "valid_from",
+            "valid_until",
+            "note",
+            "status",
+            "is_current",
+            "granted_by_name",
+            "created_at",
+            "ended_at",
+            "ended_by_name",
+            "end_reason",
+            "version",
+        ]
+        read_only_fields = fields
+
+
+class StaffPrivilegeGrantSerializer(serializers.Serializer):
+    privilege = serializers.PrimaryKeyRelatedField(queryset=ClinicalPrivilege.objects.all())
+    department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), required=False, allow_null=True
+    )
+    valid_from = serializers.DateField(required=False, allow_null=True)
+    valid_until = serializers.DateField(required=False, allow_null=True)
+    note = serializers.CharField(max_length=255, required=False, allow_blank=True)
+
+
+class StaffPrivilegeEndSerializer(serializers.Serializer):
+    version = serializers.IntegerField(min_value=1)
+    reason = serializers.CharField(max_length=255)
+
+
 class StaffMemberDetailSerializer(StaffMemberSerializer):
     department_assignments = StaffDepartmentAssignmentSerializer(many=True, read_only=True)
     qualifications = StaffQualificationSerializer(many=True, read_only=True)
     credentials = StaffCredentialSerializer(many=True, read_only=True)
+    privileges = StaffPrivilegeSerializer(many=True, read_only=True)
     documents = serializers.SerializerMethodField(
         help_text="Licence and qualification documents, newest first (archived ones included). "
         "Empty unless documents_visible."
@@ -344,6 +428,7 @@ class StaffMemberDetailSerializer(StaffMemberSerializer):
             "department_assignments",
             "qualifications",
             "credentials",
+            "privileges",
             "documents",
             "documents_visible",
         ]

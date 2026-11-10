@@ -26,6 +26,7 @@ import { ErrorAlert } from "../../components/ErrorAlert";
 import { UserAccessPanel } from "../accessControl/UserAccessPanel";
 import { useCurrentUser } from "../auth/api";
 import { hasOrganizationWidePermission, hasPermission } from "../auth/grants";
+import { PrivilegesSection } from "./Privileges";
 import { useSendInvitation, useStaffMember } from "./api";
 import { DocumentCell } from "./Documents";
 import { EXPIRY, STATUS_COLOR, VERIFICATION } from "./labels";
@@ -124,6 +125,7 @@ export function StaffDetailPage() {
   // Hints only (the API decides): verifying needs a hospital-wide grant (HIMS-STAFF-008).
   const canVerify = hasOrganizationWidePermission(user, "staff.credentials.verify");
   const canSeeAccess = hasPermission(user, "access.roles.view");
+  const canGivePrivileges = hasOrganizationWidePermission(user, "staff.privileges.manage");
   const isSelf = !!staff?.user && staff.user === user?.id;
 
   if (isPending) return <LinearProgress />;
@@ -174,6 +176,7 @@ export function StaffDetailPage() {
         <Tab label={`Departments (${current.length})`} />
         <Tab label={`Qualifications (${staff.qualifications.length})`} />
         <Tab label={`Licences (${staff.credentials.length})`} />
+        <Tab label={`Privileges (${staff.privileges.filter((p) => p.status === "active").length})`} />
         {canSeeAccess && staff.user && <Tab label="Access" />}
       </Tabs>
 
@@ -425,7 +428,9 @@ export function StaffDetailPage() {
         </Section>
       )}
 
-      {tab === 3 && staff.user && (
+      {tab === 3 && <PrivilegesSection staff={staff} canManage={canGivePrivileges} isSelf={isSelf} />}
+
+      {tab === 4 && staff.user && (
         <Section title="Access to HIMS">
           <UserAccessPanel userId={staff.user} personName={name} />
         </Section>

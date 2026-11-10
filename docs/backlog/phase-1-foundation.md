@@ -98,10 +98,10 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-STAFF-010 | Catalog screens: designations, specialties, qualification types (add/edit/deactivate in the app) | Done |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility; staff documents a separate permission ([how-to](../workflows/staff-visibility.md)) | Done |
 | HIMS-STAFF-012 | Shift schedules, leave and on-call rotations (spec 4.3): Rota, Leave and My schedule pages, admin console, no double booking enforced by the database ([design](../architecture/data-architecture/rotas-and-leave.md), [ADR-024](../decisions/ADR-024-rotas-no-overlap-in-the-database.md)) | Done |
-| HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) (gap found in HIMS-STAFF-012) | To do (🔓 unblocked 2026-11-08: the hospital sets the entitlements) |
+| HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) (gap found in HIMS-STAFF-012) | Done ([leave balances](../workflows/leave-balances.md)) |
 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head (gap found in HIMS-STAFF-012) | To do (when hospitals ask) |
-| HIMS-STAFF-015 | Minimum staffing per shift and alerts for gaps (gap found in HIMS-STAFF-012) | To do (🔓 unblocked 2026-11-08: the hospital sets the numbers) |
-| HIMS-STAFF-016 | Clinical privileges: what each doctor may perform, kept by the hospital (spec 4.3; unblocked 2026-11-08) | To do |
+| HIMS-STAFF-015 | Minimum staffing per shift and alerts for gaps (gap found in HIMS-STAFF-012) | Done ([minimum staffing](../workflows/minimum-staffing.md)) |
+| HIMS-STAFF-016 | Clinical privileges: what each doctor may perform, kept by the hospital (spec 4.3; unblocked 2026-11-08) | Done ([clinical privileges](../workflows/clinical-privileges.md)); checking them in clinical actions is HIMS-STAFF-017 in the [Phase 2 backlog](phase-2-patients.md) |
 | HIMS-STAFF-011 | Decide "today" by the hospital's time zone, not UTC: a licence that expired yesterday showed as "expiring soon" until 5:30 am in India (gap found in HIMS-SEC-012); also reviews, audit day search, postings, emails ([how-to](../workflows/dates-and-time-zones.md)) | Done |
 | HIMS-STAFF-009 | Designation catalog (IN/US, junior→senior), extended specialty/qualification catalogs, administrative system roles, RBAC document | Done |
 
