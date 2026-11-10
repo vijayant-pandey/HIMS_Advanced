@@ -26,6 +26,7 @@ class P:
     STAFF_MANAGE = "staff.manage"
     STAFF_CREDENTIALS_VERIFY = "staff.credentials.verify"
     STAFF_DOCUMENTS_VIEW = "staff.documents.view"
+    STAFF_PRIVILEGES_MANAGE = "staff.privileges.manage"
     ROLES_VIEW = "access.roles.view"
     ROLES_MANAGE = "access.roles.manage"
     ROLE_ASSIGNMENTS_MANAGE = "access.assignments.manage"
@@ -42,6 +43,7 @@ class P:
     ROTA_VIEW = "rota.view"
     ROTA_MANAGE = "rota.manage"
     LEAVE_APPROVE = "leave.approve"
+    LEAVE_POLICY_MANAGE = "leave.policy.manage"
     RECOVERY_VIEW = "recovery.view"
     RECOVERY_MANAGE = "recovery.manage"
     JOBS_VIEW = "platform.jobs.view"
@@ -90,6 +92,8 @@ PERMISSIONS: dict[str, str] = {
     P.NOTIFICATIONS_VIEW: "See the emails and SMS HIMS has sent and whether they arrived",
     P.NOTIFICATIONS_MANAGE: "Send failed emails and SMS again; send a test message",
     P.MESSAGE_TEMPLATES_MANAGE: "Change the wording of the messages HIMS sends",
+    P.STAFF_PRIVILEGES_MANAGE: "Give and end clinical privileges (what a person may perform)",
+    P.LEAVE_POLICY_MANAGE: "Set leave entitlements and adjust a person's leave balance",
     P.EQUIPMENT_VIEW: "See the equipment register: what, where, status and service dates",
     P.EQUIPMENT_MANAGE: "Add and change equipment, its status and its service records",
     P.RECOVERY_VIEW: "See backups and the results of restore drills (evidence)",
@@ -117,6 +121,8 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.FEATURES_MANAGE,
         P.STAFF_MANAGE,
         P.STAFF_CREDENTIALS_VERIFY,
+        P.STAFF_PRIVILEGES_MANAGE,
+        P.LEAVE_POLICY_MANAGE,
         P.ROLES_MANAGE,
         P.ROLE_ASSIGNMENTS_MANAGE,
         P.ACCESS_REVIEWS_MANAGE,
@@ -188,11 +194,13 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.STAFF_MANAGE,
             P.STAFF_CREDENTIALS_VERIFY,
             P.STAFF_DOCUMENTS_VIEW,
+            P.STAFF_PRIVILEGES_MANAGE,
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
             P.CATALOGS_MANAGE,
             P.ROTA_VIEW,
             P.LEAVE_APPROVE,
+            P.LEAVE_POLICY_MANAGE,
         ],
     },
     "department-head": {

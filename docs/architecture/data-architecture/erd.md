@@ -48,9 +48,15 @@ erDiagram
     staff_credentials
     staff_documents
     staff_credential_expiry_alerts
+    clinical_privileges
+    staff_privileges
     shift_types
     shifts
     leave_requests
+    staffing_requirements
+    staffing_gap_alerts
+    leave_entitlements
+    leave_balance_adjustments
     audit_events
     audit_chain_entries
     audit_integrity_checks
@@ -165,6 +171,12 @@ erDiagram
     users |o--o{ staff_documents : "uploaded_by_id"
     users |o--o{ staff_documents : "archived_by_id"
     staff_credentials ||--o{ staff_credential_expiry_alerts : "credential_id"
+    organizations ||--o{ staff_privileges : "organization_id"
+    staff_members ||--o{ staff_privileges : "staff_id"
+    clinical_privileges ||--o{ staff_privileges : "privilege_id"
+    departments |o--o{ staff_privileges : "department_id"
+    users |o--o{ staff_privileges : "granted_by_id"
+    users |o--o{ staff_privileges : "ended_by_id"
     organizations ||--o{ shifts : "organization_id"
     staff_members ||--o{ shifts : "staff_id"
     facilities ||--o{ shifts : "facility_id"
@@ -179,6 +191,15 @@ erDiagram
     users |o--o{ leave_requests : "requested_by_id"
     users |o--o{ leave_requests : "decided_by_id"
     users |o--o{ leave_requests : "cancelled_by_id"
+    organizations ||--o{ staffing_requirements : "organization_id"
+    facilities ||--o{ staffing_requirements : "facility_id"
+    departments ||--o{ staffing_requirements : "department_id"
+    shift_types ||--o{ staffing_requirements : "shift_type_id"
+    departments ||--o{ staffing_gap_alerts : "department_id"
+    shift_types ||--o{ staffing_gap_alerts : "shift_type_id"
+    users |o--o{ leave_entitlements : "updated_by_id"
+    staff_members ||--o{ leave_balance_adjustments : "staff_id"
+    users |o--o{ leave_balance_adjustments : "created_by_id"
     audit_events ||--o| audit_chain_entries : "event_id"
     users |o--o{ compliance_requirements : "reviewed_by_id"
     users |o--o{ compliance_risks : "updated_by_id"
@@ -209,6 +230,7 @@ erDiagram
         varchar default_currency
         varchar status
         boolean singleton
+        smallint leave_year_start_month
         varchar logo
         text letterhead_address
         varchar letterhead_phone
@@ -869,6 +891,35 @@ erDiagram
         timestamptz sent_at
         smallint recipients
     }
+    clinical_privileges {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        varchar code UK
+        varchar name
+        text description
+        boolean is_active
+        boolean is_custom
+    }
+    staff_privileges {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid staff_id FK
+        uuid privilege_id FK
+        uuid department_id FK
+        date valid_from
+        date valid_until
+        varchar note
+        varchar status
+        uuid granted_by_id FK
+        timestamptz ended_at
+        uuid ended_by_id FK
+        varchar end_reason
+    }
     departments
     organizations
     users
@@ -894,6 +945,12 @@ erDiagram
     users |o--o{ staff_documents : "uploaded_by_id"
     users |o--o{ staff_documents : "archived_by_id"
     staff_credentials ||--o{ staff_credential_expiry_alerts : "credential_id"
+    organizations ||--o{ staff_privileges : "organization_id"
+    staff_members ||--o{ staff_privileges : "staff_id"
+    clinical_privileges ||--o{ staff_privileges : "privilege_id"
+    departments |o--o{ staff_privileges : "department_id"
+    users |o--o{ staff_privileges : "granted_by_id"
+    users |o--o{ staff_privileges : "ended_by_id"
 ```
 
 Tables from other domains are shown without columns: `departments`, `organizations`, `users`.
@@ -957,6 +1014,51 @@ erDiagram
         uuid cancelled_by_id FK
         varchar cancel_reason
     }
+    staffing_requirements {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid facility_id FK
+        uuid department_id FK
+        uuid shift_type_id FK
+        varchar staff_type
+        varchar applies_on
+        smallint minimum
+        boolean is_active
+    }
+    staffing_gap_alerts {
+        bigint id PK
+        uuid department_id FK
+        uuid shift_type_id FK
+        varchar staff_type
+        date on_date
+        timestamptz sent_at
+    }
+    leave_entitlements {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        varchar leave_type
+        smallint from_year
+        smallint days
+        smallint max_carry_over
+        boolean prorate_on_joining
+        boolean tracked
+        uuid updated_by_id FK
+    }
+    leave_balance_adjustments {
+        uuid id PK
+        uuid staff_id FK
+        varchar leave_type
+        smallint leave_year
+        smallint days
+        varchar reason
+        uuid created_by_id FK
+        timestamptz created_at
+    }
     departments
     facilities
     organizations
@@ -976,6 +1078,15 @@ erDiagram
     users |o--o{ leave_requests : "requested_by_id"
     users |o--o{ leave_requests : "decided_by_id"
     users |o--o{ leave_requests : "cancelled_by_id"
+    organizations ||--o{ staffing_requirements : "organization_id"
+    facilities ||--o{ staffing_requirements : "facility_id"
+    departments ||--o{ staffing_requirements : "department_id"
+    shift_types ||--o{ staffing_requirements : "shift_type_id"
+    departments ||--o{ staffing_gap_alerts : "department_id"
+    shift_types ||--o{ staffing_gap_alerts : "shift_type_id"
+    users |o--o{ leave_entitlements : "updated_by_id"
+    staff_members ||--o{ leave_balance_adjustments : "staff_id"
+    users |o--o{ leave_balance_adjustments : "created_by_id"
 ```
 
 Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `staff_members`, `users`.

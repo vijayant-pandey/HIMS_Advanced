@@ -13,6 +13,7 @@ UPDATABLE_FIELDS = (
     "legal_name",
     "display_name",
     "default_timezone",
+    "leave_year_start_month",
     "letterhead_address",
     "letterhead_phone",
     "letterhead_email",

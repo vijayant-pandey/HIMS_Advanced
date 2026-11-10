@@ -86,3 +86,7 @@ or active wards cannot be set to inactive, and the console shows the same plain-
 ## Update (2026-11-09, Hospital setup group)
 
 The console gained **Equipment** and **Equipment service records** (status and visits go through the app's rules; existing visits are read-only), **Message templates** (same checks as the app, confirm-it's-you, and an action to go back to the standard wording) and the **letterhead** fields on the hospital's page, with a logo preview served through a console page because files have no public address. A check of what #42 and #43 added found nothing else missing.
+
+## Update (2026-11-09, Staff group)
+
+The console gained **Clinical privileges**, **Staff privileges**, **Staffing requirements** with a **Staffing gaps** page, **Staffing gap alerts**, **Leave entitlements** and **Leave balance adjustments**, an action to approve leave over the balance, the leave year on the hospital's page, and read-only privilege and balance sections on the staff page. These sections are read-only fields rather than inlines, so saving the staff page needs nothing extra. Everything goes through the app's rules; a refusal shows on the form.

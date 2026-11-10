@@ -42,6 +42,7 @@ import {
   useUpdateShiftType,
 } from "./api";
 import { WEEKDAYS, addDays, clock, formatDay, mondayOf } from "./labels";
+import { MinimumStaffingDialog, StaffingGaps } from "./MinimumStaffing";
 
 /** HIMS-STAFF-012: one department's week, who is on call now, and the hospital's shift types. */
 export function RotaPage() {
@@ -105,6 +106,7 @@ function WeekTab() {
   const [adding, setAdding] = useState<{ person?: RotaPerson; day?: string } | null>(null);
   const [cancelling, setCancelling] = useState<Shift | null>(null);
   const [copying, setCopying] = useState(false);
+  const [minimums, setMinimums] = useState(false);
   const data = week.data;
 
   return (
@@ -128,6 +130,7 @@ function WeekTab() {
         <Button onClick={() => setStart(mondayOf(localDate()))}>This week</Button>
         <Button onClick={() => setStart(addDays(start, 7))}>Next week</Button>
         <Box sx={{ flexGrow: 1 }} />
+        {data && <Button onClick={() => setMinimums(true)}>Minimum staffing</Button>}
         {data?.can_manage && (
           <>
             <Button variant="outlined" onClick={() => setCopying(true)}>
@@ -143,7 +146,9 @@ function WeekTab() {
       {week.error && <ErrorAlert error={week.error} />}
       {(departments.isPending || week.isFetching) && <LinearProgress aria-label="Loading the rota" />}
       {!departments.isPending && active.length === 0 && <Alert severity="info">No departments to show.</Alert>}
+      {data && <StaffingGaps week={data} />}
       {data && <WeekGrid week={data} onAdd={setAdding} onCancel={setCancelling} />}
+      {data && minimums && <MinimumStaffingDialog week={data} onClose={() => setMinimums(false)} />}
       {data && adding && <AddShiftsDialog week={data} initial={adding} onClose={() => setAdding(null)} />}
       {cancelling && <CancelShiftDialog shift={cancelling} onClose={() => setCancelling(null)} />}
       {data && copying && <CopyWeekDialog week={data} onClose={() => setCopying(false)} />}

@@ -320,6 +320,26 @@ MESSAGES: tuple[MessageSpec, ...] = (
         required=("reason",),
     ),
     MessageSpec(
+        code="rosters.staffing_gaps",
+        name="Staffing gaps coming up",
+        when="Shifts in the next 7 days have fewer people than the hospital's minimum.",
+        category="staff",
+        subject="{{department}}: {{count}} shift(s) below the minimum in the next 7 days",
+        body=(
+            "These shifts in {{department}} have fewer people than the hospital's minimum:\n\n"
+            "{{gaps}}\n\n"
+            "Open the Rota page to plan more people (sign-in needed): {{link}}\n"
+        ),
+        variables=(
+            Variable("department", "The department", "Cardiology"),
+            Variable("count", "How many gaps", "1"),
+            Variable("gaps", "The list of gaps", "- Mon 16 Nov, Night: 1 of 2 nurse planned"),
+            Variable("link", "The Rota page", "https://hims.example/rota"),
+            HOSPITAL,
+        ),
+        required=frozenset({"gaps"}),
+    ),
+    MessageSpec(
         code="staff.licence_expiry_hr",
         name="Licences expiring (for HR)",
         when="Staff licences are expiring or have expired (daily summary to HR).",

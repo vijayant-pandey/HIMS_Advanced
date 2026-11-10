@@ -75,8 +75,11 @@ facility or department through a current posting ([staff visibility](../../workf
 | Numbering, feature settings | ✅ change | change, own facility | — | — | — | — | — |
 | Staff, qualifications, licences, catalogs (Restricted) | ✅ change | view, staff posted at own facility | ✅ change and verify | view, staff posted in own department | — | — | — |
 | Staff documents: licence and certificate copies (Restricted) | ✅ open | — | ✅ open | — | — | — | — |
+| Clinical privileges (Restricted notes; HIMS-STAFF-016) | ✅ give and end | view, staff posted at own facility | ✅ give and end | view, staff posted in own department | — | — | — |
 | Rotas: shifts, on-call (Restricted: who is away, not why) | ✅ plan | — | view | plan, own department | — | view | — |
+| Minimum staffing (HIMS-STAFF-015) | ✅ set | — | view | set, own department | — | view | — |
 | Leave requests incl. kind of leave (Restricted) | ✅ decide | — | ✅ decide and record | decide, own department (never their own) | — | own only | — |
+| Leave balances and entitlements (Restricted; HIMS-STAFF-013) | ✅ set and adjust | — | ✅ set and adjust | view balances, own department | — | own only | — |
 | Accounts, roles, access, cover (Restricted) | ✅ change | — | — | — | — | — | — |
 | Access reviews | ✅ decide | — | — | — | — | — | read and download |
 | Audit log and integrity (Restricted) | **no** (separation of duties) | — | — | — | — | — | ✅ read |

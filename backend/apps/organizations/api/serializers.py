@@ -21,6 +21,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "default_timezone",
             "default_currency",
             "status",
+            "leave_year_start_month",
             "has_logo",
             "letterhead_address",
             "letterhead_phone",
@@ -42,6 +43,7 @@ class OrganizationUpdateSerializer(serializers.Serializer):
     default_timezone = serializers.CharField(
         max_length=64, required=False, validators=[validate_timezone]
     )
+    leave_year_start_month = serializers.IntegerField(min_value=1, max_value=12, required=False)
     letterhead_address = serializers.CharField(max_length=500, required=False, allow_blank=True)
     letterhead_phone = serializers.CharField(max_length=40, required=False, allow_blank=True)
     letterhead_email = serializers.EmailField(required=False, allow_blank=True)

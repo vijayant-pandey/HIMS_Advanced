@@ -71,6 +71,10 @@ def _configure_queues_and_schedule(sender, **kwargs):
             "task": "notifications.credential_expiry_alerts",
             "schedule": timedelta(hours=24),
         },
+        "staffing-gap-alerts": {
+            "task": "notifications.staffing_gap_alerts",
+            "schedule": timedelta(hours=24),
+        },
         "access-review-reminders": {
             "task": "notifications.access_review_reminders",
             "schedule": timedelta(hours=24),

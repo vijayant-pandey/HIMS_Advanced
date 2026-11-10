@@ -13,6 +13,7 @@ const ORGANIZATION: Organization = {
   default_timezone: "Asia/Kolkata",
   default_currency: "INR",
   status: "active",
+  leave_year_start_month: 1,
   has_logo: false,
   letterhead_address: "1 Synthetic Road",
   letterhead_phone: "",

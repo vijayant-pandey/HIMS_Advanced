@@ -363,3 +363,77 @@ class CredentialExpiryAlert(models.Model):
     def __str__(self) -> str:
         stage = "expired" if self.days_before == 0 else f"{self.days_before} days before"
         return f"{self.credential} ({stage})"
+
+
+class ClinicalPrivilege(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
+    """Something the hospital lets people perform (HIMS-STAFF-016; spec 4.3). The hospital writes
+    this list: HIMS ships none, because what is privileged is a clinical decision."""
+
+    code = models.SlugField(max_length=64, unique=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, max_length=1000)
+    is_active = models.BooleanField(default=True)
+    is_custom = models.BooleanField(default=True, help_text="Added by this hospital.")
+
+    class Meta:
+        db_table = "clinical_privileges"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class StaffPrivilege(OrganizationOwnedModel, VersionedModel):
+    """One person holding one privilege, from a day and perhaps until a review date. Separate from
+    degree, designation and specialty (spec 4.3). Never edited or deleted: ended with a reason."""
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        ENDED = "ended", "Ended"
+
+    staff = models.ForeignKey(StaffMember, on_delete=models.PROTECT, related_name="privileges")
+    privilege = models.ForeignKey(
+        ClinicalPrivilege, on_delete=models.PROTECT, related_name="grants"
+    )
+    department = models.ForeignKey(
+        "facilities.Department",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Only in this department. Empty means wherever the person works.",
+    )
+    valid_from = models.DateField()
+    valid_until = models.DateField(
+        null=True, blank=True, help_text="Review date. Empty means until it is ended."
+    )
+    note = models.CharField(max_length=255, blank=True, help_text="No patient details.")
+    status = models.CharField(max_length=8, choices=Status.choices, default=Status.ACTIVE)
+    granted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    end_reason = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        db_table = "staff_privileges"
+        ordering = ["-valid_from"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["staff", "privilege", "department"],
+                condition=Q(status="active"),
+                nulls_distinct=False,
+                name="staff_privilege_one_active",
+            ),
+            models.CheckConstraint(
+                condition=Q(valid_until__isnull=True) | Q(valid_until__gte=F("valid_from")),
+                name="staff_privilege_dates_in_order",
+            ),
+        ]
+        indexes = [models.Index(fields=["staff", "status"], name="staff_privilege_person_idx")]
+
+    def __str__(self) -> str:
+        return f"{self.staff}: {self.privilege}"

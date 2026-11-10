@@ -33,10 +33,11 @@ one**, before a sensitive action.
 | Suspend or terminate staff (ends their access) | Staff | `staff`: update, only for those two statuses |
 | Change a Feature setting | Features | `features`: change |
 | Change the wording of a message, or go back to the standard (HIMS-NOTIF-003) | Message wording | `message-templates`: update, reset |
+| Give or end a clinical privilege (HIMS-STAFF-016) | Staff | `staff`: privileges; `staff-privileges`: end |
 
 **In the admin console** the same areas ask before saving or running an action: users (including
 setting a password), roles, role assignments, access reviews and their items, cover, staff,
-feature settings, message wording, "Make a backup now", and **downloading an access review or audit events as CSV**
+feature settings, message wording, staff privileges, "Make a backup now", and **downloading an access review or audit events as CSV**
 (added 2026-11-09, HIMS-SEC-015). Looking does not ask. Nothing is changed until the person has confirmed, and they
 then repeat what they were doing.
 

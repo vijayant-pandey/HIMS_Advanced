@@ -20,6 +20,8 @@ import type {
   StaffMemberCreateRequest,
   StaffMemberDetail,
   StaffMemberUpdateRequest,
+  StaffPrivilege,
+  StaffPrivilegeGrantRequest,
   StaffQualification,
   StaffQualificationRequest,
 } from "../../api/types";
@@ -181,6 +183,19 @@ export function useArchiveDocument(id: string) {
   );
 }
 
+export function useGrantPrivilege(staffId: string, idempotencyKey: string) {
+  return useStaffMutation<StaffPrivilege, StaffPrivilegeGrantRequest>((body) =>
+    api.post<StaffPrivilege>(`/staff/${staffId}/privileges/`, body, { idempotencyKey }),
+  );
+}
+
+export function useEndPrivilege(id: string) {
+  return useStaffMutation<StaffPrivilege, { version: number; reason: string }>(
+    (body) => api.post<StaffPrivilege>(`/staff-privileges/${id}/end/`, body),
+    { refreshOnError: true },
+  );
+}
+
 export function useExpiringCredentials(within: number, includeExpired: boolean) {
   return useQuery<ExpiringCredential[], ApiError>({
     queryKey: [...staffKey, "expiring", { within, includeExpired }],
@@ -194,7 +209,7 @@ export function useExpiringCredentials(within: number, includeExpired: boolean) 
 
 // --- Catalogs: job titles, specialties, qualification types (HIMS-STAFF-010) ------------------
 
-export type CatalogKind = "designations" | "specialties" | "qualification-types";
+export type CatalogKind = "designations" | "specialties" | "qualification-types" | "clinical-privileges";
 
 /** Everything in one catalog, including switched-off entries (for the Catalogs page). */
 export function useCatalog<T>(kind: CatalogKind) {

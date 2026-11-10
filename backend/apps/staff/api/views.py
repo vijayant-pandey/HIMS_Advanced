@@ -15,8 +15,9 @@ from common.exceptions import ConflictError
 from common.idempotency.decorators import idempotent
 from common.permissions import FACILITY, ORGANIZATION, required_permission
 
-from .. import catalogs, documents, expiry, services
+from .. import catalogs, documents, expiry, privileges, services
 from ..models import (
+    ClinicalPrivilege,
     CredentialExpiryAlert,
     Designation,
     QualificationType,
@@ -24,10 +25,14 @@ from ..models import (
     StaffCredential,
     StaffDocument,
     StaffMember,
+    StaffPrivilege,
 )
 from ..selectors import limit_to_visible, scope_context
 from .serializers import (
     ArchiveSerializer,
+    ClinicalPrivilegeCreateSerializer,
+    ClinicalPrivilegeSerializer,
+    ClinicalPrivilegeUpdateSerializer,
     CredentialVerificationSerializer,
     DesignationCreateSerializer,
     DesignationSerializer,
@@ -49,6 +54,9 @@ from .serializers import (
     StaffMemberDetailSerializer,
     StaffMemberSerializer,
     StaffMemberUpdateSerializer,
+    StaffPrivilegeEndSerializer,
+    StaffPrivilegeGrantSerializer,
+    StaffPrivilegeSerializer,
     StaffQualificationSerializer,
 )
 
@@ -224,9 +232,36 @@ class _StaffScopeMixin:
         return scope_context(self.request.user, required_permission(self.request, self), staff_id)
 
 
+class ClinicalPrivilegeViewSet(_CatalogViewSet):
+    """What the hospital lets people perform (HIMS-STAFF-016). The hospital writes the list."""
+
+    kind = "clinical_privilege"
+    model = ClinicalPrivilege
+    serializer_class = ClinicalPrivilegeSerializer
+    create_serializer = ClinicalPrivilegeCreateSerializer
+    update_serializer = ClinicalPrivilegeUpdateSerializer
+
+    @extend_schema(parameters=[INCLUDE_INACTIVE])
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        request=ClinicalPrivilegeCreateSerializer, responses={201: ClinicalPrivilegeSerializer}
+    )
+    @idempotent("catalogs.clinical_privileges.create")
+    def create(self, request):
+        return super().create(request)
+
+    @extend_schema(request=ClinicalPrivilegeUpdateSerializer, responses=ClinicalPrivilegeSerializer)
+    def partial_update(self, request, pk=None):
+        return super().partial_update(request, pk)
+
+
 class StaffMemberViewSet(
     _StaffScopeMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
 ):
+    # Who may perform what: a stolen session must not change it (HIMS-IAM-007).
+    sensitive_actions = ("add_privilege",)
     scoped_reads = frozenset({"list", "retrieve", "documents"})
     required_permissions = {
         "list": P.STAFF_VIEW,
@@ -241,6 +276,7 @@ class StaffMemberViewSet(
         "verify_qualification": P.STAFF_CREDENTIALS_VERIFY,
         "documents": P.STAFF_DOCUMENTS_VIEW,
         "upload_document": P.STAFF_MANAGE,
+        "add_privilege": P.STAFF_PRIVILEGES_MANAGE,
     }
     http_method_names = ["get", "post", "patch", "head"]
 
@@ -268,6 +304,10 @@ class StaffMemberViewSet(
                 "qualifications__specialty",
                 "qualifications__verified_by",
                 "credentials__verified_by",
+                "privileges__privilege",
+                "privileges__department",
+                "privileges__granted_by",
+                "privileges__ended_by",
                 Prefetch("documents", StaffDocument.objects.select_related("uploaded_by")),
             )
         search = self.request.query_params.get("search", "").strip()
@@ -366,6 +406,19 @@ class StaffMemberViewSet(
         return Response(
             StaffQualificationSerializer(qualification).data, status=status.HTTP_201_CREATED
         )
+
+    @extend_schema(request=StaffPrivilegeGrantSerializer, responses={201: StaffPrivilegeSerializer})
+    @action(detail=True, methods=["post"], url_path="privileges")
+    @idempotent("staff.privileges.create")
+    def add_privilege(self, request, pk=None):
+        """Give this person a clinical privilege. Nobody gives one to themselves."""
+        staff = self.get_object()
+        serializer = StaffPrivilegeGrantSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        grant = privileges.grant_privilege(
+            actor=request.user, staff=staff, request=request, **serializer.validated_data
+        )
+        return Response(StaffPrivilegeSerializer(grant).data, status=status.HTTP_201_CREATED)
 
     @extend_schema(request=StaffCredentialSerializer, responses={201: StaffCredentialSerializer})
     @action(detail=True, methods=["post"], url_path="credentials")
@@ -529,6 +582,29 @@ class StaffCredentialViewSet(_StaffScopeMixin, mixins.RetrieveModelMixin, viewse
             **serializer.validated_data,
         )
         return Response(StaffCredentialSerializer(credential).data)
+
+
+class StaffPrivilegeViewSet(_StaffScopeMixin, viewsets.GenericViewSet):
+    """End a clinical privilege, with a reason. It stays on record."""
+
+    serializer_class = StaffPrivilegeSerializer
+    staff_field = "staff_id"
+    required_permissions = {"end": P.STAFF_PRIVILEGES_MANAGE}
+    sensitive_actions = ("end",)
+
+    def get_queryset(self):
+        return self.visible(StaffPrivilege.objects.select_related("privilege"))
+
+    @extend_schema(request=StaffPrivilegeEndSerializer, responses=StaffPrivilegeSerializer)
+    @action(detail=True, methods=["post"])
+    def end(self, request, pk=None):
+        grant = self.get_object()
+        serializer = StaffPrivilegeEndSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        grant = privileges.end_privilege(
+            actor=request.user, grant_id=grant.pk, request=request, **serializer.validated_data
+        )
+        return Response(StaffPrivilegeSerializer(grant).data)
 
 
 class StaffDocumentViewSet(_StaffScopeMixin, viewsets.GenericViewSet):

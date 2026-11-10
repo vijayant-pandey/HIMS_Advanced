@@ -156,6 +156,16 @@ LIFECYCLE: dict[str, str] = {
     "staff_credential_expiry_alerts": "One per credential, stage and expiry date (sent once).",
     "shift_types": "Catalog: never deleted; switched off (`is_active`). New times apply to shifts "
     "planned afterwards.",
+    "clinical_privileges": "Catalog the hospital writes: never deleted; switched off "
+    "(`is_active`).",
+    "staff_privileges": "Never edited or deleted; ended with who, when and why, so the record "
+    "shows who could perform what on any past day.",
+    "staffing_requirements": "Never deleted; switched off (`is_active`). Changes in the audit log.",
+    "staffing_gap_alerts": "One row per gap emailed, so each is told once. Holds no names.",
+    "leave_entitlements": "Never deleted; rows started in an earlier year cannot change, so past "
+    "balances stay as they were.",
+    "leave_balance_adjustments": "Append-only (database trigger); a wrong one is corrected by "
+    "another.",
     "shifts": "Never deleted; cancelled with a reason. Past shifts cannot be changed.",
     "leave_requests": "Never deleted; requested -> approved, refused or cancelled, each with who "
     "and when. Retention period: decision pending with the other HR records (🔒 LEGAL).",
@@ -253,6 +263,9 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "bed_status_changes.reason": (INTERNAL, "Bed status reason (no patient details)"),
     "organizations.letterhead_email": (RESTRICTED, "Contact"),
     "organizations.logo": (INTERNAL, "Hospital logo"),
+    "staff_privileges.note": (RESTRICTED, "Staff record note (no patient details)"),
+    "staff_privileges.end_reason": (RESTRICTED, "Staff record note (no patient details)"),
+    "leave_balance_adjustments.reason": (RESTRICTED, "HR note (no medical details)"),
     "equipment.status_reason": (INTERNAL, "Equipment status reason (no patient details)"),
     "equipment.notes": (INTERNAL, "Equipment notes (no patient details)"),
     "equipment_service_records.notes": (INTERNAL, "Visit notes (no patient details)"),

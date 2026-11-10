@@ -14,7 +14,7 @@ from apps.audit.services import AuditAction, model_changes, record_audit_event, 
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
-from .models import Designation, QualificationType, Specialty
+from .models import ClinicalPrivilege, Designation, QualificationType, Specialty
 
 CATALOGS = {
     "designation": (
@@ -23,6 +23,7 @@ CATALOGS = {
     ),
     "specialty": (Specialty, ("name", "is_active")),
     "qualification_type": (QualificationType, ("name", "category", "country", "is_active")),
+    "clinical_privilege": (ClinicalPrivilege, ("name", "description", "is_active")),
 }
 
 

@@ -4,16 +4,32 @@ Shifts and leave are added through the same services as the app, so every rule a
 too. They are never edited afterwards: cancel and plan again, or decide with the actions.
 """
 
+from datetime import timedelta
+
 from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.forms.models import construct_instance
+from django.template.response import TemplateResponse
+from django.urls import path
 
-from common.admin.options import HimsModelAdmin
+from apps.facilities.models import Department
+from apps.organizations.dates import hospital_today
+from common.admin.options import HimsModelAdmin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
-from . import services
-from .models import LeaveRequest, Shift, ShiftType
+from . import balances, services, staffing
+from .models import (
+    LeaveBalanceAdjustment,
+    LeaveEntitlement,
+    LeaveRequest,
+    Shift,
+    ShiftType,
+    StaffingGapAlert,
+    StaffingRequirement,
+)
+
+GAP_PAGE_DAYS = 14
 
 
 @admin.register(ShiftType)
@@ -168,6 +184,7 @@ class LeaveRequestAdmin(HimsModelAdmin):
     actions = [
         "approve_selected",
         "approve_cancelling_shifts",
+        "approve_over_balance",
         "reject_selected",
         "cancel_selected",
     ]
@@ -256,6 +273,22 @@ class LeaveRequestAdmin(HimsModelAdmin):
             "approved, shifts cancelled",
         )
 
+    @admin.action(description="Approve selected leave even if it goes over the balance")
+    def approve_over_balance(self, request, queryset):
+        self._each(
+            request,
+            queryset,
+            lambda leave: services.approve_leave(
+                actor=request.user,
+                leave_id=leave.pk,
+                version=leave.version,
+                note="Approved over the balance in the admin console",
+                allow_over_balance=True,
+                request=request,
+            ),
+            "approved",
+        )
+
     @admin.action(description="Refuse selected leave")
     def reject_selected(self, request, queryset):
         self._each(
@@ -286,3 +319,190 @@ class LeaveRequestAdmin(HimsModelAdmin):
             ),
             "cancelled",
         )
+
+
+@admin.register(StaffingRequirement)
+class StaffingRequirementAdmin(HimsModelAdmin):
+    """The hospital's minimum people per shift (HIMS-STAFF-015). A gap warns; it never blocks."""
+
+    change_list_template = "admin/rosters/staffingrequirement/change_list.html"
+    list_display = ("department", "shift_type", "staff_type", "applies_on", "minimum", "is_active")
+    list_filter = ("is_active", "department", "shift_type")
+    fields = (
+        "department",
+        "shift_type",
+        "staff_type",
+        "applies_on",
+        "minimum",
+        "is_active",
+        "version",
+    )
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        return (
+            [*readonly, "department", "shift_type", "staff_type", "applies_on"] if obj else readonly
+        )
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.organization_id = obj.department.organization_id
+            obj.facility_id = obj.department.facility_id
+        super().save_model(request, obj, form, change)
+
+    def get_urls(self):
+        return [
+            path(
+                "gaps/",
+                self.admin_site.admin_view(self.gaps_view),
+                name="rosters_staffingrequirement_gaps",
+            ),
+            *super().get_urls(),
+        ]
+
+    def gaps_view(self, request):
+        """Every shift below the minimum in the next two weeks, department by department."""
+        departments = Department.objects.filter(
+            pk__in=StaffingRequirement.objects.filter(is_active=True).values("department_id")
+        ).select_related("facility")
+        rows = []
+        for department in departments.order_by("name"):
+            first = hospital_today(department.facility)
+            last = first + timedelta(days=GAP_PAGE_DAYS - 1)
+            rows += [
+                {"department": department.name, **gap}
+                for gap in staffing.gaps(department, first, last)
+            ]
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Staffing gaps in the next two weeks",
+            "rows": rows,
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/rosters/staffingrequirement/gaps.html", context)
+
+
+@admin.register(StaffingGapAlert)
+class StaffingGapAlertAdmin(ReadOnlyModelAdmin):
+    """Gaps already emailed to planners, so each is told once."""
+
+    list_display = ("on_date", "department", "shift_type", "staff_type", "sent_at")
+    list_filter = ("department", "shift_type")
+    date_hierarchy = "on_date"
+
+
+class LeaveEntitlementForm(forms.ModelForm):
+    class Meta:
+        model = LeaveEntitlement
+        fields = (
+            "leave_type",
+            "from_year",
+            "days",
+            "max_carry_over",
+            "prorate_on_joining",
+            "tracked",
+        )
+
+    def clean_from_year(self):
+        year = self.cleaned_data["from_year"]
+        if self.instance._state.adding and year < balances.current_year():
+            raise ValidationError(
+                "An entitlement starts this leave year or later. For balances brought from "
+                "before, add a leave balance adjustment."
+            )
+        return year
+
+
+@admin.register(LeaveEntitlement)
+class LeaveEntitlementAdmin(HimsModelAdmin):
+    """Same rule as the app: rows started in an earlier year stay as they are, so past balances
+    do not change. Add a new one from this year instead."""
+
+    form = LeaveEntitlementForm
+    list_display = ("leave_type", "from_year", "days", "max_carry_over", "tracked", "updated_by")
+    list_filter = ("leave_type", "tracked")
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        return [*readonly, "leave_type", "from_year"] if obj else readonly
+
+    def has_change_permission(self, request, obj=None):
+        allowed = super().has_change_permission(request, obj)
+        return allowed and (obj is None or obj.from_year >= balances.current_year())
+
+    def save_model(self, request, obj, form, change):
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+class LeaveAdjustmentForm(forms.ModelForm):
+    actor = None  # set by the admin for this request
+
+    class Meta:
+        model = LeaveBalanceAdjustment
+        fields = ("staff", "leave_type", "leave_year", "days", "reason")
+
+    def _post_clean(self):
+        # Only copy the values: balances.check_adjustment (below) applies every rule.
+        self.instance = construct_instance(self, self.instance, self._meta.fields)
+
+    def clean(self):
+        data = super().clean()
+        if self.errors:
+            return data
+        try:
+            balances.check_adjustment(
+                actor=self.actor,
+                staff=data["staff"],
+                leave_type=data["leave_type"],
+                leave_year=data["leave_year"],
+                days=data["days"],
+                reason=data["reason"],
+            )
+        except DomainError as exc:
+            raise ValidationError(str(exc.detail)) from exc
+        return data
+
+
+@admin.register(LeaveBalanceAdjustment)
+class LeaveBalanceAdjustmentAdmin(HimsModelAdmin):
+    """Add one through the same rules as the app. They cannot be changed: a wrong one is corrected
+    by another."""
+
+    form = LeaveAdjustmentForm
+    list_display = ("created_at", "staff", "leave_type", "leave_year", "days", "created_by")
+    list_filter = ("leave_type", "leave_year")
+    search_fields = ("staff__given_name", "staff__family_name", "staff__employee_number")
+    autocomplete_fields = ("staff",)
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(request, obj, change=change, **kwargs)
+        form.actor = request.user
+        return form
+
+    def has_change_permission(self, request, obj=None):
+        return obj is None and super().has_change_permission(request, obj)
+
+    def get_fields(self, request, obj=None):
+        fields = list(LeaveAdjustmentForm.Meta.fields)
+        return [*fields, "created_by", "created_at"] if obj is not None else fields
+
+    def get_readonly_fields(self, request, obj=None):
+        return self.get_fields(request, obj) if obj is not None else []
+
+    def save_model(self, request, obj, form, change):
+        data = form.cleaned_data
+        try:
+            row = balances.adjust_balance(
+                actor=request.user,
+                staff=data["staff"],
+                leave_type=data["leave_type"],
+                leave_year=data["leave_year"],
+                days=data["days"],
+                reason=data["reason"],
+                request=request,
+            )
+        except DomainError as exc:
+            raise ValidationError(str(exc.detail)) from exc
+        obj.pk = row.pk
+        obj._state.adding = False

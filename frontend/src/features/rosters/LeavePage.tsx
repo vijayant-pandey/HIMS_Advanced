@@ -26,16 +26,23 @@ import type { LeaveRequest, LeaveType } from "../../api/types";
 import { localDate } from "../../components/dates";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { FormDialog } from "../../components/FormDialog";
+import { useCurrentUser } from "../auth/api";
+import { hasOrganizationWidePermission } from "../auth/grants";
 import { useAllDepartments } from "../staff/api";
 import { type LeaveDecision, useDecideLeave, useLeaveRequests, useRecordLeave, useRotaWeek } from "./api";
 import { LEAVE_STATUS, formatDay, leavePeriod, mondayOf } from "./labels";
+import { BalancesTab, EntitlementsTab } from "./LeaveBalances";
 import { LeaveFields } from "./LeaveFields";
 
 type Filter = "waiting" | "upcoming" | "past";
+type LeaveTab = Filter | "balances" | "entitlements";
 
 /** HIMS-STAFF-012: approvers decide leave for their departments, and record it for staff. */
 export function LeavePage() {
-  const [filter, setFilter] = useState<Filter>("waiting");
+  const { data: user } = useCurrentUser();
+  const canSetPolicy = hasOrganizationWidePermission(user, "leave.policy.manage");
+  const [tab, setTab] = useState<LeaveTab>("waiting");
+  const filter: Filter = tab === "upcoming" || tab === "past" ? tab : "waiting";
   const leave = useLeaveRequests(filter);
   const [deciding, setDeciding] = useState<{ leave: LeaveRequest; decision: LeaveDecision } | null>(null);
   const [recording, setRecording] = useState(false);
@@ -55,14 +62,18 @@ export function LeavePage() {
           Record leave
         </Button>
       </Stack>
-      <Tabs value={filter} onChange={(_, value) => setFilter(value)}>
+      <Tabs value={tab} onChange={(_, value) => setTab(value)}>
         <Tab value="waiting" label="To decide" />
         <Tab value="upcoming" label="Approved, coming up" />
         <Tab value="past" label="Past and closed" />
+        <Tab value="balances" label="Balances" />
+        <Tab value="entitlements" label="Entitlements" />
       </Tabs>
-      {leave.error && <ErrorAlert error={leave.error} />}
-      {leave.isPending && <LinearProgress aria-label="Loading leave" />}
-      <TableContainer component={Paper}>
+      {tab === "balances" && <BalancesTab canManage={canSetPolicy} />}
+      {tab === "entitlements" && <EntitlementsTab canManage={canSetPolicy} year={Number(localDate().slice(0, 4))} />}
+      {tab !== "balances" && tab !== "entitlements" && leave.error && <ErrorAlert error={leave.error} />}
+      {tab !== "balances" && tab !== "entitlements" && leave.isPending && <LinearProgress aria-label="Loading leave" />}
+      {tab !== "balances" && tab !== "entitlements" && <TableContainer component={Paper}>
         <Table size="small" aria-label="Leave">
           <TableHead>
             <TableRow>
@@ -97,6 +108,11 @@ export function LeavePage() {
                     {item.conflicting_shifts.length > 0 && (
                       <Typography variant="caption" component="p" color="warning.main">
                         {item.conflicting_shifts.length} planned shift(s) during this leave
+                      </Typography>
+                    )}
+                    {item.balance_after != null && item.balance_after < 0 && (
+                      <Typography variant="caption" component="p" color="warning.main">
+                        {-item.balance_after} day(s) over the balance
                       </Typography>
                     )}
                   </TableCell>
@@ -150,7 +166,7 @@ export function LeavePage() {
             )}
           </TableBody>
         </Table>
-      </TableContainer>
+      </TableContainer>}
       {deciding && <DecideDialog {...deciding} onClose={() => setDeciding(null)} />}
       {recording && <RecordLeaveDialog onClose={() => setRecording(false)} />}
     </Stack>
@@ -171,8 +187,11 @@ function DecideDialog({
   const decide = useDecideLeave(leave.id, decision);
   const [note, setNote] = useState("");
   const [cancelShifts, setCancelShifts] = useState(false);
+  const [overBalance, setOverBalance] = useState(false);
   const clashes = decision === "approve" ? leave.conflicting_shifts : [];
-  const needsNote = decision !== "approve";
+  const after = decision === "approve" ? leave.balance_after : null;
+  const isOver = after != null && after < 0;
+  const needsNote = decision !== "approve" || isOver;
   return (
     <FormDialog
       title={`${TITLES[decision]} · ${leave.staff_name}`}
@@ -180,14 +199,16 @@ function DecideDialog({
       fields={["note", "reason"]}
       submitLabel={TITLES[decision]}
       submitColor={decision === "approve" ? "primary" : "error"}
-      submitDisabled={(needsNote && !note.trim()) || (clashes.length > 0 && !cancelShifts)}
+      submitDisabled={
+        (needsNote && !note.trim()) || (clashes.length > 0 && !cancelShifts) || (isOver && !overBalance)
+      }
       pending={decide.isPending}
       onClose={onClose}
       onSubmit={() =>
         decide.mutate(
           decision === "cancel"
             ? { version: leave.version, reason: note.trim() }
-            : { version: leave.version, note: note.trim(), cancel_shifts: cancelShifts },
+            : { version: leave.version, note: note.trim(), cancel_shifts: cancelShifts, ...(overBalance ? { allow_over_balance: true } : {}) },
           { onSuccess: onClose },
         )
       }
@@ -195,6 +216,18 @@ function DecideDialog({
       <Typography variant="body2">
         {leave.leave_type_label}, {leavePeriod(leave)}.
       </Typography>
+      {after != null && !isOver && (
+        <Typography variant="body2">If approved, {after} day(s) of this leave are left.</Typography>
+      )}
+      {isOver && (
+        <Alert severity="warning">
+          This goes {-after} day(s) over {leave.staff_name}&apos;s balance.
+          <FormControlLabel
+            control={<Checkbox checked={overBalance} onChange={(e) => setOverBalance(e.target.checked)} />}
+            label="Approve anyway (say why below)"
+          />
+        </Alert>
+      )}
       {clashes.length > 0 && (
         <Alert severity="warning">
           {leave.staff_name} has {clashes.length} planned shift(s) during this leave:
@@ -216,7 +249,13 @@ function DecideDialog({
         required={needsNote}
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        helperText={decision === "reject" ? "The person sees this, e.g. Two others are away that week" : undefined}
+        helperText={
+          decision === "reject"
+            ? "The person sees this, e.g. Two others are away that week"
+            : isOver
+              ? "Kept in the audit log. No medical details."
+              : undefined
+        }
       />
     </FormDialog>
   );

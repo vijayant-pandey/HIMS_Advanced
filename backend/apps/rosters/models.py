@@ -15,7 +15,9 @@ from django.contrib.postgres.constraints import ExclusionConstraint
 from django.contrib.postgres.fields import DateRangeField, DateTimeRangeField, RangeOperators
 from django.db import models
 from django.db.models import F, Func, Q
+from django.utils import timezone
 
+from apps.staff.models import StaffMember
 from common.models import (
     OrganizationOwnedModel,
     TimeStampedModel,
@@ -222,3 +224,142 @@ class LeaveRequest(OrganizationOwnedModel, VersionedModel):
     @property
     def days(self) -> int:
         return (self.end_date - self.start_date).days + 1
+
+
+class StaffingRequirement(OrganizationOwnedModel, VersionedModel):
+    """The hospital's minimum people on one shift in one department (HIMS-STAFF-015). HIMS has no
+    numbers of its own. A gap warns and never blocks planning."""
+
+    class AppliesOn(models.TextChoices):
+        EVERY_DAY = "every_day", "Every day"
+        WEEKDAYS = "weekdays", "Monday to Friday"
+        WEEKENDS = "weekends", "Saturday and Sunday"
+
+    facility = models.ForeignKey("facilities.Facility", on_delete=models.PROTECT, related_name="+")
+    department = models.ForeignKey(
+        "facilities.Department", on_delete=models.PROTECT, related_name="staffing_requirements"
+    )
+    shift_type = models.ForeignKey(ShiftType, on_delete=models.PROTECT, related_name="+")
+    staff_type = models.CharField(
+        max_length=32,
+        choices=StaffMember.StaffType.choices,
+        blank=True,
+        help_text="Who counts. Empty means anyone on the shift.",
+    )
+    applies_on = models.CharField(
+        max_length=10, choices=AppliesOn.choices, default=AppliesOn.EVERY_DAY
+    )
+    minimum = models.PositiveSmallIntegerField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "staffing_requirements"
+        ordering = ["department", "shift_type"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["department", "shift_type", "staff_type", "applies_on"],
+                name="staffing_requirement_unique",
+            ),
+            models.CheckConstraint(condition=Q(minimum__gte=1), name="staffing_minimum_positive"),
+        ]
+
+    def __str__(self) -> str:
+        who = self.get_staff_type_display() if self.staff_type else "anyone"
+        return f"{self.department}: {self.shift_type.name}, at least {self.minimum} ({who})"
+
+
+class StaffingGapAlert(models.Model):
+    """A gap already emailed to the planners, so it is told once."""
+
+    department = models.ForeignKey(
+        "facilities.Department", on_delete=models.PROTECT, related_name="+"
+    )
+    shift_type = models.ForeignKey(ShiftType, on_delete=models.PROTECT, related_name="+")
+    staff_type = models.CharField(max_length=32, blank=True)
+    on_date = models.DateField()
+    sent_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "staffing_gap_alerts"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["department", "shift_type", "staff_type", "on_date"],
+                name="staffing_gap_alert_once",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.department} {self.on_date}"
+
+
+class LeaveEntitlement(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
+    """Days per leave year for one kind of leave, set by the hospital (HIMS-STAFF-013). It applies
+    from its year until a later row replaces it. A kind of leave with no row is not tracked."""
+
+    leave_type = models.CharField(max_length=16, choices=LeaveRequest.LeaveType.choices)
+    from_year = models.PositiveSmallIntegerField(help_text="The leave year it starts in")
+    days = models.PositiveSmallIntegerField(help_text="Days for a full leave year")
+    max_carry_over = models.PositiveSmallIntegerField(
+        default=0, help_text="Most unused days taken into the next leave year"
+    )
+    prorate_on_joining = models.BooleanField(
+        default=True, help_text="Someone joining during the year gets a share by whole months"
+    )
+    tracked = models.BooleanField(
+        default=True, help_text="Off: from this year, this kind of leave has no balance"
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        editable=False,
+    )
+
+    class Meta:
+        db_table = "leave_entitlements"
+        ordering = ["leave_type", "-from_year"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["leave_type", "from_year"], name="leave_entitlement_one_per_year"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_leave_type_display()} from {self.from_year}: {self.days} days"
+
+
+class LeaveBalanceAdjustment(UUIDPrimaryKeyModel):
+    """Days added to or taken from one person's balance, e.g. a balance brought from before HIMS.
+    Append-only (database trigger): a wrong one is corrected by another."""
+
+    staff = models.ForeignKey(
+        "staff.StaffMember", on_delete=models.PROTECT, related_name="leave_adjustments"
+    )
+    leave_type = models.CharField(max_length=16, choices=LeaveRequest.LeaveType.choices)
+    leave_year = models.PositiveSmallIntegerField()
+    days = models.SmallIntegerField(help_text="Plus adds days, minus takes them away")
+    reason = models.CharField(max_length=255, help_text="No medical details.")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        editable=False,
+    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        db_table = "leave_balance_adjustments"
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(condition=~Q(days=0), name="leave_adjustment_not_zero")
+        ]
+        indexes = [
+            models.Index(fields=["staff", "leave_year"], name="leave_adjustment_person_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.staff}: {self.days:+d} {self.get_leave_type_display()} ({self.leave_year})"

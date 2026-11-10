@@ -1,0 +1,6 @@
+{% extends "admin/change_list.html" %}
+{# Link to the console's list of staffing gaps (HIMS-STAFF-015). #}
+{% block object-tools-items %}
+  <li><a href="{% url 'admin:rosters_staffingrequirement_gaps' %}">Staffing gaps</a></li>
+  {{ block.super }}
+{% endblock %}

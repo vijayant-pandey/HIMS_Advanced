@@ -30,6 +30,7 @@ const ORGANIZATION: Organization = {
   default_timezone: "Asia/Kolkata",
   default_currency: "INR",
   status: "active",
+  leave_year_start_month: 1,
   has_logo: false,
   letterhead_address: "",
   letterhead_phone: "",
@@ -170,6 +171,7 @@ describe("Accounts and hospital settings", () => {
       display_name: "Sunrise",
       legal_name: "Synthetic Healthcare Pvt Ltd",
       default_timezone: "Asia/Kolkata",
+      leave_year_start_month: 1,
     });
   });
 

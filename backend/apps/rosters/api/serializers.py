@@ -145,6 +145,17 @@ class RotaPersonSerializer(serializers.Serializer):
     away = RotaAwaySerializer(many=True)
 
 
+class StaffingGapSerializer(serializers.Serializer):
+    on_date = serializers.DateField()
+    shift_type_id = serializers.UUIDField()
+    shift_type_name = serializers.CharField()
+    staff_type = serializers.CharField()
+    staff_type_label = serializers.CharField()
+    minimum = serializers.IntegerField()
+    planned = serializers.IntegerField()
+    short_by = serializers.IntegerField()
+
+
 class RotaWeekSerializer(serializers.Serializer):
     department_id = serializers.UUIDField()
     department_name = serializers.CharField()
@@ -155,6 +166,7 @@ class RotaWeekSerializer(serializers.Serializer):
     can_manage = serializers.BooleanField()
     leave_details = serializers.BooleanField()
     people = RotaPersonSerializer(many=True)
+    staffing_gaps = StaffingGapSerializer(many=True)
 
 
 class RotaNowSerializer(serializers.Serializer):
@@ -178,6 +190,7 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
     decided_by_name = serializers.CharField(
         source="decided_by.display_name", read_only=True, default=None, allow_null=True
     )
+    balance_after = serializers.SerializerMethodField()
     conflicting_shifts = serializers.SerializerMethodField(
         help_text="Planned shifts the person would miss (only while waiting for a decision)"
     )
@@ -207,12 +220,20 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             "cancelled_at",
             "cancel_reason",
             "conflicting_shifts",
+            "balance_after",
             "version",
         ]
         read_only_fields = fields
 
     def get_staff_name(self, leave) -> str:
         return f"{leave.staff.given_name} {leave.staff.family_name}"
+
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
+    def get_balance_after(self, leave):
+        """What would be left if approved; empty when decided, or not a tracked kind of leave."""
+        from ..balances import balance_after
+
+        return balance_after(leave) if leave.status == LeaveRequest.Status.REQUESTED else None
 
     @extend_schema_field(ShiftSerializer(many=True))
     def get_conflicting_shifts(self, leave):
@@ -244,6 +265,9 @@ class LeaveDecisionSerializer(serializers.Serializer):
     cancel_shifts = serializers.BooleanField(
         required=False, default=False, help_text="Approve: also cancel shifts during the leave"
     )
+    allow_over_balance = serializers.BooleanField(
+        required=False, default=False, help_text="Approve even if it goes over the balance"
+    )
 
 
 class MyPostingSerializer(serializers.Serializer):
@@ -253,9 +277,23 @@ class MyPostingSerializer(serializers.Serializer):
     is_primary = serializers.BooleanField()
 
 
+class LeaveBalanceSerializer(serializers.Serializer):
+    leave_type = serializers.CharField()
+    label = serializers.CharField()
+    year = serializers.IntegerField()
+    year_label = serializers.CharField()
+    entitled = serializers.IntegerField()
+    carried_in = serializers.IntegerField()
+    adjusted = serializers.IntegerField()
+    taken = serializers.IntegerField()
+    waiting = serializers.IntegerField(help_text="Asked for, not decided yet: not taken off")
+    remaining = serializers.IntegerField()
+
+
 class MyScheduleSerializer(serializers.Serializer):
     has_staff_record = serializers.BooleanField()
     name = serializers.CharField(required=False)
     postings = MyPostingSerializer(many=True)
     shifts = ShiftSerializer(many=True)
     leave = LeaveRequestSerializer(many=True)
+    leave_balances = LeaveBalanceSerializer(many=True)

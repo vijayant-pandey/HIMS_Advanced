@@ -1814,6 +1814,80 @@ paths:
               schema:
                 $ref: '#/components/schemas/Building'
           description: ''
+  /api/v1/clinical-privileges/:
+    get:
+      operationId: clinical_privileges_list
+      description: What the hospital lets people perform (HIMS-STAFF-016). The hospital
+        writes the list.
+      parameters:
+      - in: query
+        name: include_inactive
+        schema:
+          type: string
+        description: '''true'' = also switched-off entries'
+      tags:
+      - clinical-privileges
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClinicalPrivilege'
+          description: ''
+    post:
+      operationId: clinical_privileges_create
+      description: What the hospital lets people perform (HIMS-STAFF-016). The hospital
+        writes the list.
+      tags:
+      - clinical-privileges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClinicalPrivilegeCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalPrivilege'
+          description: ''
+  /api/v1/clinical-privileges/{id}/:
+    patch:
+      operationId: clinical_privileges_partial_update
+      description: What the hospital lets people perform (HIMS-STAFF-016). The hospital
+        writes the list.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this clinical privilege.
+        required: true
+      tags:
+      - clinical-privileges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedClinicalPrivilegeUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClinicalPrivilege'
+          description: ''
   /api/v1/compliance-requirements/:
     get:
       operationId: compliance_requirements_list
@@ -2912,6 +2986,152 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedIssuedNumberList'
+          description: ''
+  /api/v1/leave-adjustments/:
+    get:
+      operationId: leave_adjustments_list
+      description: |-
+        Days added to or taken from a balance. Append-only. Reading follows ``leave.approve``;
+        adding needs ``leave.policy.manage``.
+      parameters:
+      - in: query
+        name: person
+        schema:
+          type: string
+        description: Staff member id
+      tags:
+      - leave-adjustments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaveAdjustment'
+          description: ''
+    post:
+      operationId: leave_adjustments_create
+      description: |-
+        Days added to or taken from a balance. Append-only. Reading follows ``leave.approve``;
+        adding needs ``leave.policy.manage``.
+      tags:
+      - leave-adjustments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveAdjustmentCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveAdjustment'
+          description: ''
+  /api/v1/leave-balances/:
+    get:
+      operationId: leave_balances_retrieve
+      description: |-
+        Everyone working in a department and what is left of each kind of leave. For people who
+        decide leave there, who already see the kinds of leave.
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: year
+        schema:
+          type: integer
+        description: 'Leave year (default: this one)'
+      tags:
+      - leave-balances
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentBalances'
+          description: ''
+  /api/v1/leave-entitlements/:
+    get:
+      operationId: leave_entitlements_list
+      description: |-
+        Days per year for each kind of leave. Approvers read them; ``leave.policy.manage``
+        (hospital-wide) sets them.
+      tags:
+      - leave-entitlements
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaveEntitlement'
+          description: ''
+    post:
+      operationId: leave_entitlements_create
+      description: |-
+        Days per year for each kind of leave. Approvers read them; ``leave.policy.manage``
+        (hospital-wide) sets them.
+      tags:
+      - leave-entitlements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveEntitlementCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveEntitlement'
+          description: ''
+  /api/v1/leave-entitlements/{id}/:
+    patch:
+      operationId: leave_entitlements_partial_update
+      description: |-
+        Days per year for each kind of leave. Approvers read them; ``leave.policy.manage``
+        (hospital-wide) sets them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this leave entitlement.
+        required: true
+      tags:
+      - leave-entitlements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLeaveEntitlementUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveEntitlement'
           description: ''
   /api/v1/leave-requests/:
     get:
@@ -4836,6 +5056,35 @@ paths:
                 type: string
                 format: binary
           description: ''
+  /api/v1/staff-privileges/{id}/end/:
+    post:
+      operationId: staff_privileges_end_create
+      description: End a clinical privilege, with a reason. It stays on record.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff privilege.
+        required: true
+      tags:
+      - staff-privileges
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffPrivilegeEndRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffPrivilege'
+          description: ''
   /api/v1/staff/{id}/:
     get:
       operationId: staff_retrieve
@@ -5064,6 +5313,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/InvitationSent'
           description: ''
+  /api/v1/staff/{id}/privileges/:
+    post:
+      operationId: staff_privileges_create
+      description: Give this person a clinical privilege. Nobody gives one to themselves.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staff member.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffPrivilegeGrantRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffPrivilege'
+          description: ''
   /api/v1/staff/{id}/qualifications/:
     post:
       operationId: staff_qualifications_create
@@ -5127,6 +5405,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StaffQualification'
+          description: ''
+  /api/v1/staffing-requirements/:
+    get:
+      operationId: staffing_requirements_list
+      description: |-
+        The hospital's minimum people per shift. Seeing needs ``rota.view``, setting ``rota.manage``,
+        both for the department.
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+      tags:
+      - staffing-requirements
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffingRequirement'
+          description: ''
+    post:
+      operationId: staffing_requirements_create
+      description: |-
+        The hospital's minimum people per shift. Seeing needs ``rota.view``, setting ``rota.manage``,
+        both for the department.
+      tags:
+      - staffing-requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffingRequirementCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffingRequirement'
+          description: ''
+  /api/v1/staffing-requirements/{id}/:
+    patch:
+      operationId: staffing_requirements_partial_update
+      description: |-
+        The hospital's minimum people per shift. Seeing needs ``rota.view``, setting ``rota.manage``,
+        both for the department.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this staffing requirement.
+        required: true
+      tags:
+      - staffing-requirements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffingRequirementUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffingRequirement'
           description: ''
   /api/v1/wards/:
     get:
@@ -5901,6 +6255,16 @@ components:
         * `adult` - Adults
         * `pediatric` - Children
         * `neonatal` - Newborns
+    AppliesOnEnum:
+      enum:
+      - every_day
+      - weekdays
+      - weekends
+      type: string
+      description: |-
+        * `every_day` - Every day
+        * `weekdays` - Monday to Friday
+        * `weekends` - Saturday and Sunday
     ArchiveRequest:
       type: object
       properties:
@@ -6753,6 +7117,53 @@ components:
       description: |-
         * `email` - Email
         * `sms` - SMS
+    ClinicalPrivilege:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        is_custom:
+          type: boolean
+          readOnly: true
+          description: Added by this hospital.
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - code
+      - description
+      - id
+      - is_active
+      - is_custom
+      - name
+      - version
+    ClinicalPrivilegeCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+      required:
+      - name
     ComplianceRequirement:
       type: object
       properties:
@@ -7282,6 +7693,21 @@ components:
       - status
       - updated_at
       - version
+    DepartmentBalances:
+      type: object
+      properties:
+        year:
+          type: integer
+        year_label:
+          type: string
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonBalances'
+      required:
+      - people
+      - year
+      - year_label
     DepartmentCreateRequest:
       type: object
       properties:
@@ -8778,6 +9204,115 @@ components:
       - at
       - events_deleted
       - markers_deleted
+    LeaveAdjustment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff:
+          type: string
+          format: uuid
+          readOnly: true
+        leave_type:
+          allOf:
+          - $ref: '#/components/schemas/LeaveTypeEnum'
+          readOnly: true
+        leave_type_label:
+          type: string
+          readOnly: true
+        leave_year:
+          type: integer
+          readOnly: true
+        days:
+          type: integer
+          readOnly: true
+          description: Plus adds days, minus takes them away
+        reason:
+          type: string
+          readOnly: true
+          description: No medical details.
+        created_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by_name
+      - days
+      - id
+      - leave_type
+      - leave_type_label
+      - leave_year
+      - reason
+      - staff
+    LeaveAdjustmentCreateRequest:
+      type: object
+      properties:
+        staff:
+          type: string
+          format: uuid
+        leave_type:
+          $ref: '#/components/schemas/LeaveTypeEnum'
+        leave_year:
+          type: integer
+          maximum: 2100
+          minimum: 2000
+        days:
+          type: integer
+          maximum: 366
+          minimum: -366
+          description: Plus adds days, minus takes them away
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - days
+      - leave_type
+      - leave_year
+      - reason
+      - staff
+    LeaveBalance:
+      type: object
+      properties:
+        leave_type:
+          type: string
+        label:
+          type: string
+        year:
+          type: integer
+        year_label:
+          type: string
+        entitled:
+          type: integer
+        carried_in:
+          type: integer
+        adjusted:
+          type: integer
+        taken:
+          type: integer
+        waiting:
+          type: integer
+          description: 'Asked for, not decided yet: not taken off'
+        remaining:
+          type: integer
+      required:
+      - adjusted
+      - carried_in
+      - entitled
+      - label
+      - leave_type
+      - remaining
+      - taken
+      - waiting
+      - year
+      - year_label
     LeaveCreateRequest:
       type: object
       properties:
@@ -8819,8 +9354,97 @@ components:
           type: boolean
           default: false
           description: 'Approve: also cancel shifts during the leave'
+        allow_over_balance:
+          type: boolean
+          default: false
+          description: Approve even if it goes over the balance
       required:
       - version
+    LeaveEntitlement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        leave_type:
+          allOf:
+          - $ref: '#/components/schemas/LeaveTypeEnum'
+          readOnly: true
+        leave_type_label:
+          type: string
+          readOnly: true
+        from_year:
+          type: integer
+          readOnly: true
+          description: The leave year it starts in
+        year_label:
+          type: string
+          readOnly: true
+        days:
+          type: integer
+          readOnly: true
+          description: Days for a full leave year
+        max_carry_over:
+          type: integer
+          readOnly: true
+          description: Most unused days taken into the next leave year
+        prorate_on_joining:
+          type: boolean
+          readOnly: true
+          description: Someone joining during the year gets a share by whole months
+        tracked:
+          type: boolean
+          readOnly: true
+          description: 'Off: from this year, this kind of leave has no balance'
+        can_change:
+          type: boolean
+          readOnly: true
+          description: 'False for a row started in an earlier year: add a new one
+            instead'
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - can_change
+      - days
+      - from_year
+      - id
+      - leave_type
+      - leave_type_label
+      - max_carry_over
+      - prorate_on_joining
+      - tracked
+      - version
+      - year_label
+    LeaveEntitlementCreateRequest:
+      type: object
+      properties:
+        leave_type:
+          $ref: '#/components/schemas/LeaveTypeEnum'
+        from_year:
+          type: integer
+          maximum: 2100
+          minimum: 2000
+        days:
+          type: integer
+          maximum: 366
+          minimum: 0
+        max_carry_over:
+          type: integer
+          maximum: 366
+          minimum: 0
+          default: 0
+        prorate_on_joining:
+          type: boolean
+          default: true
+        tracked:
+          type: boolean
+          default: true
+      required:
+      - days
+      - from_year
+      - leave_type
     LeaveRequest:
       type: object
       properties:
@@ -8910,10 +9534,15 @@ components:
           readOnly: true
           description: Planned shifts the person would miss (only while waiting for
             a decision)
+        balance_after:
+          type: integer
+          nullable: true
+          readOnly: true
         version:
           type: integer
           readOnly: true
       required:
+      - balance_after
       - cancel_reason
       - cancelled_at
       - conflicting_shifts
@@ -9260,9 +9889,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LeaveRequest'
+        leave_balances:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveBalance'
       required:
       - has_staff_record
       - leave
+      - leave_balances
       - postings
       - shifts
     MySession:
@@ -9662,6 +10296,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/OrganizationStatusEnum'
           readOnly: true
+        leave_year_start_month:
+          type: integer
+          readOnly: true
+          description: 'The month the leave year starts: 1 is January, 4 is April
+            (HIMS-STAFF-013).'
         has_logo:
           type: boolean
           readOnly: true
@@ -9705,6 +10344,7 @@ components:
       - display_name
       - has_logo
       - id
+      - leave_year_start_month
       - legal_name
       - letterhead_address
       - letterhead_email
@@ -10309,6 +10949,21 @@ components:
           maxLength: 255
         is_active:
           type: boolean
+    PatchedClinicalPrivilegeUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 1000
+        is_active:
+          type: boolean
     PatchedDepartmentServiceUpdateRequest:
       type: object
       properties:
@@ -10518,6 +11173,24 @@ components:
           type: string
         closure_summary:
           type: string
+    PatchedLeaveEntitlementUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        days:
+          type: integer
+          maximum: 366
+          minimum: 0
+        max_carry_over:
+          type: integer
+          maximum: 366
+          minimum: 0
+        prorate_on_joining:
+          type: boolean
+        tracked:
+          type: boolean
     PatchedMessageTemplateUpdateRequest:
       type: object
       properties:
@@ -10582,6 +11255,10 @@ components:
           type: string
           minLength: 1
           maxLength: 64
+        leave_year_start_month:
+          type: integer
+          maximum: 12
+          minimum: 1
         letterhead_address:
           type: string
           maxLength: 500
@@ -10767,6 +11444,18 @@ components:
           type: string
           format: date
           nullable: true
+    PatchedStaffingRequirementUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        minimum:
+          type: integer
+          maximum: 999
+          minimum: 1
+        is_active:
+          type: boolean
     PatchedWardUpdateRequest:
       type: object
       properties:
@@ -10835,6 +11524,7 @@ components:
       - features.manage
       - features.view
       - leave.approve
+      - leave.policy.manage
       - locations.manage
       - locations.view
       - notifications.manage
@@ -10854,6 +11544,7 @@ components:
       - staff.credentials.verify
       - staff.documents.view
       - staff.manage
+      - staff.privileges.manage
       - staff.view
       type: string
       description: |-
@@ -10877,6 +11568,7 @@ components:
         * `features.manage` - features.manage
         * `features.view` - features.view
         * `leave.approve` - leave.approve
+        * `leave.policy.manage` - leave.policy.manage
         * `locations.manage` - locations.manage
         * `locations.view` - locations.view
         * `notifications.manage` - notifications.manage
@@ -10896,6 +11588,7 @@ components:
         * `staff.credentials.verify` - staff.credentials.verify
         * `staff.documents.view` - staff.documents.view
         * `staff.manage` - staff.manage
+        * `staff.privileges.manage` - staff.privileges.manage
         * `staff.view` - staff.view
     Person:
       type: object
@@ -10912,6 +11605,22 @@ components:
       - display_name
       - email
       - id
+    PersonBalances:
+      type: object
+      properties:
+        staff_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        balances:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveBalance'
+      required:
+      - balances
+      - name
+      - staff_id
     PolicyModeEnum:
       enum:
       - enforcing
@@ -11780,6 +12489,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RotaPerson'
+        staffing_gaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffingGap'
       required:
       - can_manage
       - days
@@ -11789,6 +12502,7 @@ components:
       - facility_name
       - leave_details
       - people
+      - staffing_gaps
       - start
     ScopeEnum:
       enum:
@@ -12745,6 +13459,11 @@ components:
           items:
             $ref: '#/components/schemas/StaffCredential'
           readOnly: true
+        privileges:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffPrivilege'
+          readOnly: true
         documents:
           type: array
           items:
@@ -12772,12 +13491,134 @@ components:
       - id
       - joined_on
       - left_on
+      - privileges
       - qualifications
       - staff_type
       - staff_type_label
       - updated_at
       - user
       - version
+    StaffPrivilege:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        privilege:
+          type: string
+          format: uuid
+          readOnly: true
+        privilege_name:
+          type: string
+          readOnly: true
+        department:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Only in this department. Empty means wherever the person works.
+        department_name:
+          type: string
+          readOnly: true
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          readOnly: true
+        valid_until:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          description: Review date. Empty means until it is ended.
+        note:
+          type: string
+          readOnly: true
+          description: No patient details.
+        status:
+          type: string
+          readOnly: true
+        is_current:
+          type: boolean
+          readOnly: true
+          description: Active, and today is within its dates
+        granted_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ended_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        end_reason:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - department
+      - department_name
+      - end_reason
+      - ended_at
+      - ended_by_name
+      - granted_by_name
+      - id
+      - is_current
+      - note
+      - privilege
+      - privilege_name
+      - status
+      - valid_from
+      - valid_until
+      - version
+    StaffPrivilegeEndRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - reason
+      - version
+    StaffPrivilegeGrantRequest:
+      type: object
+      properties:
+        privilege:
+          type: string
+          format: uuid
+        department:
+          type: string
+          format: uuid
+          nullable: true
+        valid_from:
+          type: string
+          format: date
+          nullable: true
+        valid_until:
+          type: string
+          format: date
+          nullable: true
+        note:
+          type: string
+          maxLength: 255
+      required:
+      - privilege
     StaffQualification:
       type: object
       properties:
@@ -12877,6 +13718,143 @@ components:
         * `dietitian` - Dietitian
         * `administrator` - Administrator
         * `support` - Support staff
+    StaffingGap:
+      type: object
+      properties:
+        on_date:
+          type: string
+          format: date
+        shift_type_id:
+          type: string
+          format: uuid
+        shift_type_name:
+          type: string
+        staff_type:
+          type: string
+        staff_type_label:
+          type: string
+        minimum:
+          type: integer
+        planned:
+          type: integer
+        short_by:
+          type: integer
+      required:
+      - minimum
+      - on_date
+      - planned
+      - shift_type_id
+      - shift_type_name
+      - short_by
+      - staff_type
+      - staff_type_label
+    StaffingRequirement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        department:
+          type: string
+          format: uuid
+          readOnly: true
+        department_name:
+          type: string
+          readOnly: true
+        shift_type:
+          type: string
+          format: uuid
+          readOnly: true
+        shift_type_name:
+          type: string
+          readOnly: true
+        staff_type:
+          allOf:
+          - $ref: '#/components/schemas/StaffTypeEnum'
+          readOnly: true
+          default: ''
+          description: |-
+            Who counts. Empty means anyone on the shift.
+
+            * `doctor` - Doctor
+            * `nurse` - Nurse
+            * `pharmacist` - Pharmacist
+            * `lab_technician` - Laboratory technician
+            * `radiologist` - Radiologist
+            * `dietitian` - Dietitian
+            * `administrator` - Administrator
+            * `support` - Support staff
+        staff_type_label:
+          type: string
+          readOnly: true
+        applies_on:
+          allOf:
+          - $ref: '#/components/schemas/AppliesOnEnum'
+          readOnly: true
+          default: every_day
+        applies_on_label:
+          type: string
+          readOnly: true
+        minimum:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - applies_on
+      - applies_on_label
+      - department
+      - department_name
+      - id
+      - is_active
+      - minimum
+      - shift_type
+      - shift_type_name
+      - staff_type
+      - staff_type_label
+      - version
+    StaffingRequirementCreateRequest:
+      type: object
+      properties:
+        department:
+          type: string
+          format: uuid
+        shift_type:
+          type: string
+          format: uuid
+        minimum:
+          type: integer
+          maximum: 999
+          minimum: 1
+        staff_type:
+          default: ''
+          description: |-
+            Blank means anyone on the shift counts
+
+            * `doctor` - Doctor
+            * `nurse` - Nurse
+            * `pharmacist` - Pharmacist
+            * `lab_technician` - Laboratory technician
+            * `radiologist` - Radiologist
+            * `dietitian` - Dietitian
+            * `administrator` - Administrator
+            * `support` - Support staff
+          oneOf:
+          - $ref: '#/components/schemas/StaffTypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        applies_on:
+          allOf:
+          - $ref: '#/components/schemas/AppliesOnEnum'
+          default: every_day
+      required:
+      - department
+      - minimum
+      - shift_type
     StartDrillRequest:
       type: object
       properties:

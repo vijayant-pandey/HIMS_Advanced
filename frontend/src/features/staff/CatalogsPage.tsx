@@ -22,6 +22,7 @@ import {
 import { useState } from "react";
 
 import type {
+  ClinicalPrivilege,
   Designation,
   DesignationCategory,
   QualificationCategory,
@@ -57,7 +58,7 @@ const COUNTRIES = [
   { value: "US", label: "United States" },
 ];
 
-type Item = (Designation | Specialty | QualificationType) & {
+type Item = (Designation | Specialty | QualificationType | ClinicalPrivilege) & {
   category?: string;
   country?: string;
   seniority?: number;
@@ -68,7 +69,10 @@ const TABS: { kind: CatalogKind; label: string; one: string }[] = [
   { kind: "designations", label: "Job titles", one: "job title" },
   { kind: "specialties", label: "Specialties", one: "specialty" },
   { kind: "qualification-types", label: "Qualification types", one: "qualification type" },
+  { kind: "clinical-privileges", label: "Clinical privileges", one: "clinical privilege" },
 ];
+
+const hasCategory = (kind: CatalogKind) => kind === "designations" || kind === "qualification-types";
 
 function ItemDialog({ kind, one, item, onClose }: { kind: CatalogKind; one: string; item?: Item; onClose: () => void }) {
   const save = useSaveCatalogItem(kind, item?.id, useState(() => crypto.randomUUID())[0]);
@@ -85,9 +89,11 @@ function ItemDialog({ kind, one, item, onClose }: { kind: CatalogKind; one: stri
   const body: Record<string, unknown> =
     kind === "specialties"
       ? { name: values.name.trim() }
-      : kind === "qualification-types"
-        ? { name: values.name.trim(), category: values.category, country: values.country }
-        : { ...values, name: values.name.trim() };
+      : kind === "clinical-privileges"
+        ? { name: values.name.trim(), description: values.description }
+        : kind === "qualification-types"
+          ? { name: values.name.trim(), category: values.category, country: values.country }
+          : { ...values, name: values.name.trim() };
 
   return (
     <FormDialog
@@ -107,7 +113,18 @@ function ItemDialog({ kind, one, item, onClose }: { kind: CatalogKind; one: stri
         error={!!errors.name}
         helperText={errors.name ?? (item ? `Code ${item.code} stays the same.` : "A short code is made from the name.")}
       />
-      {kind !== "specialties" && (
+      {kind === "clinical-privileges" && (
+        <TextField
+          label="Description (optional)"
+          value={values.description}
+          onChange={(e) => set("description", e.target.value)}
+          multiline
+          minRows={2}
+          error={!!errors.description}
+          helperText={errors.description ?? "e.g. what it covers and who approves it"}
+        />
+      )}
+      {hasCategory(kind) && (
         <Stack direction="row" spacing={2}>
           <TextField select fullWidth label="Category" value={values.category} onChange={(e) => set("category", e.target.value)}>
             {Object.entries(kind === "designations" ? DESIGNATION_CATEGORIES : QUALIFICATION_CATEGORIES).map(
@@ -196,8 +213,8 @@ function CatalogTab({ kind, one, canManage }: { kind: CatalogKind; one: string; 
           <TableHead>
             <TableRow>
               <TableCell>Name</TableCell>
-              {kind !== "specialties" && <TableCell>Category</TableCell>}
-              {kind !== "specialties" && <TableCell>Country</TableCell>}
+              {hasCategory(kind) && <TableCell>Category</TableCell>}
+              {hasCategory(kind) && <TableCell>Country</TableCell>}
               {kind === "designations" && <TableCell>Seniority</TableCell>}
               <TableCell>Source</TableCell>
               <TableCell>In use</TableCell>
@@ -213,14 +230,14 @@ function CatalogTab({ kind, one, canManage }: { kind: CatalogKind; one: string; 
                     {r.code}
                   </Typography>
                 </TableCell>
-                {kind !== "specialties" && (
+                {hasCategory(kind) && (
                   <TableCell>
                     {(kind === "designations" ? DESIGNATION_CATEGORIES : QUALIFICATION_CATEGORIES)[
                       r.category as never
                     ] ?? r.category}
                   </TableCell>
                 )}
-                {kind !== "specialties" && <TableCell>{r.country || "Both"}</TableCell>}
+                {hasCategory(kind) && <TableCell>{r.country || "Both"}</TableCell>}
                 {kind === "designations" && <TableCell>{r.seniority}</TableCell>}
                 <TableCell>
                   <Chip size="small" variant="outlined" label={r.is_custom ? "Added by hospital" : "Standard"} />
@@ -273,7 +290,8 @@ export function CatalogsPage() {
         <Typography variant="body2">
           The lists used when adding staff, department postings and qualifications. HIMS comes with
           standard entries for India and the US; add your hospital&apos;s own, rename them, or switch
-          off ones you do not use. Switched-off entries stay on existing records.
+          off ones you do not use. Switched-off entries stay on existing records. Clinical privileges
+          start empty: your hospital writes that list.
         </Typography>
       </Box>
       <Tabs value={tab} onChange={(_, value: number) => setTab(value)} aria-label="Catalogs">

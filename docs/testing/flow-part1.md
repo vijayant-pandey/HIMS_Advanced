@@ -45,6 +45,9 @@
 22h. [Part 18h: equipment register](#part-18h-equipment-register)
 22i. [Part 18i: logo and letterhead](#part-18i-logo-and-letterhead)
 22j. [Part 18j: message wording](#part-18j-message-wording)
+22k. [Part 18k: clinical privileges](#part-18k-clinical-privileges)
+22l. [Part 18l: minimum staffing](#part-18l-minimum-staffing)
+22m. [Part 18m: leave balances](#part-18m-leave-balances)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1245,7 +1248,7 @@ Sign in as the administrator.
 
 | Step | Do this | Expected result |
 |---|---|---|
-| 18j.1 | Menu → **Message wording** | 18 messages, all **Standard** |
+| 18j.1 | Menu → **Message wording** | 19 messages, all **Standard** |
 | 18j.2 | Select **Account invitation** → delete `{{link}}` from the message → Save | Refused: the message must keep `{{link}}` |
 | 18j.3 | Type `{{patient_name}}` into the message → **Preview** | Refused: not available in this message |
 | 18j.4 | Remove that, change the greeting to "Welcome {{name}}", keep `{{link}}` → **Preview** | Shows it with made-up details. Nothing is sent |
@@ -1254,6 +1257,58 @@ Sign in as the administrator.
 | 18j.7 | Open the message → **Use the standard wording** | The list shows **Standard** again |
 | 18j.8 | Audit log (as the auditor) | "Message wording changed" with the words before and after, and "put back to the standard" |
 | 18j.9 | Admin console → **Notifications** → **Message templates** → the same message | Placeholders, standard wording and how it reads now; the same refusals |
+
+---
+
+## Part 18k: clinical privileges
+
+Needs the Staff group PR and its migrate step (India and US), and a staff member who is not you.
+Sign in as the administrator.
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18k.1 | Menu → **Job titles & catalogs** → **Clinical privileges** | Empty: your hospital writes this list |
+| 18k.2 | **Add clinical privilege**: "Central line insertion" | It is listed |
+| 18k.3 | **Staff** → open someone → **Privileges** → **Give a privilege**: choose it, tomorrow's date as Review date → Give (confirm it's you if asked) | Listed as **Current**, with your name |
+| 18k.4 | Give the same privilege to them again | Refused: they already hold it |
+| 18k.5 | Open your own staff record, if you have one → **Privileges** | No Give or End buttons |
+| 18k.6 | Back on the other person: **End**, with a reason | Shown as **Ended** with the reason; the record stays |
+| 18k.7 | Terminate a test person who holds a privilege (Part 19) | Their privilege shows Ended, "Employment ended" |
+| 18k.8 | Admin console → **Staff privileges**; open a staff member | Grants read-only, an action to end them; a **Clinical privileges** section on the staff page |
+
+---
+
+## Part 18l: minimum staffing
+
+Needs a department with someone posted in it (Part 10) and the Rota page (Part 18).
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18l.1 | **Rota** → choose the department → **Minimum staffing** → Shift Night, At least 2 → Add | A row appears |
+| 18l.2 | Close, and go to **Next week** | A warning lists next week's nights: "0 of 2 planned" |
+| 18l.3 | **Plan shifts**: one person on one of those nights | It plans normally; that night now says "1 of 2 planned" |
+| 18l.4 | **Minimum staffing** → switch the row off | The warning goes away |
+| 18l.5 | Switch it back on. In the launcher's backend window, or a CMD window with the venv active: `python manage.py send_staffing_gap_alerts` | The planners' email appears, listing the gaps and naming nobody |
+| 18l.6 | Run the same command again | "Told planners about 0 gap(s)": each gap is told once |
+| 18l.7 | Admin console → **Staffing requirements** → **Staffing gaps** | The gaps in the next two weeks |
+
+---
+
+## Part 18m: leave balances
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18m.1 | **Leave** → **Balances** | "No balances yet": nothing changes until you set an entitlement |
+| 18m.2 | **Hospital settings** → **Edit** → **Leave year starts in** | January, with the other months to choose from. Leave it, or choose April for an April to March year |
+| 18m.3 | **Leave** → **Entitlements** → **Add an entitlement**: Annual, 2 days, carry 1 → Save | Listed |
+| 18m.4 | **Balances** | Everyone in the department with "Annual / earned leave" |
+| 18m.5 | **Adjust** one person, +1, "Balance brought from the old system" | Their balance shows "+1 adjusted" |
+| 18m.6 | Sign in as that person → **My schedule** | **My leave balance** shows the same figures |
+| 18m.7 | They ask for 5 days of annual leave | Sent; it counts as "waiting", not taken off |
+| 18m.8 | As the administrator: **Leave** → **To decide** | "N day(s) over the balance" beside the request |
+| 18m.9 | **Approve** | Greyed out until you tick **Approve anyway** and give a reason |
+| 18m.10 | **Audit log** (as the auditor) | The approval, with the days over the balance |
+| 18m.11 | Admin console → **Leave entitlements**, **Leave balance adjustments**, a staff member | The same rows; a **Leave balance this year** section on the staff page |
 
 ---
 
@@ -1416,6 +1471,9 @@ Fill in **Pass**, **Fail** (with a note) or **Skipped**.
 | 18h | Equipment register | | | |
 | 18i | Logo and letterhead | | | |
 | 18j | Message wording | | | |
+| 18k | Clinical privileges | | | |
+| 18l | Minimum staffing | | | |
+| 18m | Leave balances | | | |
 | 19 | Leaving staff | | | |
 | 20 | Safety checks | | | |
 
