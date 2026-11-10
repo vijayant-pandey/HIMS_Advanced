@@ -8,6 +8,13 @@ from .browser_views import (
 )
 from .console_views import ConsoleAccessBlockViewSet, ConsoleAccessView
 from .database_views import DatabaseAccessView
+from .retention_views import (
+    LegalHoldViewSet,
+    RetentionPeriodView,
+    RetentionPurgeRunViewSet,
+    RetentionRunView,
+    RetentionView,
+)
 from .scanning_views import ScanDocumentsView, ScanningStatusView
 from .views import (
     ComplianceRequirementViewSet,
@@ -26,6 +33,8 @@ router.register(
     "browser-security-reports", BrowserSecurityReportViewSet, basename="browser-security-report"
 )
 router.register("console-access-blocks", ConsoleAccessBlockViewSet, basename="console-access-block")
+router.register("legal-holds", LegalHoldViewSet, basename="legal-hold")
+router.register("retention-runs", RetentionPurgeRunViewSet, basename="retention-run")
 
 urlpatterns = [
     path("compliance-summary/", ComplianceSummaryView.as_view(), name="compliance-summary"),
@@ -38,6 +47,13 @@ urlpatterns = [
         "security/upload-scanning/scan/",
         ScanDocumentsView.as_view(),
         name="upload-scanning-scan",
+    ),
+    path("retention/", RetentionView.as_view(), name="retention"),
+    path("retention/run/", RetentionRunView.as_view(), name="retention-run-now"),
+    path(
+        "retention/periods/<str:category>/",
+        RetentionPeriodView.as_view(),
+        name="retention-period",
     ),
     *router.urls,
 ]

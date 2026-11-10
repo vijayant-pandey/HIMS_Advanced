@@ -6,23 +6,29 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import connection
+from django.shortcuts import redirect
 from django.template.response import TemplateResponse
-from django.urls import path
+from django.urls import path, reverse
+from django.utils.html import format_html_join
+from django.utils.http import urlencode
 
 from apps.access_control.catalog import P
 from apps.access_control.selectors import has_permission
 from apps.compliance.api.scanning_views import scanning_status
 from common import database_roles
-from common.admin.options import ReadOnlyModelAdmin
+from common.admin.options import ConfirmIdentityAdminMixin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 from common.security_headers import policy_mode
 
-from . import browser_reports, console_access, incidents, services
+from . import browser_reports, console_access, incidents, retention, services
 from .models import (
     BrowserSecurityReport,
     ComplianceRequirement,
     ConsoleAccessBlock,
     IncidentNotification,
+    LegalHold,
+    RetentionPurgeRun,
+    RetentionRule,
     RiskEntry,
     SecurityIncident,
 )
@@ -377,3 +383,297 @@ class IncidentNotificationAdmin(_ComplianceAdmin):
                 self.message_user(request, f"{row}: done.")
             except DomainError as exc:
                 self.message_user(request, f"{row}: {exc.detail}", messages.ERROR)
+
+
+# --- Retention and legal hold (HIMS-COMP-006) ---------------------------------------------------
+
+
+class RetentionRuleForm(forms.ModelForm):
+    keep_days = forms.IntegerField(
+        required=False,
+        min_value=1,
+        label="Keep for (days)",
+        help_text="Empty = keep for ever (nothing deleted). A shorter period waits "
+        f"{retention.SHORTER_PERIOD_WAIT.days} days before it applies; a longer one applies "
+        "at once.",
+    )
+    cancel_pending = forms.BooleanField(
+        required=False, label="Cancel the shorter period that is waiting"
+    )
+
+    class Meta:
+        model = RetentionRule
+        fields = ("keep_days",)
+
+    def clean(self):
+        data = super().clean()
+        kind = retention.CATEGORIES[self.instance.category]
+        days = data.get("keep_days")
+        if days is not None and not kind.minimum_days <= days <= retention.MAX_DAYS:
+            raise ValidationError(
+                f"{kind.label}: keep at least {kind.minimum_days} days "
+                f"(and at most {retention.MAX_DAYS})."
+            )
+        if data.get("cancel_pending") and self.instance.pending_from is None:
+            raise ValidationError("No shorter period is waiting.")
+        return data
+
+
+@admin.register(RetentionRule)
+class RetentionRuleAdmin(ConfirmIdentityAdminMixin, _ComplianceAdmin):
+    """How long each kind of housekeeping record is kept. The same rules and audit as the app's
+    Retention tab; a change needs "confirm it's you"."""
+
+    form = RetentionRuleForm
+    list_display = (
+        "kind",
+        "keep_days",
+        "pending_keep_days",
+        "pending_from",
+        "would_delete_now",
+        "kept_by_hold",
+        "updated_by",
+    )
+    fields = (
+        "kind",
+        "what",
+        "minimum_days",
+        "keep_days",
+        "pending_keep_days",
+        "pending_from",
+        "cancel_pending",
+        "would_delete_now",
+        "kept_by_hold",
+        "updated_by",
+        "updated_at",
+        "version",
+    )
+    readonly_fields = (
+        "kind",
+        "what",
+        "minimum_days",
+        "pending_keep_days",
+        "pending_from",
+        "would_delete_now",
+        "kept_by_hold",
+        "updated_by",
+        "updated_at",
+        "version",
+    )
+
+    def has_change_permission(self, request, obj=None):
+        return self._can_manage(request)
+
+    @admin.display(description="Kind of record")
+    def kind(self, obj):
+        return retention.CATEGORIES[obj.category].label
+
+    @admin.display(description="What is deleted")
+    def what(self, obj):
+        return retention.CATEGORIES[obj.category].what
+
+    @admin.display(description="Minimum (days)")
+    def minimum_days(self, obj):
+        return retention.CATEGORIES[obj.category].minimum_days
+
+    @admin.display(description="Would delete now")
+    def would_delete_now(self, obj):
+        plan = retention.preview_one(obj)
+        return plan["skipped"] or plan["would_delete"]
+
+    @admin.display(description="Kept by legal hold")
+    def kept_by_hold(self, obj):
+        return retention.preview_one(obj)["held"]
+
+    def save_model(self, request, obj, form, change):
+        stored = RetentionRule.objects.get(pk=obj.pk)
+        days = form.cleaned_data["keep_days"]
+        if form.cleaned_data["cancel_pending"]:
+            days = stored.keep_days
+        elif days == stored.keep_days:
+            self.message_user(request, "Nothing changed.", messages.INFO)
+            return
+        try:
+            retention.set_period(
+                actor=request.user,
+                category=obj.category,
+                keep_days=days,
+                version=stored.version,
+                request=request,
+            )
+        except DomainError as exc:
+            self.message_user(request, exc.detail, messages.ERROR)
+
+
+class LegalHoldAddForm(forms.ModelForm):
+    hold_categories = forms.MultipleChoiceField(
+        required=False,
+        label="Kinds of record held",
+        choices=[(key, kind.label) for key, kind in retention.CATEGORIES.items()],
+        widget=forms.CheckboxSelectMultiple,
+        help_text="None ticked = every kind.",
+    )
+
+    class Meta:
+        model = LegalHold
+        fields = ("reference", "reason", "subject_user")
+
+
+class LegalHoldReleaseForm(forms.ModelForm):
+    release_reason = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        label="Release: why the hold can end",
+        help_text="Fill in only to release the hold. The records then follow the normal periods.",
+    )
+
+    class Meta:
+        model = LegalHold
+        fields = ()
+
+
+@admin.register(LegalHold)
+class LegalHoldAdmin(ConfirmIdentityAdminMixin, _ComplianceAdmin):
+    """Place a legal hold, or release one with a reason. Never deleted; same rules and audit as
+    the app; each needs "confirm it's you"."""
+
+    list_display = ("reference", "held_kinds", "subject_user", "placed_by", "placed_at", "active")
+    list_filter = (("released_at", admin.EmptyFieldListFilter),)
+    search_fields = ("reference",)
+    raw_id_fields = ("subject_user",)
+    shown = (
+        "reference",
+        "reason",
+        "held_kinds",
+        "subject_user",
+        "placed_by",
+        "placed_at",
+        "released_by",
+        "released_at",
+    )
+
+    @admin.display(description="Kinds held")
+    def held_kinds(self, obj):
+        if not obj.categories:
+            return "Every kind"
+        return ", ".join(
+            retention.CATEGORIES[key].label for key in obj.categories if key in retention.CATEGORIES
+        )
+
+    @admin.display(boolean=True, description="Active")
+    def active(self, obj):
+        return obj.is_active
+
+    def has_add_permission(self, request, *args):
+        return self._can_manage(request)
+
+    def has_change_permission(self, request, obj=None):
+        return self._can_manage(request) and (obj is None or obj.is_active)
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        kwargs["form"] = LegalHoldAddForm if obj is None else LegalHoldReleaseForm
+        return super().get_form(request, obj, change=change, **kwargs)
+
+    def get_fields(self, request, obj=None):
+        if obj is None:
+            return ["reference", "reason", "hold_categories", "subject_user"]
+        return [*self.shown, "release_reason" if obj.is_active else "release_reason_shown"]
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj is None:
+            return []
+        return [*self.shown, *([] if obj.is_active else ["release_reason_shown"])]
+
+    @admin.display(description="Why it was released")
+    def release_reason_shown(self, obj):
+        return obj.release_reason
+
+    def save_model(self, request, obj, form, change):
+        data = form.cleaned_data
+        try:
+            if not change:
+                hold = retention.place_hold(
+                    actor=request.user,
+                    reference=data["reference"],
+                    reason=data["reason"],
+                    categories=data["hold_categories"],
+                    subject_user=data["subject_user"],
+                    request=request,
+                )
+                obj.pk = hold.pk
+                obj._state.adding = False
+            elif data.get("release_reason", "").strip():
+                retention.release_hold(
+                    actor=request.user,
+                    hold_id=obj.pk,
+                    version=obj.version,
+                    reason=data["release_reason"],
+                    request=request,
+                )
+            else:
+                self.message_user(request, "Nothing changed.", messages.INFO)
+        except DomainError as exc:
+            self.message_user(request, exc.detail, messages.ERROR)
+
+
+def _run_summary(key: str, plan: dict) -> tuple[str, str]:
+    label = retention.CATEGORIES[key].label if key in retention.CATEGORIES else key
+    if plan.get("skipped"):
+        return label, plan["skipped"]
+    more = " (more next run)" if plan.get("more_left") else ""
+    return label, (
+        f"deleted {plan.get('deleted', 0)}, kept by legal hold {plan.get('held', 0)}, "
+        f"period {plan.get('keep_days')} days{more}"
+    )
+
+
+@admin.register(RetentionPurgeRun)
+class RetentionPurgeRunAdmin(_ComplianceAdmin):
+    """What each purge run deleted and kept (append-only). Holds "Run the purge now"."""
+
+    change_list_template = "admin/compliance/retentionpurgerun/change_list.html"
+    list_display = ("started_at", "trigger", "run_by", "deleted_total", "finished_at")
+    list_filter = ("trigger",)
+    fields = ("started_at", "finished_at", "trigger", "run_by", "deleted_total", "per_kind")
+    readonly_fields = fields
+
+    @admin.display(description="Per kind")
+    def per_kind(self, obj):
+        return format_html_join(
+            "",
+            "<p><strong>{}</strong>: {}</p>",
+            (_run_summary(key, plan) for key, plan in obj.details.items()),
+        )
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = {**(extra_context or {}), "can_manage": self._can_manage(request)}
+        return super().changelist_view(request, extra_context)
+
+    def get_urls(self):
+        return [
+            path(
+                "run-now/",
+                self.admin_site.admin_view(self.run_now_view),
+                name="compliance_retention_run_now",
+            ),
+            *super().get_urls(),
+        ]
+
+    def run_now_view(self, request):
+        if request.method != "POST" or not self._can_manage(request):
+            raise PermissionDenied
+        from apps.identity import confirmation
+
+        back = reverse("admin:compliance_retentionpurgerun_changelist")
+        if not confirmation.is_confirmed(request):  # same rule as the API (HIMS-IAM-007)
+            messages.warning(request, "Nothing was done yet. Confirm it's you, then try again.")
+            return redirect(f"{reverse('admin:confirm_identity')}?{urlencode({'next': back})}")
+        try:
+            run = retention.run_purge(
+                trigger=RetentionPurgeRun.Trigger.MANUAL, actor=request.user, request=request
+            )
+        except DomainError as exc:
+            messages.error(request, exc.detail)
+            return redirect(back)
+        messages.success(request, f"Purge run: {run.deleted_total} record(s) deleted.")
+        return redirect("admin:compliance_retentionpurgerun_change", run.pk)

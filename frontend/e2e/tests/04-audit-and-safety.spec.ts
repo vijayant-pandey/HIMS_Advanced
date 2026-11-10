@@ -204,6 +204,40 @@ test.describe("administrator", () => {
     await expectAccessible(page, "Console access");
   });
 
+  test("retention: nothing is deleted until a period is set; a legal hold is placed and released", async ({
+    page,
+  }) => {
+    // HIMS-COMP-006. No period is set here, so the purge deletes nothing.
+    const reference = `E2E matter ${Date.now()}`;
+    await page.goto("/compliance");
+    await page.getByRole("tab", { name: "Retention" }).click();
+    const periods = page.getByRole("table", { name: "Retention periods" });
+    await expect(periods.getByText("Sign-in register")).toBeVisible();
+    await expect(periods.getByText("No period set: kept for ever.").first()).toBeVisible();
+
+    await page.getByRole("button", { name: "Place a legal hold" }).click();
+    const place = page.getByRole("dialog", { name: "Place a legal hold" });
+    await place.getByLabel(/Reference/).fill(reference);
+    await place.getByLabel(/Reason/).fill("Browser test, synthetic");
+    await place.getByLabel("Sign-in register").check();
+    await expectAccessible(page, "Place a legal hold");
+    await place.getByRole("button", { name: "Place the hold" }).click();
+    await expect(place).toHaveCount(0);
+    const holds = page.getByRole("table", { name: "Legal holds" });
+    await expect(holds.getByText(reference)).toBeVisible();
+
+    await page.getByRole("button", { name: "Run the purge now" }).click();
+    await expect(page.getByText("Purge run: 0 record(s) deleted.")).toBeVisible();
+    await expectAccessible(page, "Retention");
+
+    await page.getByRole("button", { name: `Release legal hold ${reference}` }).click();
+    const release = page.getByRole("dialog", { name: `Release legal hold ${reference}` });
+    await release.getByLabel(/Why the hold can end/).fill("Browser test finished");
+    await release.getByRole("button", { name: "Release" }).click();
+    await expect(release).toHaveCount(0);
+    await expect(holds.getByText(/Released by .*Browser test finished/)).toBeVisible();
+  });
+
   test("admin console works under its browser protection rules", async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();

@@ -20,7 +20,7 @@ Cloud's free offering, after an analysis of what that deployment needs.
 | 4 | Architecture decisions ADR-009 to ADR-026 | PO | **Accepted for now** | Status stays "Proposed" in each file until reviewed one by one; no work waits on them |
 | 5 | Clinical privileges (what a doctor may perform), minimum staffing per shift | CLIN | **Fine for now:** build them with values the hospital sets itself | Become buildable (HIMS-STAFF-016, HIMS-STAFF-015) |
 | 6 | Leave balances and entitlements | PO | **Fine for now:** build with entitlements the hospital sets itself | Becomes buildable (HIMS-STAFF-013) |
-| 7 | Retention periods and legal hold | LEGAL | **Fine for now:** build the purge with periods the hospital sets (nothing deleted until a period is set) | Becomes buildable (HIMS-COMP-006) |
+| 7 | Retention periods and legal hold | LEGAL | **Fine for now:** build the purge with periods the hospital sets (nothing deleted until a period is set) | Becomes buildable (HIMS-COMP-006); **built 2026-11-10** (nothing deleted until the hospital sets a period; [ADR-030](../decisions/ADR-030-retention-purge-and-legal-hold.md)) |
 | 8 | Single sign-on (OIDC/SAML) | PO | **Not now**; passwords with two-factor are fine | HIMS-IAM-008 deferred (optional) |
 | 9 | SMS gateway | PO | **Print to the console for now** (as today); a gateway later | HIMS-NOTIF-002 deferred |
 | 10 | Security review of the threat model | PO | **When the whole of Phase 1 is complete** | HIMS-SEC-011 becomes the last Phase 1 step |

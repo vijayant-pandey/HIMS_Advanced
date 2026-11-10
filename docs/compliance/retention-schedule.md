@@ -23,12 +23,14 @@ Expired idempotency records (48 hours) · expired browser sessions · two-factor
 reset (audited) · department opening-hour rows when replaced (audited). Secret-bearing copies of messages are
 erased once delivered.
 
-## Legal hold (to build when the periods are set)
+## Legal hold (to build when the periods are set; built 2026-11-10, HIMS-COMP-006)
 
 When a dispute or investigation is expected, counsel issues a hold and affected records must not be purged
 even if their period has passed. Any purge job built later (HIMS-COMP-006) must check for holds first,
 record what it removed, and never break the audit chain (an "archived up to link N" marker is required; see
 [audit-integrity.md](../architecture/data-architecture/audit-integrity.md)).
+
+**Built (2026-11-10, HIMS-COMP-006):** the hospital sets periods for six kinds of housekeeping record (sign-in register, message log, invitations, password resets, browser block reports, reviewed console refusals) on Compliance → Retention. Nothing is deleted until a period is set; a first or shorter period waits 7 days; legal holds (whole kinds or one person) always win; each daily run is recorded. The rows in the table above that are not among those six (clinical, audit, incidents, governance, staff, consents) are **not** purged by it. The audit log needs the archive marker first (HIMS-COMP-007, hosting stage). How-to: [retention-purge.md](../workflows/retention-purge.md).
 
 ## Person's right to erasure (India)
 

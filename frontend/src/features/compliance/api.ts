@@ -12,6 +12,10 @@ import type {
   DatabaseAccess,
   IncidentReceipt,
   IncidentReportRequest,
+  LegalHold,
+  LegalHoldPlaceRequest,
+  RetentionPurgeRun,
+  RetentionStatus,
   RiskEntry,
   SecurityIncident,
   SecurityStatus,
@@ -147,5 +151,48 @@ export function useUpdateIncident(id: string) {
 export function useRecordNotification(incidentId: string) {
   return useChange(({ id, ...body }: { id: string; status: "done" | "not_required"; reference: string; note: string }) =>
     api.post<SecurityIncident>(`/security-incidents/${incidentId}/notifications/${id}/`, body),
+  );
+}
+
+// --- Retention and legal hold (HIMS-COMP-006). Changes ask "confirm it's you" through the API client. ---
+
+export function useRetention() {
+  return useQuery<RetentionStatus, ApiError>({
+    queryKey: [...key, "retention"],
+    queryFn: ({ signal }) => api.get<RetentionStatus>("/retention/", { signal }),
+  });
+}
+
+export function useRetentionRuns() {
+  return useQuery<RetentionPurgeRun[], ApiError>({
+    queryKey: [...key, "retention-runs"],
+    queryFn: ({ signal }) => api.get<RetentionPurgeRun[]>("/retention-runs/", { signal }),
+  });
+}
+
+export function useLegalHolds() {
+  return useQuery<LegalHold[], ApiError>({
+    queryKey: [...key, "legal-holds"],
+    queryFn: ({ signal }) => api.get<LegalHold[]>("/legal-holds/", { signal }),
+  });
+}
+
+export function useSetRetentionPeriod(category: string) {
+  return useChange((body: { keep_days: number | null; version: number }) =>
+    api.post<RetentionStatus>(`/retention/periods/${category}/`, body),
+  );
+}
+
+export function useRunPurge() {
+  return useChange((_: void) => api.post<RetentionPurgeRun>("/retention/run/"));
+}
+
+export function usePlaceLegalHold(idempotencyKey: string) {
+  return useChange((body: LegalHoldPlaceRequest) => api.post<LegalHold>("/legal-holds/", body, { idempotencyKey }));
+}
+
+export function useReleaseLegalHold(id: string) {
+  return useChange((body: { version: number; reason: string }) =>
+    api.post<LegalHold>(`/legal-holds/${id}/release/`, body),
   );
 }

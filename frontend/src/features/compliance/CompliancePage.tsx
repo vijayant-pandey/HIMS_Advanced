@@ -42,6 +42,7 @@ import {
 import { BrowserProtectionTab } from "./BrowserProtectionTab";
 import { ConsoleAccessTab } from "./ConsoleAccessTab";
 import { DatabaseAccessTab } from "./DatabaseAccessTab";
+import { RetentionTab } from "./RetentionTab";
 import { ScanningTab } from "./ScanningTab";
 import { ReportIncidentDialog, SEVERITIES } from "./ReportIncidentDialog";
 
@@ -574,6 +575,7 @@ export function CompliancePage() {
         <Tab value="console" label="Console access" />
         <Tab value="database" label="Database access" />
         <Tab value="scanning" label="Scanning and traces" />
+        <Tab value="retention" label="Retention" />
       </Tabs>
       {tab === "requirements" && <RequirementsTab canManage={canManage} />}
       {tab === "risks" && <RisksTab canManage={canManage} />}
@@ -582,6 +584,7 @@ export function CompliancePage() {
       {tab === "console" && <ConsoleAccessTab canManage={canManage} />}
       {tab === "database" && <DatabaseAccessTab />}
       {tab === "scanning" && <ScanningTab canManage={canManage} />}
+      {tab === "retention" && <RetentionTab canManage={canManage} />}
     </Stack>
   );
 }

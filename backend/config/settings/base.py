@@ -317,6 +317,7 @@ SPECTACULAR_SETTINGS = {
         "RiskStatusEnum": "apps.compliance.models.RiskEntry.Status",
         "IncidentStatusEnum": "apps.compliance.models.SecurityIncident.Status",
         "IncidentNotificationStatusEnum": "apps.compliance.models.IncidentNotification.Status",
+        "RetentionCategoryEnum": "apps.compliance.retention.CATEGORY_CHOICES",
         "ShiftKindEnum": "apps.rosters.models.ShiftType.Kind",
         "ShiftStatusEnum": "apps.rosters.models.Shift.Status",
         "LeaveStatusEnum": "apps.rosters.models.LeaveRequest.Status",

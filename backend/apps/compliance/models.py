@@ -263,3 +263,112 @@ class IncidentNotification(UUIDPrimaryKeyModel, TimeStampedModel):
 
     def __str__(self) -> str:
         return self.get_kind_display()
+
+
+class RetentionRule(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
+    """How long one kind of housekeeping record is kept before the purge deletes it (spec 4.25
+    "retention, legal holds ... deletion restrictions", 28.1 #5; HIMS-COMP-006). The kinds are
+    fixed in retention.py. Empty = kept for ever, the default: nothing is deleted until the
+    hospital sets a period. A shorter period waits (``pending_*``) before it applies."""
+
+    category = models.CharField(max_length=32, unique=True, editable=False)
+    keep_days = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Days kept; empty = kept for ever (nothing deleted)."
+    )
+    pending_keep_days = models.PositiveIntegerField(
+        null=True, blank=True, help_text="A shorter period waiting to apply."
+    )
+    pending_from = models.DateTimeField(
+        null=True, blank=True, help_text="When the shorter period applies."
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        db_table = "retention_rules"
+        ordering = ["category"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(pending_keep_days__isnull=True, pending_from__isnull=True)
+                | Q(pending_keep_days__isnull=False, pending_from__isnull=False),
+                name="retention_rule_pending_complete",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.category
+
+
+class LegalHold(UUIDPrimaryKeyModel, TimeStampedModel, VersionedModel):
+    """Records that must not be purged while a dispute or investigation is expected (spec 4.25;
+    HIMS-COMP-006). Covers the kinds listed (none listed = every kind) and, when a person is
+    named, only records about that person. Never deleted: released with who, when and why."""
+
+    reference = models.CharField(max_length=120, help_text="e.g. the case or matter number.")
+    reason = models.TextField(help_text="Why the records must be kept. No patient details.")
+    categories = models.JSONField(
+        default=list, blank=True, help_text="Kinds of record held; empty = every kind."
+    )
+    subject_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Only records about this person; empty = everyone's.",
+    )
+    placed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, related_name="+"
+    )
+    placed_at = models.DateTimeField(default=timezone.now)
+    released_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    released_at = models.DateTimeField(null=True, blank=True)
+    release_reason = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "legal_holds"
+        ordering = ["-placed_at"]
+        indexes = [models.Index(fields=["released_at"], name="legal_hold_active_idx")]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(released_at__isnull=True) | ~Q(release_reason=""),
+                name="legal_hold_release_has_reason",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.reference
+
+    @property
+    def is_active(self) -> bool:
+        return self.released_at is None
+
+
+class RetentionPurgeRun(UUIDPrimaryKeyModel):
+    """One run of the retention purge: what it deleted per kind, what holds kept, what it skipped
+    (HIMS-COMP-006). Append-only (database trigger): the evidence that deletion followed the
+    rules. Holds counts only, never the deleted rows' contents."""
+
+    class Trigger(models.TextChoices):
+        SCHEDULED = "scheduled", "Daily job"
+        MANUAL = "manual", "Run by a person"
+        COMMAND = "command", "Server command"
+
+    started_at = models.DateTimeField()
+    finished_at = models.DateTimeField()
+    trigger = models.CharField(max_length=10, choices=Trigger.choices)
+    run_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    deleted_total = models.PositiveIntegerField(default=0)
+    details = models.JSONField(default=dict, help_text="Per kind: period, cut-off, counts.")
+
+    class Meta:
+        db_table = "retention_purge_runs"
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"{self.started_at:%Y-%m-%d %H:%M}: {self.deleted_total} deleted"

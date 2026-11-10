@@ -3426,6 +3426,75 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeaveRequest'
           description: ''
+  /api/v1/legal-holds/:
+    get:
+      operationId: legal_holds_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: string
+        description: '''true'' = not released yet'
+      tags:
+      - legal-holds
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegalHold'
+          description: ''
+    post:
+      operationId: legal_holds_create
+      tags:
+      - legal-holds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegalHoldPlaceRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalHold'
+          description: ''
+  /api/v1/legal-holds/{id}/release/:
+    post:
+      operationId: legal_holds_release_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this legal hold.
+        required: true
+      tags:
+      - legal-holds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegalHoldReleaseRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalHold'
+          description: ''
   /api/v1/message-templates/:
     get:
       operationId: message_templates_list
@@ -4166,6 +4235,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RestoreDrillDetail'
+          description: ''
+  /api/v1/retention/:
+    get:
+      operationId: retention_status
+      tags:
+      - retention
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionStatus'
+          description: ''
+  /api/v1/retention-runs/:
+    get:
+      operationId: retention_runs_list
+      description: The latest purge runs, newest first.
+      tags:
+      - retention-runs
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RetentionPurgeRun'
+          description: ''
+  /api/v1/retention/periods/{category}/:
+    post:
+      operationId: retention_period_set
+      description: Set how long one kind of record is kept. A shorter period waits
+        before it applies.
+      parameters:
+      - in: path
+        name: category
+        schema:
+          type: string
+        required: true
+      tags:
+      - retention
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetentionPeriodRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionStatus'
+          description: ''
+  /api/v1/retention/run/:
+    post:
+      operationId: retention_run
+      description: |-
+        Run the purge now instead of waiting for the daily job. Repeating it is harmless (the
+        second run finds nothing new), so it is not wrapped in one idempotent transaction: deleting
+        in small batches keeps the tables free for everyone else.
+      tags:
+      - retention
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionPurgeRun'
           description: ''
   /api/v1/role-assignments/:
     get:
@@ -9772,6 +9918,114 @@ components:
         * `compensatory` - Compensatory off
         * `unpaid` - Unpaid leave
         * `other` - Other
+    LegalHold:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+          description: e.g. the case or matter number.
+        reason:
+          type: string
+          readOnly: true
+          description: Why the records must be kept. No patient details.
+        categories:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        subject_name:
+          type: string
+          readOnly: true
+          nullable: true
+        subject_email:
+          type: string
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        placed_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        placed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        released_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        released_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        release_reason:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - categories
+      - id
+      - is_active
+      - placed_at
+      - placed_by_name
+      - reason
+      - reference
+      - release_reason
+      - released_at
+      - released_by_name
+      - subject_email
+      - subject_name
+      - version
+    LegalHoldPlaceRequest:
+      type: object
+      properties:
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 120
+        reason:
+          type: string
+          minLength: 1
+          description: Why the records must be kept. No patient details.
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetentionCategoryEnum'
+          description: Kinds of record held; empty = every kind.
+        subject_email:
+          description: Only records about this account; empty = everyone's.
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+      required:
+      - reason
+      - reference
+    LegalHoldReleaseRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          description: Why the records may now follow the normal periods.
+      required:
+      - reason
+      - version
     LentAccess:
       type: object
       description: One copy of the covered person's access lent to the covering person.
@@ -12149,6 +12403,200 @@ components:
       description: |-
         * `on_demand` - Started by a person
         * `command` - Started from the server command line
+    RetentionCategory:
+      type: object
+      properties:
+        category:
+          type: string
+        label:
+          type: string
+        table:
+          type: string
+        what:
+          type: string
+          description: Which rows go, in plain words.
+        minimum_days:
+          type: integer
+        keep_days:
+          type: integer
+          nullable: true
+          description: Empty = kept for ever.
+        pending_keep_days:
+          type: integer
+          nullable: true
+        pending_from:
+          type: string
+          format: date-time
+          nullable: true
+        updated_by_name:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+        version:
+          type: integer
+        would_delete:
+          type: integer
+          description: Rows the purge would delete now.
+        held:
+          type: integer
+          description: Rows past the period kept by a legal hold.
+        skipped:
+          type: string
+          description: Why nothing of this kind would be deleted.
+      required:
+      - category
+      - held
+      - keep_days
+      - label
+      - minimum_days
+      - pending_from
+      - pending_keep_days
+      - skipped
+      - table
+      - updated_at
+      - updated_by_name
+      - version
+      - what
+      - would_delete
+    RetentionCategoryEnum:
+      enum:
+      - sign_ins
+      - messages
+      - invitations
+      - password_resets
+      - browser_reports
+      - console_refusals
+      type: string
+      description: |-
+        * `sign_ins` - Sign-in register
+        * `messages` - Message log (emails and SMS)
+        * `invitations` - Account invitations
+        * `password_resets` - Password-reset requests
+        * `browser_reports` - Browser block reports
+        * `console_refusals` - Refused console addresses
+    RetentionPeriodRequest:
+      type: object
+      properties:
+        keep_days:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Days to keep; null = keep for ever.
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - keep_days
+      - version
+    RetentionPurgeRun:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/RetentionPurgeRunTriggerEnum'
+          readOnly: true
+        trigger_label:
+          type: string
+          readOnly: true
+        run_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        deleted_total:
+          type: integer
+          readOnly: true
+        details:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/RetentionRunKind'
+          readOnly: true
+      required:
+      - deleted_total
+      - details
+      - finished_at
+      - id
+      - run_by_name
+      - started_at
+      - trigger
+      - trigger_label
+    RetentionPurgeRunTriggerEnum:
+      enum:
+      - scheduled
+      - manual
+      - command
+      type: string
+      description: |-
+        * `scheduled` - Daily job
+        * `manual` - Run by a person
+        * `command` - Server command
+    RetentionRunKind:
+      type: object
+      description: What one run did for one kind of record.
+      properties:
+        keep_days:
+          type: integer
+          nullable: true
+        older_than:
+          type: string
+          nullable: true
+          description: The cut-off used.
+        skipped:
+          type: string
+          description: Why nothing of this kind was deleted.
+        deleted:
+          type: integer
+        held:
+          type: integer
+          description: Past the period but kept by a legal hold.
+        more_left:
+          type: boolean
+          description: The limit per run was reached.
+        period_applied_now:
+          type: boolean
+          description: A shorter period took effect at the start of this run.
+      required:
+      - deleted
+      - held
+      - keep_days
+      - more_left
+      - older_than
+      - period_applied_now
+      - skipped
+    RetentionStatus:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetentionCategory'
+        active_holds:
+          type: integer
+        wait_days:
+          type: integer
+          description: Days a shorter period waits before it applies.
+        last_run:
+          allOf:
+          - $ref: '#/components/schemas/RetentionPurgeRun'
+          nullable: true
+      required:
+      - active_holds
+      - categories
+      - last_run
+      - wait_days
     RevokeRequest:
       type: object
       properties:

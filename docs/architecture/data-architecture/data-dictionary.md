@@ -29,7 +29,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts), [`clinical_privileges`](#clinical_privileges), [`staff_privileges`](#staff_privileges)
 - **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests), [`staffing_requirements`](#staffing_requirements), [`staffing_gap_alerts`](#staffing_gap_alerts), [`leave_entitlements`](#leave_entitlements), [`leave_balance_adjustments`](#leave_balance_adjustments)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
-- **Compliance: requirements, risks, security incidents**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`console_access_blocks`](#console_access_blocks), [`security_incident_notifications`](#security_incident_notifications)
+- **Compliance: requirements, risks, security incidents, retention and legal holds**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`console_access_blocks`](#console_access_blocks), [`security_incident_notifications`](#security_incident_notifications), [`retention_rules`](#retention_rules), [`legal_holds`](#legal_holds), [`retention_purge_runs`](#retention_purge_runs)
 - **Notifications: emails and SMS**: [`notifications`](#notifications), [`message_templates`](#message_templates)
 - **Backups and restore drills**: [`recovery_backups`](#recovery_backups), [`recovery_restore_drills`](#recovery_restore_drills)
 - **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events)
@@ -499,7 +499,7 @@ A login identity within this deployment.
 An invitation for a user to activate their account by choosing a password (spec 4.4).
 
 - **Model:** `identity.Invitation`
-- **Lifecycle:** Single use, valid 72 hours (`HIMS_INVITATION_TTL_HOURS`); kept as history (accepted, revoked or expired).
+- **Lifecycle:** Single use, valid 72 hours (`HIMS_INVITATION_TTL_HOURS`); kept as history (accepted, revoked or expired). Closed ones purged after the period the hospital sets, unless on legal hold (HIMS-COMP-006).
 - **Rules:** `user_invitation_one_open`: Unique: user where (accepted_at is empty AND revoked_at is empty)
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
@@ -518,7 +518,7 @@ An invitation for a user to activate their account by choosing a password (spec 
 A "forgot password" request (spec 13.1: secure account recovery).
 
 - **Model:** `identity.PasswordReset`
-- **Lifecycle:** Single use, valid 60 minutes (`HIMS_PASSWORD_RESET_TTL_MINUTES`); kept as history.
+- **Lifecycle:** Single use, valid 60 minutes (`HIMS_PASSWORD_RESET_TTL_MINUTES`); kept as history. Closed ones purged after the period the hospital sets, unless on legal hold (HIMS-COMP-006).
 - **Rules:** `user_password_reset_one_open`: Unique: user where (revoked_at is empty AND used_at is empty)
 - **Extra indexes:** `password_reset_user_idx`: user, created_at
 
@@ -537,7 +537,7 @@ A "forgot password" request (spec 13.1: secure account recovery).
 Register of sign-in sessions per user (HIMS-IAM-006; spec 4.4, 13.2, 13.5).
 
 - **Model:** `identity.UserSession`
-- **Lifecycle:** Register of sign-ins; closed (`ended_at`, reason) on sign-out, expiry or switch-off; kept as history.
+- **Lifecycle:** Register of sign-ins; closed (`ended_at`, reason) on sign-out, expiry or switch-off; kept as history. Ended ones purged after the period the hospital sets (at least 365 days), unless on legal hold (HIMS-COMP-006).
 - **Extra indexes:** `user_session_open_idx`: user, ended_at
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
@@ -1298,7 +1298,7 @@ Result of one run of the audit integrity check (HIMS-SEC-010). Written once, nev
 | `problems` | jsonb | no | list() | — | Person | Restricted: Audit content | Problems |
 | `unsealed_overdue` | integer | no | `0` | 0 or more | Person | Restricted: Security record | Events older than the sealing window that are not in the chain (written outside the normal path, or with a back-dated time). |
 
-## Compliance: requirements, risks, security incidents
+## Compliance: requirements, risks, security incidents, retention and legal holds
 
 **Owner (source of truth):** Compliance / security officer. **Design:** [README](../../compliance/README.md).
 
@@ -1396,7 +1396,7 @@ A security incident or suspected breach (HIPAA 164.308(a)(6); DPDP Rule 7; CERT-
 Something a browser blocked under the security headers, added up per day (spec 13; HIMS-SEC-012). Browsers send these without signing in, so the content is not trustworthy and holds no query strings or code samples.
 
 - **Model:** `compliance.BrowserSecurityReport`
-- **Lifecycle:** One row per day and kind of block, at most 500 a day. Purge comes with the retention job (HIMS-COMP-006).
+- **Lifecycle:** One row per day and kind of block, at most 500 a day. Purged after the period the hospital sets, unless on legal hold (HIMS-COMP-006).
 - **Rules:** `browser_report_unique_per_day`: Unique: day, directive, blocked, page_path
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
@@ -1421,7 +1421,7 @@ Something a browser blocked under the security headers, added up per day (spec 1
 Admin console requests refused because the address is not allowed, added up per day and address (spec 13.1, 13.4; HIMS-SEC-015). At most 500 addresses a day.
 
 - **Model:** `compliance.ConsoleAccessBlock`
-- **Lifecycle:** One row per day and refused address, at most 500 a day; reviewed, never edited otherwise. Purge comes with the retention job (HIMS-COMP-006).
+- **Lifecycle:** One row per day and refused address, at most 500 a day; reviewed, never edited otherwise. Reviewed ones purged after the period the hospital sets (at least 365 days), unless on legal hold (HIMS-COMP-006).
 - **Rules:** `console_block_unique_per_day`: Unique: day, ip_address
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
@@ -1466,6 +1466,71 @@ One notification the law requires for an incident, with its deadline (see incide
 | `soon_alert_sent_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Soon alert sent at |
 | `overdue_alert_sent_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Overdue alert sent at |
 
+<a id="retention_rules"></a>
+### `retention_rules`
+
+How long one kind of housekeeping record is kept before the purge deletes it (spec 4.25 "retention, legal holds ... deletion restrictions", 28.1 #5; HIMS-COMP-006). The kinds are fixed in retention.py. Empty = kept for ever, the default: nothing is deleted until the hospital sets a period. A shorter period waits (``pending_*``) before it applies.
+
+- **Model:** `compliance.RetentionRule`
+- **Lifecycle:** One per kind of purgeable record, created on migrate; never deleted. Empty period = kept for ever. Every change audited (HIMS-COMP-006).
+- **Rules:** `retention_rule_pending_complete`: Check: ((pending_from is empty AND pending_keep_days is empty) OR (pending_from is set AND pending_keep_days is set))
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `category` | varchar(32) | no | — | up to 32 characters; unique | System | Internal: Business data | Category |
+| `keep_days` | integer | yes | — | 0 or more | Person | Internal: Business data | Days kept; empty = kept for ever (nothing deleted). |
+| `pending_keep_days` | integer | yes | — | 0 or more | Person | Internal: Business data | A shorter period waiting to apply. |
+| `pending_from` | timestamp with time zone | yes | — | — | Person | Internal: Business data | When the shorter period applies. |
+| `updated_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Updated by |
+
+<a id="legal_holds"></a>
+### `legal_holds`
+
+Records that must not be purged while a dispute or investigation is expected (spec 4.25; HIMS-COMP-006). Covers the kinds listed (none listed = every kind) and, when a person is named, only records about that person. Never deleted: released with who, when and why.
+
+- **Model:** `compliance.LegalHold`
+- **Lifecycle:** Never deleted; released with who, when and why. Audited (HIMS-COMP-006).
+- **Rules:** `legal_hold_release_has_reason`: Check: (released_at is empty OR NOT release_reason = '')
+- **Extra indexes:** `legal_hold_active_idx`: released_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `reference` | varchar(120) | no | — | up to 120 characters | Person | Restricted: Legal matter | e.g. the case or matter number. |
+| `reason` | text | no | — | — | Person | Restricted: Legal matter (no patient details) | Why the records must be kept. No patient details. |
+| `categories` | jsonb | no | list() | — | Person | Internal: Business data | Kinds of record held; empty = every kind. |
+| `subject_user_id` | uuid → users.id | yes | — | on delete PROTECT | Person | Internal: Person reference (id only) | Only records about this person; empty = everyone's. |
+| `placed_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Placed by |
+| `placed_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Placed at |
+| `released_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Released by |
+| `released_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Released at |
+| `release_reason` | text | no | — | — | Person | Restricted: Legal matter | Release reason |
+
+<a id="retention_purge_runs"></a>
+### `retention_purge_runs`
+
+One run of the retention purge: what it deleted per kind, what holds kept, what it skipped (HIMS-COMP-006). Append-only (database trigger): the evidence that deletion followed the rules. Holds counts only, never the deleted rows' contents.
+
+- **Model:** `compliance.RetentionPurgeRun`
+- **Lifecycle:** Append-only (database trigger); one row per purge run with counts only, the evidence that deletion followed the rules (HIMS-COMP-006).
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `started_at` | timestamp with time zone | no | — | — | System | Internal: Business data | Started at |
+| `finished_at` | timestamp with time zone | no | — | — | System | Internal: Business data | Finished at |
+| `trigger` | varchar(10) | no | — | `scheduled` (Daily job), `manual` (Run by a person), `command` (Server command) | Person | Internal: Business data | Trigger |
+| `run_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Run by |
+| `deleted_total` | integer | no | `0` | 0 or more | Person | Internal: Business data | Deleted total |
+| `details` | jsonb | no | dict() | — | Person | Internal: Counts per kind of record | Per kind: period, cut-off, counts. |
+
 ## Notifications: emails and SMS
 
 **Owner (source of truth):** Platform (each sending domain owns its wording). **Design:** [notifications](../../workflows/notifications.md).
@@ -1476,7 +1541,7 @@ One notification the law requires for an incident, with its deadline (see incide
 One email or SMS sent by HIMS (spec 4.23; HIMS-NOTIF-001), with its delivery outcome.
 
 - **Model:** `notifications.Notification`
-- **Lifecycle:** Kept as the delivery log; the real (secret-bearing) text is erased once delivered. Retention period: decision pending with the other records (🔒 LEGAL).
+- **Lifecycle:** Kept as the delivery log; the real (secret-bearing) text is erased once delivered. Sent, given-up and not-sent ones purged after the period the hospital sets, unless on legal hold (HIMS-COMP-006); waiting ones never.
 - **Extra indexes:** `notification_retry_idx`: status, next_attempt_at; `notification_created_idx`: created_at
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |

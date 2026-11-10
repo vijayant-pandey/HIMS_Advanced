@@ -103,3 +103,11 @@ uploaded in the app, with the refusal on the form. A check of what #45 added fou
 The console gained **Passkeys**: who has which, never the key itself, and the action "Remove selected
 passkeys" for a lost device (after "confirm it's you"). The console's own sign-in still asks for the
 authenticator code. A check of what #46 added found nothing missing.
+
+## Update (2026-11-10, retention purge)
+
+The console gained **Retention rules** (each kind's period, the shorter one waiting, what a purge would
+delete now and what holds keep; change or cancel with the same rules as the app), **Legal holds** (place
+on chosen kinds and optionally one person; release with a reason; never deleted) and **Retention purge
+runs** (append-only history and **Run the purge now**). Each change asks "confirm it's you" first. A
+check of what #47 added found nothing missing.

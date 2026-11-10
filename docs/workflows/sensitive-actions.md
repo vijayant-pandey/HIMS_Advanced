@@ -35,10 +35,11 @@ one**, before a sensitive action.
 | Change the wording of a message, or go back to the standard (HIMS-NOTIF-003) | Message wording | `message-templates`: update, reset |
 | Give or end a clinical privilege (HIMS-STAFF-016) | Staff | `staff`: privileges; `staff-privileges`: end |
 | Add or remove one of your passkeys (HIMS-IAM-014) | Security | `auth/passkeys`: add-options, add, remove |
+| Set how long a kind of record is kept; place or release a legal hold; run the purge now (HIMS-COMP-006) | Compliance → Retention | `retention/periods`, `retention/run`, `legal-holds`: create, release |
 
 **In the admin console** the same areas ask before saving or running an action: users (including
 setting a password), roles, role assignments, access reviews and their items, cover, staff,
-feature settings, message wording, staff privileges, removing passkeys, "Make a backup now", and **downloading an access review or audit events as CSV**
+feature settings, message wording, staff privileges, removing passkeys, retention rules, legal holds, "Run the purge now", "Make a backup now", and **downloading an access review or audit events as CSV**
 (added 2026-11-09, HIMS-SEC-015). Looking does not ask. Nothing is changed until the person has confirmed, and they
 then repeat what they were doing.
 

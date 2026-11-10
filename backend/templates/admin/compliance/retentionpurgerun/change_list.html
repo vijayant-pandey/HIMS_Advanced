@@ -1,0 +1,15 @@
+{% extends "admin/change_list.html" %}
+{# "Run the purge now" for holders of compliance.manage (HIMS-COMP-006). Posts to RetentionPurgeRunAdmin.run_now_view. #}
+{% block object-tools-items %}
+  <li><a href="{% url 'admin:compliance_retentionrule_changelist' %}">Retention periods</a></li>
+  <li><a href="{% url 'admin:compliance_legalhold_changelist' %}">Legal holds</a></li>
+  {% if can_manage %}
+  <li>
+    <form method="post" action="{% url 'admin:compliance_retention_run_now' %}" style="display:inline">
+      {% csrf_token %}
+      <button type="submit" class="button" style="padding:6px 12px">Run the purge now</button>
+    </form>
+  </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}
