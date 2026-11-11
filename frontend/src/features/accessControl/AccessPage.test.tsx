@@ -28,6 +28,56 @@ const CUSTOM: Role = {
   version: 4,
 };
 
+const ENDPOINT = {
+  area: "facilities",
+  area_label: "Facilities, departments and locations",
+  scope: "facility",
+  confirm_identity: false,
+  idempotency: "optional",
+  requirements: ["HIMS-FAC-001"],
+};
+const ENDPOINTS = {
+  summary: {
+    total: 2,
+    public: 1,
+    signed_in: 0,
+    permission: 1,
+    confirm_identity: 0,
+    idempotent: 1,
+    audited_writes: 1,
+    writes: 2,
+  },
+  endpoints: [
+    {
+      ...ENDPOINT,
+      method: "POST",
+      path: "/api/v1/facilities/",
+      summary: "Add (facilities).",
+      access: "permission",
+      permission: "facilities.manage",
+      permission_label: "Create facilities",
+      roles: ["Organization administrator"],
+      audit_actions: ["facility.created"],
+    },
+    {
+      ...ENDPOINT,
+      area: "identity",
+      area_label: "Sign-in, two-factor, passkeys, sessions and accounts",
+      method: "POST",
+      path: "/api/v1/auth/login/",
+      summary: "Sign in with email and password.",
+      access: "public",
+      permission: "",
+      permission_label: "",
+      roles: [],
+      scope: "",
+      idempotency: "",
+      audit_actions: ["auth.login"],
+      requirements: ["HIMS-IAM-002"],
+    },
+  ],
+};
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -40,6 +90,7 @@ function renderPage(grants: string[]) {
   const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
     if (init?.method === "PATCH") return json(CUSTOM);
+    if (url.includes("/api-endpoints/")) return json(ENDPOINTS);
     if (url.includes("/permissions/"))
       return json([
         { codename: "locations.view", description: "View buildings, floors, wards, rooms and beds" },
@@ -120,6 +171,21 @@ describe("AccessPage", () => {
       description: "",
       permissions: ["beds.status.manage", "locations.view"],
     });
+  });
+
+  it("lists API endpoints with who may call them, filtered by access", async () => {
+    renderPage(["access.roles.view"]);
+    fireEvent.click(await screen.findByRole("tab", { name: "API endpoints" }));
+    const table = await screen.findByRole("table", { name: "API endpoints" });
+    expect(await within(table).findByText("facilities.manage")).toBeInTheDocument();
+    expect(within(table).getByText("Organization administrator")).toBeInTheDocument();
+    expect(within(table).getByText("facility.created")).toBeInTheDocument();
+    expect(within(table).getByText("Anyone (no sign-in)")).toBeInTheDocument();
+    expect(screen.getByText(/2 endpoints: 1 need a permission/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Search"), { target: { value: "login" } });
+    expect(within(table).queryByText("facilities.manage")).not.toBeInTheDocument();
+    expect(within(table).getByText("HIMS-IAM-002")).toBeInTheDocument();
   });
 
   it("hides role and access changes from view-only users", async () => {

@@ -14,9 +14,10 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.admin.forms import AdminAuthenticationForm
 from django.core.cache import cache
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.shortcuts import redirect, render
+from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
@@ -38,6 +39,13 @@ def can_view_audit(user) -> bool:
     from apps.access_control.selectors import has_permission
 
     return has_permission(user, P.AUDIT_VIEW)
+
+
+def can_view_roles(user) -> bool:
+    from apps.access_control.catalog import P
+    from apps.access_control.selectors import has_permission
+
+    return has_permission(user, P.ROLES_VIEW)
 
 
 def can_view_compliance(user) -> bool:
@@ -159,9 +167,9 @@ class HimsAdminSite(admin.AdminSite):
     def each_context(self, request):
         context = super().each_context(request)
         user = getattr(request, "user", None)
-        context["show_security_status"] = bool(
-            user is not None and user.is_authenticated and can_view_compliance(user)
-        )
+        signed_in = user is not None and user.is_authenticated
+        context["show_security_status"] = bool(signed_in and can_view_compliance(user))
+        context["show_api_endpoints"] = bool(signed_in and can_view_roles(user))
         return context
 
     def get_urls(self):
@@ -169,8 +177,35 @@ class HimsAdminSite(admin.AdminSite):
             path(
                 "confirm-identity/", self.admin_view(self.confirm_identity), name="confirm_identity"
             ),
+            path("api-endpoints/", self.admin_view(self.api_endpoints), name="api_endpoints"),
             *super().get_urls(),
         ]
+
+    def api_endpoints(self, request):
+        """Every API endpoint, who may call it and what it records: the same list as the app's
+        Access page, API endpoints tab (HIMS-DOC-001). Read-only: it is read from the code."""
+        if not can_view_roles(request.user):
+            raise PermissionDenied
+        from common.contracts import listing
+
+        rows = listing.endpoint_rows()
+        area = request.GET.get("area", "")
+        access = request.GET.get("access", "")
+        shown = [
+            row
+            for row in rows
+            if (not area or row["area"] == area) and (not access or row["access"] == access)
+        ]
+        context = {
+            **self.each_context(request),
+            "title": "API endpoints",
+            "summary": listing.summary(rows),
+            "rows": shown,
+            "areas": listing.AREA_LABELS.items(),
+            "area": area,
+            "access": access,
+        }
+        return TemplateResponse(request, "admin/api_endpoints.html", context)
 
     def confirm_identity(self, request):
         """The console's "confirm it's you" page (HIMS-IAM-007), with the same rules as the app."""

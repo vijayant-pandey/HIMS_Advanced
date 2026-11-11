@@ -90,6 +90,8 @@ def idempotent(operation: str, *, required: bool = False):
                 record.save(update_fields=["response_status", "response_body"])
                 return response
 
+        # Read by the API contract documents and the API endpoints page (HIMS-DOC-001).
+        wrapper.idempotency = {"operation": operation, "required": required}
         return wrapper
 
     return decorator

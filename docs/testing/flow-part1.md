@@ -52,6 +52,7 @@
 22o. [Part 18o: passkeys](#part-18o-passkeys)
 22p. [Part 18p: retention purge and legal hold](#part-18p-retention-purge-and-legal-hold)
 22q. [Part 18q: performance checks and the US hospital in a new branch](#part-18q-performance-checks-and-the-us-hospital-in-a-new-branch)
+22r. [Part 18r: API endpoints and requirement records](#part-18r-api-endpoints-and-requirement-records)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1394,6 +1395,24 @@ check works on a separate throw-away copy that it removes.
 | 18q.10 | US hospital → **Audit log** (as its auditor), any page with many events | Below the table: "1–25 of N" (a very large log says "of more than 10,000") |
 
 For the full size (30 to 60 minutes) run `python manage.py volume_check` without `--scale`.
+
+## Part 18r: API endpoints and requirement records
+
+Needs the docs PR (no migrations). Sign in as the administrator. Nothing changes in these steps.
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18r.1 | Menu → **Access** → tab **API endpoints** | A line "239 endpoints: … need a permission, … are open without sign-in" and a table of every endpoint |
+| 18r.2 | **Access** = Anyone (no sign-in) | Only sign-in, invitation, password reset, CSRF, effective features and browser reports (12 rows) |
+| 18r.3 | **Search** `facilities` | `POST /api/v1/facilities/` needs `facilities.manage`, held by the Organization and Facility administrators; records `facility.created`; requirement HIMS-FAC-001 |
+| 18r.4 | **Search** `role-assignments` | The grant has a **Confirm it's you** chip |
+| 18r.5 | Sign in as the auditor → **Access** | Not in the menu (the list needs `access.roles.view`) |
+| 18r.6 | Admin console (as the administrator) → **API endpoints** at the top right | The same list, with Area and Access filters; choose Access = Anyone (no sign-in), **Show** |
+| 18r.7 | Admin console as the auditor | No **API endpoints** link |
+| 18r.8 | On GitHub (or in the folder) open `docs/requirements/README.md`, then `docs/requirements/traceability.md` | Every Phase 1 requirement with its record, endpoints, test files and PRs |
+| 18r.9 | Open `docs/architecture/api-and-integrations/endpoints/README.md` → any endpoint | Its contract: purpose, permission, scope, request and response, idempotency, version check, audit event, errors, tests |
+
+To refresh the documents after a change: in `backend` (venv active) `python manage.py api_contracts`.
 
 ---
 

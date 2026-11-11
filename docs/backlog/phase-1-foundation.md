@@ -177,7 +177,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-OPS-018 | Restore drill of a cloud database snapshot into a separate database, with the same checks as HIMS-OPS-009 (gap found in HIMS-OPS-009) | To do (🔒 AWS) |
 | HIMS-OPS-017 | Response-time targets (SLOs) measured locally, before hosting (spec 18) | Done (300 ms for pages, 500 ms for searches, 95 of 100 answers; `measure_response_times` on 24 main screens and 6 console lists, alone or in the volume check; query count per screen must not grow with the records (CI); [how-to](../workflows/performance-checks.md)) |
 | HIMS-OPS-021 | Load test with many people at once against the hosted test environment before go-live: response times through the real web server and network, against the spec 18 targets (gap found in HIMS-OPS-017, which measures one request at a time on a PC) | To do (hosting stage) |
-| HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features (spec 25.3, 29) | To do |
+| HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features (spec 25.3, 29) | Done ([requirement records](../requirements/README.md), [API contracts](../architecture/api-and-integrations/README.md); API endpoints tab and console page; [ADR-032](../decisions/ADR-032-requirement-ids-and-contract-docs.md)) |
 
 ## Later phases (epics only; P0 design required before build — spec 26)
 

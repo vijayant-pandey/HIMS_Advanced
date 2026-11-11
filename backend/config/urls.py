@@ -21,6 +21,7 @@ api_v1 = [
     path("", include("apps.recovery.api.urls")),
     path("", include("apps.performance.api.urls")),
     path("", include("common.outbox.urls")),
+    path("", include("common.contracts.api")),
 ]
 
 urlpatterns = [

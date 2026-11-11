@@ -44,5 +44,5 @@
 
 {% block nav-global %}{% endblock %}
 
-{# Security status page for holders of compliance.view (HIMS-SEC-015). #}
-{% block userlinks %}{% if show_security_status %}<a href="{% url 'admin:compliance_security_status' %}">Security status</a> / {% endif %}{{ block.super }}{% endblock %}
+{# Security status page for holders of compliance.view (HIMS-SEC-015); API endpoints for holders of access.roles.view (HIMS-DOC-001). #}
+{% block userlinks %}{% if show_security_status %}<a href="{% url 'admin:compliance_security_status' %}">Security status</a> / {% endif %}{% if show_api_endpoints %}<a href="{% url 'admin:api_endpoints' %}">API endpoints</a> / {% endif %}{{ block.super }}{% endblock %}

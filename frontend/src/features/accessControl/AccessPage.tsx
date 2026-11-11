@@ -24,6 +24,7 @@ import { ErrorAlert } from "../../components/ErrorAlert";
 import { useCurrentUser } from "../auth/api";
 import { hasOrganizationWidePermission, hasPermission } from "../auth/grants";
 import { RevokeDialog, RoleDialog } from "./AccessDialogs";
+import { ApiEndpointsTab } from "./ApiEndpointsTab";
 import { usePermissions, useRoleAssignments, useRoles } from "./api";
 import { formatDate, scopeLabel } from "./UserAccessPanel";
 
@@ -217,15 +218,18 @@ export function AccessPage() {
           Roles and access
         </Typography>
         <Typography variant="body2">
-          What each role can do, and who has access where. Every change is recorded in the audit
-          log.
+          What each role can do, who has access where, and what each permission opens in the API.
+          Every change is recorded in the audit log.
         </Typography>
       </Box>
       <Tabs value={tab} onChange={(_, value: number) => setTab(value)} aria-label="Access sections">
         <Tab label="Who has access" />
         <Tab label="Roles" />
+        <Tab label="API endpoints" />
       </Tabs>
-      {tab === 0 ? <WhoHasAccessTab /> : <RolesTab />}
+      {tab === 0 && <WhoHasAccessTab />}
+      {tab === 1 && <RolesTab />}
+      {tab === 2 && <ApiEndpointsTab />}
     </Stack>
   );
 }

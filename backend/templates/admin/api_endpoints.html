@@ -1,0 +1,49 @@
+{% extends "admin/base_site.html" %}
+{# API endpoints (HIMS-DOC-001): the same list as the app's Access page, API endpoints tab. Read-only:
+   it is read from the code, so it always matches what the server does. Full contracts: docs/architecture/api-and-integrations/. #}
+{% block breadcrumbs %}
+<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; API endpoints</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>API endpoints</h1>
+  <p>{{ summary.total }} endpoints: {{ summary.permission }} need a permission, {{ summary.signed_in }} need any sign-in, {{ summary.public }} are open without sign-in (sign-in, invitations, password reset, browser reports).
+    {{ summary.confirm_identity }} need a recent "confirm it's you"; {{ summary.idempotent }} accept an Idempotency-Key; {{ summary.audited_writes }} of {{ summary.writes }} changes record an audit event.</p>
+
+  <form method="get" class="module" style="padding: 8px;">
+    <label for="area">Area</label>
+    <select id="area" name="area">
+      <option value="">All areas</option>
+      {% for key, label in areas %}<option value="{{ key }}"{% if key == area %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <label for="access">Access</label>
+    <select id="access" name="access">
+      <option value="">Any</option>
+      <option value="permission"{% if access == "permission" %} selected{% endif %}>Needs a permission</option>
+      <option value="signed_in"{% if access == "signed_in" %} selected{% endif %}>Anyone signed in</option>
+      <option value="public"{% if access == "public" %} selected{% endif %}>Anyone (no sign-in)</option>
+    </select>
+    <input type="submit" value="Show">
+  </form>
+
+  <div class="module">
+    <table id="result_list">
+      <thead><tr><th scope="col">Method and path</th><th scope="col">What it does</th><th scope="col">Who may call it</th><th scope="col">Records</th><th scope="col">Requirement</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td><code>{{ row.method }} {{ row.path }}</code></td>
+          <td>{{ row.summary }}</td>
+          <td>{% if row.access == "permission" %}<code>{{ row.permission }}</code>{% if row.scope == "facility" %} (facility or department){% endif %}<br><span class="help">{{ row.roles|join:", "|default:"Custom roles only" }}</span>{% elif row.access == "signed_in" %}Anyone signed in{% else %}Anyone (no sign-in){% endif %}{% if row.confirm_identity %}<br><strong>Confirm it's you</strong>{% endif %}</td>
+          <td>{{ row.audit_actions|join:", "|default:"—" }}</td>
+          <td>{{ row.requirements|join:", "|default:"—" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">No endpoints match.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="help">Each endpoint's full contract (request and response, errors, idempotency, version checks, tests) is in docs/architecture/api-and-integrations/endpoints/ in the repository, generated from the same code.</p>
+</div>
+{% endblock %}

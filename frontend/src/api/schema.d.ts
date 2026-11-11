@@ -357,6 +357,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/api-endpoints/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Every API endpoint with its access rule, scope and audit events, read from the code. */
+        get: operations["api_endpoints_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit-events/": {
         parameters: {
             query?: never;
@@ -3700,6 +3717,47 @@ export interface components {
          * @enum {string}
          */
         AgeGroupEnum: "any" | "adult" | "pediatric" | "neonatal";
+        ApiEndpoint: {
+            method: string;
+            path: string;
+            area: string;
+            area_label: string;
+            summary: string;
+            /**
+             * @description public: no sign-in; signed_in: any account; permission: the one named.
+             *
+             *     * `public` - public
+             *     * `signed_in` - signed_in
+             *     * `permission` - permission
+             */
+            access: components["schemas"]["EndpointCallerEnum"];
+            permission: string;
+            permission_label: string;
+            /** @description System roles holding the permission. */
+            roles: string[];
+            /** @description organization: the grant must cover the whole hospital; facility: a grant at one facility or department is enough. */
+            scope: string;
+            /** @description Needs a recent "confirm it's you". */
+            confirm_identity: boolean;
+            /** @description Idempotency-Key: empty (not taken), optional or required. */
+            idempotency: string;
+            audit_actions: string[];
+            requirements: string[];
+        };
+        ApiEndpointList: {
+            summary: components["schemas"]["ApiEndpointSummary"];
+            endpoints: components["schemas"]["ApiEndpoint"][];
+        };
+        ApiEndpointSummary: {
+            total: number;
+            public: number;
+            signed_in: number;
+            permission: number;
+            confirm_identity: number;
+            idempotent: number;
+            audited_writes: number;
+            writes: number;
+        };
         /**
          * @description * `every_day` - Every day
          *     * `weekdays` - Monday to Friday
@@ -4432,6 +4490,13 @@ export interface components {
             valid_until?: string | null;
             reason: string;
         };
+        /**
+         * @description * `public` - public
+         *     * `signed_in` - signed_in
+         *     * `permission` - permission
+         * @enum {string}
+         */
+        EndpointCallerEnum: "public" | "signed_in" | "permission";
         Equipment: {
             /** Format: uuid */
             readonly id: string;
@@ -7803,6 +7868,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Account"];
+                };
+            };
+        };
+    };
+    api_endpoints_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiEndpointList"];
                 };
             };
         };
