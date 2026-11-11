@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api } from "../../api/client";
 import type {
+  ApiEndpointList,
   PaginatedRoleAssignmentList,
   PaginatedRoleList,
   Permission,
@@ -19,6 +20,15 @@ export function useRoles() {
     queryKey: [...accessKey, "roles"],
     queryFn: ({ signal }) =>
       api.get<PaginatedRoleList>("/roles/", { query: { page_size: 100 }, signal }),
+  });
+}
+
+/** Every API endpoint with who may call it, read from the server's code (HIMS-DOC-001). */
+export function useApiEndpoints() {
+  return useQuery<ApiEndpointList, ApiError>({
+    queryKey: [...accessKey, "api-endpoints"],
+    queryFn: ({ signal }) => api.get<ApiEndpointList>("/api-endpoints/", { signal }),
+    staleTime: Infinity,
   });
 }
 

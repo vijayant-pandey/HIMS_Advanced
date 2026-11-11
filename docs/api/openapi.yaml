@@ -590,6 +590,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Account'
           description: ''
+  /api/v1/api-endpoints/:
+    get:
+      operationId: api_endpoints_retrieve
+      description: Every API endpoint with its access rule, scope and audit events,
+        read from the code.
+      tags:
+      - api-endpoints
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEndpointList'
+          description: ''
   /api/v1/audit-events/:
     get:
       operationId: audit_events_list
@@ -6625,6 +6641,110 @@ components:
         * `adult` - Adults
         * `pediatric` - Children
         * `neonatal` - Newborns
+    ApiEndpoint:
+      type: object
+      properties:
+        method:
+          type: string
+        path:
+          type: string
+        area:
+          type: string
+        area_label:
+          type: string
+        summary:
+          type: string
+        access:
+          allOf:
+          - $ref: '#/components/schemas/EndpointCallerEnum'
+          description: |-
+            public: no sign-in; signed_in: any account; permission: the one named.
+
+            * `public` - public
+            * `signed_in` - signed_in
+            * `permission` - permission
+        permission:
+          type: string
+        permission_label:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+          description: System roles holding the permission.
+        scope:
+          type: string
+          description: 'organization: the grant must cover the whole hospital; facility:
+            a grant at one facility or department is enough.'
+        confirm_identity:
+          type: boolean
+          description: Needs a recent "confirm it's you".
+        idempotency:
+          type: string
+          description: 'Idempotency-Key: empty (not taken), optional or required.'
+        audit_actions:
+          type: array
+          items:
+            type: string
+        requirements:
+          type: array
+          items:
+            type: string
+      required:
+      - access
+      - area
+      - area_label
+      - audit_actions
+      - confirm_identity
+      - idempotency
+      - method
+      - path
+      - permission
+      - permission_label
+      - requirements
+      - roles
+      - scope
+      - summary
+    ApiEndpointList:
+      type: object
+      properties:
+        summary:
+          $ref: '#/components/schemas/ApiEndpointSummary'
+        endpoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiEndpoint'
+      required:
+      - endpoints
+      - summary
+    ApiEndpointSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        public:
+          type: integer
+        signed_in:
+          type: integer
+        permission:
+          type: integer
+        confirm_identity:
+          type: integer
+        idempotent:
+          type: integer
+        audited_writes:
+          type: integer
+        writes:
+          type: integer
+      required:
+      - audited_writes
+      - confirm_identity
+      - idempotent
+      - permission
+      - public
+      - signed_in
+      - total
+      - writes
     AppliesOnEnum:
       enum:
       - every_day
@@ -8465,6 +8585,16 @@ components:
           maxLength: 2000
       required:
       - reason
+    EndpointCallerEnum:
+      enum:
+      - public
+      - signed_in
+      - permission
+      type: string
+      description: |-
+        * `public` - public
+        * `signed_in` - signed_in
+        * `permission` - permission
     Equipment:
       type: object
       properties:

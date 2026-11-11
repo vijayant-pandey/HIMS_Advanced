@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "common.idempotency",
     "common.outbox",
     "common.datadict",  # generates the data dictionary (spec 28); no tables
+    "common.contracts",  # API contracts and traceability (spec 25, 29); no tables
     "common.devtools",  # developer/test-only commands (browser-test database); no tables
     # Business domains
     "apps.audit",
@@ -322,6 +323,8 @@ SPECTACULAR_SETTINGS = {
         "PerformanceKindEnum": "apps.performance.models.PerformanceCheck.Kind",
         "PerformanceOutcomeEnum": "apps.performance.models.PerformanceCheck.Outcome",
         "PerformanceTriggerEnum": "apps.performance.models.PerformanceCheck.Trigger",
+        # Who may call an endpoint (HIMS-DOC-001).
+        "EndpointCallerEnum": "common.contracts.inventory.ACCESS_CHOICES",
         "ShiftKindEnum": "apps.rosters.models.ShiftType.Kind",
         "ShiftStatusEnum": "apps.rosters.models.Shift.Status",
         "LeaveStatusEnum": "apps.rosters.models.LeaveRequest.Status",

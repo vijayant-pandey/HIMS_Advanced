@@ -13,6 +13,8 @@ in the [roadmap](docs/status/roadmap.md). The product owner's step-by-step brows
 | `backend/` | Django 5.2 + DRF modular monolith, Celery workers |
 | `frontend/` | React 19 + TypeScript SPA (Vite, MUI, TanStack Query) |
 | `docs/api/openapi.yaml` | API contract (generated; checked in CI) |
+| `docs/architecture/api-and-integrations/` | Every endpoint's contract (generated; checked in CI) |
+| `docs/requirements/` | Requirement records and the traceability matrix |
 | `docs/decisions/` | Architecture Decision Records |
 | `infrastructure/` | Terraform and runbooks (Stage B onward) |
 
@@ -175,6 +177,10 @@ every check. `python manage.py volume_check` fills a throw-away copy with the re
 hospital (all synthetic), checks that the busiest queries use their indexes and measures the main
 screens, records the results and removes the copy (HIMS-DATA-002, HIMS-OPS-017):
 [docs/workflows/performance-checks.md](docs/workflows/performance-checks.md).
+
+## API endpoints and requirement records
+
+Every endpoint's contract is generated from the code by `python manage.py api_contracts` (checked in CI): [docs/architecture/api-and-integrations](docs/architecture/api-and-integrations/README.md). Every built requirement has a record and a line in the traceability matrix: [docs/requirements](docs/requirements/README.md). In the app, **Access → API endpoints** lists who may call each endpoint; the console has the same page (HIMS-DOC-001).
 
 ## Browser tests for both hospitals
 

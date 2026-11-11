@@ -27,7 +27,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
-| Phase 1 tickets | 122: ✅ 97 done or approved · 25 left: 5 🔓 can be built now (4 of them optional or later), 1 at the end of Phase 1 (security review), 15 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 1 tickets | 122: ✅ 98 done or approved · 24 left: 4 🔓 can be built now (all optional or later), 1 at the end of Phase 1 (security review), 15 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
@@ -38,7 +38,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~98%, cloud ~10% | 97 (PR #1–#48 and #30, measuring and tests, 2 approvals) | 5 buildable items (section 4a; 4 optional), then the security review; hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~99%, cloud ~10% | 98 (PR #1–#49 and #30, the docs group, 2 approvals) | The security review next; 4 optional items (section 4a); hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -73,11 +73,11 @@ PACS/LIS/drug database/SMS.
 | 22 | Architecture decisions | 🟡 | Review ADR-009 to ADR-027 one by one (accepted for now, 2026-11-08) | PO |
 | 23 | Readiness checklist (45) | 🟡 2 done, 7 partial | 36 items | CLIN, LEGAL, AWS, PAYER |
 | 24 | Reference links | n/a | — | — |
-| 25 | Delivery standard | 🟡 | Formal requirement records for built features | 🔓 |
+| 25 | Delivery standard | 🟡 90% | Records for each new requirement as built; release evidence per environment (records for all built ones done, HIMS-DOC-001) | Hosting |
 | 26 | P0 before each domain | 🟡 | P0 for Phases 3–6 (Phase 2 approved for now, 2026-11-08) | PO, CLIN |
 | 27 | P1 before production | ⬜ | Cloud disaster recovery (local restore drills done, HIMS-OPS-009), runbooks, load tests, UAT | AWS, CLIN |
 | 28 | Artifact A (data) | 🟡 80% | P0 domains (volume index check done: HIMS-DATA-002) | P0 |
-| 29 | Artifact B (API) | 🟡 60% | Per-endpoint contract docs; webhooks/adapters | 🔓 partly; PAYER |
+| 29 | Artifact B (API) | 🟡 85% | Provider adapters and webhooks (per-endpoint contracts done, HIMS-DOC-001) | PAYER, VENDOR |
 | 30 | Artifact C (AWS) | 🟡 8% | Terraform, network, KMS, cloud backups (30.5 separate database users done, HIMS-OPS-007) | Hosting stage (Oracle Cloud, ADR-027) |
 | 31 | Environments | 🟡 | Hosted Dev/QA/Staging/Production | PO (hosting accounts) |
 | 32 | GitHub workflow | 🟡 | Projects board | — |
@@ -104,9 +104,9 @@ fit, so nothing is forgotten.
 | 4 | Passkeys (alone: changes sign-in) | HIMS-IAM-014 | 13.1 | ✅ done |
 | 5 | Retention purge (alone: deletes data) | HIMS-COMP-006 | 4.25, 28 | ✅ done |
 | 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ✅ done |
-| 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ⬜ **next** |
+| 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ✅ done |
 
-Then the security review (HIMS-SEC-011). The table below keeps each task's own row.
+**Next: the security review (HIMS-SEC-011).** The table below keeps each task's own row.
 
 | Step | Spec § | Ticket | Task | Status | Why this order |
 |---|---|---|---|---|---|
@@ -125,7 +125,7 @@ Then the security review (HIMS-SEC-011). The table below keeps each task's own r
 | 13 | 28.6 | HIMS-DATA-002 | Index check with production-like synthetic volume | ✅ done (group 6) | Before real volume |
 | 14 | 19.2 | HIMS-QA-003 | Browser tests for the US deployment and the admin console | ✅ done (group 6) | US is a separate deployment |
 | 15 | 13.1 | HIMS-IAM-014 | Passkeys as a second factor | ✅ done (group 4) | Optional upgrade over authenticator codes |
-| 16 | 25, 29 | HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features | ⬜ | Traceability (spec 25.3, 29) |
+| 16 | 25, 29 | HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features | ✅ done (group 7) | Traceability (spec 25.3, 29) |
 | 17 | 18 | HIMS-OPS-017 | Response-time targets (SLOs) measured locally | ✅ done (group 6) | Baseline before hosting |
 | 18 | 4.22, 13.3 | HIMS-SEC-013 | Virus scanning of uploaded documents | ✅ done (group 3) | Before patient documents |
 | 19 | 13.3, 18 | HIMS-SEC-020 | Filter the error text kept in traces with the same rules as logs | ✅ done (group 3) | Gap found by HIMS-SEC-019; needed before traces are sent anywhere (HIMS-PLAT-019) |
@@ -133,7 +133,7 @@ Then the security review (HIMS-SEC-011). The table below keeps each task's own r
 | 19b | 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts (the hospital sets the numbers) | ✅ done (group 2) | Unblocked 2026-11-08 (CLIN) |
 | 19c | 4.3 | HIMS-STAFF-013 | Leave balances and entitlements (the hospital sets them) | ✅ done (group 2) | Unblocked 2026-11-08 (PO) |
 | 19d | 4.25, 28 | HIMS-COMP-006 | Retention purge with legal hold (the hospital sets the periods; nothing deleted until set) | ✅ done (group 5) | Unblocked 2026-11-08 (LEGAL) |
-| 19e | 13 | HIMS-SEC-011 | Security review of the threat model | ⬜ last | PO: when the whole of Phase 1 is complete |
+| 19e | 13 | HIMS-SEC-011 | Security review of the threat model | ⬜ **next** | PO: when the whole of Phase 1 is complete (the buildable queue is now done) |
 | — | 4.4 | HIMS-IAM-019 | Self-service cover requests | ⬜ optional | When hospitals ask |
 | — | 4.3 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head | ⬜ optional | When hospitals ask |
 | — | 4.25 | HIMS-SEC-017 | Integrity check as a background job | ⬜ later | When the audit log nears ~1 million records |
@@ -235,7 +235,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 
 ## 6. Done so far
 
-97 Phase 1 items: tickets delivered in PR #1–#48 (and #30) and the measuring and tests PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
+98 Phase 1 items: tickets delivered in PR #1–#49 (and #30) and the docs group PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
 tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and
 [work queue](spec-status.md#next-work-queue-dependency-free-in-recommended-order).
 

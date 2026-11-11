@@ -126,3 +126,5 @@ instead of the date bar (`LargeTableAdminMixin`); the audit list's record type, 
 and the background events' type moved from filters to the search box. The console now has its own browser tests (`05-admin-console.spec.ts`, and the US
 hospital's console in `e2e/us`). A check of what #48 added (retention rules with their preview, legal
 holds, purge runs with Run now) found nothing missing.
+
+**Update (2026-11-11, HIMS-DOC-001):** the console has an **API endpoints** page (link at the top right, for holders of `access.roles.view`): every endpoint, who may call it, whether it needs "confirm it's you", what it records and its requirement, read from the same code as the app's Access page tab. A check of what #49 added (performance checks with Run the index check now, the large-list counting, the department filters) found nothing missing: the response-time and volume checks run from the command line only, as on the app's Performance screen.
