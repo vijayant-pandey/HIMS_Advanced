@@ -168,6 +168,19 @@ invitations and resets, security logs) are kept; nothing is deleted until a peri
 hold stops the purge (HIMS-COMP-006): [docs/workflows/retention-purge.md](docs/workflows/retention-purge.md).
 On your PC: `python manage.py purge_expired_records --dry-run`.
 
+## Performance: indexes and response times
+
+**Performance** in the menu shows the targets (spec 18: 300 ms for screens, 500 ms for searches) and
+every check. `python manage.py volume_check` fills a throw-away copy with the records of a 500-bed
+hospital (all synthetic), checks that the busiest queries use their indexes and measures the main
+screens, records the results and removes the copy (HIMS-DATA-002, HIMS-OPS-017):
+[docs/workflows/performance-checks.md](docs/workflows/performance-checks.md).
+
+## Browser tests for both hospitals
+
+`npm run e2e` (India and the admin console) and `npm run e2e:us` (a separate US hospital) in
+`frontend` (HIMS-QA-001, HIMS-QA-003): [docs/testing/browser-tests.md](docs/testing/browser-tests.md).
+
 ## Admin console: only from allowed addresses
 
 The admin console answers only the addresses in `HIMS_ADMIN_ALLOWED_NETWORKS`; anyone else gets

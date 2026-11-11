@@ -51,6 +51,7 @@
 22n. [Part 18n: virus scanning and traces](#part-18n-virus-scanning-and-traces)
 22o. [Part 18o: passkeys](#part-18o-passkeys)
 22p. [Part 18p: retention purge and legal hold](#part-18p-retention-purge-and-legal-hold)
+22q. [Part 18q: performance checks and the US hospital in a new branch](#part-18q-performance-checks-and-the-us-hospital-in-a-new-branch)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1372,6 +1373,27 @@ deleted in these steps: the first period only applies after 7 days, and you canc
 | 18p.9 | Admin console → Compliance → **Retention rules**, **Legal holds**, **Retention purge runs** | The same periods, the released hold, the run; **Run the purge now** at the top of the runs page |
 | 18p.10 | Launcher window: `python manage.py purge_expired_records --dry-run` (in `backend`, venv active) | One line per kind: "No period set: kept for ever." |
 | 18p.11 | **Audit log** (as the auditor), area Compliance | "Retention period changed" (twice), "Legal hold placed", "Legal hold released", "Retention purge run" |
+
+## Part 18q: performance checks and the US hospital in a new branch
+
+Needs the measuring-and-tests PR and its migrate step (India and US). Sign in as the administrator.
+Nothing in your hospital's records changes in these steps: the checks only read, and the volume
+check works on a separate throw-away copy that it removes.
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18q.1 | Menu → **Performance** | Targets: 300 ms for screens, 500 ms for searches; "Not run yet." (or earlier results) |
+| 18q.2 | **Run the index check now** | "Index check passed: 24 of 24 queries use their index in time." with a **See each query** link |
+| 18q.3 | **See each query** | 24 rows, each **OK**, with the index used (small tables say "read whole, which is quicker at this size") |
+| 18q.4 | Launcher window (in `backend`, venv active): `python manage.py volume_check --scale 0.1` | Takes about 5 minutes; ends "Index check (query plans): 24 of 24 ..." and "Response times: 30 of 30 ..." |
+| 18q.5 | Refresh **Performance** | Under "At the size of a large hospital": both checks **Passed**, about 360,000 records; database "hims_volume (throw-away copy, synthetic records)" |
+| 18q.6 | Open the **Response times** check | 30 screens (24 in the app, 6 console lists) with typical and p95 times under their targets, and the number of queries each makes |
+| 18q.7 | Admin console → Performance → **Performance checks** | The same checks; **Run the index check now** at the top |
+| 18q.8 | **Audit log** (as the auditor), area Performance checks | "Performance check run (index check or response times)" for each check |
+| 18q.9 | US hospital (`npm run dev:us`, sign in as its administrator) → **Facilities** → **New facility** | Country already **United States**, time zone **America/New_York**; Cancel |
+| 18q.10 | US hospital → **Audit log** (as its auditor), any page with many events | Below the table: "1–25 of N" (a very large log says "of more than 10,000") |
+
+For the full size (30 to 60 minutes) run `python manage.py volume_check` without `--scale`.
 
 ---
 

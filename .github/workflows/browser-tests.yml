@@ -1,5 +1,6 @@
 # Browser tests with Playwright (spec 19.2, 33.1 "fast PR suite and a broader scheduled suite";
-# HIMS-QA-001). Runs on PRs into development, every night and on demand. Not a required check:
+# HIMS-QA-001; the US hospital and the admin console: HIMS-QA-003). Runs on PRs into development,
+# every night and on demand. Not a required check:
 # it does not block merging until the product owner adds it to the branch ruleset.
 # Actions are pinned to commit SHAs (HIMS-PLAT-013; enforced by common/tests/test_ci_workflows.py).
 name: browser-tests
@@ -20,7 +21,7 @@ concurrency:
 jobs:
   playwright:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     permissions:
       contents: read
     services:
@@ -59,9 +60,13 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-      - name: Browser tests
+      - name: Browser tests (India hospital and the admin console)
         working-directory: frontend
         run: npm run e2e
+      - name: Browser tests (US hospital, a separate deployment)
+        if: ${{ !cancelled() }}
+        working-directory: frontend
+        run: npm run e2e:us
       - name: Keep the report when something failed
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -70,4 +75,6 @@ jobs:
           path: |
             frontend/playwright-report
             frontend/test-results
+            frontend/playwright-report-us
+            frontend/test-results-us
           retention-days: 7

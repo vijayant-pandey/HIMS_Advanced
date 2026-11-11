@@ -74,6 +74,7 @@ erDiagram
     message_templates
     recovery_backups
     recovery_restore_drills
+    performance_checks
     outbox_events
     outbox_processed_events
     idempotency_records
@@ -1402,6 +1403,29 @@ erDiagram
         integer problem_count
     }
     recovery_backups ||--o{ recovery_restore_drills : "backup_id"
+```
+
+## Performance checks: indexes and response times (logical)
+
+```mermaid
+erDiagram
+    performance_checks {
+        uuid id PK
+        varchar kind
+        timestamptz started_at
+        timestamptz finished_at
+        varchar trigger
+        uuid requested_by_id
+        varchar outcome
+        varchar database
+        varchar environment
+        varchar release
+        jsonb dataset
+        bigint dataset_rows
+        jsonb results
+        integer problem_count
+        varchar summary
+    }
 ```
 
 ## Platform: transactional outbox (logical)

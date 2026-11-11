@@ -30,6 +30,8 @@ function feature(overrides: Partial<FeatureState>): FeatureState {
   };
 }
 
+const ABDM = "integrations.abdm"; // India only
+
 const FEATURES: FeatureState[] = [
   feature({}),
   feature({
@@ -53,6 +55,17 @@ const FEATURES: FeatureState[] = [
     category: "Clinical modules",
     available: false,
     planned_phase: "Phase 2",
+    enabled: false,
+    default: false,
+  }),
+  feature({
+    key: ABDM,
+    name: "ABDM (Ayushman Bharat Digital Mission)",
+    category: "Clinical modules",
+    available: false,
+    planned_phase: "Phase 6",
+    countries: ["IN"],
+    offered_in_country: false,
     enabled: false,
     default: false,
   }),
@@ -110,6 +123,10 @@ describe("FeaturesPage", () => {
     expect(await screen.findByText("Locations and beds")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Clinical modules" })).toBeInTheDocument();
     expect(screen.getByText("Coming in Phase 2")).toBeInTheDocument();
+    // Another country's feature never comes here, even when it is still planned (HIMS-QA-003).
+    const abdm = screen.getByText("ABDM (Ayushman Bharat Digital Mission)").closest("tr")!;
+    expect(within(abdm).getByText("Not offered in this country")).toBeInTheDocument();
+    expect(within(abdm).queryByText(/Coming in/)).toBeNull();
     expect(screen.getByText("Board decision · Synthetic Admin")).toBeInTheDocument();
     // planned features cannot be changed
     expect(screen.queryByRole("button", { name: "Change Patient registration" })).not.toBeInTheDocument();

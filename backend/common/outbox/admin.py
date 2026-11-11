@@ -4,7 +4,7 @@ from django.template.response import TemplateResponse
 
 from apps.access_control.catalog import P
 from apps.access_control.selectors import has_permission
-from common.admin.options import ReadOnlyModelAdmin
+from common.admin.options import LargeTableAdminMixin, ReadOnlyModelAdmin
 from common.exceptions import ConflictError
 
 from .maintenance import dismiss, outbox_health, send_again
@@ -12,7 +12,7 @@ from .models import OutboxEvent, ProcessedEvent
 
 
 @admin.register(OutboxEvent)
-class OutboxEventAdmin(ReadOnlyModelAdmin):
+class OutboxEventAdmin(LargeTableAdminMixin, ReadOnlyModelAdmin):
     """The same health summary and decisions as the Background jobs page (HIMS-PLAT-014)."""
 
     change_list_template = "admin/outbox/outboxevent/change_list.html"
@@ -25,9 +25,8 @@ class OutboxEventAdmin(ReadOnlyModelAdmin):
         "last_error",
         "resolution_note",
     )
-    list_filter = ("status", "event_type")
-    search_fields = ("id", "aggregate_id", "correlation_id")
-    date_hierarchy = "occurred_at"
+    list_filter = ("status", ("occurred_at", admin.DateFieldListFilter))
+    search_fields = ("id", "event_type", "aggregate_id", "correlation_id")
     actions = ["requeue", "dismiss_selected"]
 
     def changelist_view(self, request, extra_context=None):

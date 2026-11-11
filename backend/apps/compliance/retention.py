@@ -375,12 +375,18 @@ def preview_one(rule: RetentionRule) -> dict:
     return _counted(_category(rule.category), rule, _active_holds(), timezone.now())
 
 
+def batch_ids(rows: QuerySet) -> QuerySet:
+    """The next batch to delete. Any order will do, so none is asked for: the database can then
+    use the index on the cut-off column instead of walking the whole table (HIMS-DATA-002)."""
+    return rows.order_by().values_list("pk", flat=True)[:DELETE_BATCH]
+
+
 def _delete(rows: QuerySet) -> tuple[int, bool]:
     """Delete in small transactions, at most RUN_LIMIT rows; (deleted, more left)."""
     deleted = 0
     model = rows.model
     while deleted < RUN_LIMIT:
-        ids = list(rows.order_by("pk").values_list("pk", flat=True)[:DELETE_BATCH])
+        ids = list(batch_ids(rows))
         if not ids:
             return deleted, False
         with transaction.atomic():

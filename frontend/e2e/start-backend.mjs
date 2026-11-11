@@ -1,12 +1,16 @@
 // Starts a throw-away HIMS backend for the browser tests (HIMS-QA-001). Started by
 // playwright.config.ts; not meant to be run by hand.
 //
-// 1. Recreates the empty database `hims_e2e` (the command refuses any other name).
-// 2. Migrates it and provisions a synthetic hospital with an administrator and an auditor.
-// 3. Runs the API on port 8100 (the normal local hospitals use 8000/8001, so they are untouched).
+// 1. Recreates the empty database `hims_e2e` (`hims_e2e_us` for the US hospital; the command
+//    refuses any name not starting with hims_e2e).
+// 2. Migrates it and provisions a synthetic hospital (India, or the US with HIMS_E2E_DEPLOYMENT=us:
+//    HIMS-QA-003) with an administrator and an auditor.
+// 3. Runs the API on port 8100 (US: 8110; the normal local hospitals use 8000/8001, so they are
+//    untouched).
 //
-// Database server: E2E_DATABASE_URL if set, otherwise the server from backend/.env with the
-// database name replaced by hims_e2e. Emails are written to e2e/.mail, uploads to e2e/.media.
+// Database server: E2E_DATABASE_URL if set, otherwise the server from backend/.env; either way the
+// database name is replaced by the test database's. Emails are written to e2e/.mail, uploads to
+// e2e/.media (US: .mail-us, .media-us).
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -26,15 +30,18 @@ function python() {
 }
 
 function databaseUrl() {
-  if (process.env.E2E_DATABASE_URL) return process.env.E2E_DATABASE_URL;
-  const file = join(backend, ".env");
-  // The owner's URL when the app has its own limited user (HIMS-OPS-007): creating the throw-away
-  // database needs the owner's rights.
-  const text = existsSync(file) ? readFileSync(file, "utf8") : "";
-  const line = text.match(/^HIMS_MIGRATION_DATABASE_URL=(.+)$/m) || text.match(/^DATABASE_URL=(.+)$/m);
-  if (!line) throw new Error("Set E2E_DATABASE_URL, e.g. postgres://user:pass@localhost:5432/hims_e2e");
-  const url = new URL(line[1].trim());
-  url.pathname = "/hims_e2e";
+  let server = process.env.E2E_DATABASE_URL;
+  if (!server) {
+    const file = join(backend, ".env");
+    // The owner's URL when the app has its own limited user (HIMS-OPS-007): creating the
+    // throw-away database needs the owner's rights.
+    const text = existsSync(file) ? readFileSync(file, "utf8") : "";
+    const line = text.match(/^HIMS_MIGRATION_DATABASE_URL=(.+)$/m) || text.match(/^DATABASE_URL=(.+)$/m);
+    if (!line) throw new Error("Set E2E_DATABASE_URL, e.g. postgres://user:pass@localhost:5432/hims_e2e");
+    server = line[1].trim();
+  }
+  const url = new URL(server);
+  url.pathname = `/${E2E.database}`;
   return url.toString();
 }
 
@@ -81,11 +88,11 @@ run(["reset_e2e_database"]);
 run(["migrate", "--no-input", "-v", "0"]);
 run([
   "provision_organization",
-  "--legal-name=E2E Synthetic Hospital Pvt Ltd",
-  "--display-name=E2E Synthetic Hospital",
-  "--country=IN",
-  "--timezone=Asia/Kolkata",
-  "--currency=INR",
+  `--legal-name=${E2E.legalName}`,
+  `--display-name=${E2E.displayName}`,
+  `--country=${E2E.country}`,
+  `--timezone=${E2E.timezone}`,
+  `--currency=${E2E.currency}`,
   `--admin-email=${ADMIN.email}`,
   `--admin-name=${ADMIN.name}`,
   "--admin-password-env=E2E_ADMIN_PASSWORD",

@@ -111,3 +111,18 @@ delete now and what holds keep; change or cancel with the same rules as the app)
 on chosen kinds and optionally one person; release with a reason; never deleted) and **Retention purge
 runs** (append-only history and **Run the purge now**). Each change asks "confirm it's you" first. A
 check of what #47 added found nothing missing.
+
+**Update 2026-11-10 (HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003):** Performance → **Performance
+checks** lists every index check and response-time measurement (read-only evidence, results per query
+or screen) with **Run the index check now** for holders of `platform.performance.manage`, the same
+service as the app's Performance screen. The response-time check now also times the console's lists
+of the six largest tables; it found the "By department" filters and department columns looking up
+each department's facility one query at a time, fixed with `DepartmentListFilter` and
+`list_select_related` (rota, leave, minimum staffing, gap alerts, role assignments, wards, clinical
+privileges). The lists of the five largest tables (audit events, messages, background events,
+sign-ins, issued numbers) took up to 1.9 s at hospital size: they now count up to 10,000 ("More than
+10,000"), skip Django's second full count, and filter dates with Today / Past 7 days / This month
+instead of the date bar (`LargeTableAdminMixin`); the audit list's record type, the messages' kind
+and the background events' type moved from filters to the search box. The console now has its own browser tests (`05-admin-console.spec.ts`, and the US
+hospital's console in `e2e/us`). A check of what #48 added (retention rules with their preview, legal
+holds, purge runs with Run now) found nothing missing.

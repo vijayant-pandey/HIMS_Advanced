@@ -25,6 +25,7 @@ CATEGORIES: dict[str, str] = {
     "notification": "Emails and SMS",
     "compliance": "Compliance",
     "recovery": "Backups and restore drills",
+    "performance": "Performance checks",
     "database": "Database access",
     "outbox": "Background jobs",
 }
@@ -149,6 +150,7 @@ LABELS: dict[str, str] = {
     A.AUDIT_INTEGRITY_ALERT_SENT: "Audit integrity problem: auditors alerted",
     A.BACKUP_CREATED: "Backup made",
     A.RESTORE_DRILL_COMPLETED: "Restore drill run",
+    A.PERFORMANCE_CHECK_RUN: "Performance check run (index check or response times)",
     A.DATABASE_USERS_SET_UP: "Separate database users set up or their rights re-applied",
     A.OUTBOX_CLEANED_UP: "Old background events cleaned up",
     A.OUTBOX_EVENT_SENT_AGAIN: "Failed background event sent again",

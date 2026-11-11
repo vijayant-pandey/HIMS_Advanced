@@ -21,6 +21,16 @@ export const CATEGORIES: { value: string; label: string }[] = [
   { value: "feature", label: "Features" },
   { value: "admin", label: "Admin console changes" },
   { value: "audit", label: "Audit log use" },
+  // Added 2026-11-10 (found by HIMS-QA-003): every area the server knows can be chosen; a backend
+  // test (apps/audit/tests/test_audit_areas.py) keeps this list in step with apps/audit/catalog.py.
+  { value: "rota", label: "Rotas" },
+  { value: "leave", label: "Leave" },
+  { value: "notification", label: "Emails and SMS" },
+  { value: "compliance", label: "Compliance" },
+  { value: "recovery", label: "Backups and restore drills" },
+  { value: "database", label: "Database access" },
+  { value: "outbox", label: "Background jobs" },
+  { value: "performance", label: "Performance checks" },
 ];
 
 export function who(event: AuditEvent): string {

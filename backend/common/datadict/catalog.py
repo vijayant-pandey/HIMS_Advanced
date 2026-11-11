@@ -85,6 +85,11 @@ DOMAINS: dict[str, dict] = {
         "owner": "Platform / operations (evidence for auditors)",
         "docs": ["../../workflows/backup-and-restore.md"],
     },
+    "performance": {
+        "name": "Performance checks: indexes and response times",
+        "owner": "Platform / operations",
+        "docs": ["../../workflows/performance-checks.md", "volume-check.md"],
+    },
     "outbox": {
         "name": "Platform: transactional outbox",
         "owner": "Platform",
@@ -207,6 +212,9 @@ LIFECYCLE: dict[str, str] = {
     "PC. The backup files live outside the database (`HIMS_BACKUP_DIR`).",
     "recovery_restore_drills": "Append-only (database trigger); one row per restore drill, the "
     "evidence that backups can be restored (spec 27.1).",
+    "performance_checks": "Append-only (database trigger); one row per index check or "
+    "response-time measurement, kept as evidence; counts and timings only (HIMS-DATA-002, "
+    "HIMS-OPS-017).",
     "idempotency_records": "Purged hourly once expired (48 hours, "
     "`HIMS_IDEMPOTENCY_RETENTION_HOURS`).",
 }
@@ -269,6 +277,8 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "recovery_backups.manifest": (INTERNAL, "Inventory: counts and fingerprints, no contents"),
     "recovery_backups.dump_sha256": (INTERNAL, "Checksum"),
     "recovery_restore_drills.checks": (INTERNAL, "Check results (table names, no contents)"),
+    "performance_checks.results": (INTERNAL, "Timings and index names, no record contents"),
+    "performance_checks.dataset": (INTERNAL, "Row counts per table"),
     "staff_documents.original_name": (RESTRICTED, "Document (file name)"),
     "access_review_items.account_active": (RESTRICTED, "Access evidence"),
     "access_review_items.last_signed_in_at": (RESTRICTED, "Access evidence"),

@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin, messages
 
-from common.admin.options import HimsModelAdmin, ReadOnlyModelAdmin
+from common.admin.options import HimsModelAdmin, LargeTableAdminMixin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
 from .models import IssuedNumber, NumberCounter, NumberingScheme
@@ -102,8 +102,7 @@ class NumberCounterAdmin(ReadOnlyModelAdmin):
 
 
 @admin.register(IssuedNumber)
-class IssuedNumberAdmin(ReadOnlyModelAdmin):
+class IssuedNumberAdmin(LargeTableAdminMixin, ReadOnlyModelAdmin):
     list_display = ("value", "document_type", "facility", "issued_by", "reference", "created_at")
-    list_filter = ("document_type", "facility")
+    list_filter = ("document_type", "facility", ("created_at", admin.DateFieldListFilter))
     search_fields = ("value", "reference")
-    date_hierarchy = "created_at"

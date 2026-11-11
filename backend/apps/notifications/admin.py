@@ -10,7 +10,12 @@ from django.utils.safestring import mark_safe
 
 from apps.access_control.catalog import P
 from apps.access_control.selectors import has_permission
-from common.admin.options import ConfirmIdentityAdminMixin, HimsModelAdmin, ReadOnlyModelAdmin
+from common.admin.options import (
+    ConfirmIdentityAdminMixin,
+    HimsModelAdmin,
+    LargeTableAdminMixin,
+    ReadOnlyModelAdmin,
+)
 from common.exceptions import DomainError
 
 from .message_catalog import BY_KEY
@@ -42,7 +47,7 @@ class TestMessageForm(forms.Form):
 
 
 @admin.register(Notification)
-class NotificationAdmin(ReadOnlyModelAdmin):
+class NotificationAdmin(LargeTableAdminMixin, ReadOnlyModelAdmin):
     """Every email and SMS HIMS sent (HIMS-NOTIF-001). Read only: sign-in links and secrets
     are hidden in the stored copy; failed messages can be sent again, and a test message sent
     (same rules and audit as the Messages page)."""
@@ -50,9 +55,8 @@ class NotificationAdmin(ReadOnlyModelAdmin):
     change_list_template = "admin/notifications/notification/change_list.html"
 
     list_display = ("created_at", "channel", "template", "to", "subject", "status", "attempts")
-    list_filter = ("channel", "status", "category")
-    search_fields = ("subject", "template", "recipients")
-    date_hierarchy = "created_at"
+    list_filter = ("channel", "status", ("created_at", admin.DateFieldListFilter))
+    search_fields = ("subject", "template", "category", "recipients")
     actions = ["send_again"]
     fields = (
         "created_at",

@@ -52,6 +52,13 @@ class OutboxEvent(models.Model):
                 name="outbox_pending_idx",
             ),
             models.Index(fields=["aggregate_type", "aggregate_id"], name="outbox_aggregate_idx"),
+            # Failed and dismissed events: counted on the health page and cleaned up daily. Few
+            # rows, so a small index (HIMS-DATA-002 found the count reading the whole table).
+            models.Index(
+                fields=["status", "resolved_at"],
+                condition=Q(status__in=["dead", "dismissed"]),
+                name="outbox_attention_idx",
+            ),
         ]
 
     def __str__(self) -> str:

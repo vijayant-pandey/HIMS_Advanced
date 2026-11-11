@@ -12,6 +12,7 @@ from common.admin.options import (
     ConfirmIdentityAdminMixin,
     HimsInline,
     HimsModelAdmin,
+    LargeTableAdminMixin,
     ReadOnlyModelAdmin,
 )
 from common.exceptions import DomainError
@@ -78,7 +79,7 @@ class PasskeyAdmin(ConfirmIdentityAdminMixin, ReadOnlyModelAdmin):
 
 
 @admin.register(UserSession)
-class UserSessionAdmin(ReadOnlyModelAdmin):
+class UserSessionAdmin(LargeTableAdminMixin, ReadOnlyModelAdmin):
     """Who is signed in where. The session key is a secret and is never displayed."""
 
     list_display = ("user", "created_at", "ip_address", "ended_at", "end_reason")

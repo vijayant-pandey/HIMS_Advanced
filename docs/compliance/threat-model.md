@@ -44,6 +44,7 @@ separate deployments, separate databases; (5) developers and hosting staff to pr
 | **I**nformation disclosure | Leak of secrets | Secret scan in CI, gitignored env files, encryption of secrets | Managed secret store at hosting | R-008 |
 | **I**nformation disclosure | Another hospital's data | One database per hospital, environment guard | Isolation tests at hosting | R-012 |
 | **D**enial of service | Flooding, lost data, ransomware | Rate limits, safe retries | Backups, restore drills, RTO/RPO, WAF at hosting; load tests | R-010 |
+| **D**enial of service | Screens slow down as records grow until they time out; a check button used to load the database | Busy queries checked against their indexes at hospital size and response times measured against spec 18 targets (`volume_check`, HIMS-DATA-002, HIMS-OPS-017); the audit log's total count capped at 10,000; the index check only reads, needs `platform.performance.manage` and runs one at a time; measuring refused when hosted | Load test with many people at once before go-live (HIMS-OPS-021) | R-010 |
 | **E**levation of privilege | Acting beyond a role | Default deny on server, escalation guard, no self-granted access, last-admin protection; tested | Independent penetration test | R-004 |
 | Supply chain | Poisoned library or action | Hash-locked libraries, SHA-pinned actions, vulnerability scans | SBOM at release | R-011 |
 | Clinical safety | Wrong-patient record | Designed: duplicate check, identity header, entered-in-error, two-person merge | Build Phase 2; doctor sign-off | R-014 |

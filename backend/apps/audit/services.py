@@ -145,6 +145,7 @@ class AuditAction:
     AUDIT_INTEGRITY_ALERT_SENT = "audit.integrity.alert_sent"
     BACKUP_CREATED = "recovery.backup.created"
     RESTORE_DRILL_COMPLETED = "recovery.restore_drill.completed"
+    PERFORMANCE_CHECK_RUN = "performance.check_run"
     DATABASE_USERS_SET_UP = "database.users_set_up"
     OUTBOX_CLEANED_UP = "outbox.cleaned_up"
     OUTBOX_EVENT_SENT_AGAIN = "outbox.event_sent_again"

@@ -112,6 +112,8 @@ class RoleAssignmentAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
     """Grants go through the same service as the API: scope rules, escalation guard, audit."""
 
     list_display = ("user", "role", "facility", "department", "valid_until", "revoked_at")
+    # A department shows its facility's code: load both at once, not a query per row (HIMS-OPS-017).
+    list_select_related = ("user", "role", "facility", "department__facility")
     list_filter = (
         "role",
         ("revoked_at", admin.EmptyFieldListFilter),

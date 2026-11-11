@@ -252,6 +252,10 @@ export function AuditLogPage() {
               page={page}
               rowsPerPage={PAGE_SIZE}
               rowsPerPageOptions={[PAGE_SIZE]}
+              // Counting stops at 10,000 on a large audit log (HIMS-DATA-002).
+              labelDisplayedRows={({ from, to, count }) =>
+                `${from}–${to} of ${data.count_capped ? "more than " : ""}${count.toLocaleString()}`
+              }
               onPageChange={(_, value: number) => setPage(value)}
             />
           )}

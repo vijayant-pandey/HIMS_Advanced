@@ -296,6 +296,8 @@ class StaffPrivilegeAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
     """Same rules and audit as the Staff page. Never edited: end one with the action."""
 
     list_display = ("staff", "privilege", "department", "valid_from", "valid_until", "status")
+    # A department shows its facility's code: load both at once, not a query per row (HIMS-OPS-017).
+    list_select_related = ("staff", "privilege", "department__facility")
     list_filter = ("status", "privilege")
     search_fields = ("staff__given_name", "staff__family_name", "staff__employee_number")
     autocomplete_fields = ("staff",)

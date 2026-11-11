@@ -20,7 +20,7 @@ financial domains are added here as they are built.
 | 1 | Domain-by-domain logical ERD | [erd.md](erd.md), one diagram per domain | ✅ built domains |
 | 2 | Physical ERD, all tables and cardinalities | [erd.md](erd.md), "All tables" | ✅ |
 | 3 | Data dictionary (type, nullability, default, allowed values, source, sensitivity) | [data-dictionary.md](data-dictionary.md) | ✅ |
-| 4 | Index and uniqueness specification tied to query patterns | Per table in the dictionary; patterns in [section 4](#4-indexes-and-the-queries-they-serve) | ✅ (volume test: HIMS-DATA-002) |
+| 4 | Index and uniqueness specification tied to query patterns | Per table in the dictionary; patterns in [section 4](#4-indexes-and-the-queries-they-serve) | ✅ checked at production-like volume ([volume check](volume-check.md), HIMS-DATA-002) |
 | 5 | Lifecycle, retention, archive and correction rules | "Lifecycle" per table in the dictionary; [section 3](#3-lifecycle-and-correction) | ✅ (purge of housekeeping tables by periods the hospital sets, with legal hold: HIMS-COMP-006) |
 | 6 | Transaction boundaries and concurrency rules | [section 5](#5-transactions-and-concurrency) | ✅ |
 | 7 | Data classification and access matrix | "Sensitivity" per column; [section 2](#2-classification-and-access) | ✅ |
@@ -115,8 +115,12 @@ Every person also sees their own account, sign-ins and cover arrangements.
 
 ## 4. Indexes and the queries they serve
 
-Validated on developer data; HIMS-DATA-002 repeats the check with production-like synthetic
-volumes and query plans (spec 28.6). Foreign keys are always indexed.
+Validated with production-like synthetic volume and query plans (spec 28.6; HIMS-DATA-002,
+2026-11-10): `python manage.py volume_check` fills a throw-away copy with the records of a 500-bed
+hospital (3.6 million rows), reads PostgreSQL's plan for every query below and fails if one does not
+use its index or takes over 100 ms. The list of queries lives in `apps/performance/queries.py`; a
+test keeps it and this table in step. Results: [volume check](volume-check.md). Foreign keys are
+always indexed.
 
 | Query | Index or unique rule |
 |---|---|
@@ -130,9 +134,16 @@ volumes and query plans (spec 28.6). Foreign keys are always indexed.
 | Licences expiring soon (daily alerts) | `staff_credential_expiry_idx` |
 | Numbers issued per document type, newest first | `issued_numbers_type_idx` |
 | Outbox events waiting to be sent | `outbox_pending_idx` (partial: pending only) |
+| Failed and dismissed outbox events (health page counts, clean-up) | `outbox_attention_idx` (partial: dead and dismissed only; added by HIMS-DATA-002) |
+| Old published outbox events (daily clean-up) | `outbox_published_idx` (partial: published only) |
+| Failed messages due to be sent again (background job) | `notification_retry_idx` |
+| Messages screen, newest first | `notification_created_idx` |
+| The current browser's sign-in (every sign-in check) | unique `session_key` |
+| Rota: one department's week, one person's week | `shift_department_day_idx`, `shift_staff_day_idx` |
 | Expired idempotency records (hourly purge) | `idempotency_expiry_idx` |
-| Retention purge: ended sign-ins and messages older than the cut-off | `user_session_open_idx` (user, ended_at), `notification_created_idx` |
+| Retention purge: ended sign-ins and messages older than the cut-off | `user_session_ended_idx` (partial: ended only; added by HIMS-DATA-002, which found `user_session_open_idx` could not serve it), `notification_created_idx` (batches are taken in no particular order so this index can be used) |
 | Integrity check history | `audit_check_finished_idx` |
+| Audit sealing: the next events to seal (every minute); events waiting (integrity status) | `audit_occurred_idx` with `audit_chain_entries_event_id_key`, written as NOT EXISTS (HIMS-DATA-002 found the join form reading the whole chain on every batch: 2.9 s at 1.3 million links, now 0.09 s) |
 | Codes unique within their scope (facility, department, ward, room, bed, role, catalog) | unique constraints listed per table in the dictionary |
 
 Patient search, encounter, medication, lab and claim indexes (spec 28.6) are designed with
@@ -223,5 +234,7 @@ Follow spec 28.7 and [database-migrations.md](../../workflows/database-migration
 - End-to-end checks run against throw-away databases created for the run.
 - The manual test guide ([flow-part1.md](../../testing/flow-part1.md)) uses invented people
   (Ravi Doctor, Asha Nurse) and `@test.local` addresses.
-- Volume testing (HIMS-DATA-002) will generate synthetic rows at production-like scale with the
-  same rules.
+- Volume testing (HIMS-DATA-002) generates synthetic rows at production-like scale with the
+  same rules, only into the throw-away database `hims_volume` (`seed_volume_data` refuses any
+  other): "Synthetic Staff 000123", `@synthetic.test`, passwords that cannot be used. See
+  [volume check](volume-check.md).

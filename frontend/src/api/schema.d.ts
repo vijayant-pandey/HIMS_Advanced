@@ -2376,6 +2376,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/performance-checks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Index checks and response-time measurements, newest first. */
+        get: operations["performance_checks_list"];
+        put?: never;
+        /** @description Run the index check on this hospital's database now (reads only; a few seconds). */
+        post: operations["performance_checks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/performance-checks/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Index checks and response-time measurements, newest first. */
+        get: operations["performance_checks_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/performance-checks/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The latest results of each kind, on this database and on the volume copy. */
+        get: operations["performance_checks_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/permissions/": {
         parameters: {
             query?: never;
@@ -5404,6 +5456,8 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["AuditEvent"][];
+            /** @description True when there are more than `count` matches (counting stops at 10,000). */
+            count_capped: boolean;
         };
         PaginatedBedList: {
             /** @example 123 */
@@ -5883,6 +5937,85 @@ export interface components {
             age_group?: components["schemas"]["AgeGroupEnum"];
             is_active?: boolean;
         };
+        PerformanceCheck: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["PerformanceKindEnum"];
+            readonly kind_label: string;
+            /** Format: date-time */
+            readonly started_at: string;
+            /** Format: date-time */
+            readonly finished_at: string;
+            readonly trigger: components["schemas"]["PerformanceTriggerEnum"];
+            readonly trigger_label: string;
+            readonly requested_by_name: string | null;
+            readonly outcome: components["schemas"]["PerformanceOutcomeEnum"];
+            /** @description The database measured (a volume check names its throw-away copy). */
+            readonly database: string;
+            readonly environment: string;
+            readonly release: string;
+            readonly dataset_rows: number;
+            readonly problem_count: number;
+            readonly summary: string;
+        };
+        PerformanceCheckDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["PerformanceKindEnum"];
+            readonly kind_label: string;
+            /** Format: date-time */
+            readonly started_at: string;
+            /** Format: date-time */
+            readonly finished_at: string;
+            readonly trigger: components["schemas"]["PerformanceTriggerEnum"];
+            readonly trigger_label: string;
+            readonly requested_by_name: string | null;
+            readonly outcome: components["schemas"]["PerformanceOutcomeEnum"];
+            /** @description The database measured (a volume check names its throw-away copy). */
+            readonly database: string;
+            readonly environment: string;
+            readonly release: string;
+            readonly dataset_rows: number;
+            readonly problem_count: number;
+            readonly summary: string;
+            /** @description Rows per main table. */
+            readonly dataset: {
+                [key: string]: number;
+            };
+            readonly query_results: components["schemas"]["QueryResult"][];
+            readonly screen_results: components["schemas"]["ScreenResult"][];
+        };
+        /**
+         * @description * `indexes` - Index check (query plans)
+         *     * `response_times` - Response times
+         * @enum {string}
+         */
+        PerformanceKindEnum: "indexes" | "response_times";
+        /**
+         * @description * `passed` - Passed: every target met
+         *     * `failed` - Failed: see the results
+         * @enum {string}
+         */
+        PerformanceOutcomeEnum: "passed" | "failed";
+        PerformanceStatus: {
+            /** @description False in hosted environments: response times come from monitoring there. */
+            can_measure_here: boolean;
+            /** Format: double */
+            page_target_ms: number;
+            /** Format: double */
+            search_target_ms: number;
+            last_index_check: components["schemas"]["PerformanceCheck"] | null;
+            last_response_times: components["schemas"]["PerformanceCheck"] | null;
+            last_volume_index_check: components["schemas"]["PerformanceCheck"] | null;
+            last_volume_response_times: components["schemas"]["PerformanceCheck"] | null;
+        };
+        /**
+         * @description * `on_demand` - Started by a person
+         *     * `command` - Started from the server command line
+         *     * `volume` - Volume check (throw-away copy with synthetic records)
+         * @enum {string}
+         */
+        PerformanceTriggerEnum: "on_demand" | "command" | "volume";
         /**
          * @description * `none` - Never restarts
          *     * `calendar_year` - Restarts every calendar year
@@ -5929,6 +6062,8 @@ export interface components {
          *     * `platform.admin_console` - platform.admin_console
          *     * `platform.jobs.manage` - platform.jobs.manage
          *     * `platform.jobs.view` - platform.jobs.view
+         *     * `platform.performance.manage` - platform.performance.manage
+         *     * `platform.performance.view` - platform.performance.view
          *     * `recovery.manage` - recovery.manage
          *     * `recovery.view` - recovery.view
          *     * `rota.manage` - rota.manage
@@ -5940,7 +6075,7 @@ export interface components {
          *     * `staff.view` - staff.view
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view";
         Person: {
             /** Format: uuid */
             id: string;
@@ -5986,6 +6121,25 @@ export interface components {
             category: components["schemas"]["QualificationTypeCategoryEnum"];
             /** @description IN, US, or blank for both countries */
             country?: string;
+        };
+        QueryResult: {
+            key: string;
+            label: string;
+            table: string;
+            table_rows: number;
+            expected_indexes: string[];
+            indexes_used: string[];
+            full_reads: string[];
+            /**
+             * Format: double
+             * @description Execution time of one run (EXPLAIN ANALYZE).
+             */
+            ms: number;
+            /** Format: double */
+            budget_ms: number;
+            rows: number | null;
+            passed: boolean;
+            detail: string;
         };
         ReasonRequest: {
             reason: string;
@@ -6393,6 +6547,29 @@ export interface components {
          * @enum {string}
          */
         ScopeEnum: "organization" | "facility";
+        ScreenResult: {
+            key: string;
+            label: string;
+            path: string;
+            /** @description HTTP status of the calls (200 expected). */
+            status: number;
+            samples: number;
+            /** Format: double */
+            p50_ms: number;
+            /** Format: double */
+            p95_ms: number;
+            /** Format: double */
+            max_ms: number;
+            /** @description Database queries one call makes. */
+            queries: number;
+            /**
+             * Format: double
+             * @description p95 target (spec 18).
+             */
+            target_ms: number;
+            passed: boolean;
+            detail: string;
+        };
         SecurityIncident: {
             /** Format: uuid */
             readonly id: string;
@@ -10910,6 +11087,85 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Organization"];
+                };
+            };
+        };
+    };
+    performance_checks_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformanceCheck"][];
+                };
+            };
+        };
+    };
+    performance_checks_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformanceCheckDetail"];
+                };
+            };
+        };
+    };
+    performance_checks_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this performance check. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformanceCheckDetail"];
+                };
+            };
+        };
+    };
+    performance_checks_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformanceStatus"];
                 };
             };
         };

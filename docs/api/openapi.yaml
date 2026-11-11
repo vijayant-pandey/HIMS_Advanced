@@ -4081,6 +4081,77 @@ paths:
               schema:
                 $ref: '#/components/schemas/Organization'
           description: ''
+  /api/v1/performance-checks/:
+    get:
+      operationId: performance_checks_list
+      description: Index checks and response-time measurements, newest first.
+      tags:
+      - performance-checks
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PerformanceCheck'
+          description: ''
+    post:
+      operationId: performance_checks_create
+      description: Run the index check on this hospital's database now (reads only;
+        a few seconds).
+      tags:
+      - performance-checks
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceCheckDetail'
+          description: ''
+  /api/v1/performance-checks/{id}/:
+    get:
+      operationId: performance_checks_retrieve
+      description: Index checks and response-time measurements, newest first.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this performance check.
+        required: true
+      tags:
+      - performance-checks
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceCheckDetail'
+          description: ''
+  /api/v1/performance-checks/status/:
+    get:
+      operationId: performance_checks_status_retrieve
+      description: The latest results of each kind, on this database and on the volume
+        copy.
+      tags:
+      - performance-checks
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceStatus'
+          description: ''
   /api/v1/permissions/:
     get:
       operationId: permissions_list
@@ -10968,6 +11039,7 @@ components:
       required:
       - count
       - results
+      - count_capped
       properties:
         count:
           type: integer
@@ -10986,6 +11058,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditEvent'
+        count_capped:
+          type: boolean
+          description: True when there are more than `count` matches (counting stops
+            at 10,000).
     PaginatedBedList:
       type: object
       required:
@@ -11965,6 +12041,234 @@ components:
           $ref: '#/components/schemas/AgeGroupEnum'
         is_active:
           type: boolean
+    PerformanceCheck:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceTriggerEnum'
+          readOnly: true
+        trigger_label:
+          type: string
+          readOnly: true
+        requested_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceOutcomeEnum'
+          readOnly: true
+        database:
+          type: string
+          readOnly: true
+          description: The database measured (a volume check names its throw-away
+            copy).
+        environment:
+          type: string
+          readOnly: true
+        release:
+          type: string
+          readOnly: true
+        dataset_rows:
+          type: integer
+          readOnly: true
+        problem_count:
+          type: integer
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+      required:
+      - database
+      - dataset_rows
+      - environment
+      - finished_at
+      - id
+      - kind
+      - kind_label
+      - outcome
+      - problem_count
+      - release
+      - requested_by_name
+      - started_at
+      - summary
+      - trigger
+      - trigger_label
+    PerformanceCheckDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+        trigger:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceTriggerEnum'
+          readOnly: true
+        trigger_label:
+          type: string
+          readOnly: true
+        requested_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceOutcomeEnum'
+          readOnly: true
+        database:
+          type: string
+          readOnly: true
+          description: The database measured (a volume check names its throw-away
+            copy).
+        environment:
+          type: string
+          readOnly: true
+        release:
+          type: string
+          readOnly: true
+        dataset_rows:
+          type: integer
+          readOnly: true
+        problem_count:
+          type: integer
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+        dataset:
+          type: object
+          additionalProperties:
+            type: integer
+          readOnly: true
+          description: Rows per main table.
+        query_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryResult'
+          readOnly: true
+        screen_results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScreenResult'
+          readOnly: true
+      required:
+      - database
+      - dataset
+      - dataset_rows
+      - environment
+      - finished_at
+      - id
+      - kind
+      - kind_label
+      - outcome
+      - problem_count
+      - query_results
+      - release
+      - requested_by_name
+      - screen_results
+      - started_at
+      - summary
+      - trigger
+      - trigger_label
+    PerformanceKindEnum:
+      enum:
+      - indexes
+      - response_times
+      type: string
+      description: |-
+        * `indexes` - Index check (query plans)
+        * `response_times` - Response times
+    PerformanceOutcomeEnum:
+      enum:
+      - passed
+      - failed
+      type: string
+      description: |-
+        * `passed` - Passed: every target met
+        * `failed` - Failed: see the results
+    PerformanceStatus:
+      type: object
+      properties:
+        can_measure_here:
+          type: boolean
+          description: 'False in hosted environments: response times come from monitoring
+            there.'
+        page_target_ms:
+          type: number
+          format: double
+        search_target_ms:
+          type: number
+          format: double
+        last_index_check:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceCheck'
+          nullable: true
+        last_response_times:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceCheck'
+          nullable: true
+        last_volume_index_check:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceCheck'
+          nullable: true
+        last_volume_response_times:
+          allOf:
+          - $ref: '#/components/schemas/PerformanceCheck'
+          nullable: true
+      required:
+      - can_measure_here
+      - last_index_check
+      - last_response_times
+      - last_volume_index_check
+      - last_volume_response_times
+      - page_target_ms
+      - search_target_ms
+    PerformanceTriggerEnum:
+      enum:
+      - on_demand
+      - command
+      - volume
+      type: string
+      description: |-
+        * `on_demand` - Started by a person
+        * `command` - Started from the server command line
+        * `volume` - Volume check (throw-away copy with synthetic records)
     PeriodEnum:
       enum:
       - none
@@ -12024,6 +12328,8 @@ components:
       - platform.admin_console
       - platform.jobs.manage
       - platform.jobs.view
+      - platform.performance.manage
+      - platform.performance.view
       - recovery.manage
       - recovery.view
       - rota.manage
@@ -12068,6 +12374,8 @@ components:
         * `platform.admin_console` - platform.admin_console
         * `platform.jobs.manage` - platform.jobs.manage
         * `platform.jobs.view` - platform.jobs.view
+        * `platform.performance.manage` - platform.performance.manage
+        * `platform.performance.view` - platform.performance.view
         * `recovery.manage` - recovery.manage
         * `recovery.view` - recovery.view
         * `rota.manage` - rota.manage
@@ -12189,6 +12497,56 @@ components:
       required:
       - category
       - name
+    QueryResult:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        table:
+          type: string
+        table_rows:
+          type: integer
+        expected_indexes:
+          type: array
+          items:
+            type: string
+        indexes_used:
+          type: array
+          items:
+            type: string
+        full_reads:
+          type: array
+          items:
+            type: string
+        ms:
+          type: number
+          format: double
+          description: Execution time of one run (EXPLAIN ANALYZE).
+        budget_ms:
+          type: number
+          format: double
+        rows:
+          type: integer
+          nullable: true
+        passed:
+          type: boolean
+        detail:
+          type: string
+      required:
+      - budget_ms
+      - detail
+      - expected_indexes
+      - full_reads
+      - indexes_used
+      - key
+      - label
+      - ms
+      - passed
+      - rows
+      - table
+      - table_rows
     ReasonRequest:
       type: object
       properties:
@@ -13254,6 +13612,53 @@ components:
       description: |-
         * `organization` - Whole hospital
         * `facility` - Per facility
+    ScreenResult:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        path:
+          type: string
+        status:
+          type: integer
+          description: HTTP status of the calls (200 expected).
+        samples:
+          type: integer
+        p50_ms:
+          type: number
+          format: double
+        p95_ms:
+          type: number
+          format: double
+        max_ms:
+          type: number
+          format: double
+        queries:
+          type: integer
+          description: Database queries one call makes.
+        target_ms:
+          type: number
+          format: double
+          description: p95 target (spec 18).
+        passed:
+          type: boolean
+        detail:
+          type: string
+      required:
+      - detail
+      - key
+      - label
+      - max_ms
+      - p50_ms
+      - p95_ms
+      - passed
+      - path
+      - queries
+      - samples
+      - status
+      - target_ms
     SecurityIncident:
       type: object
       properties:
