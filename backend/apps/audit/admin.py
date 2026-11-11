@@ -6,6 +6,7 @@ from django.shortcuts import redirect
 from django.urls import path, reverse
 from django.utils.html import format_html, format_html_join
 
+from common.admin.options import LargeTableAdminMixin
 from common.admin.site import can_view_audit
 from common.exceptions import ConflictError
 
@@ -15,7 +16,7 @@ from .services import AuditAction, record_audit_event
 
 
 @admin.register(AuditEvent)
-class AuditEventAdmin(admin.ModelAdmin):
+class AuditEventAdmin(LargeTableAdminMixin, admin.ModelAdmin):
     """View-only, and only for holders of ``audit.view`` (separation of duties, ADR-013).
     Nobody can add, edit or delete audit events: the database rejects it anyway."""
 
@@ -28,9 +29,8 @@ class AuditEventAdmin(admin.ModelAdmin):
         "resource_id",
         "request_id",
     )
-    list_filter = ("outcome", "actor_type", "resource_type")
-    search_fields = ("action", "resource_id", "request_id", "actor_id")
-    date_hierarchy = "occurred_at"
+    list_filter = ("outcome", "actor_type", ("occurred_at", admin.DateFieldListFilter))
+    search_fields = ("action", "resource_type", "resource_id", "request_id", "actor_id")
     ordering = ("-occurred_at",)
     actions = ["download_csv"]
 

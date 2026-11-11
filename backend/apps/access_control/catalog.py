@@ -48,6 +48,8 @@ class P:
     RECOVERY_MANAGE = "recovery.manage"
     JOBS_VIEW = "platform.jobs.view"
     JOBS_MANAGE = "platform.jobs.manage"
+    PERFORMANCE_VIEW = "platform.performance.view"
+    PERFORMANCE_MANAGE = "platform.performance.manage"
     ADMIN_CONSOLE = "platform.admin_console"
 
 
@@ -102,6 +104,10 @@ PERMISSIONS: dict[str, str] = {
     ),
     P.JOBS_VIEW: "See background jobs: waiting, retried and failed events",
     P.JOBS_MANAGE: "Send a failed background event again, or dismiss it, with a reason",
+    P.PERFORMANCE_VIEW: (
+        "See the index checks and response-time measurements against their targets (evidence)"
+    ),
+    P.PERFORMANCE_MANAGE: "Run the index check now (reads only; changes no records)",
     P.ACCOUNTS_MANAGE: (
         "Add sign-in accounts for people who are not staff, switch accounts off or on, "
         "reset their two-factor and sign them out"

@@ -30,7 +30,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import DEFAULT_DB_ALIAS, connection, transaction
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 
 from apps.notifications.services import send_message
@@ -177,8 +177,17 @@ def sealing_window_start(last: dict | None = None) -> datetime | None:
     return last["event__occurred_at"] - _lookback()
 
 
+def unsealed_events():
+    """Events with no link in the chain yet. Written as NOT EXISTS so PostgreSQL uses the chain's
+    event index for each event; the join form (``chain_entry__isnull=True``) made it read the whole
+    chain on every batch, about 3 seconds at a million links (found by HIMS-DATA-002)."""
+    return AuditEvent.objects.filter(
+        ~Exists(AuditChainEntry.objects.filter(event_id=OuterRef("pk")))
+    )
+
+
 def _pending(last: dict | None):
-    pending = AuditEvent.objects.filter(chain_entry__isnull=True)
+    pending = unsealed_events()
     start = sealing_window_start(last) if last else None
     return pending.filter(occurred_at__gte=start) if start else pending
 
@@ -352,7 +361,7 @@ def _never_sealed(findings: _Findings) -> int:
     start = sealing_window_start()
     if start is None:
         return 0
-    late = AuditEvent.objects.filter(chain_entry__isnull=True, occurred_at__lt=start)
+    late = unsealed_events().filter(occurred_at__lt=start)
     count = late.count()
     for row in late.order_by("occurred_at").values(*HASHED_FIELDS)[:MAX_PROBLEMS_KEPT]:
         findings.add("not_sealed", event_id=str(row["id"]), **_event_details(row))
@@ -468,7 +477,7 @@ def _alert_auditors(check: AuditIntegrityCheck) -> None:
 def integrity_status() -> dict:
     last = _last_link()
     start = sealing_window_start(last)
-    waiting = AuditEvent.objects.filter(chain_entry__isnull=True)
+    waiting = unsealed_events()
     if start is not None:
         waiting = waiting.filter(occurred_at__gte=start)
     return {

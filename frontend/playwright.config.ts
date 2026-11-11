@@ -9,10 +9,15 @@ import { E2E } from "./e2e/config.mjs";
  * Starts its own throw-away backend (port 8100, database hims_e2e) and app (port 5180), so the
  * normal local hospitals keep running untouched. Tests run one after another because they build
  * on the same synthetic hospital (set up hospital → invite staff → give access → audit).
+ *
+ * `npm run e2e:us` (playwright.us.config.ts) runs the US hospital instead: its own database
+ * (hims_e2e_us), ports 8110/5190 and the tests in e2e/us (HIMS-QA-003). The sign-in set-up is shared.
  */
+const us = E2E.deployment === "us";
+
 export default defineConfig({
-  testDir: "./e2e/tests",
-  outputDir: "./test-results",
+  testDir: "./e2e",
+  outputDir: us ? "./test-results-us" : "./test-results",
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
@@ -21,7 +26,9 @@ export default defineConfig({
   retries: 0,
   timeout: 90_000,
   expect: { timeout: process.env.CI ? 20_000 : 10_000 },
-  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
+  reporter: process.env.CI
+    ? [["list"], ["html", { open: "never", outputFolder: us ? "playwright-report-us" : "playwright-report" }]]
+    : [["list"]],
   use: {
     baseURL: E2E.appUrl,
     trace: "retain-on-failure",
@@ -29,8 +36,12 @@ export default defineConfig({
     ...devices["Desktop Chrome"],
   },
   projects: [
-    { name: "setup", testMatch: /auth\.setup\.ts/ },
-    { name: "chromium", dependencies: ["setup"], testMatch: /.*\.spec\.ts/ },
+    { name: "setup", testMatch: /tests[\\/]auth\.setup\.ts$/ },
+    {
+      name: us ? "chromium-us" : "chromium",
+      dependencies: ["setup"],
+      testMatch: us ? /us[\\/].*\.spec\.ts$/ : /tests[\\/].*\.spec\.ts$/,
+    },
   ],
   webServer: [
     {

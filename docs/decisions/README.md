@@ -36,3 +36,4 @@ default, awaiting the named approver), **Superseded**.
 | [028](ADR-028-message-wording-and-letterhead.md) | Editable message wording with fixed placeholders; letterhead added at delivery | Proposed |
 | [029](ADR-029-leave-balances-worked-out.md) | Leave balances are worked out, never stored | Proposed |
 | [030](ADR-030-retention-purge-and-legal-hold.md) | Retention purge limited to housekeeping records, with waiting periods and legal holds | Proposed |
+| [031](ADR-031-performance-targets-and-volume-check.md) | Response-time targets per screen, an index check that follows the code, and a volume check on a throw-away copy | Proposed |

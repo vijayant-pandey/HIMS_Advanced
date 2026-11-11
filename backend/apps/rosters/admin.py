@@ -15,7 +15,7 @@ from django.urls import path
 
 from apps.facilities.models import Department
 from apps.organizations.dates import hospital_today
-from common.admin.options import HimsModelAdmin, ReadOnlyModelAdmin
+from common.admin.options import DepartmentListFilter, HimsModelAdmin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 
 from . import balances, services, staffing
@@ -76,7 +76,9 @@ class ShiftForm(forms.ModelForm):
 @admin.register(Shift)
 class ShiftAdmin(HimsModelAdmin):
     list_display = ("staff", "shift_type", "on_date", "department", "status", "starts_at")
-    list_filter = ("status", "shift_type", "department")
+    # A department shows its facility's code: load both at once, not a query per row (HIMS-OPS-017).
+    list_select_related = ("staff", "shift_type", "department__facility")
+    list_filter = ("status", "shift_type", ("department", DepartmentListFilter))
     search_fields = ("staff__given_name", "staff__family_name", "staff__employee_number")
     date_hierarchy = "on_date"
     autocomplete_fields = ("staff",)
@@ -177,7 +179,9 @@ class LeaveRequestAdmin(HimsModelAdmin):
     """Leave recorded here still needs a decision by someone other than the person."""
 
     list_display = ("staff", "leave_type", "start_date", "end_date", "status", "department")
-    list_filter = ("status", "leave_type", "department")
+    # A department shows its facility's code: load both at once, not a query per row (HIMS-OPS-017).
+    list_select_related = ("staff", "department__facility")
+    list_filter = ("status", "leave_type", ("department", DepartmentListFilter))
     search_fields = ("staff__given_name", "staff__family_name", "staff__employee_number")
     date_hierarchy = "start_date"
     autocomplete_fields = ("staff",)
@@ -327,7 +331,9 @@ class StaffingRequirementAdmin(HimsModelAdmin):
 
     change_list_template = "admin/rosters/staffingrequirement/change_list.html"
     list_display = ("department", "shift_type", "staff_type", "applies_on", "minimum", "is_active")
-    list_filter = ("is_active", "department", "shift_type")
+    # A department shows its facility's code: load both at once, not a query per row (HIMS-OPS-017).
+    list_select_related = ("department__facility", "shift_type")
+    list_filter = ("is_active", ("department", DepartmentListFilter), "shift_type")
     fields = (
         "department",
         "shift_type",
@@ -387,7 +393,9 @@ class StaffingGapAlertAdmin(ReadOnlyModelAdmin):
     """Gaps already emailed to planners, so each is told once."""
 
     list_display = ("on_date", "department", "shift_type", "staff_type", "sent_at")
-    list_filter = ("department", "shift_type")
+    # A department shows its facility's code: load both at once, not a query per row (HIMS-OPS-017).
+    list_select_related = ("department__facility", "shift_type")
+    list_filter = (("department", DepartmentListFilter), "shift_type")
     date_hierarchy = "on_date"
 
 

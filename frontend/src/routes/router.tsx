@@ -22,6 +22,7 @@ const access = () => import("../features/accessControl/AccessPage");
 const reviews = () => import("../features/accessControl/AccessReviewsPage");
 const audit = () => import("../features/audit/AuditIntegrityPage");
 const recovery = () => import("../features/recovery/RecoveryPage");
+const performance = () => import("../features/performance/PerformancePage");
 const staff = () => import("../features/staff/StaffDetailPage");
 
 export const routes = [
@@ -132,6 +133,8 @@ export const routes = [
                 lazy: screen(() => import("../features/jobs/BackgroundJobsPage"), (m) => m.BackgroundJobsPage),
               },
               { path: "recovery/drills/:id", lazy: screen(recovery, (m) => m.RestoreDrillPage) },
+              { path: "performance", lazy: screen(performance, (m) => m.PerformancePage) },
+              { path: "performance/:id", lazy: screen(performance, (m) => m.PerformanceCheckPage) },
               {
                 path: "compliance",
                 lazy: screen(() => import("../features/compliance/CompliancePage"), (m) => m.CompliancePage),

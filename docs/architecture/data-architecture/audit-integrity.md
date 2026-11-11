@@ -37,6 +37,11 @@ superuser) can switch triggers off. Tamper evidence makes such an edit **visible
   slow transaction that commits late is still sealed. A record that appears **older** than that
   window and was never sealed is reported by the check ("never sealed"): it was written outside
   the normal path or with a back-dated time.
+* "Not sealed yet" is asked as NOT EXISTS against the chain's `event_id` index, so each batch reads
+  only the records in the window, however long the chain grows. The earlier join form read the
+  whole chain on every batch: 2.9 s at 1.3 million links, now 0.09 s (found by the volume check,
+  HIMS-DATA-002; the index check now guards it). Catching up a large backlog, e.g. after the
+  scheduler was down for a day, therefore stays quick.
 * The fingerprint covers every column of the event (id, time, organization, facility, actor,
   action, record, outcome, reason, reference number, IP address, browser, before/after changes,
   extra details) in a fixed JSON layout (`v1`).

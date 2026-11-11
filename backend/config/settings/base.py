@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "apps.compliance",
     "apps.rosters",
     "apps.recovery",
+    "apps.performance",
 ]
 
 # Django admin is the HIMS operations console (ADR-016): gated by HIMS RBAC rather than
@@ -318,6 +319,9 @@ SPECTACULAR_SETTINGS = {
         "IncidentStatusEnum": "apps.compliance.models.SecurityIncident.Status",
         "IncidentNotificationStatusEnum": "apps.compliance.models.IncidentNotification.Status",
         "RetentionCategoryEnum": "apps.compliance.retention.CATEGORY_CHOICES",
+        "PerformanceKindEnum": "apps.performance.models.PerformanceCheck.Kind",
+        "PerformanceOutcomeEnum": "apps.performance.models.PerformanceCheck.Outcome",
+        "PerformanceTriggerEnum": "apps.performance.models.PerformanceCheck.Trigger",
         "ShiftKindEnum": "apps.rosters.models.ShiftType.Kind",
         "ShiftStatusEnum": "apps.rosters.models.Shift.Status",
         "LeaveStatusEnum": "apps.rosters.models.LeaveRequest.Status",

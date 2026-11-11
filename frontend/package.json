@@ -13,6 +13,7 @@
     "build": "tsc -b && vite build",
     "size": "node scripts/check-bundle-size.mjs",
     "e2e": "playwright test",
+    "e2e:us": "playwright test -c playwright.us.config.ts",
     "e2e:report": "playwright show-report",
     "typecheck": "tsc -b --noEmit && tsc -p e2e --noEmit",
     "lint": "eslint .",

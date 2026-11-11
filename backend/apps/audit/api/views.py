@@ -15,6 +15,7 @@ from rest_framework.response import Response
 
 from apps.access_control.catalog import P
 from apps.organizations.dates import hospital_timezone
+from common.pagination import CappedCountPagination
 
 from .. import catalog
 from ..exports import EXPORT_LIMIT, events_csv_response
@@ -155,6 +156,7 @@ class AuditEventViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """Audit search for auditors. Searching and exporting the audit log are themselves audited."""
 
     serializer_class = AuditEventSerializer
+    pagination_class = CappedCountPagination  # the largest table: count up to 10,000 only
     sensitive_actions = ("export",)
     required_permissions = {"list": P.AUDIT_VIEW, "export": P.AUDIT_VIEW, "actions": P.AUDIT_VIEW}
 

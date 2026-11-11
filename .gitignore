@@ -42,6 +42,12 @@ frontend/e2e/.media/
 frontend/e2e/.state/
 frontend/playwright-report/
 frontend/test-results/
+# The US hospital's browser-test run (HIMS-QA-003)
+frontend/e2e/.mail-us/
+frontend/e2e/.media-us/
+frontend/e2e/.state-us/
+frontend/playwright-report-us/
+frontend/test-results-us/
 backend/staticfiles/
 backend/media/
 # Backups made on a developer PC hold every record (HIMS-OPS-009)

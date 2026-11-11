@@ -163,7 +163,8 @@ def test_nothing_works_out_today_on_the_utc_clock():
                     pytest.fail(f"{path}:{node.lineno}: use apps.organizations.dates")
     frontend = ROOT / "frontend"
     for path in [*(frontend / "src").rglob("*.ts*"), *(frontend / "e2e").rglob("*.*s")]:
-        if path.name == "dates.ts" or ".test." in path.name:
+        # Folders such as e2e/.mail-us (browser-test output) match the pattern too: files only.
+        if not path.is_file() or path.name == "dates.ts" or ".test." in path.name:
             continue
         if "toISOString().slice(0, 10)" in path.read_text(encoding="utf-8"):
             pytest.fail(f"{path}: use localDate from components/dates.ts")

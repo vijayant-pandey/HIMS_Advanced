@@ -15,6 +15,7 @@ import { z } from "zod";
 
 import { ApiError } from "../../api/client";
 import { ErrorAlert } from "../../components/ErrorAlert";
+import { useCurrentUser } from "../auth/api";
 import { useCreateFacility } from "./api";
 
 const FACILITY_TYPES = [
@@ -57,6 +58,15 @@ const DEFAULTS: FormValues = {
   phone: "",
 };
 
+// A new branch is normally in the hospital's own country (India and the US are separate
+// deployments); the time zone can still be changed, e.g. to America/Chicago.
+const HOME_ZONE = { IN: "Asia/Kolkata", US: "America/New_York" } as const;
+
+function defaultsFor(country: string | undefined): FormValues {
+  const home = country === "US" ? "US" : "IN";
+  return { ...DEFAULTS, country: home, timezone: HOME_ZONE[home] };
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -66,16 +76,18 @@ export function CreateFacilityDialog({ open, onClose }: Props) {
   // One key per dialog session: double-clicks and network retries cannot create duplicates.
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const create = useCreateFacility(idempotencyKey);
+  const { data: user } = useCurrentUser();
+  const defaults = defaultsFor(user?.organization?.country);
   const {
     register,
     handleSubmit,
     setError,
     reset,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: DEFAULTS });
+  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults });
 
   const close = () => {
-    reset(DEFAULTS);
+    reset(defaults);
     create.reset();
     setIdempotencyKey(crypto.randomUUID());
     onClose();
@@ -122,7 +134,7 @@ export function CreateFacilityDialog({ open, onClose }: Props) {
                 </MenuItem>
               ))}
             </TextField>
-            <TextField select label="Country" defaultValue={DEFAULTS.country} {...register("country")}>
+            <TextField select label="Country" defaultValue={defaults.country} {...register("country")}>
               <MenuItem value="IN">India</MenuItem>
               <MenuItem value="US">United States</MenuItem>
             </TextField>

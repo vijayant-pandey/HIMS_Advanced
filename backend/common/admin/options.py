@@ -13,6 +13,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 
 from apps.audit.services import model_changes, record_audit_event, snapshot
+from common.pagination import CappedPaginator
 
 from .site import can_use_console
 
@@ -145,3 +146,25 @@ class ReadOnlyModelAdmin(_ConsolePermissions, admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+class DepartmentListFilter(admin.RelatedFieldListFilter):
+    """ "By department" with each department's facility loaded in the same query: a department's
+    name shows its facility's code, which otherwise costs one query per department on every list
+    page (found by HIMS-OPS-017)."""
+
+    def field_choices(self, field, request, model_admin):
+        ordering = self.field_admin_ordering(field, request, model_admin) or ("name",)
+        departments = field.related_model._default_manager.select_related("facility")
+        return [(department.pk, str(department)) for department in departments.order_by(*ordering)]
+
+
+class LargeTableAdminMixin:
+    """For the console's lists of the largest tables (audit log, messages, background events,
+    sign-ins, issued numbers). Counting stops at 10,000 ("More than 10,000"), the second count of
+    the whole table is skipped, and dates are filtered with Today / Past 7 days / This month
+    instead of the date bar, whose year list reads the whole table. HIMS-OPS-017 measured the
+    audit list at 1.9 s with 2 million events before this."""
+
+    show_full_result_count = False
+    paginator = CappedPaginator

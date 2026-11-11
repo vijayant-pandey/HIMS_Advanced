@@ -32,11 +32,13 @@ const SETTING_LABEL: Record<FeatureSetting["setting"], string> = {
 };
 
 function Availability({ feature }: { feature: FeatureState }) {
-  if (!feature.available) {
-    return <Chip size="small" variant="outlined" label={`Coming in ${feature.planned_phase}`} />;
-  }
+  // A feature for another country never comes here, so that is said first (found by HIMS-QA-003:
+  // a US hospital was told India's ABDM was "Coming in Phase 6").
   if (!feature.offered_in_country) {
     return <Chip size="small" variant="outlined" label="Not offered in this country" />;
+  }
+  if (!feature.available) {
+    return <Chip size="small" variant="outlined" label={`Coming in ${feature.planned_phase}`} />;
   }
   return (
     <Chip

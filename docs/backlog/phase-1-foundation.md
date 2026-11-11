@@ -128,7 +128,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | ID | Ticket | Status |
 |---|---|---|
 | HIMS-DATA-001 | Artifact A for built domains: generated data dictionary and ERDs (CI freshness check), classification, lifecycle, index ↔ query patterns, transactions, history, migrations, catalogs, data flows, synthetic data ([index](../architecture/data-architecture/README.md)) | Done |
-| HIMS-DATA-002 | Check indexes with production-like synthetic volume and query plans (spec 28.6) | To do |
+| HIMS-DATA-002 | Check indexes with production-like synthetic volume and query plans (spec 28.6) | Done (`volume_check`: a throw-away copy with 3.6 million synthetic rows, 24 busy queries' plans; found and fixed four problems; Performance screen and console; [volume check](../architecture/data-architecture/volume-check.md), [ADR-031](../decisions/ADR-031-performance-targets-and-volume-check.md)) |
 | HIMS-DATA-003 | Artifact A for each P0 domain before release (patients/MPI first; spec 28.8) | To do (🔒 with Phase 2 P0 sign-off) |
 
 ## EPIC HIMS-QA — Quality
@@ -137,7 +137,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 |---|---|---|
 | HIMS-QA-001 | Playwright browser tests for Phase 1 flows with axe accessibility checks; CI workflow ([how-to](../testing/browser-tests.md)) | Done |
 | HIMS-QA-002 | Make `browser-tests` a required check once it has run green for two weeks | To do (PO: branch ruleset) |
-| HIMS-QA-003 | Browser tests for the US deployment and the admin console | To do |
+| HIMS-QA-003 | Browser tests for the US deployment and the admin console | Done (`npm run e2e:us`: a separate US hospital, 12 tests; `05-admin-console.spec.ts`: 4 console tests; both in the `browser-tests` workflow; found the New facility form starting in India for a US hospital, fixed; [how-to](../testing/browser-tests.md)) |
 
 ## EPIC HIMS-NOTIF — Notifications
 
@@ -175,7 +175,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-OPS-008 | Customer provisioning automation in the control plane | To do |
 | HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | Done ([how-to](../workflows/backup-and-restore.md): Backups page, admin console, commands; restore into a separate copy checked against the backup's inventory incl. audit chain and documents) |
 | HIMS-OPS-018 | Restore drill of a cloud database snapshot into a separate database, with the same checks as HIMS-OPS-009 (gap found in HIMS-OPS-009) | To do (🔒 AWS) |
-| HIMS-OPS-017 | Response-time targets (SLOs) measured locally, before hosting (spec 18) | To do |
+| HIMS-OPS-017 | Response-time targets (SLOs) measured locally, before hosting (spec 18) | Done (300 ms for pages, 500 ms for searches, 95 of 100 answers; `measure_response_times` on 24 main screens and 6 console lists, alone or in the volume check; query count per screen must not grow with the records (CI); [how-to](../workflows/performance-checks.md)) |
+| HIMS-OPS-021 | Load test with many people at once against the hosted test environment before go-live: response times through the real web server and network, against the spec 18 targets (gap found in HIMS-OPS-017, which measures one request at a time on a PC) | To do (hosting stage) |
 | HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features (spec 25.3, 29) | To do |
 
 ## Later phases (epics only; P0 design required before build — spec 26)

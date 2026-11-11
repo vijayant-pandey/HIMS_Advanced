@@ -32,6 +32,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Compliance: requirements, risks, security incidents, retention and legal holds**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`console_access_blocks`](#console_access_blocks), [`security_incident_notifications`](#security_incident_notifications), [`retention_rules`](#retention_rules), [`legal_holds`](#legal_holds), [`retention_purge_runs`](#retention_purge_runs)
 - **Notifications: emails and SMS**: [`notifications`](#notifications), [`message_templates`](#message_templates)
 - **Backups and restore drills**: [`recovery_backups`](#recovery_backups), [`recovery_restore_drills`](#recovery_restore_drills)
+- **Performance checks: indexes and response times**: [`performance_checks`](#performance_checks)
 - **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events)
 - **Platform: idempotency**: [`idempotency_records`](#idempotency_records)
 
@@ -538,7 +539,7 @@ Register of sign-in sessions per user (HIMS-IAM-006; spec 4.4, 13.2, 13.5).
 
 - **Model:** `identity.UserSession`
 - **Lifecycle:** Register of sign-ins; closed (`ended_at`, reason) on sign-out, expiry or switch-off; kept as history. Ended ones purged after the period the hospital sets (at least 365 days), unless on legal hold (HIMS-COMP-006).
-- **Extra indexes:** `user_session_open_idx`: user, ended_at
+- **Extra indexes:** `user_session_open_idx`: user, ended_at; `user_session_ended_idx`: ended_at where ended_at is set
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
 |---|---|---|---|---|---|---|---|
@@ -1638,6 +1639,35 @@ One restore drill: a backup restored into a new, separate database and folder, e
 | `checks` | jsonb | no | list() | — | Person | Internal: Check results (table names, no contents) | Checks |
 | `problem_count` | integer | no | `0` | 0 or more | Person | Internal: Business data | Problem count |
 
+## Performance checks: indexes and response times
+
+**Owner (source of truth):** Platform / operations. **Design:** [performance-checks](../../workflows/performance-checks.md), [volume-check](volume-check.md).
+
+<a id="performance_checks"></a>
+### `performance_checks`
+
+- **Model:** `performance.PerformanceCheck`
+- **Lifecycle:** Append-only (database trigger); one row per index check or response-time measurement, kept as evidence; counts and timings only (HIMS-DATA-002, HIMS-OPS-017).
+- **Extra indexes:** `performance_check_kind_idx`: kind, finished_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `kind` | varchar(20) | no | — | `indexes` (Index check (query plans)), `response_times` (Response times) | Person | Internal: Business data | Kind |
+| `started_at` | timestamp with time zone | no | — | — | System | Internal: Business data | Started at |
+| `finished_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Finished at |
+| `trigger` | varchar(16) | no | — | `on_demand` (Started by a person), `command` (Started from the server command line), `volume` (Volume check (throw-away copy with synthetic records)) | Person | Internal: Business data | Trigger |
+| `requested_by_id` | uuid | yes | — | — | Person | Internal: Business data | Requested by id |
+| `outcome` | varchar(16) | no | — | `passed` (Passed: every target met), `failed` (Failed: see the results) | Person | Internal: Business data | Outcome |
+| `database` | varchar(63) | no | — | up to 63 characters | Person | Internal: Business data | The database measured (a volume check names its throw-away copy). |
+| `environment` | varchar(20) | no | — | up to 20 characters | Person | Internal: Business data | Environment |
+| `release` | varchar(64) | no | — | up to 64 characters | Person | Internal: Business data | Release |
+| `dataset` | jsonb | no | dict() | — | Person | Internal: Row counts per table | Approximate rows per main table when measured. Counts only. |
+| `dataset_rows` | bigint | no | `0` | 0 or more | Person | Internal: Business data | Dataset rows |
+| `results` | jsonb | no | list() | — | Person | Internal: Timings and index names, no record contents | One entry per query or screen: timings, index names, target, passed. No record contents. |
+| `problem_count` | integer | no | `0` | 0 or more | Person | Internal: Business data | Problem count |
+| `summary` | varchar(300) | no | — | up to 300 characters | Person | Internal: Business data | Summary |
+
 ## Platform: transactional outbox
 
 **Owner (source of truth):** Platform. **Design:** [ADR-005-transactional-outbox](../../decisions/ADR-005-transactional-outbox.md), [ADR-012-outbox-dispatcher](../../decisions/ADR-012-outbox-dispatcher.md).
@@ -1649,7 +1679,7 @@ A domain event committed atomically with the change that caused it (spec 14.2, 2
 
 - **Model:** `outbox.OutboxEvent`
 - **Lifecycle:** Published and dismissed rows deleted by the daily clean-up after `HIMS_OUTBOX_RETENTION_DAYS` (30); waiting and failed rows never automatically (a person sends them again or dismisses them, with a reason; HIMS-PLAT-014).
-- **Extra indexes:** `outbox_published_idx`: published_at where status = 'published'; `outbox_pending_idx`: available_at, occurred_at where status = 'pending'; `outbox_aggregate_idx`: aggregate_type, aggregate_id
+- **Extra indexes:** `outbox_published_idx`: published_at where status = 'published'; `outbox_pending_idx`: available_at, occurred_at where status = 'pending'; `outbox_aggregate_idx`: aggregate_type, aggregate_id; `outbox_attention_idx`: status, resolved_at where status in ['dead', 'dismissed']
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
 |---|---|---|---|---|---|---|---|

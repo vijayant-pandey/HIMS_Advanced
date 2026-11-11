@@ -180,7 +180,16 @@ class UserSession(UUIDPrimaryKeyModel):
     class Meta:
         db_table = "user_sessions"
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["user", "ended_at"], name="user_session_open_idx")]
+        indexes = [
+            models.Index(fields=["user", "ended_at"], name="user_session_open_idx"),
+            # The retention purge finds sign-ins that ended before its cut-off (HIMS-DATA-002
+            # found it reading the whole table).
+            models.Index(
+                fields=["ended_at"],
+                condition=models.Q(ended_at__isnull=False),
+                name="user_session_ended_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         state = self.get_end_reason_display() if self.ended_at else "active"

@@ -192,6 +192,8 @@ class WardAdmin(_LocationAdmin):
     parent_field = "floor"
     inlines = [RoomInline]
     list_display = ("code", "name", "ward_type", "floor", "department", "is_active")
+    # A department shows its facility's code: load both at once, not a query per row (HIMS-OPS-017).
+    list_select_related = ("floor__building", "department__facility")
     list_filter = ("is_active", "ward_type", "facility")
     search_fields = ("code", "name")
     fields = (
