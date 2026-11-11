@@ -1025,6 +1025,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/background-jobs/schedule/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The scheduled jobs and their last run, when run_scheduled_jobs starts them
+         *     (HIMS-OPS-023). With Celery beat the runs are in the worker's log instead.
+         */
+        get: operations["background_jobs_schedule_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/backups/": {
         parameters: {
             query?: never;
@@ -6716,6 +6736,21 @@ export interface components {
             blocked_last_30_days: number;
             traces: components["schemas"]["Traces"];
         };
+        ScheduledJob: {
+            name: string;
+            label: string;
+            every_seconds: number;
+            /** Format: date-time */
+            last_started_at: string | null;
+            /** Format: date-time */
+            last_finished_at: string | null;
+            /** @description running, ok or failed; empty when never run here. */
+            last_outcome: string;
+            last_duration_ms: number | null;
+            last_error: string;
+            runs: number;
+            failures: number;
+        };
         /**
          * @description * `organization` - Whole hospital
          *     * `facility` - Per facility
@@ -8919,6 +8954,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OutboxHealth"];
+                };
+            };
+        };
+    };
+    background_jobs_schedule_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledJob"][];
                 };
             };
         };

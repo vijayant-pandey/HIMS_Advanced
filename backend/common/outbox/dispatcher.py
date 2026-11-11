@@ -41,6 +41,15 @@ def publish_to_broker(event: OutboxEvent) -> None:
     )
 
 
+def handle_here(event: OutboxEvent) -> None:
+    """Without a broker (one server, HIMS-OPS-023), the dispatcher handles each waiting event in
+    its own process instead of publishing it. A failure counts as a failed attempt, with the same
+    back-off and the same "dead" status after the last attempt."""
+    if event.customer_id != settings.HIMS_DEPLOYMENT_ID:
+        raise RuntimeError("The event belongs to another deployment.")
+    process_event(event.id, deployment=settings.HIMS_DEPLOYMENT_ID)
+
+
 def dispatch_pending(
     *, batch_size: int | None = None, publish: Callable[[OutboxEvent], None] = publish_to_broker
 ) -> int:

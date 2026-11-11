@@ -4,7 +4,7 @@
 
 Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-requirement-ids-and-contract-docs.md)) traced to its requirement record, the API endpoints that deliver it ([contracts](../architecture/api-and-integrations/endpoints/README.md)), the backend test files that name it or call its endpoints, and the pull requests that delivered it (spec 25.3). Browser tests and manual steps are named in each record.
 
-92 of 126 marked Done in the backlog; 97 requirement records (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
+95 of 126 marked Done in the backlog; 100 requirement records (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
@@ -14,14 +14,14 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-PLAT-004 | Request/correlation ID: middleware, logs, audit, outbox, Celery propagation | Done | [record](platform-and-operations.md#hims-plat-004) | — | 2 files | before PRs |
 | HIMS-PLAT-005 | Structured JSON logging with deployment/environment/release fields | Done | [record](platform-and-operations.md#hims-plat-005) | — | 1 files | before PRs |
 | HIMS-PLAT-006 | Idempotency-Key support (replay, conflict, concurrent duplicates) | Done | [record](platform-and-operations.md#hims-plat-006) | — | 1 files | before PRs |
-| HIMS-PLAT-007 | Transactional outbox, SKIP LOCKED dispatcher, consumer dedup (ADR-012) | Done | [record](platform-and-operations.md#hims-plat-007) | 4 | 2 files | before PRs |
+| HIMS-PLAT-007 | Transactional outbox, SKIP LOCKED dispatcher, consumer dedup (ADR-012) | Done | [record](platform-and-operations.md#hims-plat-007) | 5 | 3 files | before PRs |
 | HIMS-PLAT-008 | Optimistic concurrency (`version`) for editable configuration records | Done | [record](platform-and-operations.md#hims-plat-008) | — | 1 files | before PRs |
 | HIMS-PLAT-009 | Health endpoints (live/ready) | Done | [record](platform-and-operations.md#hims-plat-009) | — | 1 files | before PRs |
 | HIMS-PLAT-010 | OpenAPI contract generated and validated; frontend types generated from it | Done | [record](platform-and-operations.md#hims-plat-010) | — | — | before PRs |
 | HIMS-PLAT-011 | Backend container image (non-root, single image for all roles) | Done | [record](platform-and-operations.md#hims-plat-011) | — | — | before PRs |
 | HIMS-PLAT-012 | Hash-locked Python lockfile (uv, universal, `--require-hashes` in CI and image; [how-to](../workflows/dependencies.md)) | Done | [record](platform-and-operations.md#hims-plat-012) | — | 1 files | #24, before PRs |
 | HIMS-PLAT-013 | Pin GitHub Actions to commit SHAs; least-privilege tokens per job; Dependabot for actions (test-enforced) | Done | [record](platform-and-operations.md#hims-plat-013) | — | 1 files | #25, #26, #30, before PRs |
-| HIMS-PLAT-014 | Outbox and idempotency retention/archival jobs and runbook | Done | [record](platform-and-operations.md#hims-plat-014) | 4 | 1 files | #40, before PRs |
+| HIMS-PLAT-014 | Outbox and idempotency retention/archival jobs and runbook | Done | [record](platform-and-operations.md#hims-plat-014) | 5 | 2 files | #40, before PRs |
 | HIMS-PLAT-015 | Route-level code splitting in the SPA (first download 1,045 → 494 kB; CI bundle budget 500 kB; reload page after updates) | Done | [record](platform-and-operations.md#hims-plat-015) | — | — | #24, before PRs |
 | HIMS-UI-001 | Theme selector (white & blue/red/green, minimal black & white) across launcher, apps and admin | Done | [record](platform-and-operations.md#hims-ui-001) | — | 1 files | #5, before PRs |
 | HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event); plus 6 more colour themes (10 total) and a compact modern design | Done | [record](platform-and-operations.md#hims-ui-002) | 2 | 11 files | #5 |
@@ -37,16 +37,16 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-OPS-011 | Real email provider per hosted environment (e.g. Amazon SES / Render-compatible SMTP); console email locally | To do | — | — | — | — |
 | HIMS-ORG-001 | Organization model (one per deployment) + `provision_organization` command (ADR-009) | Done | [record](organization-and-facilities.md#hims-org-001) | — | 1 files | before PRs |
 | HIMS-ORG-002 | `GET/PATCH /organization/` with versioning and audit | Done | [record](organization-and-facilities.md#hims-org-002) | 2 | 3 files | before PRs |
-| HIMS-FAC-001 | Facilities API: list/create/retrieve/update, scoped visibility, audit | Done | [record](organization-and-facilities.md#hims-fac-001) | 4 | 12 files | before PRs |
+| HIMS-FAC-001 | Facilities API: list/create/retrieve/update, scoped visibility, audit | Done | [record](organization-and-facilities.md#hims-fac-001) | 4 | 13 files | before PRs |
 | HIMS-FAC-002 | Departments API: create within facility scope, inactive-facility guard | Done | [record](organization-and-facilities.md#hims-fac-002) | 7 | 6 files | before PRs |
-| HIMS-FAC-003 | Facility admin UI (list + create with idempotency) | Done | [record](organization-and-facilities.md#hims-fac-003) | 4 | 12 files | before PRs |
+| HIMS-FAC-003 | Facility admin UI (list + create with idempotency) | Done | [record](organization-and-facilities.md#hims-fac-003) | 4 | 13 files | before PRs |
 | HIMS-FAC-004 | Location hierarchy: building → floor → ward/unit → room → bed (config only; allocation is Phase 3) | Done | [record](organization-and-facilities.md#hims-fac-004) | 23 | 4 files | #10 |
 | HIMS-FAC-005 | In-app screens to add/edit buildings, floors, wards, rooms and beds | Done | [record](organization-and-facilities.md#hims-fac-005) | 24 | 3 files | #12 |
 | HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | Done | [record](organization-and-facilities.md#hims-org-003) | 7 | 1 files | #11, before PRs |
 | HIMS-ORG-004 | Feature flags per organization/country/facility | Done | [record](organization-and-facilities.md#hims-org-004) | 3 | 1 files | #13, before PRs |
 | HIMS-ORG-005 | Hospital settings screen (name, legal name, default time zone) | Done | [record](organization-and-facilities.md#hims-org-005) | 2 | 3 files | #17, before PRs |
 | HIMS-ORG-006 | Hospital logo and letterhead for printouts and emails (spec 4.1) | Done | [record](organization-and-facilities.md#hims-org-006) | 4 | 2 files | #44, before PRs |
-| HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done | [record](organization-and-facilities.md#hims-fac-006) | 11 | 14 files | #15 |
+| HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done | [record](organization-and-facilities.md#hims-fac-006) | 11 | 15 files | #15 |
 | HIMS-FAC-007 | Department head, services offered and operating hours | Done | [record](organization-and-facilities.md#hims-fac-007) | 8 | 6 files | #19 |
 | HIMS-FAC-008 | Bed board: every ward's beds and their status on one screen, no patients yet (spec 4.10) | Done | [record](organization-and-facilities.md#hims-fac-008) | 1 | 1 files | #43 |
 | HIMS-FAC-009 | Equipment register: item, location, status, service dates (spec 4.12; workflows wait for PO) | Done | [record](organization-and-facilities.md#hims-fac-009) | 7 | 1 files | #44 |
@@ -95,7 +95,7 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-SEC-012 | Security headers/CSP for the screens, admin console and API; reports of anything blocked ([how-to](../workflows/security-headers.md)) | Done | [record](audit-and-security.md#hims-sec-012) | 4 | 2 files | #32 |
 | HIMS-SEC-013 | Upload validation/malware scanning service | Done | [record](audit-and-security.md#hims-sec-013) | 2 | 1 files | #46 |
 | HIMS-SEC-014 | Trust `X-Forwarded-For` only from our own proxies, for audit addresses, sign-in register, rate limits and the console lock-out | Done | [record](audit-and-security.md#hims-sec-014) | — | 1 files | #32 |
-| HIMS-SEC-018 | Send `frontend/security-headers.json` as response headers at hosting (CloudFront response headers policy) and check them from outside (gap found in HIMS-SEC-012) | To do | — | — | — | — |
+| HIMS-SEC-018 | Send `frontend/security-headers.json` as response headers at hosting (CloudFront response headers policy) and check them from outside (gap found in HIMS-SEC-012) | Done | [record](audit-and-security.md#hims-sec-018) | — | 1 files | this PR |
 | HIMS-SEC-016 | Copy each passed check's audit chain head to write-once storage (S3 Object Lock) as an independent anchor (gap found in HIMS-SEC-010) | To do | — | — | — | — |
 | HIMS-SEC-019 | Secret-in-logs test: no password, token, code or key ever reaches a log line (spec 13.5) | Done | [record](audit-and-security.md#hims-sec-019) | — | 2 files | #37 |
 | HIMS-SEC-020 | Filter the error text that traces keep (`exception.message`, stack) with the same rules as logs, before traces are sent anywhere (gap found in HIMS-SEC-019) | Done | [record](audit-and-security.md#hims-sec-020) | — | 3 files | #46 |
@@ -124,9 +124,9 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-OPS-006 | Migration release job with lock; per-customer schema version tracking | To do | — | — | — | — |
 | HIMS-OPS-007 | Separate DB roles (runtime / migration / read-only / break-glass); runtime lacks TRUNCATE on audit | Done | [record](platform-and-operations.md#hims-ops-007) | 1 | 1 files | #39 |
 | HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | To do | — | — | — | — |
-| HIMS-OPS-020 | Hosting analysis: map the specification's hosting needs (sections 17, 30, 31, 34) to Oracle Cloud's free offering, its limits and gaps ([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)) | Done | [record](platform-and-operations.md#hims-ops-020) | 1 | 1 files | this PR |
-| HIMS-OPS-022 | Serve the screens from the same server as the API (built React app through WhiteNoise, with the screens' security headers), so one free service and one address are enough (gap found in HIMS-OPS-020) | To do | — | — | — | — |
-| HIMS-OPS-023 | Scheduled jobs without a worker: run every due job once from an outside clock (host cron or GitHub Actions), never twice at the same time (gap found in HIMS-OPS-020) | To do | — | — | — | — |
+| HIMS-OPS-020 | Hosting analysis: map the specification's hosting needs (sections 17, 30, 31, 34) to Oracle Cloud's free offering, its limits and gaps ([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)) | Done | [record](platform-and-operations.md#hims-ops-020) | 1 | 1 files | #52 |
+| HIMS-OPS-022 | Serve the screens from the same server as the API (built React app through WhiteNoise, with the screens' security headers), so one free service and one address are enough (gap found in HIMS-OPS-020) | Done | [record](platform-and-operations.md#hims-ops-022) | — | 1 files | this PR |
+| HIMS-OPS-023 | Scheduled jobs without a worker: run every due job once from an outside clock (host cron or GitHub Actions), never twice at the same time (gap found in HIMS-OPS-020) | Done | [record](platform-and-operations.md#hims-ops-023) | — | 1 files | this PR |
 | HIMS-OPS-024 | The first free Development environment without a payment card (Northflank, or Render + Neon + GitHub Actions): settings, deploy from `development`, `hosting_check` in the pipeline (gap found in HIMS-OPS-020) | To do | — | — | — | — |
 | HIMS-OPS-008 | Customer provisioning automation in the control plane | To do | — | — | — | — |
 | HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | Done | [record](platform-and-operations.md#hims-ops-009) | 7 | 3 files | #38 |

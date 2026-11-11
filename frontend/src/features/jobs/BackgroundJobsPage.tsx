@@ -25,6 +25,7 @@ import { FormDialog } from "../../components/FormDialog";
 import { useCurrentUser } from "../auth/api";
 import { hasOrganizationWidePermission } from "../auth/grants";
 import { type Show, useDecideEvent, useJobEvents, useJobHealth } from "./api";
+import { ScheduledJobsSection } from "./ScheduledJobsSection";
 
 const when = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
 const formatWhen = (value?: string | null) => (value ? when.format(new Date(value)) : "—");
@@ -231,6 +232,7 @@ export function BackgroundJobsPage() {
       {deciding && (
         <DecisionDialog event={deciding.event} decision={deciding.decision} onClose={() => setDeciding(undefined)} />
       )}
+      <ScheduledJobsSection />
     </Stack>
   );
 }

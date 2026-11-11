@@ -39,7 +39,7 @@ proves it on a running server.
 | HTTPS, secure cookies, HSTS | 13.3, 17.2 | Hosted settings force them | `https` |
 | PostgreSQL 15+, encrypted connection | 9, 13.3 | All data; 1 GB is plenty for a test environment | `database_tls` |
 | Separate database users | 13.2, 17.2 | `setup_database_roles` (HIMS-OPS-007) | `database_users` |
-| A scheduler: 14 jobs, audit sealing every minute | 13.4, 14 | Celery beat, or an outside clock (HIMS-OPS-023) | `scheduled_jobs` |
+| A scheduler: 13 jobs, audit sealing every minute | 13.4, 14 | Celery beat, or an outside clock (HIMS-OPS-023) | `scheduled_jobs` |
 | Background events | 14.2 | Celery worker, or handled in the request when there is no broker | `background_events` |
 | Redis (broker, shared rate limits) | 14 | Optional: without it, one process works | `shared_cache` |
 | Durable private storage for documents | 4.22, 13.3 | Local disk now; S3-compatible later (HIMS-OPS-015) | `documents` |
@@ -117,8 +117,8 @@ New tickets (in the [backlog](../../backlog/phase-1-foundation.md) and the hosti
 
 | Ticket | What | Why |
 |---|---|---|
-| HIMS-OPS-022 | Serve the screens from the same server as the API (the built React app through WhiteNoise, with the screens' security headers) | One free service; sign-in cookies need one address; also sends the screens' headers (most of HIMS-SEC-018) |
-| HIMS-OPS-023 | Scheduled jobs without a worker: a command that runs every due job once, safe to start from an outside clock | Free hosts have no always-on scheduler; the audit log must still be sealed |
+| HIMS-OPS-022 (done) | Serve the screens from the same server as the API (the built React app through WhiteNoise, with the screens' security headers) | One free service; sign-in cookies need one address; also sends the screens' headers (most of HIMS-SEC-018) |
+| HIMS-OPS-023 (done) | Scheduled jobs without a worker: a command that runs every due job once, safe to start from an outside clock | Free hosts have no always-on scheduler; the audit log must still be sealed |
 | HIMS-OPS-024 | The first free Development environment: account, settings, deploy from `development`, `hosting_check` in the pipeline, the PO's sign-in | The goal of this stage |
 
 The existing hosting-stage tickets keep their purpose and move to whichever host is chosen for real

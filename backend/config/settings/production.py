@@ -22,6 +22,7 @@ from .base import (
     HIMS_ENABLE_ADMIN,
     HIMS_ENVIRONMENT,
     HIMS_FIELD_ENCRYPTION_KEYS,
+    HIMS_FRONTEND_DIST,
     HIMS_MFA_REQUIRED_FOR_PRIVILEGED,
     HIMS_SESSION_MAX_SECONDS,
     HIMS_TRUSTED_PROXIES,
@@ -47,6 +48,13 @@ X_FRAME_OPTIONS = "DENY"
 # Static files collected at image build, served by the app itself with WhiteNoise, right after
 # Django's security middleware (HIMS-OPS-010). On a developer PC runserver serves them instead.
 STORAGES = HOSTED_STORAGES
+# The screens from the same server (HIMS-OPS-022): WhiteNoise serves the built app's files at the
+# site root, with the screens' protection headers; screen addresses get index.html (config/urls).
+if HIMS_FRONTEND_DIST:
+    from common.screens import add_headers as _screens_headers
+
+    WHITENOISE_ROOT = HIMS_FRONTEND_DIST
+    WHITENOISE_ADD_HEADERS_FUNCTION = _screens_headers
 MIDDLEWARE = [MIDDLEWARE[0], "whitenoise.middleware.WhiteNoiseMiddleware", *MIDDLEWARE[1:]]
 
 # Secrets never reach a log (HIMS-SEC-019): a printed email lands in the server log here, so it

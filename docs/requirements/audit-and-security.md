@@ -175,6 +175,25 @@ Spec sections 4.25, 13. Format: [README](README.md). Endpoints:
 | Test evidence | `common/admin/tests/test_console_allow_list.py`, `apps/compliance/tests/test_console_access.py`; manual test Part 18f |
 | Release risk | Availability if the list is wrong (setting change) |
 
+### HIMS-SEC-018
+
+| Field | Record |
+|---|---|
+| ID and title | HIMS-SEC-018 The screens' protection headers sent by the hosting |
+| Business/clinical reason | The content security policy and framing rules protect the screens only if the server sends them (spec 13.3). Owner: PO |
+| Actors | Browsers |
+| Preconditions | The server serves the screens (HIMS-OPS-022) |
+| Main success path | Every screen page carries the policy, framing, referrer and permissions headers; HSTS over HTTPS |
+| Alternate/failure paths | Report-only mode (`HIMS_CSP_REPORT_ONLY`) sends the policy as report-only |
+| Data effects | None |
+| Security classification | Public |
+| Audit requirement | Blocked content reported (HIMS-SEC-012) |
+| Idempotency/concurrency | Not applicable |
+| Integration dependencies | A CDN in front later must keep the headers |
+| Acceptance criteria | The headers equal `frontend/security-headers.json` (test) |
+| Test evidence | `common/tests/test_screens.py` |
+| Release risk | A too-strict policy blocks a screen (browser tests use the same headers). Rollback: report-only mode |
+
 ### HIMS-SEC-019
 
 | Field | Record |

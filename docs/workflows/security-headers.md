@@ -26,7 +26,7 @@ attacker manages to slip code into a page, the browser refuses to run it or to s
 | API documentation page (off in managed environments) | Allows the Swagger CDN | `backend/common/security_headers.py` |
 | The screens (React app) | Our own scripts and connections only | `frontend/security-headers.json` |
 
-The screens are static files, so **the hosting service must send these headers**:
+The screens are static files, so **the hosting service must send these headers**. When the HIMS server itself serves the screens (the hosted image, HIMS-OPS-022: [one-server hosting](one-server-hosting.md)), it sends exactly these headers (`common/screens.py`, kept identical to the JSON file by a test), so nothing has to be copied by hand. Otherwise:
 
 - `vite preview` and the browser tests use `frontend/security-headers.json` exactly, so the tests
   prove the policy works on every screen.

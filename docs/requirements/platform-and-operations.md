@@ -566,6 +566,44 @@ their "actors" are every caller and their evidence is the shared tests in `backe
 | Test evidence | `apps/compliance/tests/test_hosting.py`; frontend `HostingTab.test.tsx`; manual test Part 18t; [hosting analysis](../architecture/hosting/hosting-analysis.md) |
 | Release risk | None (documents and a read-only check) |
 
+### HIMS-OPS-022
+
+| Field | Record |
+|---|---|
+| ID and title | HIMS-OPS-022 The screens served by the same server as the API, from one image |
+| Business/clinical reason | The free host gives one small service, and sign-in cookies need one address for the screens and the API (ADR-034). Owner: PO |
+| Actors | Browsers; the host runs the root `Dockerfile` image |
+| Preconditions | The image built with the screens (`HIMS_FRONTEND_DIST`) |
+| Main success path | Screen addresses answer the app's start page with the screens' protection headers; the app's files are cached for a year; API, console and health addresses are unchanged |
+| Alternate/failure paths | Missing files, unknown API addresses and the server's own areas answer 404, never the app; "/admin" still gets its slash; without `HIMS_FRONTEND_DIST` nothing is served (developer PC) |
+| Data effects | None |
+| Security classification | Public (the app's code, no data) |
+| Audit requirement | None |
+| Idempotency/concurrency | Not applicable |
+| Integration dependencies | The host's HTTPS proxy (`X-Forwarded-Proto`) |
+| Acceptance criteria | The screens' headers equal `frontend/security-headers.json` (test); CI builds the image and finds the screens in it |
+| Test evidence | `common/tests/test_screens.py`; CI container job; manual test Part 18u |
+| Release risk | A wrong address rule could hide an API path (tested both ways). Rollback: unset `HIMS_FRONTEND_DIST` |
+
+### HIMS-OPS-023
+
+| Field | Record |
+|---|---|
+| ID and title | HIMS-OPS-023 Scheduled jobs without an always-on scheduler |
+| Business/clinical reason | The audit log must be sealed every minute and daily jobs must run, also on a host that only offers a timer. Owner: PO |
+| Actors | The host's timer (`run_scheduled_jobs`); `platform.jobs.view` sees the run board |
+| Preconditions | Database reachable |
+| Main success path | Every call runs each due job once and records its last run; frequent jobs run on every call |
+| Alternate/failure paths | A second call while one runs does nothing; a failing job does not stop the others, keeps its error and is tried again after 5 minutes; the command then ends with an error; without a broker waiting events are handled here |
+| Data effects | `scheduled_jobs` (one row per job), and whatever each job changes |
+| Security classification | Internal (job names and filtered errors) |
+| Audit requirement | Each job's own events (for example `outbox.cleaned_up`, `compliance.retention.purge_run`) |
+| Idempotency/concurrency | PostgreSQL advisory lock; the jobs themselves are idempotent (spec 14.3) |
+| Integration dependencies | None |
+| Acceptance criteria | All 13 jobs run without a worker (test); the hosting check turns OK once the audit log is sealed |
+| Test evidence | `common/tests/test_scheduled_jobs.py`; frontend `BackgroundJobsPage.test.tsx`; manual test Part 18u |
+| Release risk | Low. Rollback: run Celery beat instead |
+
 ## Data, tests and documents
 
 ### HIMS-DATA-001

@@ -197,6 +197,7 @@ export type SecurityTestCase = Schemas["SecurityTestCase"];
 export type ReviewFinding = Schemas["ReviewFinding"];
 export type HostingReadiness = Schemas["HostingReadiness"];
 export type HostingCheck = Schemas["HostingCheck"];
+export type ScheduledJob = Schemas["ScheduledJob"];
 export type DatabaseAccess = Schemas["DatabaseAccess"];
 export type ConsoleAccess = Schemas["ConsoleAccess"];
 export type ConsoleAccessBlock = Schemas["ConsoleAccessBlock"];

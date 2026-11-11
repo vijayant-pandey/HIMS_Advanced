@@ -1,15 +1,19 @@
 import logging
 
 from celery import shared_task
+from django.conf import settings
 
 from .dispatcher import dispatch_pending as _dispatch_pending
-from .dispatcher import process_event
+from .dispatcher import handle_here, process_event
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(name="outbox.dispatch_pending", ignore_result=True)
 def dispatch_pending() -> int:
+    if settings.HIMS_OUTBOX_DISPATCH_INLINE:
+        # No broker: publishing would hand the event to nobody (HIMS-OPS-023).
+        return _dispatch_pending(publish=handle_here)
     return _dispatch_pending()
 
 

@@ -92,6 +92,21 @@ class OutboxHealthSerializer(serializers.Serializer):
     attention = serializers.ListField(child=serializers.CharField())
 
 
+class ScheduledJobSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    label = serializers.CharField()
+    every_seconds = serializers.IntegerField()
+    last_started_at = serializers.DateTimeField(allow_null=True)
+    last_finished_at = serializers.DateTimeField(allow_null=True)
+    last_outcome = serializers.CharField(
+        allow_blank=True, help_text="running, ok or failed; empty when never run here."
+    )
+    last_duration_ms = serializers.IntegerField(allow_null=True)
+    last_error = serializers.CharField(allow_blank=True)
+    runs = serializers.IntegerField()
+    failures = serializers.IntegerField()
+
+
 class DecisionSerializer(serializers.Serializer):
     reason = serializers.CharField(max_length=300, help_text="Why (kept in the audit log).")
 
@@ -114,6 +129,7 @@ class BackgroundJobViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     required_permissions = {
         "list": P.JOBS_VIEW,
         "health": P.JOBS_VIEW,
+        "schedule": P.JOBS_VIEW,
         "send_again": P.JOBS_MANAGE,
         "dismiss": P.JOBS_MANAGE,
     }
@@ -148,6 +164,15 @@ class BackgroundJobViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def health(self, request):
         """How many events wait, are retried or failed; the last clean-up."""
         return Response(OutboxHealthSerializer(outbox_health()).data)
+
+    @extend_schema(responses=ScheduledJobSerializer(many=True))
+    @action(detail=False, methods=["get"])
+    def schedule(self, request):
+        """The scheduled jobs and their last run, when run_scheduled_jobs starts them
+        (HIMS-OPS-023). With Celery beat the runs are in the worker's log instead."""
+        from .scheduler import board
+
+        return Response(ScheduledJobSerializer(board(), many=True).data)
 
     def _decide(self, request, pk, decide):
         body = DecisionSerializer(data=request.data)
