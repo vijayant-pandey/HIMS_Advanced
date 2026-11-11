@@ -4975,6 +4975,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/DatabaseAccess'
           description: ''
+  /api/v1/security/hosting/:
+    get:
+      operationId: security_hosting_retrieve
+      description: What this server still needs before it can host HIMS, read from
+        its own settings.
+      tags:
+      - security
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostingReadiness'
+          description: ''
   /api/v1/security/review/:
     get:
       operationId: security_review_retrieve
@@ -9428,6 +9444,73 @@ components:
       - designation
       - id
       - name
+    HostingCheck:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        spec:
+          type: string
+          description: Specification sections.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/HostingCheckStatusEnum'
+          description: |-
+            ok: met; fail: needed before going on the internet at all; warn: fine with synthetic test data, needed before real patient data.
+
+            * `ok` - ok
+            * `warn` - warn
+            * `fail` - fail
+        detail:
+          type: string
+        fix:
+          type: string
+      required:
+      - detail
+      - fix
+      - key
+      - label
+      - spec
+      - status
+    HostingCheckStatusEnum:
+      enum:
+      - ok
+      - warn
+      - fail
+      type: string
+      description: |-
+        * `ok` - ok
+        * `warn` - warn
+        * `fail` - fail
+    HostingReadiness:
+      type: object
+      properties:
+        environment:
+          type: string
+        developer_pc:
+          type: boolean
+        ready_to_host:
+          type: boolean
+        ready_for_real_data:
+          type: boolean
+        failing:
+          type: integer
+        before_real_data:
+          type: integer
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/HostingCheck'
+      required:
+      - before_real_data
+      - checks
+      - developer_pc
+      - environment
+      - failing
+      - ready_for_real_data
+      - ready_to_host
     HoursSession:
       type: object
       properties:

@@ -509,6 +509,7 @@ def seed(*, scale: float = 1.0, progress=None) -> dict[str, int]:
     added.update({"staff_members": n["staff"], "users": n["staff"], "beds": n["wards"] * 30})
     say("Updating PostgreSQL's statistics (ANALYZE)...")
     with connection.cursor() as cursor:
-        for table in MAIN_TABLES:
-            cursor.execute(f'ANALYZE "{table}"')
+        # Every table, not only the filled ones: the busy queries also join small tables (roles,
+        # permissions), and stale statistics there can change which index a plan starts from.
+        cursor.execute("ANALYZE")
     return added

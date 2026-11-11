@@ -24,6 +24,7 @@ from . import (
     browser_reports,
     console_access,
     encryption,
+    hosting,
     incidents,
     retention,
     security_review,
@@ -366,6 +367,8 @@ class ConsoleAccessBlockAdmin(_ComplianceAdmin):
             # (HIMS-SEC-011).
             "review": security_review.summary(),
             "encryption": encryption.status(),
+            # What this server still needs before it hosts HIMS (HIMS-OPS-020).
+            "hosting": hosting.readiness(),
         }
         return TemplateResponse(request, "admin/compliance/security_status.html", context)
 

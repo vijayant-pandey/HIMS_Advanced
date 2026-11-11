@@ -54,6 +54,7 @@
 22q. [Part 18q: performance checks and the US hospital in a new branch](#part-18q-performance-checks-and-the-us-hospital-in-a-new-branch)
 22r. [Part 18r: API endpoints and requirement records](#part-18r-api-endpoints-and-requirement-records)
 22s. [Part 18s: the security review](#part-18s-the-security-review)
+22t. [Part 18t: hosting readiness](#part-18t-hosting-readiness)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1431,6 +1432,19 @@ Needs the security review PR (no migrations). Use the India hospital.
 | 18s.6 | As the administrator open **Bed board** and leave the tab alone for 31 minutes (it keeps refreshing itself) | The next refresh shows the sign-in page: refreshes do not count as use |
 | 18s.7 | **Audit log** (auditor), area "Sign-in and security", event "Signed out of devices"; then event "Failed sign-in" | An entry with reason `expired_idle` for step 18s.6; failed sign-ins with reason `paused` for step 18s.4 |
 | 18s.8 | Launcher window (in `backend`, venv active): `python manage.py rotate_encryption_keys --dry-run` | "Would encrypt again: 0 …" and "Values needing an older key now: 0." (nothing to do until a new key is added: [encryption keys](../workflows/encryption-keys.md)) |
+
+---
+
+## Part 18t: hosting readiness
+
+Needs the hosting analysis PR (no migrations). Use the India hospital.
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18t.1 | Sign in as the auditor → **Compliance** → tab **Hosting readiness** | "… item(s) must be fixed before this server is on the internet (expected on a developer PC)" and a table of 17 checks with **OK**, **Must fix** or **Before real data**, each with what to do |
+| 18t.2 | Admin console (administrator) → **Security status** | A **Hosting readiness (local)** section with the same checks |
+| 18t.3 | Launcher window (in `backend`, venv active): `python manage.py hosting_check` | The same list in words; last line "… failing, … needed before real patient data (local)."; it ends with an error because this is a developer PC |
+| 18t.4 | Read [hosting-analysis.md](../architecture/hosting/hosting-analysis.md) section 1 | Oracle needs a card; the free plan without a card is Northflank, or Render + Neon + GitHub Actions, for test data only |
 
 ---
 

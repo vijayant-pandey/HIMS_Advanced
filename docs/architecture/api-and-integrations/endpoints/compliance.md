@@ -760,6 +760,34 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Automated test cases | `common/tests/test_database_roles.py::test_compliance_page_shows_database_access` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
+### GET /api/v1/security/hosting/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `security_hosting_retrieve` |
+| Method and path | `GET /api/v1/security/hosting/` |
+| Business purpose | What this server still needs before it can host HIMS, read from its own settings. |
+| Requirements | [HIMS-OPS-020](../../../requirements/platform-and-operations.md#hims-ops-020) |
+| Actor / permission required | `compliance.view` (See the compliance registers: requirements, risks and security incidents). System roles holding it: Organization administrator, Auditor / compliance officer, Compliance / security officer. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | No body |
+| Response schema | 200 `HostingReadiness` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/compliance/tests/test_hosting.py::test_hosting_tab_and_console` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### GET /api/v1/security/review/
 
 | Field | Contract |

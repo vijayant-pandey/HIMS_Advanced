@@ -18,6 +18,7 @@ import type {
   RetentionStatus,
   RiskEntry,
   SecurityIncident,
+  HostingReadiness,
   SecurityReview,
   SecurityStatus,
 } from "../../api/types";
@@ -58,6 +59,14 @@ export function useSecurityReview() {
   return useQuery<SecurityReview, ApiError>({
     queryKey: [...key, "security-review"],
     queryFn: ({ signal }) => api.get<SecurityReview>("/security/review/", { signal }),
+  });
+}
+
+/** What this server still needs before it hosts HIMS (HIMS-OPS-020). */
+export function useHostingReadiness() {
+  return useQuery<HostingReadiness, ApiError>({
+    queryKey: [...key, "hosting"],
+    queryFn: ({ signal }) => api.get<HostingReadiness>("/security/hosting/", { signal }),
   });
 }
 

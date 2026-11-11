@@ -10,7 +10,7 @@ ordered plan. **Last updated:** 2026-11-10 (after PR #47, with the retention pur
 **for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
 comes at the end of Phase 1; hosting is **Oracle Cloud at the very end** instead of AWS
 ([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)). Below, 'AWS' therefore means the **hosting stage at
-the end**, re-planned for Oracle Cloud after the analysis (HIMS-OPS-020).
+the end**, re-planned by the hosting analysis (HIMS-OPS-020, done): a free Development environment on a host that needs no payment card first ([ADR-034](../decisions/ADR-034-free-hosting-without-a-card.md)), paid hosting before real data.
 
 **Legend:** ✅ done · 🟡 partly done · ⬜ not started · 🔓 can be built now · 🔒 blocked (blocker
 named) · **PO** you · **CLIN** doctors/nurses/pharmacists · **LEGAL** legal/compliance · **AWS**
@@ -27,7 +27,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
-| Phase 1 tickets | 123: ✅ 99 done or approved · 24 left: 4 🔓 can be built now (all optional or later), 16 hosting stage at the very end (Oracle Cloud; next: the hosting analysis, HIMS-OPS-020), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 1 tickets | 126: ✅ 100 done or approved · 26 left: 6 🔓 can be built now (HIMS-OPS-022, HIMS-OPS-023 next; 4 optional or later), 16 hosting stage (first: the free Development environment, HIMS-OPS-024), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
@@ -38,7 +38,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~10% | 99 (PR #1–#50 and #30, the security review, 2 approvals) | Hosting stage (section 4b, starting with HIMS-OPS-020); 4 optional items (section 4a) | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~15% | 100 (PR #1–#51 and #30, the hosting analysis, 2 approvals) | Get ready for a free host (HIMS-OPS-022, HIMS-OPS-023), then the free Development environment (HIMS-OPS-024); 4 optional items | Hosting: free Development without a card first (ADR-034); paid hosting before real data | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -105,8 +105,9 @@ fit, so nothing is forgotten.
 | 5 | Retention purge (alone: deletes data) | HIMS-COMP-006 | 4.25, 28 | ✅ done |
 | 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ✅ done |
 | 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ✅ done |
+| 8 | Ready for a free host (found by the hosting analysis) | HIMS-OPS-022, HIMS-OPS-023 | 17, 31, 14 | ⬜ **next** |
 
-**Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step). **Next: the hosting stage on Oracle Cloud, starting with the hosting analysis (HIMS-OPS-020, section 4b).** The table below keeps each task's own row.
+**Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step), and the hosting analysis (HIMS-OPS-020) is done. **Next: group 8 below, then the free Development environment (HIMS-OPS-024, section 4b).** The table below keeps each task's own row.
 
 | Step | Spec § | Ticket | Task | Status | Why this order |
 |---|---|---|---|---|---|
@@ -143,7 +144,8 @@ fit, so nothing is forgotten.
 
 | Spec § | Ticket | Task | Blocked by |
 |---|---|---|---|
-| 17, 30, 34 | HIMS-OPS-020 | Hosting analysis: map the spec's hosting needs to Oracle Cloud's offering, limits and gaps (ADR-027) | First step of the hosting stage |
+| 17, 30, 34 | HIMS-OPS-020 | Hosting analysis | ✅ done 2026-11-11 ([analysis](../architecture/hosting/hosting-analysis.md)) |
+| 17, 31, 33 | HIMS-OPS-024 | The first free Development environment (no payment card): account, settings, deploy from `development`, `hosting_check` in the pipeline | PO: free account sign-up; after group 8 |
 | 17, 30 | HIMS-OPS-003 | Terraform modules (network, ECS, RDS, Redis, S3, KMS, secrets, monitoring) | AWS |
 | 17.2, 30.5 | HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | AWS |
 | 17, 18 | HIMS-OPS-004 | Alarms and runbooks (errors, latency, database, queues, outbox) | AWS |
@@ -197,7 +199,7 @@ fit, so nothing is forgotten.
 | 38 | 6 | 4.24, 7.6 | — | Reporting and analytics | ⬜ | Domains; LEGAL for cross-hospital |
 | 39 | 6 | 12 | — | FHIR, ABDM (ABHA), external EHRs | ⬜ | Partners, LEGAL |
 | 40 | 6 | 4.15, 4.16 | — | PACS, LIS and device integrations | ⬜ | VENDOR |
-| 41 | 6 | 17, 27, 30 | HIMS-OPS-020, then the Phase 1 hosting items | Hosting stage on Oracle Cloud (ADR-027): analysis, hosting, backups, disaster recovery, alarms | ⬜ | At the very end (PO 2026-11-08) |
+| 41 | 6 | 17, 27, 30 | HIMS-OPS-020 (done), HIMS-OPS-022/023/024, then the Phase 1 hosting items | Hosting stage: free Development first (ADR-034), paid hosting before real data: backups, disaster recovery, alarms | 🟡 analysis done | At the very end (PO 2026-11-08) |
 | 42 | 6 | 18, 19, 27 | — | Performance, security and recovery tests; clinical validation | ⬜ | Hosting, CLIN |
 | 43 | 6 | 20, 35 | — | Hospital acceptance testing, training, controlled rollout | ⬜ | Everything above |
 

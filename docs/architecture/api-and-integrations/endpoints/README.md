@@ -2,7 +2,7 @@
 
 # API endpoints (contracts index)
 
-241 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
+242 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
 
 ## [Hospital settings, logo and letterhead](organizations.md)
 
@@ -289,6 +289,7 @@
 | [`POST /api/v1/security/browser-reports/`](compliance.md#post-api-v1-security-browser-reports) | public | HIMS-SEC-012 |
 | [`GET /api/v1/security/console-access/`](compliance.md#get-api-v1-security-console-access) | `compliance.view` | HIMS-SEC-015 |
 | [`GET /api/v1/security/database-access/`](compliance.md#get-api-v1-security-database-access) | `compliance.view` | HIMS-OPS-007 |
+| [`GET /api/v1/security/hosting/`](compliance.md#get-api-v1-security-hosting) | `compliance.view` | HIMS-OPS-020 |
 | [`GET /api/v1/security/review/`](compliance.md#get-api-v1-security-review) | `compliance.view` | HIMS-SEC-011 |
 | [`GET /api/v1/security/status/`](compliance.md#get-api-v1-security-status) | `compliance.view` | HIMS-SEC-012, HIMS-SEC-015 |
 | [`GET /api/v1/security/upload-scanning/`](compliance.md#get-api-v1-security-upload-scanning) | `compliance.view` | HIMS-SEC-013 |

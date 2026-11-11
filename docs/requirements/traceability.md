@@ -4,7 +4,7 @@
 
 Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-requirement-ids-and-contract-docs.md)) traced to its requirement record, the API endpoints that deliver it ([contracts](../architecture/api-and-integrations/endpoints/README.md)), the backend test files that name it or call its endpoints, and the pull requests that delivered it (spec 25.3). Browser tests and manual steps are named in each record.
 
-91 of 123 marked Done in the backlog; 96 requirement records (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
+92 of 126 marked Done in the backlog; 97 requirement records (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
@@ -90,7 +90,7 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-AUD-002 | Access-denied events recorded outside rolled-back transactions | Done | [record](audit-and-security.md#hims-aud-002) | — | 2 files | before PRs |
 | HIMS-AUD-003 | Audit log screen for auditors in the app + CSV export | Done | [record](audit-and-security.md#hims-aud-003) | 3 | 7 files | #16, before PRs |
 | HIMS-SEC-010 | Audit tamper evidence: keyed hash chain over every audit event, sealed every minute, daily + on-demand integrity check, alerts to auditors, Audit integrity screen and admin console ([design](../architecture/data-architecture/audit-integrity.md)) | Done | [record](audit-and-security.md#hims-sec-010) | 4 | 1 files | #22 |
-| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Done | [record](audit-and-security.md#hims-sec-011) | 1 | 1 files | this PR |
+| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Done | [record](audit-and-security.md#hims-sec-011) | 1 | 1 files | #51 |
 | HIMS-SEC-021 | Independent security review and penetration test of the hosted system before real patient data (gap found in HIMS-SEC-011) | To do | — | — | — | — |
 | HIMS-SEC-012 | Security headers/CSP for the screens, admin console and API; reports of anything blocked ([how-to](../workflows/security-headers.md)) | Done | [record](audit-and-security.md#hims-sec-012) | 4 | 2 files | #32 |
 | HIMS-SEC-013 | Upload validation/malware scanning service | Done | [record](audit-and-security.md#hims-sec-013) | 2 | 1 files | #46 |
@@ -124,7 +124,10 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-OPS-006 | Migration release job with lock; per-customer schema version tracking | To do | — | — | — | — |
 | HIMS-OPS-007 | Separate DB roles (runtime / migration / read-only / break-glass); runtime lacks TRUNCATE on audit | Done | [record](platform-and-operations.md#hims-ops-007) | 1 | 1 files | #39 |
 | HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | To do | — | — | — | — |
-| HIMS-OPS-020 | Hosting analysis: map the specification's hosting needs (sections 17, 30, 31, 34) to Oracle Cloud's free offering, its limits and gaps ([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)) | To do | — | — | — | — |
+| HIMS-OPS-020 | Hosting analysis: map the specification's hosting needs (sections 17, 30, 31, 34) to Oracle Cloud's free offering, its limits and gaps ([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)) | Done | [record](platform-and-operations.md#hims-ops-020) | 1 | 1 files | this PR |
+| HIMS-OPS-022 | Serve the screens from the same server as the API (built React app through WhiteNoise, with the screens' security headers), so one free service and one address are enough (gap found in HIMS-OPS-020) | To do | — | — | — | — |
+| HIMS-OPS-023 | Scheduled jobs without a worker: run every due job once from an outside clock (host cron or GitHub Actions), never twice at the same time (gap found in HIMS-OPS-020) | To do | — | — | — | — |
+| HIMS-OPS-024 | The first free Development environment without a payment card (Northflank, or Render + Neon + GitHub Actions): settings, deploy from `development`, `hosting_check` in the pipeline (gap found in HIMS-OPS-020) | To do | — | — | — | — |
 | HIMS-OPS-008 | Customer provisioning automation in the control plane | To do | — | — | — | — |
 | HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | Done | [record](platform-and-operations.md#hims-ops-009) | 7 | 3 files | #38 |
 | HIMS-OPS-018 | Restore drill of a cloud database snapshot into a separate database, with the same checks as HIMS-OPS-009 (gap found in HIMS-OPS-009) | To do | — | — | — | — |

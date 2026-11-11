@@ -8,6 +8,7 @@ from .browser_views import (
 )
 from .console_views import ConsoleAccessBlockViewSet, ConsoleAccessView
 from .database_views import DatabaseAccessView
+from .hosting_views import HostingReadinessView
 from .retention_views import (
     LegalHoldViewSet,
     RetentionPeriodView,
@@ -45,6 +46,7 @@ urlpatterns = [
     path("security/console-access/", ConsoleAccessView.as_view(), name="console-access"),
     path("security/upload-scanning/", ScanningStatusView.as_view(), name="upload-scanning"),
     path("security/review/", SecurityReviewView.as_view(), name="security-review"),
+    path("security/hosting/", HostingReadinessView.as_view(), name="hosting-readiness"),
     path(
         "security/upload-scanning/scan/",
         ScanDocumentsView.as_view(),

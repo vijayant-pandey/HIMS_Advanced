@@ -337,6 +337,8 @@ SPECTACULAR_SETTINGS = {
         "ReviewSeverityEnum": "apps.compliance.security_review.SEVERITIES",
         "ReviewFindingStatusEnum": "apps.compliance.security_review.FINDING_STATUSES",
         "SecurityTestStatusEnum": "apps.compliance.security_review.CASE_STATUSES",
+        # Hosting readiness (HIMS-OPS-020).
+        "HostingCheckStatusEnum": "apps.compliance.hosting.STATUSES",
         "ShiftKindEnum": "apps.rosters.models.ShiftType.Kind",
         "ShiftStatusEnum": "apps.rosters.models.Shift.Status",
         "LeaveStatusEnum": "apps.rosters.models.LeaveRequest.Status",
