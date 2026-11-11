@@ -143,3 +143,31 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `common/tests/test_outbox_maintenance.py::test_screen_lists_what_needs_a_look_and_records_decisions` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/scheduled-jobs/run/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `scheduled_jobs_run_create` |
+| Method and path | `POST /api/v1/scheduled-jobs/run/` |
+| Business purpose | Run the scheduled jobs that are due, for an outside timer calling every minute. |
+| Requirements | [HIMS-OPS-023](../../../requirements/platform-and-operations.md#hims-ops-023), HIMS-OPS-024 |
+| Actor / permission required | Anyone, without signing in (the answer reveals nothing about accounts or records) |
+| Customer / facility scope | — |
+| Request schema | No body |
+| Response schema | 200 `ScheduledRun` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Any (no state rule) |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | No version check (adds a new record or is a one-off action); unique rules in the database refuse duplicates |
+| Database transaction | Each statement on its own (no multi-row change); the audit event is saved with it |
+| Audit event | `access.denied` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | scheduler: 10/min per address (`HIMS_THROTTLE_SCHEDULER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `common/tests/test_scheduled_jobs.py::test_the_timer_address_is_off_without_its_setting`, `common/tests/test_scheduled_jobs.py::test_the_timer_address_needs_the_right_value_and_runs_due_jobs` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |

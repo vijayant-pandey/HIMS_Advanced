@@ -2,7 +2,7 @@
 
 # API endpoints (contracts index)
 
-243 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
+244 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
 
 ## [Hospital settings, logo and letterhead](organizations.md)
 
@@ -304,6 +304,7 @@
 | [`GET /api/v1/background-jobs/schedule/`](outbox.md#get-api-v1-background-jobs-schedule) | `platform.jobs.view` | HIMS-PLAT-007, HIMS-PLAT-014 |
 | [`POST /api/v1/background-jobs/{pk}/dismiss/`](outbox.md#post-api-v1-background-jobs-pk-dismiss) | `platform.jobs.manage` | HIMS-PLAT-007, HIMS-PLAT-014 |
 | [`POST /api/v1/background-jobs/{pk}/send-again/`](outbox.md#post-api-v1-background-jobs-pk-send-again) | `platform.jobs.manage` | HIMS-PLAT-007, HIMS-PLAT-014 |
+| [`POST /api/v1/scheduled-jobs/run/`](outbox.md#post-api-v1-scheduled-jobs-run) | public | HIMS-OPS-023, HIMS-OPS-024 |
 
 ## [Backups and restore drills](recovery.md)
 

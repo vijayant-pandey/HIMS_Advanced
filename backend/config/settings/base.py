@@ -273,6 +273,9 @@ HIMS_CSP_REPORT_ONLY = env.bool("HIMS_CSP_REPORT_ONLY", default=False)
 # The built screens (React app) served by this server, one site for everything (common/screens.py;
 # HIMS-OPS-022). Empty on a developer PC, where Vite's dev server serves them.
 HIMS_FRONTEND_DIST = env.str("HIMS_FRONTEND_DIST", default="")
+# An outside timer may start the scheduled jobs over HTTPS with this secret in the
+# X-HIMS-Scheduler-Token header (common/outbox/trigger.py; HIMS-OPS-024). Empty: the address is off.
+HIMS_SCHEDULER_TOKEN = env.str("HIMS_SCHEDULER_TOKEN", default="")
 # How long a person stays confirmed before being asked again for a sensitive action
 # (apps/identity/confirmation.py, HIMS-IAM-007).
 HIMS_CONFIRM_IDENTITY_MINUTES = env.int("HIMS_CONFIRM_IDENTITY_MINUTES", default=15)
@@ -301,6 +304,7 @@ REST_FRAMEWORK = {
         "password_reset": env.str("HIMS_THROTTLE_PASSWORD_RESET", default="5/min"),
         "browser_report": env.str("HIMS_THROTTLE_BROWSER_REPORT", default="30/min"),
         "confirm_identity": env.str("HIMS_THROTTLE_CONFIRM_IDENTITY", default="10/min"),
+        "scheduler": env.str("HIMS_THROTTLE_SCHEDULER", default="10/min"),
     },
     "UNAUTHENTICATED_USER": "django.contrib.auth.models.AnonymousUser",
 }

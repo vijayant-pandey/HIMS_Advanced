@@ -157,8 +157,8 @@ CHECKED: list[tuple[str, str]] = [
     (
         "Access control",
         "Default deny on every endpoint, read from the code and pinned by tests (HIMS-DOC-001); "
-        "only 12 endpoints work without sign-in, all rate limited; rows outside a facility grant "
-        "answer 404.",
+        "the few endpoints that work without sign-in are pinned by a test and all rate limited; "
+        "rows outside a facility grant answer 404.",
     ),
     (
         "Files",

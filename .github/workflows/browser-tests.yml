@@ -59,7 +59,9 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
-          npx playwright install --with-deps chromium
+          # Extra fonts come from Ubuntu's servers; when those cannot be reached, Chrome alone is
+          # enough (its libraries are already on the runner).
+          npx playwright install --with-deps chromium || npx playwright install chromium
       - name: Browser tests (India hospital and the admin console)
         working-directory: frontend
         run: npm run e2e

@@ -9,7 +9,8 @@ Live check of any server: Compliance page → **Hosting readiness**, or
 the day you create the account (links at the end).
 
 **Confirmed at sign-up (2026-11-11):** the PO created a Northflank account on the free Sandbox with
-**no card asked**. The free Sandbox offers two regions only: **Europe - West (London)** and
+**no card asked**, but **creating a database (addon) asks for a card** ("Payment method required…
+You will not be charged"), so the database comes from **Neon** (no card) instead. Northflank's status page also showed an open security incident (since 2026-10-30), so **Plan 2 is used: Render + Neon, both in Singapore, with cron-job.org as the timer** ([Render + Neon guide](../../workflows/render-neon-hosting.md)). The free Sandbox offers two regions only: **Europe - West (London)** and
 **US - Central (Council Bluffs)**; every other region, including **Asia - South - Delhi**, needs the
 paid plan. Chosen: **Europe - West (London)**, the closer of the two to India. GitHub is connected
 with access to the HIMS repository only.

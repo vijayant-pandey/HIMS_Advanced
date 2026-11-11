@@ -88,6 +88,8 @@ def test_open_endpoints_are_only_the_expected_ones():
         "POST /api/v1/auth/password-reset/confirm/",
         "GET /api/v1/features/effective/",
         "POST /api/v1/security/browser-reports/",
+        # An outside timer; off without HIMS_SCHEDULER_TOKEN, and needs it (HIMS-OPS-024).
+        "POST /api/v1/scheduled-jobs/run/",
     }
     for key in public:
         method, path = key.split(" ")
