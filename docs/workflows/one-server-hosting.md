@@ -56,7 +56,15 @@ now. The **Background jobs** page and the console (**Outbox → Scheduled jobs**
 often it runs, its last run and its last problem. **Compliance → Hosting readiness** shows "Must
 fix" when the audit log is not being sealed, the sign that the timer is not running.
 
-## On Northflank (the details come with HIMS-OPS-024)
+**Hosts without any timer or shell** (Render's free plan): an outside timer such as cron-job.org calls
+`POST /api/v1/scheduled-jobs/run/` every minute with the header `X-HIMS-Scheduler-Token` set to
+`HIMS_SCHEDULER_TOKEN`. It runs the same due jobs as the command. Off (404) unless the setting is set;
+a wrong value gets 403 and is audited; rate limited. Steps: [Render + Neon guide](render-neon-hosting.md).
+
+## On Northflank (not used: its database asks for a card; kept for reference)
+
+The free Development environment runs on Render + Neon instead:
+[Render + Neon guide](render-neon-hosting.md).
 
 | Northflank part | Uses |
 |---|---|

@@ -27,7 +27,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
-| Phase 1 tickets | 126: ✅ 103 done or approved · 23 left: 4 🔓 can be built now (all optional or later), 15 hosting stage (next: the free Development environment on Northflank, HIMS-OPS-024), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 1 tickets | 126: ✅ 103 done or approved · 23 left: 4 🔓 can be built now (all optional or later), 15 hosting stage (now: the free Development environment on Render + Neon, HIMS-OPS-024), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
@@ -107,7 +107,7 @@ fit, so nothing is forgotten.
 | 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ✅ done |
 | 8 | Ready for a free host (found by the hosting analysis) | HIMS-OPS-022, HIMS-OPS-023 | 17, 31, 14 | ✅ done |
 
-**Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step), and the hosting analysis (HIMS-OPS-020) is done. Group 8 (ready for the free host) is done too. **Next: the free Development environment on Northflank (HIMS-OPS-024, section 4b).** The table below keeps each task's own row.
+**Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step), and the hosting analysis (HIMS-OPS-020) is done. Group 8 (ready for the free host) is done too. **Now: the free Development environment on Render + Neon (HIMS-OPS-024, section 4b), in progress.** The table below keeps each task's own row.
 
 | Step | Spec § | Ticket | Task | Status | Why this order |
 |---|---|---|---|---|---|
@@ -145,7 +145,7 @@ fit, so nothing is forgotten.
 | Spec § | Ticket | Task | Blocked by |
 |---|---|---|---|
 | 17, 30, 34 | HIMS-OPS-020 | Hosting analysis | ✅ done 2026-11-11 ([analysis](../architecture/hosting/hosting-analysis.md)) |
-| 17, 31, 33 | HIMS-OPS-024 | The first free Development environment (no payment card): account, settings, deploy from `development`, `hosting_check` in the pipeline | PO: free account sign-up; after group 8 |
+| 17, 31, 33 | HIMS-OPS-024 | The first free Development environment (no payment card): Render + Neon + cron-job.org, deploy from `development` ([guide](../workflows/render-neon-hosting.md)) | 🟡 in progress: code ready; the PO creates the service |
 | 17, 30 | HIMS-OPS-003 | Terraform modules (network, ECS, RDS, Redis, S3, KMS, secrets, monitoring) | AWS |
 | 17.2, 30.5 | HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | AWS |
 | 17, 18 | HIMS-OPS-004 | Alarms and runbooks (errors, latency, database, queues, outbox) | AWS |

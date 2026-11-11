@@ -29,7 +29,7 @@ Threats and controls: [threat-model.md](threat-model.md). Live view: the **Compl
 | Forged requests | Every signed-in write goes through CSRF checks; the nine sign-in, invitation and reset endpoints that run before sign-in enforce CSRF themselves. |
 | Injection | No SQL built from user input: the few raw statements use fixed names or quoted identifiers; no `eval`, `pickle`, unsafe YAML or shell commands. |
 | Cross-site scripting | React escapes all text and nothing uses raw HTML; the two server-side HTML spots escape first; content security policy on screens, console and API. |
-| Access control | Default deny on every endpoint, read from the code and pinned by tests (HIMS-DOC-001); only 12 endpoints work without sign-in, all rate limited; rows outside a facility grant answer 404. |
+| Access control | Default deny on every endpoint, read from the code and pinned by tests (HIMS-DOC-001); the few endpoints that work without sign-in are pinned by a test and all rate limited; rows outside a facility grant answer 404. |
 | Files | Uploads are virus-checked, typed by content and size-limited; downloads need a permission and the person's scope, are audited, and are sent as attachments with a sandbox policy and no caching. |
 | Secrets | Nothing secret in the repository (secret scan in CI), logs, traces or audit metadata (tests); hosted settings refuse to start without their keys; API docs and the console are off unless switched on, the console only from allowed addresses. |
 | Transport and browser | HTTPS redirect, HSTS, secure and HTTP-only cookies, SameSite, X-Frame-Options DENY, nosniff, strict referrer policy in hosted settings; checked by `check --deploy` in CI. |

@@ -1405,8 +1405,8 @@ Needs the docs PR (no migrations). Sign in as the administrator. Nothing changes
 
 | Step | Do this | Expected result |
 |---|---|---|
-| 18r.1 | Menu → **Access** → tab **API endpoints** | A line "241 endpoints: … need a permission, … are open without sign-in" and a table of every endpoint |
-| 18r.2 | **Access** = Anyone (no sign-in) | Only sign-in, invitation, password reset, CSRF, effective features and browser reports (12 rows) |
+| 18r.1 | Menu → **Access** → tab **API endpoints** | A line "… endpoints: … need a permission, … are open without sign-in" and a table of every endpoint |
+| 18r.2 | **Access** = Anyone (no sign-in) | Only sign-in, invitation, password reset, CSRF, effective features, browser reports and the scheduled-jobs timer address (13 rows) |
 | 18r.3 | **Search** `facilities` | `POST /api/v1/facilities/` needs `facilities.manage`, held by the Organization and Facility administrators; records `facility.created`; requirement HIMS-FAC-001 |
 | 18r.4 | **Search** `role-assignments` | The grant has a **Confirm it's you** chip |
 | 18r.5 | Sign in as the auditor → **Access** | Not in the menu (the list needs `access.roles.view`) |
@@ -1457,7 +1457,7 @@ Needs the "ready for Northflank" PR and its migrate step (India and US). Use the
 |---|---|---|
 | 18u.1 | Administrator → **Background jobs**, scroll down | A **Scheduled jobs** table: 13 jobs with how often each runs ("Every minute" for sealing the audit log); "No runs recorded here" |
 | 18u.2 | Launcher window (in `backend`, venv active): `python manage.py run_scheduled_jobs` | One line per job ("ok … audit-seal-events …") and "Ran 13 job(s), 0 failed." |
-| 18u.3 | Run the same command again at once | Only the frequent jobs run ("Ran 2 job(s)") |
+| 18u.3 | Run the same command again at once, then once more a minute later | At once: only sending background events runs ("Ran 1 job(s)"); a minute later sealing the audit log runs too ("Ran 2 job(s)") |
 | 18u.4 | Refresh **Background jobs** | Each job's last run, "Finished", and how long it took |
 | 18u.5 | Admin console → **Outbox → Scheduled jobs** | The same 13 rows, read-only |
 | 18u.6 | **Compliance → Hosting readiness** | "Scheduled jobs are running" is **OK** |

@@ -4825,6 +4825,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/RotaNow'
           description: ''
+  /api/v1/scheduled-jobs/run/:
+    post:
+      operationId: scheduled_jobs_run_create
+      description: Run the scheduled jobs that are due, for an outside timer calling
+        every minute.
+      tags:
+      - scheduled-jobs
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduledRun'
+          description: ''
   /api/v1/security-incidents/:
     get:
       operationId: security_incidents_list
@@ -13992,6 +14008,20 @@ components:
       - last_started_at
       - name
       - runs
+    ScheduledRun:
+      type: object
+      properties:
+        busy:
+          type: boolean
+          description: Another run was still going; nothing started.
+        ran:
+          type: integer
+        failed:
+          type: integer
+      required:
+      - busy
+      - failed
+      - ran
     ScopeEnum:
       enum:
       - organization

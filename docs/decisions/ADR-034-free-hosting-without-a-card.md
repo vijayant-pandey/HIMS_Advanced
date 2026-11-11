@@ -20,9 +20,16 @@ agreements (HIPAA BAA, DPDP data processing) and an India region.
    data only, deployed from the `development` branch:
    * first choice **Northflank Sandbox** (always on, a database, scheduled jobs). **Chosen:** the PO
      signed up on 2026-11-11 with no card asked; region **Europe - West (London)** (the free plan
-     offers London and US - Central only; Delhi is paid);
+     offers London and US - Central only; Delhi is paid). **Found at set-up:** a Northflank database
+     asks for a card, so the database is **Neon** (no card) and Northflank runs only HIMS and its
+     timer, if those need no card;
    * otherwise **Render** (free web service) + **Neon** (free PostgreSQL, Singapore) + **GitHub
      Actions** (scheduled jobs every 5 minutes).
+   * **Final choice (2026-11-11):** Northflank's database needs a card and its status page showed an open
+     security incident, so **Render (Singapore) + Neon (Singapore, direct connection) + cron-job.org**
+     calling a token-protected timer address every minute (instead of GitHub Actions: every minute, no
+     Actions minutes used, and it keeps the free service awake). Database updates and the first
+     administrator are run from the PO's PC. Steps: [Render + Neon guide](../workflows/render-neon-hosting.md).
 2. HIMS is made to fit these hosts without changing how it behaves: the screens are served by the
    same server as the API (HIMS-OPS-022), and the scheduled jobs can be started by an outside clock
    (HIMS-OPS-023). Then the environment is set up (HIMS-OPS-024).

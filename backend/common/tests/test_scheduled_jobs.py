@@ -123,3 +123,37 @@ def test_schedule_on_the_background_jobs_page_and_console(client_for, admin_user
     console.force_login(admin_user)
     page = console.get("/admin/outbox/scheduledjob/").content.decode()
     assert "Seal the audit log" in page
+
+
+# --- An outside timer over HTTPS (HIMS-OPS-024) ------------------------------------------------
+
+RUN = "/api/v1/scheduled-jobs/run/"
+TIMER = "synthetic-timer-value-0000"
+
+
+@pytest.mark.django_db
+def test_the_timer_address_is_off_without_its_setting():
+    from rest_framework.test import APIClient
+
+    assert APIClient().post(RUN, HTTP_X_HIMS_SCHEDULER_TOKEN=TIMER).status_code == 404
+
+
+@pytest.mark.django_db(transaction=True)
+def test_the_timer_address_needs_the_right_value_and_runs_due_jobs(organization, settings):
+    from rest_framework.test import APIClient
+
+    from apps.audit.models import AuditEvent
+    from apps.audit.services import AuditAction
+
+    settings.HIMS_SCHEDULER_TOKEN = TIMER
+    caller = APIClient()
+    assert caller.post(RUN).status_code == 403
+    assert caller.post(RUN, HTTP_X_HIMS_SCHEDULER_TOKEN="wrong-value-0000").status_code == 403
+    assert AuditEvent.objects.filter(action=AuditAction.ACCESS_DENIED).count() == 2
+    assert not ScheduledJob.objects.exists()
+
+    response = caller.post(RUN, HTTP_X_HIMS_SCHEDULER_TOKEN=TIMER)
+    assert response.status_code == 200
+    assert response.json() == {"busy": False, "ran": len(SCHEDULE), "failed": 0}
+    again = caller.post(RUN, HTTP_X_HIMS_SCHEDULER_TOKEN=TIMER).json()
+    assert again["ran"] == 1  # at once, only the every-5-seconds job is due again

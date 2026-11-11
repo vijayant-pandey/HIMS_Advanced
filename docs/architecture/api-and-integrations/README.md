@@ -21,7 +21,7 @@ services. Written for developers, reviewers and auditors.
 | Pagination, filtering, ordering, maximum page size | Pages of 25, `page_size` up to 100; the audit log counts to 10,000 and says "more than" (`count_capped`) |
 | One error format (RFC 9457) | See [errors](#errors) |
 | Request / correlation ID | `X-Request-ID` accepted or made, returned, in every log line, audit event, outbox event and job (HIMS-PLAT-004) |
-| Authentication and object-level authorization everywhere | Default deny: each view declares its permission per action; facility-scoped rows outside the grant are 404. Only 12 endpoints work without sign-in (sign-in, invitations, password reset, browser reports, CSRF, effective features), each rate limited, and a test pins that list |
+| Authentication and object-level authorization everywhere | Default deny: each view declares its permission per action; facility-scoped rows outside the grant are 404. Only 13 endpoints work without sign-in (sign-in, invitations, password reset, browser reports, CSRF, effective features, and the scheduled-jobs timer address, which needs its own secret and is off unless set), each rate limited, and a test pins that list |
 | Foreign keys checked against the hospital and scope | Each deployment has one hospital database (ADR-003); facility and department references are checked against the caller's scope |
 | No provider secrets in the screens | Secrets live in server settings only; messages mask links in the log |
 | No personal data or tokens in URLs, traces or client error reports | Tokens travel in request bodies; traces use route templates and filtered error text (HIMS-SEC-020) |

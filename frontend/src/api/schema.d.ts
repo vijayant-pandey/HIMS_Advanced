@@ -2826,6 +2826,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/scheduled-jobs/run/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run the scheduled jobs that are due, for an outside timer calling every minute. */
+        post: operations["scheduled_jobs_run_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security-incidents/": {
         parameters: {
             query?: never;
@@ -6750,6 +6767,12 @@ export interface components {
             last_error: string;
             runs: number;
             failures: number;
+        };
+        ScheduledRun: {
+            /** @description Another run was still going; nothing started. */
+            busy: boolean;
+            ran: number;
+            failed: number;
         };
         /**
          * @description * `organization` - Whole hospital
@@ -12025,6 +12048,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RotaNow"];
+                };
+            };
+        };
+    };
+    scheduled_jobs_run_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledRun"];
                 };
             };
         };

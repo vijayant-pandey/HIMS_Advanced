@@ -132,6 +132,7 @@ VIEW_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     _C + "retention_views.LegalHoldViewSet": ("HIMS-COMP-006",),
     # Operations
     "common.outbox.api.BackgroundJobViewSet": ("HIMS-PLAT-007", "HIMS-PLAT-014"),
+    "common.outbox.trigger.ScheduledJobsTriggerView": ("HIMS-OPS-023", "HIMS-OPS-024"),
     "apps.recovery.api.views.BackupViewSet": ("HIMS-OPS-009",),
     "apps.recovery.api.views.RestoreDrillViewSet": ("HIMS-OPS-009",),
     "apps.performance.api.views.PerformanceCheckViewSet": ("HIMS-DATA-002", "HIMS-OPS-017"),

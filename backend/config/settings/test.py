@@ -50,6 +50,7 @@ REST_FRAMEWORK = {
         "password_reset": "10000/min",
         "browser_report": "10000/min",
         "confirm_identity": "10000/min",
+        "scheduler": "10000/min",
     },
 }
 
