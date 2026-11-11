@@ -8,7 +8,7 @@ from common.admin.options import LargeTableAdminMixin, ReadOnlyModelAdmin
 from common.exceptions import ConflictError
 
 from .maintenance import dismiss, outbox_health, send_again
-from .models import OutboxEvent, ProcessedEvent
+from .models import OutboxEvent, ProcessedEvent, ScheduledJob
 
 
 @admin.register(OutboxEvent)
@@ -95,3 +95,28 @@ class OutboxEventAdmin(LargeTableAdminMixin, ReadOnlyModelAdmin):
 class ProcessedEventAdmin(ReadOnlyModelAdmin):
     list_display = ("processed_at", "handler", "event_id")
     search_fields = ("event_id", "handler")
+
+
+@admin.register(ScheduledJob)
+class ScheduledJobAdmin(ReadOnlyModelAdmin):
+    """The last run of each scheduled job started by run_scheduled_jobs (HIMS-OPS-023), the same
+    as the Background jobs page. Read-only: runs are started by the host's timer, not from here."""
+
+    list_display = (
+        "name",
+        "job",
+        "every_seconds",
+        "last_started_at",
+        "last_outcome",
+        "last_duration_ms",
+        "runs",
+        "failures",
+    )
+    list_filter = ("last_outcome",)
+    search_fields = ("name", "task")
+
+    @admin.display(description="What it does")
+    def job(self, obj):
+        from config.schedule import LABELS
+
+        return LABELS.get(obj.name, obj.name)

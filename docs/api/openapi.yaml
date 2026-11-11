@@ -1491,6 +1491,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/OutboxHealth'
           description: ''
+  /api/v1/background-jobs/schedule/:
+    get:
+      operationId: background_jobs_schedule_list
+      description: |-
+        The scheduled jobs and their last run, when run_scheduled_jobs starts them
+        (HIMS-OPS-023). With Celery beat the runs are in the worker's log instead.
+      tags:
+      - background-jobs
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduledJob'
+          description: ''
   /api/v1/backups/:
     get:
       operationId: backups_list
@@ -13933,6 +13952,46 @@ components:
       - reachable
       - scanner
       - traces
+    ScheduledJob:
+      type: object
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        every_seconds:
+          type: integer
+        last_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_finished_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_outcome:
+          type: string
+          description: running, ok or failed; empty when never run here.
+        last_duration_ms:
+          type: integer
+          nullable: true
+        last_error:
+          type: string
+        runs:
+          type: integer
+        failures:
+          type: integer
+      required:
+      - every_seconds
+      - failures
+      - label
+      - last_duration_ms
+      - last_error
+      - last_finished_at
+      - last_outcome
+      - last_started_at
+      - name
+      - runs
     ScopeEnum:
       enum:
       - organization

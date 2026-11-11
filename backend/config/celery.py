@@ -6,7 +6,6 @@ Tasks must still be idempotent: a task may execute more than once (spec 14.3).
 """
 
 import os
-from datetime import timedelta
 
 from celery import Celery, signals
 
@@ -44,64 +43,10 @@ def _configure_queues_and_schedule(sender, **kwargs):
         "notifications.*": {"queue": f"{prefix}.notifications"},
         "reports.*": {"queue": f"{prefix}.reports"},
     }
-    sender.conf.beat_schedule = {
-        "outbox-dispatch": {
-            "task": "outbox.dispatch_pending",
-            "schedule": timedelta(seconds=5),
-            "options": {"expires": 5},
-        },
-        "outbox-cleanup": {
-            "task": "platform.outbox_cleanup",
-            "schedule": timedelta(hours=24),
-        },
-        "outbox-health-check": {
-            "task": "platform.outbox_health_check",
-            "schedule": timedelta(minutes=15),
-            "options": {"expires": 900},
-        },
-        "idempotency-purge": {
-            "task": "platform.purge_expired_idempotency_records",
-            "schedule": timedelta(hours=1),
-        },
-        "expired-sessions-cleanup": {
-            "task": "platform.clear_expired_sessions",
-            "schedule": timedelta(hours=24),
-        },
-        "credential-expiry-alerts": {
-            "task": "notifications.credential_expiry_alerts",
-            "schedule": timedelta(hours=24),
-        },
-        "staffing-gap-alerts": {
-            "task": "notifications.staffing_gap_alerts",
-            "schedule": timedelta(hours=24),
-        },
-        "access-review-reminders": {
-            "task": "notifications.access_review_reminders",
-            "schedule": timedelta(hours=24),
-        },
-        "retention-purge": {
-            "task": "platform.retention_purge",
-            "schedule": timedelta(hours=24),
-        },
-        "incident-deadline-alerts": {
-            "task": "notifications.incident_deadline_alerts",
-            "schedule": timedelta(hours=1),
-        },
-        "notification-retries": {
-            "task": "notifications.retry_failed",
-            "schedule": timedelta(minutes=5),
-            "options": {"expires": 300},
-        },
-        "audit-seal-events": {
-            "task": "platform.audit_seal_events",
-            "schedule": timedelta(minutes=1),
-            "options": {"expires": 60},
-        },
-        "audit-integrity-check": {
-            "task": "platform.audit_integrity_check",
-            "schedule": timedelta(hours=24),
-        },
-    }
+    # One list for Celery beat and run_scheduled_jobs (config/schedule.py; HIMS-OPS-023).
+    from config.schedule import beat_schedule
+
+    sender.conf.beat_schedule = beat_schedule()
 
 
 # --- Correlation ID propagation from API requests into tasks (spec 29.1) -----------------

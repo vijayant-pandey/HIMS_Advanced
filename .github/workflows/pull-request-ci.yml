@@ -117,7 +117,10 @@ jobs:
         with:
           persist-credentials: false
       - name: Build image
-        run: docker build -t hims-backend:${{ github.sha }} backend
+        # The hosted image: screens and server together, from the repository root (HIMS-OPS-022).
+        run: docker build -t hims-backend:${{ github.sha }} .
+      - name: Image holds the built screens
+        run: docker run --rm hims-backend:${{ github.sha }} test -f /app/screens/index.html
       - name: Image starts with production settings
         run: |
           docker run --rm \

@@ -1,7 +1,7 @@
 from django.conf import settings
-from django.urls import include, path
+from django.urls import include, path, re_path
 
-from common import health
+from common import health, screens
 
 api_v1 = [
     path("auth/", include("apps.identity.api.urls")),
@@ -47,3 +47,14 @@ if settings.HIMS_ENABLE_API_DOCS:
             name="api-docs",
         ),
     ]
+
+# The screens, when this server serves them (HIMS_FRONTEND_DIST; HIMS-OPS-022). Last, so it never
+# hides an API, console or health address; answers 404 when the screens are not served here.
+urlpatterns += [
+    re_path(
+        # Not the server's own areas, so "/admin" or "/api/v1/staff" still get their missing slash.
+        r"^(?!(api|admin|health|static|assets|media-not-served)(/|$))(?P<path>.*)$",
+        screens.index,
+        name="screens",
+    )
+]

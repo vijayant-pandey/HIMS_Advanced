@@ -27,7 +27,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
-| Phase 1 tickets | 126: ✅ 100 done or approved · 26 left: 6 🔓 can be built now (HIMS-OPS-022, HIMS-OPS-023 next; 4 optional or later), 16 hosting stage (first: the free Development environment, HIMS-OPS-024), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 1 tickets | 126: ✅ 103 done or approved · 23 left: 4 🔓 can be built now (all optional or later), 15 hosting stage (next: the free Development environment on Northflank, HIMS-OPS-024), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
@@ -38,7 +38,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~15% | 100 (PR #1–#51 and #30, the hosting analysis, 2 approvals) | Get ready for a free host (HIMS-OPS-022, HIMS-OPS-023), then the free Development environment (HIMS-OPS-024); 4 optional items | Hosting: free Development without a card first (ADR-034); paid hosting before real data | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~20% | 103 (PR #1–#52 and #30, ready for Northflank, 2 approvals) | The free Development environment on Northflank (HIMS-OPS-024); 4 optional items | Hosting: free Development without a card first (ADR-034); paid hosting before real data | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -105,9 +105,9 @@ fit, so nothing is forgotten.
 | 5 | Retention purge (alone: deletes data) | HIMS-COMP-006 | 4.25, 28 | ✅ done |
 | 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ✅ done |
 | 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ✅ done |
-| 8 | Ready for a free host (found by the hosting analysis) | HIMS-OPS-022, HIMS-OPS-023 | 17, 31, 14 | ⬜ **next** |
+| 8 | Ready for a free host (found by the hosting analysis) | HIMS-OPS-022, HIMS-OPS-023 | 17, 31, 14 | ✅ done |
 
-**Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step), and the hosting analysis (HIMS-OPS-020) is done. **Next: group 8 below, then the free Development environment (HIMS-OPS-024, section 4b).** The table below keeps each task's own row.
+**Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step), and the hosting analysis (HIMS-OPS-020) is done. Group 8 (ready for the free host) is done too. **Next: the free Development environment on Northflank (HIMS-OPS-024, section 4b).** The table below keeps each task's own row.
 
 | Step | Spec § | Ticket | Task | Status | Why this order |
 |---|---|---|---|---|---|
@@ -157,7 +157,7 @@ fit, so nothing is forgotten.
 | 13.4 | HIMS-SEC-016 | Copy the audit chain head to write-once storage | AWS |
 | 4.25, 13.4 | HIMS-COMP-007 | Archive the audit log outside the database (with an "archived up to link N" marker), then purge it by its period (gap found in HIMS-COMP-006) | AWS / hosting |
 | 17.3, 27.1 | HIMS-OPS-018 | Restore drill of a cloud snapshot with the same checks (gap found in HIMS-OPS-009) | AWS |
-| 13.3 | HIMS-SEC-018 | Send the screens' protection headers at hosting | AWS |
+| 13.3 | HIMS-SEC-018 | Send the screens' protection headers at hosting | ✅ done 2026-11-11: the server sends them when it serves the screens (HIMS-OPS-022) |
 | 18 | HIMS-PLAT-019 | Send traces to AWS | AWS |
 | 18 | HIMS-OPS-021 | Load test with many people at once against the hosted test environment before go-live (gap found in HIMS-OPS-017) | AWS / hosting |
 | 4.23 | HIMS-NOTIF-002 | SMS gateway (India DLT, US provider) | Deferred: SMS printed to the console for now (PO 2026-11-08) |

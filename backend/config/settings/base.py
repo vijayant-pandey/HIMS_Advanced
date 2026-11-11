@@ -270,6 +270,9 @@ HIMS_TRUSTED_PROXIES = env.list("HIMS_TRUSTED_PROXIES", default=[])
 # True only tells browsers to report instead of block: a switch for rolling out or
 # backing out a policy change (HIMS-SEC-012).
 HIMS_CSP_REPORT_ONLY = env.bool("HIMS_CSP_REPORT_ONLY", default=False)
+# The built screens (React app) served by this server, one site for everything (common/screens.py;
+# HIMS-OPS-022). Empty on a developer PC, where Vite's dev server serves them.
+HIMS_FRONTEND_DIST = env.str("HIMS_FRONTEND_DIST", default="")
 # How long a person stays confirmed before being asked again for a sensitive action
 # (apps/identity/confirmation.py, HIMS-IAM-007).
 HIMS_CONFIRM_IDENTITY_MINUTES = env.int("HIMS_CONFIRM_IDENTITY_MINUTES", default=15)

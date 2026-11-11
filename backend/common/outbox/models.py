@@ -96,3 +96,32 @@ class ProcessedEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.handler} processed {self.event_id}"
+
+
+class ScheduledJob(models.Model):
+    """The last run of each scheduled job when ``run_scheduled_jobs`` starts them (hosts without
+    an always-on scheduler; HIMS-OPS-023). One row per job in config/schedule.py, updated on every
+    run: a status board, not a history (failures also go to the log)."""
+
+    class Outcome(models.TextChoices):
+        RUNNING = "running", "Running"
+        OK = "ok", "Finished"
+        FAILED = "failed", "Failed"
+
+    name = models.CharField(max_length=64, primary_key=True)
+    task = models.CharField(max_length=100)
+    every_seconds = models.PositiveIntegerField()
+    last_started_at = models.DateTimeField(null=True, blank=True)
+    last_finished_at = models.DateTimeField(null=True, blank=True)
+    last_outcome = models.CharField(max_length=16, choices=Outcome.choices, blank=True)
+    last_duration_ms = models.PositiveIntegerField(null=True, blank=True)
+    last_error = models.CharField(max_length=300, blank=True)
+    runs = models.PositiveIntegerField(default=0)
+    failures = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = "scheduled_jobs"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name

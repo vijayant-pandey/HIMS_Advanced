@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api } from "../../api/client";
-import type { OutboxEvent, OutboxHealth } from "../../api/types";
+import type { OutboxEvent, OutboxHealth, ScheduledJob } from "../../api/types";
 
 const key = ["background-jobs"] as const;
 
@@ -17,6 +17,14 @@ export function useJobHealth() {
         background: queryClient.getQueryData(queryKey) !== undefined, // a timed refresh
       }),
     refetchInterval: 30_000,
+  });
+}
+
+/** The scheduled jobs and their last run when run_scheduled_jobs starts them (HIMS-OPS-023). */
+export function useScheduledJobs() {
+  return useQuery<ScheduledJob[], ApiError>({
+    queryKey: [...key, "schedule"],
+    queryFn: ({ signal }) => api.get<ScheduledJob[]>("/background-jobs/schedule/", { signal }),
   });
 }
 

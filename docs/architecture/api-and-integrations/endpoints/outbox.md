@@ -60,6 +60,34 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Automated test cases | `common/tests/test_outbox_maintenance.py::test_screen_lists_what_needs_a_look_and_records_decisions`, `common/tests/test_outbox_maintenance.py::test_only_people_with_the_permission_see_or_decide` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
+### GET /api/v1/background-jobs/schedule/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `background_jobs_schedule_list` |
+| Method and path | `GET /api/v1/background-jobs/schedule/` |
+| Business purpose | The scheduled jobs and their last run, when run_scheduled_jobs starts them (HIMS-OPS-023). With Celery beat the runs are in the worker's log instead. |
+| Requirements | [HIMS-PLAT-007](../../../requirements/platform-and-operations.md#hims-plat-007), [HIMS-PLAT-014](../../../requirements/platform-and-operations.md#hims-plat-014) |
+| Actor / permission required | `platform.jobs.view` (See background jobs: waiting, retried and failed events). System roles holding it: Organization administrator. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | No body |
+| Response schema | 200 list of `ScheduledJob` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `common/tests/test_scheduled_jobs.py::test_schedule_on_the_background_jobs_page_and_console` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### POST /api/v1/background-jobs/{pk}/dismiss/
 
 | Field | Contract |

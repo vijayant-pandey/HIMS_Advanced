@@ -188,6 +188,8 @@ LIFECYCLE: dict[str, str] = {
     "sends them again or dismisses them, with a reason; HIMS-PLAT-014).",
     "outbox_processed_events": "Kept for duplicate detection; deleted by the daily clean-up "
     "after the retention period, unless the event can still run again (HIMS-PLAT-014).",
+    "scheduled_jobs": "One row per scheduled job (config/schedule.py), updated on every run "
+    "started by run_scheduled_jobs; a status board, not a history (HIMS-OPS-023).",
     "compliance_requirements": "Wording synced from code; removed items switched off, never "
     "deleted. Status changes audited.",
     "compliance_risks": "Never deleted; closed with a status. Changes audited.",
@@ -246,6 +248,7 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "idempotency_records.request_fingerprint": (INTERNAL, "Checksum"),
     "outbox_events.payload": (RESTRICTED, "Event content (may hold personal data)"),
     "outbox_events.last_error": (INTERNAL, "System diagnostics"),
+    "scheduled_jobs.last_error": (INTERNAL, "System diagnostics, filtered like the logs"),
     "outbox_events.resolution_note": (RESTRICTED, "Decision note (no patient details)"),
     "audit_events.changes": (RESTRICTED, "Audit content (before/after values)"),
     "audit_events.metadata": (RESTRICTED, "Audit content"),

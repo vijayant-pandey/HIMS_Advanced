@@ -55,6 +55,7 @@
 22r. [Part 18r: API endpoints and requirement records](#part-18r-api-endpoints-and-requirement-records)
 22s. [Part 18s: the security review](#part-18s-the-security-review)
 22t. [Part 18t: hosting readiness](#part-18t-hosting-readiness)
+22u. [Part 18u: one server and scheduled jobs](#part-18u-one-server-and-scheduled-jobs)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1445,6 +1446,24 @@ Needs the hosting analysis PR (no migrations). Use the India hospital.
 | 18t.2 | Admin console (administrator) → **Security status** | A **Hosting readiness (local)** section with the same checks |
 | 18t.3 | Launcher window (in `backend`, venv active): `python manage.py hosting_check` | The same list in words; last line "… failing, … needed before real patient data (local)."; it ends with an error because this is a developer PC |
 | 18t.4 | Read [hosting-analysis.md](../architecture/hosting/hosting-analysis.md) section 1 | Oracle needs a card; the free plan without a card is Northflank, or Render + Neon + GitHub Actions, for test data only |
+
+---
+
+## Part 18u: one server and scheduled jobs
+
+Needs the "ready for Northflank" PR and its migrate step (India and US). Use the India hospital.
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18u.1 | Administrator → **Background jobs**, scroll down | A **Scheduled jobs** table: 13 jobs with how often each runs ("Every minute" for sealing the audit log); "No runs recorded here" |
+| 18u.2 | Launcher window (in `backend`, venv active): `python manage.py run_scheduled_jobs` | One line per job ("ok … audit-seal-events …") and "Ran 13 job(s), 0 failed." |
+| 18u.3 | Run the same command again at once | Only the frequent jobs run ("Ran 2 job(s)") |
+| 18u.4 | Refresh **Background jobs** | Each job's last run, "Finished", and how long it took |
+| 18u.5 | Admin console → **Outbox → Scheduled jobs** | The same 13 rows, read-only |
+| 18u.6 | **Compliance → Hosting readiness** | "Scheduled jobs are running" is **OK** |
+
+The screens served by the server itself are tested in CI (the image) and checked again on Northflank
+(HIMS-OPS-024).
 
 ---
 

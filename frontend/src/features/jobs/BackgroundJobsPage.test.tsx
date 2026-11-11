@@ -37,6 +37,33 @@ const HEALTH = {
   attention: ["1 event(s) failed after every retry and need a decision"],
 };
 
+const SCHEDULE = [
+  {
+    name: "audit-seal-events",
+    label: "Seal the audit log",
+    every_seconds: 60,
+    last_started_at: "2026-11-11T09:00:00Z",
+    last_finished_at: "2026-11-11T09:00:01Z",
+    last_outcome: "ok",
+    last_duration_ms: 120,
+    last_error: "",
+    runs: 42,
+    failures: 0,
+  },
+  {
+    name: "retention-purge",
+    label: "Retention purge",
+    every_seconds: 86_400,
+    last_started_at: "2026-11-11T02:00:00Z",
+    last_finished_at: "2026-11-11T02:00:02Z",
+    last_outcome: "failed",
+    last_duration_ms: 2000,
+    last_error: "RuntimeError: synthetic failure",
+    runs: 3,
+    failures: 1,
+  },
+];
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
@@ -46,6 +73,7 @@ function renderPage(grants: string[], health: unknown = HEALTH) {
     const url = String(input);
     if (init?.method === "POST") return json({ ...FAILED, status: "pending", attempts: 0, resolution_note: "Fixed" });
     if (url.includes("/health/")) return json(health);
+    if (url.includes("/schedule/")) return json(SCHEDULE);
     return json([FAILED]);
   });
   const user: CurrentUser = {
@@ -102,6 +130,17 @@ describe("Background jobs (HIMS-PLAT-014)", () => {
     fireEvent.change(within(dialog).getByLabelText(/Reason/), { target: { value: "Invitation was for a test account" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Dismiss" }));
     await vi.waitFor(() => expect(posted(fetchMock, "/background-jobs/e1/dismiss/")).toBeTruthy());
+  });
+
+  it("lists the scheduled jobs with how often they run and how the last run went (HIMS-OPS-023)", async () => {
+    renderPage(["platform.jobs.view"]);
+    const table = await screen.findByRole("table", { name: "Scheduled jobs" });
+    expect(await within(table).findByText("Seal the audit log")).toBeInTheDocument();
+    expect(within(table).getByText("Every minute")).toBeInTheDocument();
+    expect(within(table).getByText("Every day")).toBeInTheDocument();
+    expect(within(table).getByText("Failed")).toBeInTheDocument();
+    expect(within(table).getByText("3 (1 failed)")).toBeInTheDocument();
+    expect(within(table).getByText("RuntimeError: synthetic failure")).toBeInTheDocument();
   });
 
   it("view-only people see everything but cannot decide", async () => {

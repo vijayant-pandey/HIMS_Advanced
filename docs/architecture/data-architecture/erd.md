@@ -77,6 +77,7 @@ erDiagram
     performance_checks
     outbox_events
     outbox_processed_events
+    scheduled_jobs
     idempotency_records
     organizations ||--o{ facilities : "organization_id"
     organizations ||--o{ departments : "organization_id"
@@ -1458,6 +1459,18 @@ erDiagram
         varchar handler
         uuid event_id
         timestamptz processed_at
+    }
+    scheduled_jobs {
+        varchar name PK
+        varchar task
+        integer every_seconds
+        timestamptz last_started_at
+        timestamptz last_finished_at
+        varchar last_outcome
+        integer last_duration_ms
+        varchar last_error
+        integer runs
+        integer failures
     }
 ```
 

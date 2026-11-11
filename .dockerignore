@@ -1,0 +1,27 @@
+# What the hosted image (./Dockerfile) never needs. Secrets and personal notes first.
+**/.env
+**/.env.*
+login.md
+.git
+.github
+docs
+infrastructure
+*.MD
+
+# Local tools and generated folders
+**/node_modules
+**/__pycache__
+**/*.pyc
+backend/.venv
+backend/.pytest_cache
+backend/.ruff_cache
+.ruff_cache
+backend/staticfiles
+backend/media
+frontend/dist
+frontend/test-results*
+frontend/playwright-report*
+frontend/e2e/.media*
+frontend/e2e/.mail*
+frontend/e2e/.state*
+frontend/coverage

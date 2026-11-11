@@ -33,7 +33,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Notifications: emails and SMS**: [`notifications`](#notifications), [`message_templates`](#message_templates)
 - **Backups and restore drills**: [`recovery_backups`](#recovery_backups), [`recovery_restore_drills`](#recovery_restore_drills)
 - **Performance checks: indexes and response times**: [`performance_checks`](#performance_checks)
-- **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events)
+- **Platform: transactional outbox**: [`outbox_events`](#outbox_events), [`outbox_processed_events`](#outbox_processed_events), [`scheduled_jobs`](#scheduled_jobs)
 - **Platform: idempotency**: [`idempotency_records`](#idempotency_records)
 
 ## Hospital (organization)
@@ -1719,6 +1719,27 @@ Consumer-side deduplication: one row per (handler, event) processed (spec 29.7).
 | `handler` | varchar(200) | no | — | up to 200 characters | Person | Internal: Business data | Handler |
 | `event_id` | uuid | no | — | — | Person | Internal: Business data | Event id |
 | `processed_at` | timestamp with time zone | no | now (on create) | — | System | Internal: Business data | Processed at |
+
+<a id="scheduled_jobs"></a>
+### `scheduled_jobs`
+
+The last run of each scheduled job when ``run_scheduled_jobs`` starts them (hosts without an always-on scheduler; HIMS-OPS-023). One row per job in config/schedule.py, updated on every run: a status board, not a history (failures also go to the log).
+
+- **Model:** `outbox.ScheduledJob`
+- **Lifecycle:** One row per scheduled job (config/schedule.py), updated on every run started by run_scheduled_jobs; a status board, not a history (HIMS-OPS-023).
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `name` **PK** | varchar(64) | no | — | up to 64 characters | System | Internal: System metadata | Name |
+| `task` | varchar(100) | no | — | up to 100 characters | Person | Internal: Business data | Task |
+| `every_seconds` | integer | no | — | 0 or more | Person | Internal: Business data | Every seconds |
+| `last_started_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Last started at |
+| `last_finished_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Last finished at |
+| `last_outcome` | varchar(16) | no | — | `running` (Running), `ok` (Finished), `failed` (Failed) | Person | Internal: Business data | Last outcome |
+| `last_duration_ms` | integer | yes | — | 0 or more | Person | Internal: Business data | Last duration ms |
+| `last_error` | varchar(300) | no | — | up to 300 characters | Person | Internal: System diagnostics, filtered like the logs | Last error |
+| `runs` | integer | no | `0` | 0 or more | Person | Internal: Business data | Runs |
+| `failures` | integer | no | `0` | 0 or more | Person | Internal: Business data | Failures |
 
 ## Platform: idempotency
 

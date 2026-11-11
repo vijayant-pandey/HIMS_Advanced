@@ -189,7 +189,7 @@ Every endpoint's contract is generated from the code by `python manage.py api_co
 
 ## Hosting
 
-Where HIMS can run, including free hosts that need no payment card, is in the [hosting analysis](docs/architecture/hosting/hosting-analysis.md) ([ADR-034](docs/decisions/ADR-034-free-hosting-without-a-card.md)). The free stage is a Development environment with synthetic data only. Any server can be checked with `python manage.py hosting_check` or on the Compliance page's **Hosting readiness** tab.
+Where HIMS can run, including free hosts that need no payment card, is in the [hosting analysis](docs/architecture/hosting/hosting-analysis.md) ([ADR-034](docs/decisions/ADR-034-free-hosting-without-a-card.md)). The free stage is a Development environment with synthetic data only. Any server can be checked with `python manage.py hosting_check` or on the Compliance page's **Hosting readiness** tab. The hosted image (root `Dockerfile`) serves the screens, API and console from one address, and `python manage.py run_scheduled_jobs` runs the scheduled jobs from the host's timer: [docs/workflows/one-server-hosting.md](docs/workflows/one-server-hosting.md).
 
 ## Security review
 

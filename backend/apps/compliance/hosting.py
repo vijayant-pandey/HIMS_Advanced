@@ -140,8 +140,12 @@ def _database() -> list[dict]:
 def _scheduled_jobs() -> dict:
     from apps.audit.integrity import unsealed_events
 
+    now = timezone.now()
+    # Only events the sealing job looks at (HIMS_AUDIT_SEAL_LOOKBACK_HOURS); older unsealed ones
+    # are reported by the integrity check instead.
     late = unsealed_events().filter(
-        occurred_at__lt=timezone.now() - timedelta(minutes=SEAL_LATE_MINUTES)
+        occurred_at__lt=now - timedelta(minutes=SEAL_LATE_MINUTES),
+        occurred_at__gte=now - timedelta(hours=settings.HIMS_AUDIT_SEAL_LOOKBACK_HOURS),
     )
     running = not late.exists()
     return _check(
