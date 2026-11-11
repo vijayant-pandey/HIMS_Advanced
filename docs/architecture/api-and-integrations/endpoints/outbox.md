@@ -148,14 +148,14 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 
 | Field | Contract |
 |---|---|
-| Endpoint ID | `—` |
+| Endpoint ID | `scheduled_jobs_run_create` |
 | Method and path | `POST /api/v1/scheduled-jobs/run/` |
 | Business purpose | Run the scheduled jobs that are due, for an outside timer calling every minute. |
 | Requirements | [HIMS-OPS-023](../../../requirements/platform-and-operations.md#hims-ops-023), HIMS-OPS-024 |
 | Actor / permission required | Anyone, without signing in (the answer reveals nothing about accounts or records) |
 | Customer / facility scope | — |
 | Request schema | No body |
-| Response schema | — |
+| Response schema | 200 `ScheduledRun` |
 | Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
 | Allowed current states | Any (no state rule) |
 | Resulting state | As in the purpose above; the new state is in the response and the audit event |
