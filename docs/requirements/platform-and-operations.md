@@ -547,6 +547,25 @@ their "actors" are every caller and their evidence is the shared tests in `backe
 | Test evidence | `apps/performance/tests/test_performance.py`; manual test Part 18q |
 | Release risk | None |
 
+### HIMS-OPS-020
+
+| Field | Record |
+|---|---|
+| ID and title | HIMS-OPS-020 Hosting analysis: what HIMS needs from a host, the hosts compared, and a live readiness check |
+| Business/clinical reason | Before hosting, know what each host gives and lacks (spec 17, 30, 31, 34); the PO has no payment card, so the free stage must need none. Owner: PO |
+| Actors | `compliance.view` (Hosting readiness tab, console Security status); the deployment pipeline (`hosting_check`) |
+| Preconditions | None |
+| Main success path | The analysis recommends a free Development environment without a card; any server shows what it still needs, as "Must fix" or "Before real data" |
+| Alternate/failure paths | A server with debug on, no HTTPS, an open console, missing keys or no scheduler fails the check (exit 1); `--real-data` also fails on what free hosts cannot give |
+| Data effects | None (reads settings, `audit_events`, `audit_chain_entries` and `recovery_backups`) |
+| Security classification | Internal (names settings, never their values) |
+| Audit requirement | None (read only) |
+| Idempotency/concurrency | Read only |
+| Integration dependencies | The chosen host (free sign-up by the PO, HIMS-OPS-024) |
+| Acceptance criteria | A hosted environment with the hosted settings has no "Must fix"; a missing scheduler is noticed from the audit log within 10 minutes; the developer PC is shown as expected to fail |
+| Test evidence | `apps/compliance/tests/test_hosting.py`; frontend `HostingTab.test.tsx`; manual test Part 18t; [hosting analysis](../architecture/hosting/hosting-analysis.md) |
+| Release risk | None (documents and a read-only check) |
+
 ## Data, tests and documents
 
 ### HIMS-DATA-001

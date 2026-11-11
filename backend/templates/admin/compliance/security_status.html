@@ -47,6 +47,20 @@
   </div>
 
   <div class="module">
+    <h2>Hosting readiness ({{ hosting.environment }})</h2>
+    <p>{% if hosting.ready_for_real_data %}Ready for real data.{% elif hosting.ready_to_host %}Fit to host with synthetic test data; {{ hosting.before_real_data }} item(s) needed before real patient data.{% else %}{{ hosting.failing }} item(s) must be fixed before this server is on the internet{% if hosting.developer_pc %} (expected on a developer PC){% endif %}.{% endif %}</p>
+    <table>
+      <thead><tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col">Detail</th><th scope="col">Fix</th></tr></thead>
+      <tbody>
+      {% for check in hosting.checks %}
+        <tr><td>{{ check.label }}</td><td>{% if check.status == "ok" %}OK{% elif check.status == "warn" %}Before real data{% else %}<strong>Must fix</strong>{% endif %}</td><td>{{ check.detail }}</td><td>{{ check.fix }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="help">The same as the Compliance page's Hosting readiness tab and <code>python manage.py hosting_check</code>. What each host offers: docs/architecture/hosting/hosting-analysis.md.</p>
+  </div>
+
+  <div class="module">
     <h2>Encryption keys for stored secrets</h2>
     <table>
       <tr><th scope="row">Keys configured</th><td>{{ encryption.keys }} (newest first; HIMS_FIELD_ENCRYPTION_KEYS)</td></tr>

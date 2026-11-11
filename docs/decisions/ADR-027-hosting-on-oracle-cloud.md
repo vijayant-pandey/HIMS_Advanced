@@ -1,6 +1,8 @@
 # ADR-027: Host on Oracle Cloud (free offering) at the end of the build, instead of AWS
 
-**Status:** Proposed (PO direction, 2026-11-08) · **Analysis:** HIMS-OPS-020 · **Spec:** 6, 17, 30,
+**Status:** On hold (2026-11-11): Oracle asks every new account for a payment card; the free stage
+uses a host without one ([ADR-034](ADR-034-free-hosting-without-a-card.md)). Oracle stays an option
+for the paid stage. Originally proposed (PO direction, 2026-11-08) · **Analysis:** HIMS-OPS-020 · **Spec:** 6, 17, 30,
 31, 33, 34 · **Log:** [decisions log](../status/decisions-log.md)
 
 ## Context

@@ -44,6 +44,7 @@ import { ConsoleAccessTab } from "./ConsoleAccessTab";
 import { DatabaseAccessTab } from "./DatabaseAccessTab";
 import { RetentionTab } from "./RetentionTab";
 import { ScanningTab } from "./ScanningTab";
+import { HostingTab } from "./HostingTab";
 import { SecurityReviewTab } from "./SecurityReviewTab";
 import { ReportIncidentDialog, SEVERITIES } from "./ReportIncidentDialog";
 
@@ -578,6 +579,7 @@ export function CompliancePage() {
         <Tab value="scanning" label="Scanning and traces" />
         <Tab value="retention" label="Retention" />
         <Tab value="review" label="Security review" />
+        <Tab value="hosting" label="Hosting readiness" />
       </Tabs>
       {tab === "requirements" && <RequirementsTab canManage={canManage} />}
       {tab === "risks" && <RisksTab canManage={canManage} />}
@@ -588,6 +590,7 @@ export function CompliancePage() {
       {tab === "scanning" && <ScanningTab canManage={canManage} />}
       {tab === "retention" && <RetentionTab canManage={canManage} />}
       {tab === "review" && <SecurityReviewTab />}
+      {tab === "hosting" && <HostingTab />}
     </Stack>
   );
 }

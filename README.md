@@ -187,6 +187,10 @@ Every endpoint's contract is generated from the code by `python manage.py api_co
 `npm run e2e` (India and the admin console) and `npm run e2e:us` (a separate US hospital) in
 `frontend` (HIMS-QA-001, HIMS-QA-003): [docs/testing/browser-tests.md](docs/testing/browser-tests.md).
 
+## Hosting
+
+Where HIMS can run, including free hosts that need no payment card, is in the [hosting analysis](docs/architecture/hosting/hosting-analysis.md) ([ADR-034](docs/decisions/ADR-034-free-hosting-without-a-card.md)). The free stage is a Development environment with synthetic data only. Any server can be checked with `python manage.py hosting_check` or on the Compliance page's **Hosting readiness** tab.
+
 ## Security review
 
 The Phase 1 security review (HIMS-SEC-011) is on the **Compliance** page, **Security review** tab, and in [docs/compliance/security-review.md](docs/compliance/security-review.md). Sessions end after 30 minutes without use (screens refreshing themselves do not count) and after 12 hours; 10 wrong passwords for one email pause its sign-in for 15 minutes ([ADR-033](docs/decisions/ADR-033-session-limits-and-sign-in-pause.md)). Retiring an encryption key: [docs/workflows/encryption-keys.md](docs/workflows/encryption-keys.md).

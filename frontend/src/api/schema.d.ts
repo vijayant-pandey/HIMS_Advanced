@@ -2903,6 +2903,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/security/hosting/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What this server still needs before it can host HIMS, read from its own settings. */
+        get: operations["security_hosting_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security/review/": {
         parameters: {
             query?: never;
@@ -4813,6 +4830,38 @@ export interface components {
             id: string;
             name: string;
             designation: string | null;
+        };
+        HostingCheck: {
+            key: string;
+            label: string;
+            /** @description Specification sections. */
+            spec: string;
+            /**
+             * @description ok: met; fail: needed before going on the internet at all; warn: fine with synthetic test data, needed before real patient data.
+             *
+             *     * `ok` - ok
+             *     * `warn` - warn
+             *     * `fail` - fail
+             */
+            status: components["schemas"]["HostingCheckStatusEnum"];
+            detail: string;
+            fix: string;
+        };
+        /**
+         * @description * `ok` - ok
+         *     * `warn` - warn
+         *     * `fail` - fail
+         * @enum {string}
+         */
+        HostingCheckStatusEnum: "ok" | "warn" | "fail";
+        HostingReadiness: {
+            environment: string;
+            developer_pc: boolean;
+            ready_to_host: boolean;
+            ready_for_real_data: boolean;
+            failing: number;
+            before_real_data: number;
+            checks: components["schemas"]["HostingCheck"][];
         };
         HoursSession: {
             /**
@@ -12104,6 +12153,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatabaseAccess"];
+                };
+            };
+        };
+    };
+    security_hosting_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HostingReadiness"];
                 };
             };
         };

@@ -124,6 +124,7 @@ VIEW_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     _C + "scanning_views.ScanningStatusView": ("HIMS-SEC-013",),
     _C + "scanning_views.ScanDocumentsView": ("HIMS-SEC-013",),
     _C + "review_views.SecurityReviewView": ("HIMS-SEC-011",),
+    _C + "hosting_views.HostingReadinessView": ("HIMS-OPS-020",),
     _C + "retention_views.RetentionView": ("HIMS-COMP-006",),
     _C + "retention_views.RetentionPeriodView": ("HIMS-COMP-006",),
     _C + "retention_views.RetentionRunView": ("HIMS-COMP-006",),
