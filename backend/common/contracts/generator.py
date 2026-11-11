@@ -598,7 +598,7 @@ def index_file(areas) -> str:
         for endpoint in endpoints:
             access = (
                 f"`{endpoint.permission}`"
-                if inventory.PERMISSION == endpoint.access
+                if endpoint.needs_permission
                 else endpoint.access.replace("_", " ")
             )
             link = f"[`{endpoint.method} {endpoint.path}`]({label}.md#{_anchor(endpoint)})"

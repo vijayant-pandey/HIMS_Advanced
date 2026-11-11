@@ -75,9 +75,13 @@ class Endpoint:
         return self.method in _WRITE_METHODS
 
     @property
+    def needs_permission(self) -> bool:
+        return self.access == PERMISSION
+
+    @property
     def mfa(self) -> bool:
         """Privileged users must have passed two-factor (ScopedPermission; HIMS-IAM-005)."""
-        return self.access == PERMISSION
+        return self.needs_permission
 
 
 def _request(method: str, path: str):

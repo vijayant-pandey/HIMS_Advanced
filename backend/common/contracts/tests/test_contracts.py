@@ -8,6 +8,7 @@ from django.urls import resolve
 
 from apps.access_control.catalog import PERMISSIONS
 from common.contracts import catalog, generator, inventory, reach
+from common.contracts.inventory import SIGNED_IN
 
 # Spec 25.4: the fields every requirement record has.
 RECORD_FIELDS = (
@@ -65,7 +66,7 @@ def test_every_permission_endpoint_names_a_real_permission():
     broken = [
         endpoint.key
         for endpoint in inventory.endpoints()
-        if inventory.PERMISSION == endpoint.access and endpoint.permission not in PERMISSIONS
+        if endpoint.needs_permission and endpoint.permission not in PERMISSIONS
     ]
     assert not broken
 
@@ -109,7 +110,7 @@ def test_code_walk_finds_what_the_important_writes_record():
     upload = reach.for_endpoint(_endpoint("POST", "/api/v1/staff/{pk}/documents/"))
     assert any(label.startswith("Virus scanner") for label in upload.external)
     removal = _endpoint("POST", "/api/v1/auth/passkeys/{passkey_id}/remove/")
-    assert inventory.SIGNED_IN == removal.access
+    assert removal.access == SIGNED_IN
     assert _endpoint("POST", "/api/v1/role-assignments/").confirm_identity
 
 
