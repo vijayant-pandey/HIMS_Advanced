@@ -113,7 +113,8 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-AUD-002 | Access-denied events recorded outside rolled-back transactions | Done |
 | HIMS-AUD-003 | Audit log screen for auditors in the app + CSV export | Done |
 | HIMS-SEC-010 | Audit tamper evidence: keyed hash chain over every audit event, sealed every minute, daily + on-demand integrity check, alerts to auditors, Audit integrity screen and admin console ([design](../architecture/data-architecture/audit-integrity.md)) | Done |
-| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Drafted with HIMS-COMP-005 ([threat model](../compliance/threat-model.md)); security review scheduled as the last Phase 1 step (PO 2026-11-08) |
+| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Done (internal security review 2026-11-11: [security review](../compliance/security-review.md), [threat model](../compliance/threat-model.md); five findings fixed) |
+| HIMS-SEC-021 | Independent security review and penetration test of the hosted system before real patient data (gap found in HIMS-SEC-011) | To do (hosting stage) |
 | HIMS-SEC-012 | Security headers/CSP for the screens, admin console and API; reports of anything blocked ([how-to](../workflows/security-headers.md)) | Done (hosting must send the screens' headers: HIMS-SEC-018) |
 | HIMS-SEC-013 | Upload validation/malware scanning service | Done ([virus scanning](../workflows/virus-scanning.md)); ClamAV itself is set up in the hosting stage |
 | HIMS-SEC-014 | Trust `X-Forwarded-For` only from our own proxies, for audit addresses, sign-in register, rate limits and the console lock-out | Done |

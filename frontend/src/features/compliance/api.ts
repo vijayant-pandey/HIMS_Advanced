@@ -18,6 +18,7 @@ import type {
   RetentionStatus,
   RiskEntry,
   SecurityIncident,
+  SecurityReview,
   SecurityStatus,
 } from "../../api/types";
 
@@ -52,6 +53,14 @@ export function useIncidents() {
 }
 
 /** How the app's database user is limited (HIMS-OPS-007); read from the database itself. */
+/** The Phase 1 security review and the encryption key status (HIMS-SEC-011). */
+export function useSecurityReview() {
+  return useQuery<SecurityReview, ApiError>({
+    queryKey: [...key, "security-review"],
+    queryFn: ({ signal }) => api.get<SecurityReview>("/security/review/", { signal }),
+  });
+}
+
 export function useDatabaseAccess() {
   return useQuery<DatabaseAccess, ApiError>({
     queryKey: [...key, "database-access"],

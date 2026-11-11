@@ -779,6 +779,8 @@ export interface paths {
          *
          *     Records an ``access.none_assigned`` audit event and returns its reference number (the
          *     request ID), which the "no access yet" page shows so an administrator can find the event.
+         *     The audit log cannot be cleaned up, so one event per person per 10 minutes is enough, and
+         *     someone who already has access records nothing (HIMS-SEC-011 finding F-04).
          */
         post: operations["auth_no_access_report_create"];
         delete?: never;
@@ -2901,6 +2903,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/security/review/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The Phase 1 security review and the encryption key status. */
+        get: operations["security_review_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/security/status/": {
         parameters: {
             query?: never;
@@ -4482,6 +4501,18 @@ export interface components {
          * @enum {string}
          */
         EmploymentStatusEnum: "active" | "on_leave" | "suspended" | "terminated";
+        EncryptedField: {
+            name: string;
+            values: number;
+            on_older_keys: number;
+        };
+        EncryptionStatus: {
+            /** @description Keys configured (newest first). */
+            keys: number;
+            fields: components["schemas"]["EncryptedField"][];
+            /** @description Stored secrets an older key is still needed for; 0 means old keys can go. */
+            on_older_keys: number;
+        };
         EndAssignmentRequest: {
             /**
              * Format: date
@@ -4766,6 +4797,10 @@ export interface components {
          * @enum {string}
          */
         GenderRestrictionEnum: "any" | "male" | "female";
+        GoLiveItem: {
+            ticket: string;
+            what: string;
+        };
         Grant: {
             permission: string;
             /** Format: uuid */
@@ -6369,6 +6404,32 @@ export interface components {
             wait_days: number;
             last_run: components["schemas"]["RetentionPurgeRun"] | null;
         };
+        ReviewCheck: {
+            area: string;
+            result: string;
+        };
+        ReviewFinding: {
+            code: string;
+            severity: components["schemas"]["ReviewSeverityEnum"];
+            area: string;
+            finding: string;
+            fix: string;
+            status: components["schemas"]["ReviewFindingStatusEnum"];
+        };
+        /**
+         * @description * `fixed` - fixed
+         *     * `accepted` - accepted
+         * @enum {string}
+         */
+        ReviewFindingStatusEnum: "fixed" | "accepted";
+        /**
+         * @description * `high` - high
+         *     * `medium` - medium
+         *     * `low` - low
+         *     * `info` - info
+         * @enum {string}
+         */
+        ReviewSeverityEnum: "high" | "medium" | "low" | "info";
         RevokeRequest: {
             reason: string;
         };
@@ -6662,12 +6723,41 @@ export interface components {
             readonly notifications: components["schemas"]["IncidentNotification"][];
             readonly version: number;
         };
+        SecurityReview: {
+            /** Format: date */
+            reviewed_on: string;
+            reviewer: string;
+            scope: string;
+            method: string;
+            findings: components["schemas"]["ReviewFinding"][];
+            checked: components["schemas"]["ReviewCheck"][];
+            cases: components["schemas"]["SecurityTestCase"][];
+            before_go_live: components["schemas"]["GoLiveItem"][];
+            encryption: components["schemas"]["EncryptionStatus"];
+        };
         SecurityStatus: {
             policy_mode: components["schemas"]["PolicyModeEnum"];
             proxies_configured: boolean;
             your_address: string | null;
             reports_to_review: number;
         };
+        SecurityTestCase: {
+            number: number;
+            /** @description As written in spec 13.5. */
+            case: string;
+            status: components["schemas"]["SecurityTestStatusEnum"];
+            status_label: string;
+            how: string;
+            /** @description Automated tests that prove it. */
+            tests: number;
+        };
+        /**
+         * @description * `tested` - tested
+         *     * `phase1_form` - phase1_form
+         *     * `waits` - waits
+         * @enum {string}
+         */
+        SecurityTestStatusEnum: "tested" | "phase1_form" | "waits";
         /**
          * @description * `-` - Dash (-)
          *     * `/` - Slash (/)
@@ -8466,6 +8556,14 @@ export interface operations {
             };
         };
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoAccessReference"];
+                };
+            };
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -12006,6 +12104,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatabaseAccess"];
+                };
+            };
+        };
+    };
+    security_review_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityReview"];
                 };
             };
         };

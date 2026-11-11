@@ -15,6 +15,7 @@ from .retention_views import (
     RetentionRunView,
     RetentionView,
 )
+from .review_views import SecurityReviewView
 from .scanning_views import ScanDocumentsView, ScanningStatusView
 from .views import (
     ComplianceRequirementViewSet,
@@ -43,6 +44,7 @@ urlpatterns = [
     path("security/database-access/", DatabaseAccessView.as_view(), name="database-access"),
     path("security/console-access/", ConsoleAccessView.as_view(), name="console-access"),
     path("security/upload-scanning/", ScanningStatusView.as_view(), name="upload-scanning"),
+    path("security/review/", SecurityReviewView.as_view(), name="security-review"),
     path(
         "security/upload-scanning/scan/",
         ScanDocumentsView.as_view(),

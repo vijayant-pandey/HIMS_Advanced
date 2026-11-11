@@ -10,7 +10,7 @@ Spec 25.4 lists fourteen fields every requirement record holds. Spec 29.5 lists 
 every endpoint specification holds, and 29.9 asks that breaking changes be caught in CI.
 
 By the end of Phase 1 the backlog already has 122 tickets named `HIMS-<AREA>-NNN`, and those IDs
-appear in the code, tests, commits, PR titles and the tracker. The API has 239 endpoints. A
+appear in the code, tests, commits, PR titles and the tracker. The API has 240 endpoints. A
 contract written by hand for each would be out of date after the next pull request.
 
 ## Decision
@@ -49,7 +49,7 @@ ticket with its status, record, endpoints, test files and PRs.
 
 * **Renumber to `HIMS-FR-…`:** matches the spec's suggestion, but breaks the link to 49 PRs and the
   tests that name tickets. Rejected; the mapping table gives the same classification.
-* **Hand-written endpoint contracts:** 239 × 22 fields, out of date quickly. Rejected.
+* **Hand-written endpoint contracts:** 240 × 22 fields, out of date quickly. Rejected.
 * **Contracts only in OpenAPI descriptions:** OpenAPI has no place for audit events, locks or
   requirement links, and would bloat the generated types. Rejected; OpenAPI stays the schema
   source and the contracts read it.

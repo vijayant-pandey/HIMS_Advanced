@@ -97,6 +97,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.identity.session_limits.SessionLimitsMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -201,6 +202,12 @@ SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_NAME = env.str("HIMS_SESSION_COOKIE_NAME", default="hims_session")
 SESSION_COOKIE_AGE = env.int("HIMS_SESSION_IDLE_SECONDS", default=30 * 60)
 SESSION_SAVE_EVERY_REQUEST = True  # sliding idle timeout
+# Background refreshes do not count as use, and nobody stays signed in longer than this
+# (apps/identity/session_limits.py; HIMS-SEC-011).
+HIMS_SESSION_MAX_SECONDS = env.int("HIMS_SESSION_MAX_SECONDS", default=12 * 60 * 60)
+# Wrong passwords per email before sign-in with it pauses (apps/identity/sign_in_limits.py).
+HIMS_SIGN_IN_MAX_FAILURES = env.int("HIMS_SIGN_IN_MAX_FAILURES", default=10)
+HIMS_SIGN_IN_PAUSE_SECONDS = env.int("HIMS_SIGN_IN_PAUSE_SECONDS", default=15 * 60)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_NAME = env.str("HIMS_CSRF_COOKIE_NAME", default="hims_csrftoken")
@@ -325,6 +332,11 @@ SPECTACULAR_SETTINGS = {
         "PerformanceTriggerEnum": "apps.performance.models.PerformanceCheck.Trigger",
         # Who may call an endpoint (HIMS-DOC-001).
         "EndpointCallerEnum": "common.contracts.inventory.ACCESS_CHOICES",
+        # Security review (HIMS-SEC-011).
+        "SeverityEnum": "apps.compliance.models.SecurityIncident.Severity",
+        "ReviewSeverityEnum": "apps.compliance.security_review.SEVERITIES",
+        "ReviewFindingStatusEnum": "apps.compliance.security_review.FINDING_STATUSES",
+        "SecurityTestStatusEnum": "apps.compliance.security_review.CASE_STATUSES",
         "ShiftKindEnum": "apps.rosters.models.ShiftType.Kind",
         "ShiftStatusEnum": "apps.rosters.models.Shift.Status",
         "LeaveStatusEnum": "apps.rosters.models.LeaveRequest.Status",

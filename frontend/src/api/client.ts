@@ -8,6 +8,8 @@
  */
 
 export const API_BASE = "/api/v1";
+/** Marks a timed refresh (apps/identity/session_limits.py). */
+export const BACKGROUND_HEADER = "X-HIMS-Background";
 // Must match the backend's HIMS_CSRF_COOKIE_NAME (differs per local deployment, e.g. US).
 const CSRF_COOKIE: string = import.meta.env.VITE_CSRF_COOKIE ?? "hims_csrftoken";
 
@@ -60,6 +62,9 @@ export interface RequestOptions {
   /** Send for create/submit operations so retries never duplicate work (spec 29.3). */
   idempotencyKey?: string;
   signal?: AbortSignal;
+  /** A timed refresh nobody asked for: the server does not count it as use, so a screen left open is still signed
+   * out after the idle time (HIMS-SEC-011). */
+  background?: boolean;
 }
 
 function buildUrl(path: string, query?: RequestOptions["query"]): string {
@@ -110,6 +115,7 @@ async function sendRequest<T>(method: Method, path: string, options: RequestOpti
     if (token) headers["X-CSRFToken"] = token;
   }
   if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
+  if (options.background) headers[BACKGROUND_HEADER] = "1";
 
   const response = await fetch(buildUrl(path, options.query), {
     method,

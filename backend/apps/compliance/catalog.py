@@ -470,9 +470,10 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         4,
         4,
         "Two-factor for privileged roles, phishing-resistant passkeys as a second factor "
-        "(HIMS-IAM-014), throttling, sign-in register; the admin console answers only allowed "
-        "addresses (HIMS-SEC-015). Planned: two-factor for clinical roles (D13), firewall rule at "
-        "hosting (HIMS-OPS-020).",
+        "(HIMS-IAM-014), throttling per address and per account, sessions ended after 30 minutes "
+        "without use and after 12 hours (HIMS-SEC-011), sign-in register; the admin console "
+        "answers only allowed addresses (HIMS-SEC-015). Planned: two-factor for clinical roles "
+        "(D13), firewall rule at hosting (HIMS-OPS-020).",
     ),
     (
         "R-002",
@@ -500,8 +501,9 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         "application",
         2,
         5,
-        "Default-deny server checks, escalation guard, permission tests. "
-        "Planned: independent penetration test.",
+        "Default-deny server checks, escalation guard, permission tests; every endpoint's "
+        "access rule read from the code and pinned by tests (HIMS-DOC-001); internal security "
+        "review (HIMS-SEC-011). Planned: independent penetration test (HIMS-SEC-021).",
     ),
     (
         "R-005",
@@ -542,8 +544,9 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         "data",
         3,
         5,
-        "Secret scanning in CI, gitignored environment files, encrypted secrets. "
-        "Planned: managed secret store and rotation at hosting.",
+        "Secret scanning in CI, gitignored environment files, encrypted secrets with key "
+        "rotation (`rotate_encryption_keys`, HIMS-SEC-011). Planned: managed secret store at "
+        "hosting.",
     ),
     (
         "R-009",
@@ -562,8 +565,9 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         "availability",
         3,
         5,
-        "Planned at hosting: backups, point-in-time recovery, restore drills, "
-        "RTO/RPO. Until then no real patient data is entered.",
+        "Backups and restore drills with audit-chain checks on a developer PC (HIMS-OPS-009). "
+        "Planned at hosting: scheduled backups, point-in-time recovery, cloud restore drill "
+        "(HIMS-OPS-018), RTO/RPO. Until then no real patient data is entered.",
     ),
     (
         "R-011",
@@ -581,8 +585,9 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         "data",
         1,
         5,
-        "One database per hospital, startup environment guard, no cross-database "
-        "links. Planned: isolation tests at hosting.",
+        "One database per hospital, startup environment guard, no cross-database links; "
+        "background events of another hospital refused (HIMS-SEC-011). Planned: isolation tests "
+        "at hosting.",
     ),
     (
         "R-013",

@@ -28,7 +28,8 @@ The DPDP Rules commence in stages: most duties (including breach notice and log 
 |---|---|---|
 | [requirements-matrix.md](requirements-matrix.md) | Every requirement, with citation and what HIMS does (generated) | Counsel, compliance officer |
 | [risk-register.md](risk-register.md) | Starting risks with scores (generated) | Compliance officer |
-| [threat-model.md](threat-model.md) | How HIMS could be attacked and what stops it | Security reviewer |
+| [threat-model.md](threat-model.md) | How HIMS could be attacked and what stops it (reviewed 2026-11-11) | Security reviewer |
+| [security-review.md](security-review.md) | The Phase 1 security review: findings and fixes, the ten spec 13.5 tests, what remains before go-live (generated) | Security reviewer, compliance officer |
 | [hipaa-security.md](hipaa-security.md) | HIPAA safeguards and risk analysis worksheet | US deployment |
 | [india-dpdp-cert-in.md](india-dpdp-cert-in.md) | DPDP, CERT-In, ABDM, Aadhaar assessment | India deployment |
 | [incident-response-runbook.md](incident-response-runbook.md) | What to do, hour by hour, in an incident | Everyone on the incident team |

@@ -26,6 +26,15 @@ describe("api client", () => {
     expect(headers["X-Request-ID"]).toMatch(/^[0-9a-f-]{36}$/);
   });
 
+  it("marks timed refreshes so they do not keep a session awake (HIMS-SEC-011)", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => jsonResponse(200, {}));
+    await api.get("/bed-board/", { background: true });
+    await api.get("/bed-board/");
+    const headers = fetchMock.mock.calls.map(([, init]) => init!.headers as Record<string, string>);
+    expect(headers[0]!["X-HIMS-Background"]).toBe("1");
+    expect(headers[1]!["X-HIMS-Background"]).toBeUndefined();
+  });
+
   it("raises ApiError carrying the problem document", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse(

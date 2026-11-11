@@ -23,7 +23,7 @@ Cloud's free offering, after an analysis of what that deployment needs.
 | 7 | Retention periods and legal hold | LEGAL | **Fine for now:** build the purge with periods the hospital sets (nothing deleted until a period is set) | Becomes buildable (HIMS-COMP-006); **built 2026-11-10** (nothing deleted until the hospital sets a period; [ADR-030](../decisions/ADR-030-retention-purge-and-legal-hold.md)) |
 | 8 | Single sign-on (OIDC/SAML) | PO | **Not now**; passwords with two-factor are fine | HIMS-IAM-008 deferred (optional) |
 | 9 | SMS gateway | PO | **Print to the console for now** (as today); a gateway later | HIMS-NOTIF-002 deferred |
-| 10 | Security review of the threat model | PO | **When the whole of Phase 1 is complete** | HIMS-SEC-011 becomes the last Phase 1 step |
+| 10 | Security review of the threat model | PO | **When the whole of Phase 1 is complete** | HIMS-SEC-011 becomes the last Phase 1 step; done 2026-11-11 as an internal review ([security review](../compliance/security-review.md)); the independent review and penetration test is HIMS-SEC-021 (hosting stage) |
 | 11 | Hosting | PO | **Oracle Cloud (free offering) instead of AWS, at the very end**, after an analysis ([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)) | AWS-labelled items become the "hosting stage"; first step is the analysis (HIMS-OPS-020) |
 | 12 | Clinical delegation (HIMS-IAM-018), tax rules | CLIN, LEGAL | Belong with the clinical actions (Phase 2) and billing (Phase 5) | Moved to those phases |
 

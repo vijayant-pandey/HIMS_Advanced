@@ -47,6 +47,36 @@
   </div>
 
   <div class="module">
+    <h2>Encryption keys for stored secrets</h2>
+    <table>
+      <tr><th scope="row">Keys configured</th><td>{{ encryption.keys }} (newest first; HIMS_FIELD_ENCRYPTION_KEYS)</td></tr>
+      {% for field in encryption.fields %}<tr><th scope="row">{{ field.name }}</th><td>{{ field.values }} stored, {{ field.on_older_keys }} still on an older key</td></tr>{% endfor %}
+    </table>
+    <p class="help">{% if encryption.on_older_keys %}Run <code>python manage.py rotate_encryption_keys</code> before removing an older key.{% else %}Nothing needs an older key: older keys can be removed.{% endif %}</p>
+  </div>
+
+  <div class="module">
+    <h2>Security review ({{ review.reviewed_on|date:"j M Y" }})</h2>
+    <table>
+      <thead><tr><th scope="col">Code</th><th scope="col">Severity</th><th scope="col">Finding</th><th scope="col">Fix</th><th scope="col">Status</th></tr></thead>
+      <tbody>
+      {% for finding in review.findings %}
+        <tr><td>{{ finding.code }}</td><td>{{ finding.severity }}</td><td>{{ finding.finding }}</td><td>{{ finding.fix }}</td><td>{{ finding.status }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <h3>Security tests of spec 13.5</h3>
+    <table>
+      <tbody>
+      {% for case in review.cases %}
+        <tr><td>{{ case.number }}</td><td>{{ case.case }}</td><td>{{ case.status_label }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="help">Before real patient data: {% for item in review.before_go_live %}{{ item.ticket }} ({{ item.what }}){% if not forloop.last %}; {% endif %}{% endfor %}. Full review: docs/compliance/security-review.md.</p>
+  </div>
+
+  <div class="module">
     <h2>Database users</h2>
     <p>{% if database_separated %}Separated: the app runs with its own limited database user.{% elif not database.set_up %}Not set up yet (allowed on a developer PC; required when hosted).{% else %}A check failed: see below.{% endif %} The app connects as <strong>{{ database.current_user }}</strong>.</p>
     <table>

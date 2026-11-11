@@ -56,3 +56,28 @@ def decrypt(token: str) -> str:
         raise DecryptionError(
             "Stored secret could not be decrypted with the configured keys."
         ) from exc
+
+
+def key_count() -> int:
+    return len(settings.HIMS_FIELD_ENCRYPTION_KEYS) or 1
+
+
+def is_on_newest_key(token: str) -> bool:
+    """True when the newest key (the first) can read the value, so older keys are not needed."""
+    configured = settings.HIMS_FIELD_ENCRYPTION_KEYS
+    newest = Fernet(configured[0].encode()) if configured else Fernet(_derived_local_key())
+    try:
+        newest.decrypt(token.encode())
+    except InvalidToken:
+        return False
+    return True
+
+
+def rotate(token: str) -> str:
+    """The same value, encrypted again with the newest key (HIMS-SEC-011)."""
+    try:
+        return _cipher().rotate(token.encode()).decode()
+    except InvalidToken as exc:
+        raise DecryptionError(
+            "Stored secret could not be decrypted with the configured keys."
+        ) from exc

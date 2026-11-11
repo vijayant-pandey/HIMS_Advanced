@@ -1181,6 +1181,8 @@ paths:
 
         Records an ``access.none_assigned`` audit event and returns its reference number (the
         request ID), which the "no access yet" page shows so an administrator can find the event.
+        The audit log cannot be cleaned up, so one event per person per 10 minutes is enough, and
+        someone who already has access records nothing (HIMS-SEC-011 finding F-04).
       tags:
       - auth
       requestBody:
@@ -1191,6 +1193,12 @@ paths:
       security:
       - sessionAuth: []
       responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoAccessReference'
+          description: ''
         '201':
           content:
             application/json:
@@ -4967,6 +4975,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/DatabaseAccess'
           description: ''
+  /api/v1/security/review/:
+    get:
+      operationId: security_review_retrieve
+      description: The Phase 1 security review and the encryption key status.
+      tags:
+      - security
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SecurityReview'
+          description: ''
   /api/v1/security/status/:
     get:
       operationId: security_status_retrieve
@@ -8571,6 +8594,37 @@ components:
         * `on_leave` - On leave
         * `suspended` - Suspended
         * `terminated` - Terminated
+    EncryptedField:
+      type: object
+      properties:
+        name:
+          type: string
+        values:
+          type: integer
+        on_older_keys:
+          type: integer
+      required:
+      - name
+      - on_older_keys
+      - values
+    EncryptionStatus:
+      type: object
+      properties:
+        keys:
+          type: integer
+          description: Keys configured (newest first).
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/EncryptedField'
+        on_older_keys:
+          type: integer
+          description: Stored secrets an older key is still needed for; 0 means old
+            keys can go.
+      required:
+      - fields
+      - keys
+      - on_older_keys
     EndAssignmentRequest:
       type: object
       properties:
@@ -9332,6 +9386,16 @@ components:
         * `any` - Any
         * `male` - Male only
         * `female` - Female only
+    GoLiveItem:
+      type: object
+      properties:
+        ticket:
+          type: string
+        what:
+          type: string
+      required:
+      - ticket
+      - what
     Grant:
       type: object
       properties:
@@ -13085,6 +13149,58 @@ components:
       - categories
       - last_run
       - wait_days
+    ReviewCheck:
+      type: object
+      properties:
+        area:
+          type: string
+        result:
+          type: string
+      required:
+      - area
+      - result
+    ReviewFinding:
+      type: object
+      properties:
+        code:
+          type: string
+        severity:
+          $ref: '#/components/schemas/ReviewSeverityEnum'
+        area:
+          type: string
+        finding:
+          type: string
+        fix:
+          type: string
+        status:
+          $ref: '#/components/schemas/ReviewFindingStatusEnum'
+      required:
+      - area
+      - code
+      - finding
+      - fix
+      - severity
+      - status
+    ReviewFindingStatusEnum:
+      enum:
+      - fixed
+      - accepted
+      type: string
+      description: |-
+        * `fixed` - fixed
+        * `accepted` - accepted
+    ReviewSeverityEnum:
+      enum:
+      - high
+      - medium
+      - low
+      - info
+      type: string
+      description: |-
+        * `high` - high
+        * `medium` - medium
+        * `low` - low
+        * `info` - info
     RevokeRequest:
       type: object
       properties:
@@ -13875,6 +13991,46 @@ components:
       - status_label
       - title
       - version
+    SecurityReview:
+      type: object
+      properties:
+        reviewed_on:
+          type: string
+          format: date
+        reviewer:
+          type: string
+        scope:
+          type: string
+        method:
+          type: string
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewFinding'
+        checked:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewCheck'
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/SecurityTestCase'
+        before_go_live:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoLiveItem'
+        encryption:
+          $ref: '#/components/schemas/EncryptionStatus'
+      required:
+      - before_go_live
+      - cases
+      - checked
+      - encryption
+      - findings
+      - method
+      - reviewed_on
+      - reviewer
+      - scope
     SecurityStatus:
       type: object
       properties:
@@ -13892,6 +14048,40 @@ components:
       - proxies_configured
       - reports_to_review
       - your_address
+    SecurityTestCase:
+      type: object
+      properties:
+        number:
+          type: integer
+        case:
+          type: string
+          description: As written in spec 13.5.
+        status:
+          $ref: '#/components/schemas/SecurityTestStatusEnum'
+        status_label:
+          type: string
+        how:
+          type: string
+        tests:
+          type: integer
+          description: Automated tests that prove it.
+      required:
+      - case
+      - how
+      - number
+      - status
+      - status_label
+      - tests
+    SecurityTestStatusEnum:
+      enum:
+      - tested
+      - phase1_form
+      - waits
+      type: string
+      description: |-
+        * `tested` - tested
+        * `phase1_form` - phase1_form
+        * `waits` - waits
     SeparatorEnum:
       enum:
       - '-'

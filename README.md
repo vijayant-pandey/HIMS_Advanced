@@ -187,6 +187,10 @@ Every endpoint's contract is generated from the code by `python manage.py api_co
 `npm run e2e` (India and the admin console) and `npm run e2e:us` (a separate US hospital) in
 `frontend` (HIMS-QA-001, HIMS-QA-003): [docs/testing/browser-tests.md](docs/testing/browser-tests.md).
 
+## Security review
+
+The Phase 1 security review (HIMS-SEC-011) is on the **Compliance** page, **Security review** tab, and in [docs/compliance/security-review.md](docs/compliance/security-review.md). Sessions end after 30 minutes without use (screens refreshing themselves do not count) and after 12 hours; 10 wrong passwords for one email pause its sign-in for 15 minutes ([ADR-033](docs/decisions/ADR-033-session-limits-and-sign-in-pause.md)). Retiring an encryption key: [docs/workflows/encryption-keys.md](docs/workflows/encryption-keys.md).
+
 ## Admin console: only from allowed addresses
 
 The admin console answers only the addresses in `HIMS_ADMIN_ALLOWED_NETWORKS`; anyone else gets

@@ -152,6 +152,7 @@ LABELS: dict[str, str] = {
     A.RESTORE_DRILL_COMPLETED: "Restore drill run",
     A.PERFORMANCE_CHECK_RUN: "Performance check run (index check or response times)",
     A.DATABASE_USERS_SET_UP: "Separate database users set up or their rights re-applied",
+    A.DATABASE_ENCRYPTION_ROTATED: "Stored secrets encrypted again with the newest key",
     A.OUTBOX_CLEANED_UP: "Old background events cleaned up",
     A.OUTBOX_EVENT_SENT_AGAIN: "Failed background event sent again",
     A.OUTBOX_EVENT_DISMISSED: "Failed background event dismissed",

@@ -275,9 +275,14 @@ export const confirmIdentityKey = ["auth", "confirm-identity"] as const;
 
 /** Whether sensitive actions will ask right now (HIMS-IAM-007). */
 export function useIdentityConfirmation() {
+  const queryClient = useQueryClient();
   return useQuery<ConfirmIdentityStatus, ApiError>({
     queryKey: confirmIdentityKey,
-    queryFn: ({ signal }) => api.get<ConfirmIdentityStatus>("/auth/confirm-identity/", { signal }),
+    queryFn: ({ signal }) =>
+      api.get<ConfirmIdentityStatus>("/auth/confirm-identity/", {
+        signal,
+        background: queryClient.getQueryData(confirmIdentityKey) !== undefined,
+      }),
     refetchInterval: 60_000, // it runs out by itself
   });
 }

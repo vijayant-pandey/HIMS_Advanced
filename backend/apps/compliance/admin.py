@@ -20,7 +20,15 @@ from common.admin.options import ConfirmIdentityAdminMixin, ReadOnlyModelAdmin
 from common.exceptions import DomainError
 from common.security_headers import policy_mode
 
-from . import browser_reports, console_access, incidents, retention, services
+from . import (
+    browser_reports,
+    console_access,
+    encryption,
+    incidents,
+    retention,
+    security_review,
+    services,
+)
 from .models import (
     BrowserSecurityReport,
     ComplianceRequirement,
@@ -354,6 +362,10 @@ class ConsoleAccessBlockAdmin(_ComplianceAdmin):
                 reviewed_at__isnull=True
             ).count(),
             "scanning": scanning_status(),
+            # The Phase 1 security review and the key status, as on the Compliance page
+            # (HIMS-SEC-011).
+            "review": security_review.summary(),
+            "encryption": encryption.status(),
         }
         return TemplateResponse(request, "admin/compliance/security_status.html", context)
 

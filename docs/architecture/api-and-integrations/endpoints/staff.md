@@ -477,7 +477,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `DOCUMENT_INFECTED`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
-| Automated test cases | `apps/staff/tests/test_directory_scope.py::test_seeing_a_person_does_not_open_their_documents`, `apps/staff/tests/test_documents_and_expiry.py::test_download_is_audited_and_never_runs_content`, `apps/staff/tests/test_documents_and_expiry.py::test_people_without_staff_access_cannot_open_documents`, `common/tests/test_virus_scan.py::test_a_virus_found_later_blocks_the_file_and_archives_it` |
+| Automated test cases | `apps/compliance/tests/test_security_review.py::test_a_guessed_document_address_finds_nothing`, `apps/staff/tests/test_directory_scope.py::test_seeing_a_person_does_not_open_their_documents`, `apps/staff/tests/test_documents_and_expiry.py::test_download_is_audited_and_never_runs_content`, `apps/staff/tests/test_documents_and_expiry.py::test_people_without_staff_access_cannot_open_documents`, `common/tests/test_virus_scan.py::test_a_virus_found_later_blocks_the_file_and_archives_it` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
 ### POST /api/v1/staff-privileges/{pk}/end/
@@ -729,7 +729,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
-| Automated test cases | `apps/staff/tests/test_directory_scope.py::test_seeing_a_person_does_not_open_their_documents` |
+| Automated test cases | `apps/compliance/tests/test_security_review.py::test_a_guessed_document_address_finds_nothing`, `apps/staff/tests/test_directory_scope.py::test_seeing_a_person_does_not_open_their_documents` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
 ### POST /api/v1/staff/{pk}/documents/
@@ -757,7 +757,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
-| Automated test cases | `apps/staff/tests/test_directory_scope.py::test_seeing_a_person_does_not_open_their_documents` |
+| Automated test cases | `apps/compliance/tests/test_security_review.py::test_a_guessed_document_address_finds_nothing`, `apps/staff/tests/test_directory_scope.py::test_seeing_a_person_does_not_open_their_documents` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
 ### POST /api/v1/staff/{pk}/invitation/

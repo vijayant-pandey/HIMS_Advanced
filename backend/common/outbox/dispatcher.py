@@ -35,6 +35,7 @@ def publish_to_broker(event: OutboxEvent) -> None:
     app.send_task(
         "outbox.handle_event",
         args=[str(event.id)],
+        kwargs={"deployment": settings.HIMS_DEPLOYMENT_ID},
         queue=f"{settings.HIMS_CELERY_QUEUE_PREFIX}.outbox",
         headers={"hims_request_id": event.correlation_id},
     )
@@ -91,13 +92,38 @@ def dispatch_inline(event_id) -> None:
     )
 
 
-def process_event(event_id) -> None:
+def process_event(event_id, deployment: str | None = None) -> None:
     """Run every registered handler for an event, each at most once. Raises on failure so the
-    Celery task retries; already-completed handlers are skipped on retry."""
+    Celery task retries; already-completed handlers are skipped on retry.
+
+    Spec 13.5: a job with missing or stale hospital context must not run. A message addressed to
+    another deployment is refused before anything is read; an event whose own ``customer_id`` is
+    not this deployment (a copied database, a renamed deployment) is marked dead with the reason
+    and its handlers never run (HIMS-SEC-011 finding F-05).
+    """
+    if deployment is not None and deployment != settings.HIMS_DEPLOYMENT_ID:
+        logger.error(
+            "Background event refused: addressed to another deployment",
+            extra={"event_id": str(event_id), "deployment": deployment},
+        )
+        return
     try:
         event = OutboxEvent.objects.get(pk=event_id)
     except OutboxEvent.DoesNotExist:
         logger.warning("Outbox event not found", extra={"event_id": str(event_id)})
+        return
+    if event.customer_id != settings.HIMS_DEPLOYMENT_ID:
+        OutboxEvent.objects.filter(pk=event.pk).update(
+            status=OutboxEvent.Status.DEAD,
+            last_error=(
+                f"Belongs to deployment '{event.customer_id}', not this one "
+                f"('{settings.HIMS_DEPLOYMENT_ID}'); not run."
+            )[:500],
+        )
+        logger.error(
+            "Background event refused: it belongs to another deployment",
+            extra={"event_id": str(event.id), "deployment": event.customer_id},
+        )
         return
 
     for name, handler in handlers_for(event.event_type):

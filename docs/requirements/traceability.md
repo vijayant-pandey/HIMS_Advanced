@@ -4,7 +4,7 @@
 
 Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-requirement-ids-and-contract-docs.md)) traced to its requirement record, the API endpoints that deliver it ([contracts](../architecture/api-and-integrations/endpoints/README.md)), the backend test files that name it or call its endpoints, and the pull requests that delivered it (spec 25.3). Browser tests and manual steps are named in each record.
 
-90 of 122 marked Done in the backlog; 95 requirement records (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
+91 of 123 marked Done in the backlog; 96 requirement records (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
@@ -24,7 +24,7 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-PLAT-014 | Outbox and idempotency retention/archival jobs and runbook | Done | [record](platform-and-operations.md#hims-plat-014) | 4 | 1 files | #40, before PRs |
 | HIMS-PLAT-015 | Route-level code splitting in the SPA (first download 1,045 → 494 kB; CI bundle budget 500 kB; reload page after updates) | Done | [record](platform-and-operations.md#hims-plat-015) | — | — | #24, before PRs |
 | HIMS-UI-001 | Theme selector (white & blue/red/green, minimal black & white) across launcher, apps and admin | Done | [record](platform-and-operations.md#hims-ui-001) | — | 1 files | #5, before PRs |
-| HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event); plus 6 more colour themes (10 total) and a compact modern design | Done | [record](platform-and-operations.md#hims-ui-002) | 2 | 10 files | #5 |
+| HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event); plus 6 more colour themes (10 total) and a compact modern design | Done | [record](platform-and-operations.md#hims-ui-002) | 2 | 11 files | #5 |
 | HIMS-PLAT-016 | OpenTelemetry tracing for API, database, Celery and outbound HTTP; off by default, PHI-safe ([ADR-021](../decisions/ADR-021-tracing.md)) | Done | [record](platform-and-operations.md#hims-plat-016) | — | 1 files | #24, before PRs |
 | HIMS-PLAT-019 | Send traces to AWS (ADOT collector sidecar → X-Ray/CloudWatch), sampling and retention per environment (gap found in HIMS-PLAT-016) | To do | — | — | — | before PRs |
 | HIMS-PLAT-017 | Django admin operations console: RBAC-gated, audited, no deletion (ADR-016) | Done | [record](platform-and-operations.md#hims-plat-017) | — | 1 files | before PRs |
@@ -37,16 +37,16 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-OPS-011 | Real email provider per hosted environment (e.g. Amazon SES / Render-compatible SMTP); console email locally | To do | — | — | — | — |
 | HIMS-ORG-001 | Organization model (one per deployment) + `provision_organization` command (ADR-009) | Done | [record](organization-and-facilities.md#hims-org-001) | — | 1 files | before PRs |
 | HIMS-ORG-002 | `GET/PATCH /organization/` with versioning and audit | Done | [record](organization-and-facilities.md#hims-org-002) | 2 | 3 files | before PRs |
-| HIMS-FAC-001 | Facilities API: list/create/retrieve/update, scoped visibility, audit | Done | [record](organization-and-facilities.md#hims-fac-001) | 4 | 11 files | before PRs |
+| HIMS-FAC-001 | Facilities API: list/create/retrieve/update, scoped visibility, audit | Done | [record](organization-and-facilities.md#hims-fac-001) | 4 | 12 files | before PRs |
 | HIMS-FAC-002 | Departments API: create within facility scope, inactive-facility guard | Done | [record](organization-and-facilities.md#hims-fac-002) | 7 | 6 files | before PRs |
-| HIMS-FAC-003 | Facility admin UI (list + create with idempotency) | Done | [record](organization-and-facilities.md#hims-fac-003) | 4 | 11 files | before PRs |
+| HIMS-FAC-003 | Facility admin UI (list + create with idempotency) | Done | [record](organization-and-facilities.md#hims-fac-003) | 4 | 12 files | before PRs |
 | HIMS-FAC-004 | Location hierarchy: building → floor → ward/unit → room → bed (config only; allocation is Phase 3) | Done | [record](organization-and-facilities.md#hims-fac-004) | 23 | 4 files | #10 |
 | HIMS-FAC-005 | In-app screens to add/edit buildings, floors, wards, rooms and beds | Done | [record](organization-and-facilities.md#hims-fac-005) | 24 | 3 files | #12 |
 | HIMS-ORG-003 | Hospital-specific numbering schemes (MRN, encounter, invoice, claim) | Done | [record](organization-and-facilities.md#hims-org-003) | 7 | 1 files | #11, before PRs |
 | HIMS-ORG-004 | Feature flags per organization/country/facility | Done | [record](organization-and-facilities.md#hims-org-004) | 3 | 1 files | #13, before PRs |
 | HIMS-ORG-005 | Hospital settings screen (name, legal name, default time zone) | Done | [record](organization-and-facilities.md#hims-org-005) | 2 | 3 files | #17, before PRs |
 | HIMS-ORG-006 | Hospital logo and letterhead for printouts and emails (spec 4.1) | Done | [record](organization-and-facilities.md#hims-org-006) | 4 | 2 files | #44, before PRs |
-| HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done | [record](organization-and-facilities.md#hims-fac-006) | 11 | 13 files | #15 |
+| HIMS-FAC-006 | Departments screen + facility edit screen; close-in-order rules | Done | [record](organization-and-facilities.md#hims-fac-006) | 11 | 14 files | #15 |
 | HIMS-FAC-007 | Department head, services offered and operating hours | Done | [record](organization-and-facilities.md#hims-fac-007) | 8 | 6 files | #19 |
 | HIMS-FAC-008 | Bed board: every ward's beds and their status on one screen, no patients yet (spec 4.10) | Done | [record](organization-and-facilities.md#hims-fac-008) | 1 | 1 files | #43 |
 | HIMS-FAC-009 | Equipment register: item, location, status, service dates (spec 4.12; workflows wait for PO) | Done | [record](organization-and-facilities.md#hims-fac-009) | 7 | 1 files | #44 |
@@ -70,15 +70,15 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-IAM-018 | Clinical delegation (a consultant's patients, orders, signing rights) on top of cover arrangements (gap found in HIMS-IAM-017) | Moves to Phase 2 | — | — | — | — |
 | HIMS-IAM-019 | Self-service cover requests: the away person proposes cover, an administrator approves (optional; gap found in HIMS-IAM-017) | To do | — | — | — | — |
 | HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | Done | [record](identity-and-access.md#hims-iam-014) | 7 | 1 files | #47 |
-| HIMS-STAFF-001 | Staff members, department assignments, qualifications, credentials (spec 9.4) | Done | [record](staff-and-rota.md#hims-staff-001) | 13 | 14 files | before PRs |
+| HIMS-STAFF-001 | Staff members, department assignments, qualifications, credentials (spec 9.4) | Done | [record](staff-and-rota.md#hims-staff-001) | 13 | 15 files | before PRs |
 | HIMS-STAFF-002 | Controlled specialty/qualification catalogs (starter set — clinical informatics to own) | Done | [record](staff-and-rota.md#hims-staff-002) | 6 | 2 files | before PRs |
 | HIMS-STAFF-003 | Credential verification with segregation of duties | Done | [record](staff-and-rota.md#hims-staff-003) | 3 | 5 files | before PRs |
-| HIMS-STAFF-004 | Termination/suspension disables login | Done | [record](staff-and-rota.md#hims-staff-004) | 13 | 14 files | before PRs |
-| HIMS-STAFF-005 | Credential document upload (local storage, type/size checks, audited downloads; ADR-020) | Done | [record](staff-and-rota.md#hims-staff-005) | 15 | 15 files | #18 |
+| HIMS-STAFF-004 | Termination/suspension disables login | Done | [record](staff-and-rota.md#hims-staff-004) | 13 | 15 files | before PRs |
+| HIMS-STAFF-005 | Credential document upload (local storage, type/size checks, audited downloads; ADR-020) | Done | [record](staff-and-rota.md#hims-staff-005) | 15 | 16 files | #18 |
 | HIMS-STAFF-006 | Credential expiry alerts (scheduled job + notifications) + Licence expiry page | Done | [record](staff-and-rota.md#hims-staff-006) | 3 | 5 files | #18 |
-| HIMS-STAFF-007 | Staff detail/onboarding UI | Done | [record](staff-and-rota.md#hims-staff-007) | 13 | 14 files | #14 |
+| HIMS-STAFF-007 | Staff detail/onboarding UI | Done | [record](staff-and-rota.md#hims-staff-007) | 13 | 15 files | #14 |
 | HIMS-STAFF-010 | Catalog screens: designations, specialties, qualification types (add/edit/deactivate in the app) | Done | [record](staff-and-rota.md#hims-staff-010) | 9 | 3 files | #19 |
-| HIMS-STAFF-008 | Department-scoped staff directory visibility; staff documents a separate permission ([how-to](../workflows/staff-visibility.md)) | Done | [record](staff-and-rota.md#hims-staff-008) | 15 | 15 files | #36 |
+| HIMS-STAFF-008 | Department-scoped staff directory visibility; staff documents a separate permission ([how-to](../workflows/staff-visibility.md)) | Done | [record](staff-and-rota.md#hims-staff-008) | 15 | 16 files | #36 |
 | HIMS-STAFF-012 | Shift schedules, leave and on-call rotations (spec 4.3): Rota, Leave and My schedule pages, admin console, no double booking enforced by the database ([design](../architecture/data-architecture/rotas-and-leave.md), [ADR-024](../decisions/ADR-024-rotas-no-overlap-in-the-database.md)) | Done | [record](staff-and-rota.md#hims-staff-012) | 17 | 3 files | #35 |
 | HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) (gap found in HIMS-STAFF-012) | Done | [record](staff-and-rota.md#hims-staff-013) | 13 | 2 files | #45 |
 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head (gap found in HIMS-STAFF-012) | To do | — | — | — | — |
@@ -90,7 +90,8 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-AUD-002 | Access-denied events recorded outside rolled-back transactions | Done | [record](audit-and-security.md#hims-aud-002) | — | 2 files | before PRs |
 | HIMS-AUD-003 | Audit log screen for auditors in the app + CSV export | Done | [record](audit-and-security.md#hims-aud-003) | 3 | 7 files | #16, before PRs |
 | HIMS-SEC-010 | Audit tamper evidence: keyed hash chain over every audit event, sealed every minute, daily + on-demand integrity check, alerts to auditors, Audit integrity screen and admin console ([design](../architecture/data-architecture/audit-integrity.md)) | Done | [record](audit-and-security.md#hims-sec-010) | 4 | 1 files | #22 |
-| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Drafted with HIMS-COMP-005 | — | — | — | — |
+| HIMS-SEC-011 | Threat model and risk assessment (spec 23) | Done | [record](audit-and-security.md#hims-sec-011) | 1 | 1 files | this PR |
+| HIMS-SEC-021 | Independent security review and penetration test of the hosted system before real patient data (gap found in HIMS-SEC-011) | To do | — | — | — | — |
 | HIMS-SEC-012 | Security headers/CSP for the screens, admin console and API; reports of anything blocked ([how-to](../workflows/security-headers.md)) | Done | [record](audit-and-security.md#hims-sec-012) | 4 | 2 files | #32 |
 | HIMS-SEC-013 | Upload validation/malware scanning service | Done | [record](audit-and-security.md#hims-sec-013) | 2 | 1 files | #46 |
 | HIMS-SEC-014 | Trust `X-Forwarded-For` only from our own proxies, for audit addresses, sign-in register, rate limits and the console lock-out | Done | [record](audit-and-security.md#hims-sec-014) | — | 1 files | #32 |
@@ -129,4 +130,4 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-OPS-018 | Restore drill of a cloud database snapshot into a separate database, with the same checks as HIMS-OPS-009 (gap found in HIMS-OPS-009) | To do | — | — | — | — |
 | HIMS-OPS-017 | Response-time targets (SLOs) measured locally, before hosting (spec 18) | Done | [record](platform-and-operations.md#hims-ops-017) | 4 | 1 files | #49 |
 | HIMS-OPS-021 | Load test with many people at once against the hosted test environment before go-live: response times through the real web server and network, against the spec 18 targets (gap found in HIMS-OPS-017, which measures one request at a time on a PC) | To do | — | — | — | — |
-| HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features (spec 25.3, 29) | Done | [record](platform-and-operations.md#hims-doc-001) | 1 | 1 files | this PR |
+| HIMS-DOC-001 | Requirement records and per-endpoint contract docs for built features (spec 25.3, 29) | Done | [record](platform-and-operations.md#hims-doc-001) | 1 | 1 files | #50 |
