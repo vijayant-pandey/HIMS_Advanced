@@ -53,6 +53,7 @@
 22p. [Part 18p: retention purge and legal hold](#part-18p-retention-purge-and-legal-hold)
 22q. [Part 18q: performance checks and the US hospital in a new branch](#part-18q-performance-checks-and-the-us-hospital-in-a-new-branch)
 22r. [Part 18r: API endpoints and requirement records](#part-18r-api-endpoints-and-requirement-records)
+22s. [Part 18s: the security review](#part-18s-the-security-review)
 23. [Part 19: leaving staff (termination)](#part-19-leaving-staff-termination)
 24. [Part 20: safety checks (things that must be refused)](#part-20-safety-checks-things-that-must-be-refused)
 25. [Part 21: repeat the key steps for the US hospital](#part-21-repeat-the-key-steps-for-the-us-hospital)
@@ -1402,7 +1403,7 @@ Needs the docs PR (no migrations). Sign in as the administrator. Nothing changes
 
 | Step | Do this | Expected result |
 |---|---|---|
-| 18r.1 | Menu → **Access** → tab **API endpoints** | A line "239 endpoints: … need a permission, … are open without sign-in" and a table of every endpoint |
+| 18r.1 | Menu → **Access** → tab **API endpoints** | A line "241 endpoints: … need a permission, … are open without sign-in" and a table of every endpoint |
 | 18r.2 | **Access** = Anyone (no sign-in) | Only sign-in, invitation, password reset, CSRF, effective features and browser reports (12 rows) |
 | 18r.3 | **Search** `facilities` | `POST /api/v1/facilities/` needs `facilities.manage`, held by the Organization and Facility administrators; records `facility.created`; requirement HIMS-FAC-001 |
 | 18r.4 | **Search** `role-assignments` | The grant has a **Confirm it's you** chip |
@@ -1413,6 +1414,23 @@ Needs the docs PR (no migrations). Sign in as the administrator. Nothing changes
 | 18r.9 | Open `docs/architecture/api-and-integrations/endpoints/README.md` → any endpoint | Its contract: purpose, permission, scope, request and response, idempotency, version check, audit event, errors, tests |
 
 To refresh the documents after a change: in `backend` (venv active) `python manage.py api_contracts`.
+
+---
+
+## Part 18s: the security review
+
+Needs the security review PR (no migrations). Use the India hospital.
+
+| Step | Do this | Expected result |
+|---|---|---|
+| 18s.1 | Sign in as the auditor → **Compliance** → tab **Security review** | Reviewed 11/11/2026; seven findings F-01 to F-07 (five **Fixed**, F-06 **Accepted**); the ten spec 13.5 tests (five **Tested**, three "Tested for Phase 1 records", two "Waits for the feature"); Encryption keys: every stored secret uses the newest key; "Before real patient data" lists HIMS-SEC-021 |
+| 18s.2 | Admin console (as the administrator) → **Security status** at the top right | New sections **Encryption keys for stored secrets** and **Security review** with the same findings |
+| 18s.3 | Sign out. Sign in as the nurse with a **wrong** password 10 times | Each time "Email or password is incorrect." |
+| 18s.4 | Now the **right** password | "Too many wrong passwords for this email. Sign-in is paused for 15 minutes…" (the same appears for an email that has no account) |
+| 18s.5 | Wait 15 minutes (or restart HIMS on your PC, which clears the count), then sign in | Signs in |
+| 18s.6 | As the administrator open **Bed board** and leave the tab alone for 31 minutes (it keeps refreshing itself) | The next refresh shows the sign-in page: refreshes do not count as use |
+| 18s.7 | **Audit log** (auditor), area "Sign-in and security", event "Signed out of devices"; then event "Failed sign-in" | An entry with reason `expired_idle` for step 18s.6; failed sign-ins with reason `paused` for step 18s.4 |
+| 18s.8 | Launcher window (in `backend`, venv active): `python manage.py rotate_encryption_keys --dry-run` | "Would encrypt again: 0 …" and "Values needing an older key now: 0." (nothing to do until a new key is added: [encryption keys](../workflows/encryption-keys.md)) |
 
 ---
 

@@ -44,6 +44,7 @@ import { ConsoleAccessTab } from "./ConsoleAccessTab";
 import { DatabaseAccessTab } from "./DatabaseAccessTab";
 import { RetentionTab } from "./RetentionTab";
 import { ScanningTab } from "./ScanningTab";
+import { SecurityReviewTab } from "./SecurityReviewTab";
 import { ReportIncidentDialog, SEVERITIES } from "./ReportIncidentDialog";
 
 const when = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -576,6 +577,7 @@ export function CompliancePage() {
         <Tab value="database" label="Database access" />
         <Tab value="scanning" label="Scanning and traces" />
         <Tab value="retention" label="Retention" />
+        <Tab value="review" label="Security review" />
       </Tabs>
       {tab === "requirements" && <RequirementsTab canManage={canManage} />}
       {tab === "risks" && <RisksTab canManage={canManage} />}
@@ -585,6 +587,7 @@ export function CompliancePage() {
       {tab === "database" && <DatabaseAccessTab />}
       {tab === "scanning" && <ScanningTab canManage={canManage} />}
       {tab === "retention" && <RetentionTab canManage={canManage} />}
+      {tab === "review" && <SecurityReviewTab />}
     </Stack>
   );
 }

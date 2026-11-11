@@ -421,7 +421,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
-| Automated test cases | `apps/access_control/tests/test_authorization.py::test_facility_scoped_user_only_sees_their_facility`, `apps/facilities/tests/test_facilities_api.py::test_stale_update_is_rejected_and_change_is_audited`, `common/tests/test_api_conventions.py::test_unknown_resource_is_404_problem`, `common/tests/test_database_roles.py::test_the_app_still_does_all_its_work_as_its_own_user` |
+| Automated test cases | `apps/access_control/tests/test_authorization.py::test_facility_scoped_user_only_sees_their_facility`, `apps/compliance/tests/test_security_review.py::test_a_record_or_session_from_another_hospital_is_not_found`, `apps/facilities/tests/test_facilities_api.py::test_stale_update_is_rejected_and_change_is_audited`, `common/tests/test_api_conventions.py::test_unknown_resource_is_404_problem`, `common/tests/test_database_roles.py::test_the_app_still_does_all_its_work_as_its_own_user` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
 ### PATCH /api/v1/facilities/{pk}/

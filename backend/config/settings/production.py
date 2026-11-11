@@ -23,9 +23,11 @@ from .base import (
     HIMS_ENVIRONMENT,
     HIMS_FIELD_ENCRYPTION_KEYS,
     HIMS_MFA_REQUIRED_FOR_PRIVILEGED,
+    HIMS_SESSION_MAX_SECONDS,
     HIMS_TRUSTED_PROXIES,
     HOSTED_STORAGES,
     MIDDLEWARE,
+    SESSION_COOKIE_AGE,
     env,
 )
 
@@ -68,6 +70,10 @@ for _entry in HIMS_AUDIT_CHAIN_KEYS:
             "(id up to 32 characters, secret at least 32 characters)."
         )
 
+if not 60 * 60 <= HIMS_SESSION_MAX_SECONDS <= 24 * 60 * 60:
+    raise ImproperlyConfigured("HIMS_SESSION_MAX_SECONDS must be between 1 and 24 hours.")
+if not 5 * 60 <= SESSION_COOKIE_AGE <= 60 * 60:
+    raise ImproperlyConfigured("HIMS_SESSION_IDLE_SECONDS must be between 5 and 60 minutes.")
 if not 1 <= HIMS_CONFIRM_IDENTITY_MINUTES <= 60:
     raise ImproperlyConfigured("HIMS_CONFIRM_IDENTITY_MINUTES must be between 1 and 60.")
 if not HIMS_TRUSTED_PROXIES:

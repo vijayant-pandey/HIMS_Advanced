@@ -640,6 +640,6 @@ their "actors" are every caller and their evidence is the shared tests in `backe
 | Audit requirement | None (read only) |
 | Idempotency/concurrency | Read only |
 | Integration dependencies | None |
-| Acceptance criteria | 239 endpoints documented in the 29.5 template; every Done requirement has a complete record; the app and console list match the code |
+| Acceptance criteria | Every endpoint (240 when built) documented in the 29.5 template; every Done requirement has a complete record; the app and console list match the code |
 | Test evidence | `common/contracts/tests/test_contracts.py`; frontend `AccessPage.test.tsx`; manual test Part 18r |
 | Release risk | None (documents and a read-only list) |

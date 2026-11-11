@@ -42,9 +42,14 @@ export function useRotaWeek(department: string, start: string) {
 }
 
 export function useRotaNow() {
+  const queryClient = useQueryClient();
   return useQuery<RotaNow, ApiError>({
     queryKey: [...rotaKey, "now"],
-    queryFn: ({ signal }) => api.get<RotaNow>("/rota/now/", { signal }),
+    queryFn: ({ queryKey, signal }) =>
+      api.get<RotaNow>("/rota/now/", {
+        signal,
+        background: queryClient.getQueryData(queryKey) !== undefined, // a timed refresh
+      }),
     refetchInterval: 5 * 60_000,
   });
 }

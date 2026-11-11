@@ -21,9 +21,9 @@ def dispatch_pending() -> int:
     retry_backoff_max=900,
     retry_jitter=True,
 )
-def handle_event(self, event_id: str) -> None:
+def handle_event(self, event_id: str, deployment: str | None = None) -> None:
     try:
-        process_event(event_id)
+        process_event(event_id, deployment=deployment)
     except Exception as exc:
         logger.warning(
             "Outbox handler failed; retrying",

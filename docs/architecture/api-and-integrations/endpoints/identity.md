@@ -446,7 +446,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | Passkey checks (WebAuthn) done on the server; no outside service |
 | Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
-| Expected error codes | 400 `VALIDATION_ERROR`, 401 `INVALID_CREDENTIALS`, 429 `RATE_LIMITED` |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `INVALID_CREDENTIALS`, 429 `RATE_LIMITED`, 429 `SIGN_IN_PAUSED` |
 | Rate / volume assumptions | login: 10/min per address (`HIMS_THROTTLE_LOGIN`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `apps/identity/tests/test_accounts.py::test_switch_off_and_on_ends_sessions_and_is_audited`, `apps/identity/tests/test_auth.py::test_login_requires_csrf_token`, `common/tests/test_client_ip_and_headers.py::test_faking_the_header_does_not_get_around_the_sign_in_limit`, `common/tests/test_log_safety.py::test_fields_named_like_secrets_or_payloads_are_hidden_others_kept`, `common/tests/test_secrets_never_logged.py::test_no_secret_reaches_a_log_the_audit_log_or_a_stored_error` |
@@ -743,7 +743,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Actor / permission required | Anyone signed in, for their own account or the hospital-wide basics |
 | Customer / facility scope | — |
 | Request schema | `NoAccessReportRequest`: `page` (≤ 200 characters) |
-| Response schema | 201 `NoAccessReference` |
+| Response schema | 200 `NoAccessReference`, 201 `NoAccessReference` |
 | Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
 | Allowed current states | Any (no state rule) |
 | Resulting state | As in the purpose above; the new state is in the response and the audit event |
@@ -754,10 +754,10 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
-| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 429 `RATE_LIMITED` |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 409 `CONFLICT`, 409 `HAS_ACCESS`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
-| Automated test cases | `apps/identity/tests/test_no_access.py::test_no_access_page_visit_is_audited_with_its_reference`, `apps/identity/tests/test_no_access.py::test_no_access_report_requires_sign_in` |
+| Automated test cases | `apps/compliance/tests/test_security_review.py::test_no_access_reports_cannot_flood_the_audit_log`, `apps/identity/tests/test_no_access.py::test_no_access_page_visit_is_audited_with_its_reference`, `apps/identity/tests/test_no_access.py::test_no_access_report_requires_sign_in` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
 ### GET /api/v1/auth/passkeys/

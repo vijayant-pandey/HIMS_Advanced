@@ -27,7 +27,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
-| Phase 1 tickets | 122: ✅ 98 done or approved · 24 left: 4 🔓 can be built now (all optional or later), 1 at the end of Phase 1 (security review), 15 hosting stage at the very end (Oracle Cloud), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
+| Phase 1 tickets | 123: ✅ 99 done or approved · 24 left: 4 🔓 can be built now (all optional or later), 16 hosting stage at the very end (Oracle Cloud; next: the hosting analysis, HIMS-OPS-020), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
@@ -38,7 +38,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application ~99%, cloud ~10% | 98 (PR #1–#49 and #30, the docs group, 2 approvals) | The security review next; 4 optional items (section 4a); hosting stage | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~10% | 99 (PR #1–#50 and #30, the security review, 2 approvals) | Hosting stage (section 4b, starting with HIMS-OPS-020); 4 optional items (section 4a) | Hosting: Oracle Cloud at the very end (ADR-027) | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -61,7 +61,7 @@ PACS/LIS/drug database/SMS.
 | 10 | Concurrency | 🟡 | Bed allocation race; domain duplicates | P0 ADT, domains |
 | 11 | Insurance and Stedi | ⬜ | All | PAYER |
 | 12 | Interoperability (FHIR, ABDM) | ⬜ | All | Partners, LEGAL |
-| 13 | Security and privacy | 🟡 | Patient scope (passkeys: done, HIMS-IAM-014; error text in traces: done, HIMS-SEC-020; virus scanning: done, HIMS-SEC-013); break-glass (console allow-list: done, HIMS-SEC-015) | 🔓 partly; CLIN; AWS |
+| 13 | Security and privacy | 🟡 | Patient scope; break-glass (Phase 2); independent penetration test (HIMS-SEC-021). Done: passkeys (HIMS-IAM-014), error text in traces (HIMS-SEC-020), virus scanning (HIMS-SEC-013), console allow-list (HIMS-SEC-015), the Phase 1 security review with session limits, per-account sign-in pause and key rotation (HIMS-SEC-011) | 🔓 partly; CLIN; AWS |
 | 14 | Redis/Celery | 🟡 | Alarms on queue health (monitoring and clean-up built, HIMS-PLAT-014) | Hosting stage |
 | 15 | React frontend | 🟡 1 of 7 workspaces | Clinical workspaces; patient chart | Domains |
 | 16 | REST API | 🟡 4 of 18 endpoint groups | Domain endpoints | Domains |
@@ -71,7 +71,7 @@ PACS/LIS/drug database/SMS.
 | 20 | Roadmap | 🟡 Phase 1 | Phases 1 (rest) to 6 | See section 2 |
 | 21 | Vertical slice (14 steps) | 🟡 4 done | Steps 5–14 | Phases 2–5 |
 | 22 | Architecture decisions | 🟡 | Review ADR-009 to ADR-027 one by one (accepted for now, 2026-11-08) | PO |
-| 23 | Readiness checklist (45) | 🟡 2 done, 7 partial | 36 items | CLIN, LEGAL, AWS, PAYER |
+| 23 | Readiness checklist (45) | 🟡 3 done, 7 partial | 35 items | CLIN, LEGAL, AWS, PAYER |
 | 24 | Reference links | n/a | — | — |
 | 25 | Delivery standard | 🟡 90% | Records for each new requirement as built; release evidence per environment (records for all built ones done, HIMS-DOC-001) | Hosting |
 | 26 | P0 before each domain | 🟡 | P0 for Phases 3–6 (Phase 2 approved for now, 2026-11-08) | PO, CLIN |
@@ -106,7 +106,7 @@ fit, so nothing is forgotten.
 | 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ✅ done |
 | 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ✅ done |
 
-**Next: the security review (HIMS-SEC-011).** The table below keeps each task's own row.
+**Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step). **Next: the hosting stage on Oracle Cloud, starting with the hosting analysis (HIMS-OPS-020, section 4b).** The table below keeps each task's own row.
 
 | Step | Spec § | Ticket | Task | Status | Why this order |
 |---|---|---|---|---|---|
@@ -133,7 +133,7 @@ fit, so nothing is forgotten.
 | 19b | 4.3 | HIMS-STAFF-015 | Minimum staffing per shift, gap alerts (the hospital sets the numbers) | ✅ done (group 2) | Unblocked 2026-11-08 (CLIN) |
 | 19c | 4.3 | HIMS-STAFF-013 | Leave balances and entitlements (the hospital sets them) | ✅ done (group 2) | Unblocked 2026-11-08 (PO) |
 | 19d | 4.25, 28 | HIMS-COMP-006 | Retention purge with legal hold (the hospital sets the periods; nothing deleted until set) | ✅ done (group 5) | Unblocked 2026-11-08 (LEGAL) |
-| 19e | 13 | HIMS-SEC-011 | Security review of the threat model | ⬜ **next** | PO: when the whole of Phase 1 is complete (the buildable queue is now done) |
+| 19e | 13 | HIMS-SEC-011 | Security review of the threat model | ✅ done | PO: when the whole of Phase 1 is complete; seven findings, five fixed ([security review](../compliance/security-review.md)) |
 | — | 4.4 | HIMS-IAM-019 | Self-service cover requests | ⬜ optional | When hospitals ask |
 | — | 4.3 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head | ⬜ optional | When hospitals ask |
 | — | 4.25 | HIMS-SEC-017 | Integrity check as a background job | ⬜ later | When the audit log nears ~1 million records |
@@ -167,7 +167,8 @@ fit, so nothing is forgotten.
 | 3 | — | Approve the RBAC document, clinical role permissions | ✅ approved for now 2026-11-08 |
 | 4.25 | HIMS-COMP-006 | Retention purge with legal hold | ✅ unblocked 2026-11-08: step 19d, built (group 5) |
 | 23 | HIMS-COMP-001…005 | Counsel and hospital review of the compliance pack | ✅ approved for now 2026-11-08 |
-| 23 | HIMS-SEC-011 | Security reviewer for the threat model | Scheduled: last step of Phase 1 (19e) |
+| 23 | HIMS-SEC-011 | Security reviewer for the threat model | ✅ done 2026-11-11 (internal review, step 19e) |
+| 13, 23 | HIMS-SEC-021 | Independent security review and penetration test of the hosted system, before real patient data (gap found in HIMS-SEC-011) | Hosting stage |
 | 4.1 | — | Tax rules | Moves to Phase 5 (billing) |
 
 ### 4c. Phase 2 onwards
@@ -235,7 +236,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 
 ## 6. Done so far
 
-98 Phase 1 items: tickets delivered in PR #1–#49 (and #30) and the docs group PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
+99 Phase 1 items: tickets delivered in PR #1–#50 (and #30) and the security review PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
 tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and
 [work queue](spec-status.md#next-work-queue-dependency-free-in-recommended-order).
 

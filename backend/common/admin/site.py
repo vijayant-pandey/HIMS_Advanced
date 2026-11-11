@@ -69,18 +69,29 @@ class HimsAdminAuthenticationForm(AdminAuthenticationForm):
         return f"admin-login-failures:{ip}"
 
     def clean(self):
+        from apps.identity import sign_in_limits
+
         key = self._lockout_key()
+        email = self.cleaned_data.get("username") or ""
         if cache.get(key, 0) >= MAX_FAILED_LOGINS:
             raise ValidationError(
                 "Too many failed sign-in attempts. Try again in 15 minutes.", code="locked"
             )
         try:
+            # Per account as well as per address, shared with the app's sign-in (HIMS-SEC-011).
+            sign_in_limits.check(email)
+        except sign_in_limits.SignInPaused as exc:
+            self._audit(outcome="failure")
+            raise ValidationError(str(exc.detail), code="locked") from exc
+        try:
             cleaned = super().clean()
             self._check_second_factor()
         except ValidationError:
             cache.set(key, cache.get(key, 0) + 1, LOCKOUT_SECONDS)
+            sign_in_limits.record_failure(email)
             self._audit(outcome="failure")
             raise
+        sign_in_limits.clear(email)
         self._audit(outcome="success", actor=self.get_user())
         return cleaned
 

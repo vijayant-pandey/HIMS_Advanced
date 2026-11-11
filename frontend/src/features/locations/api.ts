@@ -52,12 +52,15 @@ export const BOARD_REFRESH_MS = 30_000;
 
 /** The bed board for one facility (default: the first one the person can see). */
 export function useBedBoard(facilityId: string | undefined) {
+  const queryClient = useQueryClient();
   return useQuery<BedBoard, ApiError>({
     queryKey: [...locationsKey, "board", facilityId ?? "first"],
-    queryFn: ({ signal }) =>
+    queryFn: ({ queryKey, signal }) =>
       api.get<BedBoard>("/bed-board/", {
         query: facilityId ? { facility: facilityId } : undefined,
         signal,
+        // A wall screen refreshing itself is not someone using HIMS (HIMS-SEC-011).
+        background: queryClient.getQueryData(queryKey) !== undefined,
       }),
     refetchInterval: BOARD_REFRESH_MS,
     refetchOnWindowFocus: true,

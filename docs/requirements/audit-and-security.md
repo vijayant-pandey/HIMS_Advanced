@@ -80,6 +80,25 @@ Spec sections 4.25, 13. Format: [README](README.md). Endpoints:
 | Test evidence | `apps/audit/tests/test_integrity.py`; manual test Part 17 |
 | Release risk | Compliance. Copy of the chain head off-site: HIMS-SEC-016 (hosting) |
 
+### HIMS-SEC-011
+
+| Field | Record |
+|---|---|
+| ID and title | HIMS-SEC-011 Threat model and risk assessment, reviewed: the Phase 1 security review |
+| Business/clinical reason | Spec 23 asks for a completed threat model and risk assessment; the PO scheduled the review for the end of Phase 1 (2026-11-08). Owner: PO |
+| Actors | `compliance.view` (Security review tab); console users with `compliance.view` (Security status); every signed-in person (session limits); everyone signing in (per-account pause); the operator (`rotate_encryption_keys`) |
+| Preconditions | Phase 1 built |
+| Main success path | Every threat checked against the code; findings fixed with tests; the review kept in code and shown on the Compliance page, the console and a generated document |
+| Alternate/failure paths | A screen left open ends its session after 30 minutes without use, any session after 12 hours; 10 wrong passwords for one email in 15 minutes pause it (429 `SIGN_IN_PAUSED`); a background event of another hospital is marked failed and never runs; a value no listed key can read stops the key rotation with nothing changed |
+| Data effects | `user_sessions` (expired), `user_mfa_devices` and `notifications` (re-encrypted), `outbox_events` (refused events), `audit_events` |
+| Security classification | Security evidence (internal) |
+| Audit requirement | `auth.sessions.ended` (reason `expired_idle` or `expired_time_limit`), `auth.login_failed` (reason `paused`), `database.encryption_rotated` |
+| Idempotency/concurrency | Key rotation in one transaction under row locks, repeatable; the per-account count in the shared cache |
+| Integration dependencies | Shared cache (Redis) when hosted, so every server process counts together |
+| Acceptance criteria | A screen refreshing itself is signed out after 30 minutes nobody uses it; a password cannot be guessed faster from many addresses; an old key can be removed after rotation; the ten spec 13.5 tests are each tested or waiting for their feature |
+| Test evidence | `apps/compliance/tests/test_security_review.py`; frontend `SecurityReviewTab.test.tsx`, `client.test.ts`; manual test Part 18s; [security review](../compliance/security-review.md) |
+| Release risk | Usability: wall screens sign out after 30 minutes untouched; a colleague can pause someone's sign-in for 15 minutes. Rollback: the limits are settings (`HIMS_SESSION_IDLE_SECONDS`, `HIMS_SESSION_MAX_SECONDS`, `HIMS_SIGN_IN_MAX_FAILURES`) |
+
 ### HIMS-SEC-012
 
 | Field | Record |

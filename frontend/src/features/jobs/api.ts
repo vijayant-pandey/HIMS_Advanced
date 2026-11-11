@@ -8,9 +8,14 @@ const key = ["background-jobs"] as const;
 export type Show = "attention" | "failed" | "waiting" | "dismissed";
 
 export function useJobHealth() {
+  const queryClient = useQueryClient();
   return useQuery<OutboxHealth, ApiError>({
     queryKey: [...key, "health"],
-    queryFn: ({ signal }) => api.get<OutboxHealth>("/background-jobs/health/", { signal }),
+    queryFn: ({ queryKey, signal }) =>
+      api.get<OutboxHealth>("/background-jobs/health/", {
+        signal,
+        background: queryClient.getQueryData(queryKey) !== undefined, // a timed refresh
+      }),
     refetchInterval: 30_000,
   });
 }

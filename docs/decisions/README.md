@@ -38,3 +38,4 @@ default, awaiting the named approver), **Superseded**.
 | [030](ADR-030-retention-purge-and-legal-hold.md) | Retention purge limited to housekeeping records, with waiting periods and legal holds | Proposed |
 | [031](ADR-031-performance-targets-and-volume-check.md) | Response-time targets per screen, an index check that follows the code, and a volume check on a throw-away copy | Proposed |
 | [032](ADR-032-requirement-ids-and-contract-docs.md) | Ticket IDs as requirement IDs; endpoint contracts generated from the code | Proposed |
+| [033](ADR-033-session-limits-and-sign-in-pause.md) | Session limits background refreshes cannot defeat, and a sign-in pause per account | Proposed |

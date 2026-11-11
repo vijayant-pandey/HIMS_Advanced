@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.contrib.auth import authenticate, login, logout
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from drf_spectacular.utils import extend_schema
@@ -14,10 +17,18 @@ from apps.audit.services import AuditAction, record_audit_event
 from apps.features.catalog import F
 from apps.features.services import require_enabled
 from apps.organizations.models import Organization
-from common.exceptions import DomainError
+from common.exceptions import ConflictError, DomainError
 from common.throttling import ScopedThrottle
 
-from .. import confirmation, invitations, mfa, passkeys, password_reset, sessions
+from .. import (
+    confirmation,
+    invitations,
+    mfa,
+    passkeys,
+    password_reset,
+    sessions,
+    sign_in_limits,
+)
 from ..models import Passkey, UserSession
 from .serializers import (
     ConfirmIdentitySerializer,
@@ -118,10 +129,22 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"].strip().lower()
+        try:
+            sign_in_limits.check(email)  # per account, on top of the per-address rate limit
+        except sign_in_limits.SignInPaused:
+            record_audit_event(
+                action=AuditAction.AUTH_LOGIN_FAILED,
+                resource_type="session",
+                request=request,
+                outcome=AuditEvent.Outcome.FAILURE,
+                metadata={"reason": "paused"},
+            )
+            raise
         user = authenticate(
             request._request, email=email, password=serializer.validated_data["password"]
         )
         if user is None:
+            sign_in_limits.record_failure(email)
             # Same response for unknown, inactive and wrong-password accounts (spec 13.1).
             record_audit_event(
                 action=AuditAction.AUTH_LOGIN_FAILED,
@@ -130,6 +153,7 @@ class LoginView(APIView):
                 outcome=AuditEvent.Outcome.FAILURE,
             )
             raise InvalidCredentials("Email or password is incorrect.")
+        sign_in_limits.clear(email)
         if mfa.confirmed_device(user) is not None:
             mfa.begin_challenge(request, user)
             return Response(
@@ -322,14 +346,34 @@ class NoAccessReportView(APIView):
 
     Records an ``access.none_assigned`` audit event and returns its reference number (the
     request ID), which the "no access yet" page shows so an administrator can find the event.
+    The audit log cannot be cleaned up, so one event per person per 10 minutes is enough, and
+    someone who already has access records nothing (HIMS-SEC-011 finding F-04).
     """
 
     permission_classes = [IsAuthenticated]
+    REPEAT_MINUTES = 10
 
-    @extend_schema(request=NoAccessReportSerializer, responses={201: NoAccessReferenceSerializer})
+    @extend_schema(
+        request=NoAccessReportSerializer,
+        responses={200: NoAccessReferenceSerializer, 201: NoAccessReferenceSerializer},
+    )
     def post(self, request):
         serializer = NoAccessReportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        if list_grants(request.user):
+            raise ConflictError("You already have access.", code="HAS_ACCESS")
+        recent = (
+            AuditEvent.objects.filter(
+                action=AuditAction.ACCESS_NONE_ASSIGNED,
+                resource_id=str(request.user.pk),
+                occurred_at__gte=timezone.now() - timedelta(minutes=self.REPEAT_MINUTES),
+            )
+            .order_by("-occurred_at")
+            .values_list("request_id", flat=True)
+            .first()
+        )
+        if recent:
+            return Response({"reference": recent})
         event = record_audit_event(
             action=AuditAction.ACCESS_NONE_ASSIGNED,
             resource_type="user",
@@ -338,7 +382,7 @@ class NoAccessReportView(APIView):
             outcome=AuditEvent.Outcome.DENIED,
             metadata={
                 "page": serializer.validated_data["page"],
-                "grant_count": len(list_grants(request.user)),
+                "grant_count": 0,
             },
         )
         return Response({"reference": event.request_id}, status=status.HTTP_201_CREATED)
