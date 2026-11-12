@@ -69,3 +69,16 @@ or `requirements-matrix.md` by hand**: change `apps/compliance/catalog.py` and r
 Things outside our control can still fail a check: a newly published vulnerability in a package
 (`pip-audit`, `npm audit`) or a GitHub outage. Those are reported as they are and fixed in their
 own PR (for example, Dependabot updates, HIMS-PLAT-013).
+
+**Lessons from 2026-11-12 (HIMS-IAM-021, HIMS-QA-004)**, caught locally by the full test run before
+any push:
+
+* A new audit area (the first part of an event name, e.g. `support.`) must also be added to the
+  Audit log screen's area list, `frontend/src/features/audit/labels.ts`
+  (`test_every_audit_area_is_in_the_apps_area_list`).
+* Never use `date.today()` or `timezone.localdate()` outside `apps/organizations/dates.py`: "today"
+  is the hospital's day, from its time zone (`test_nothing_works_out_today_on_the_utc_clock`).
+* Scripts that edit files on Windows must write bytes (or `newline="
+"`); `write_text` turns every
+  line ending into CRLF. Git turns them back on commit (`.gitattributes`), but the diff is noisier.
+

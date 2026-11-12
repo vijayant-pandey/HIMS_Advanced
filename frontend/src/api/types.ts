@@ -147,6 +147,10 @@ export type AccessReviewSchedule = Schemas["AccessReviewSchedule"];
 export type AccessDelegation = Schemas["AccessDelegation"];
 export type AccessDelegationCreated = Schemas["AccessDelegationCreated"];
 export type AccessDelegationCreateRequest = Schemas["AccessDelegationCreateRequest"];
+// Supplier support access, the "locked box" (HIMS-IAM-021).
+export type SupportAccess = Schemas["SupportAccess"];
+export type SupportAccessOptions = Schemas["SupportAccessOptions"];
+export type SupportAccessRequestRequest = Schemas["SupportAccessRequestRequest"];
 export type DelegableAccess = Schemas["DelegableAccess"];
 export type AccessReviewStartRequest = Schemas["AccessReviewStartRequest"];
 export type AccessReviewDecideRequest = Schemas["AccessReviewDecideRequest"];

@@ -310,3 +310,104 @@ class AccessDelegation(OrganizationOwnedModel, VersionedModel):
         if now >= self.ends_at:
             return self.Status.FINISHED
         return self.Status.ACTIVE
+
+
+class SupportAccess(OrganizationOwnedModel, VersionedModel):
+    """Supplier support access, the "locked box" (spec 7.2 "customer support access requests and
+    approval workflow", 7.4 "emergency support access ... audit it"; HIMS-IAM-021).
+
+    The software supplier's support account holds no hospital access of its own. It asks for one
+    role for a limited time with a reason: the hospital's administrator approves or refuses, or,
+    in an emergency, the access opens at once. The access is an ordinary, time-limited role
+    assignment (``assignment``), so it ends by itself. While it lasts, every request the account
+    makes is recorded in the audit log. Never deleted.
+    """
+
+    class Kind(models.TextChoices):
+        STANDARD = "standard", "Asked for, approved by the hospital"
+        EMERGENCY = "emergency", "Emergency (opened at once)"
+
+    class State(models.TextChoices):
+        WAITING = "waiting", "Waiting for the hospital"
+        GRANTED = "granted", "Access given"
+        REFUSED = "refused", "Refused"
+        CANCELLED = "cancelled", "Cancelled by the supplier"
+        ENDED_EARLY = "ended_early", "Ended early"
+
+    class Status(models.TextChoices):
+        """What the screens show: ``State`` plus whether given access is still running."""
+
+        WAITING = "waiting", "Waiting for the hospital"
+        ACTIVE = "active", "Active now"
+        FINISHED = "finished", "Finished (time ran out)"
+        REFUSED = "refused", "Refused"
+        CANCELLED = "cancelled", "Cancelled by the supplier"
+        ENDED_EARLY = "ended_early", "Ended early"
+
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="+",
+        help_text="The supplier's support account that asked.",
+    )
+    role = models.ForeignKey(
+        Role, on_delete=models.PROTECT, related_name="+", help_text="The access asked for."
+    )
+    kind = models.CharField(max_length=16, choices=Kind.choices, default=Kind.STANDARD)
+    reason = models.TextField(help_text="Why the supplier needs access (no patient details).")
+    hours = models.PositiveSmallIntegerField(help_text="How long the access lasts once given.")
+    state = models.CharField(max_length=16, choices=State.choices, default=State.WAITING)
+    decided_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_note = models.TextField(blank=True)
+    starts_at = models.DateTimeField(null=True, blank=True)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    assignment = models.OneToOneField(
+        RoleAssignment,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="support_access",
+        help_text="The time-limited access given.",
+    )
+    ended_at = models.DateTimeField(null=True, blank=True)
+    ended_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    end_reason = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "support_access"
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(hours__gte=1) & Q(hours__lte=24), name="support_access_hours_range"
+            ),
+            models.CheckConstraint(
+                condition=~Q(state="granted")
+                | (Q(starts_at__isnull=False) & Q(ends_at__gt=models.F("starts_at"))),
+                name="support_access_granted_has_period",
+            ),
+            models.UniqueConstraint(
+                fields=["requested_by"],
+                condition=Q(state="waiting"),
+                name="support_access_one_waiting",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["state", "-created_at"], name="support_access_state_idx"),
+            models.Index(fields=["requested_by", "ends_at"], name="support_access_person_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.requested_by} asks for {self.role} ({self.get_kind_display()})"
+
+    @property
+    def status(self) -> str:
+        if self.state != self.State.GRANTED:
+            return self.state
+        if self.ends_at is not None and timezone.now() >= self.ends_at:
+            return self.Status.FINISHED
+        return self.Status.ACTIVE

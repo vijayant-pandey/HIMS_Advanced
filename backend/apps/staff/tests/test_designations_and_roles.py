@@ -17,6 +17,7 @@ EXPECTED_SYSTEM_ROLES = {
     "bed-manager",
     "compliance-officer",
     "equipment-officer",
+    "supplier-support",
 }
 
 

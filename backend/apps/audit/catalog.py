@@ -28,6 +28,7 @@ CATEGORIES: dict[str, str] = {
     "performance": "Performance checks",
     "database": "Database access",
     "outbox": "Background jobs",
+    "support": "Supplier support access",
 }
 
 LABELS: dict[str, str] = {
@@ -129,6 +130,13 @@ LABELS: dict[str, str] = {
     A.CREDENTIAL_EXPIRY_ALERT_SENT: "Licence expiry alert sent",
     A.ACCESS_DELEGATION_CREATED: "Cover arranged (access lent for a time)",
     A.ACCESS_DELEGATION_ENDED: "Cover ended early",
+    A.SUPPORT_ACCESS_REQUESTED: "Supplier asked for support access",
+    A.SUPPORT_ACCESS_APPROVED: "Supplier support access approved",
+    A.SUPPORT_ACCESS_REFUSED: "Supplier support access refused",
+    A.SUPPORT_ACCESS_CANCELLED: "Supplier cancelled a support access request",
+    A.SUPPORT_ACCESS_EMERGENCY_OPENED: "Supplier opened emergency support access",
+    A.SUPPORT_ACCESS_ENDED: "Supplier support access ended early",
+    A.SUPPORT_ACCESS_USED: "Supplier support: request made during support access",
     A.COMPLIANCE_REQUIREMENT_UPDATED: "Compliance requirement updated",
     A.COMPLIANCE_RISK_CREATED: "Risk added",
     A.COMPLIANCE_RISK_UPDATED: "Risk updated",

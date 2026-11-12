@@ -31,6 +31,7 @@ export const CATEGORIES: { value: string; label: string }[] = [
   { value: "database", label: "Database access" },
   { value: "outbox", label: "Background jobs" },
   { value: "performance", label: "Performance checks" },
+  { value: "support", label: "Supplier support access" },
 ];
 
 export function who(event: AuditEvent): string {

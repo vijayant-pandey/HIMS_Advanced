@@ -25,7 +25,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Numbering (MRN, visit, invoice, claim numbers)**: [`numbering_schemes`](#numbering_schemes), [`numbering_counters`](#numbering_counters), [`issued_numbers`](#issued_numbers)
 - **Feature settings**: [`feature_flags`](#feature_flags)
 - **Identity: accounts, sign-in, two-factor**: [`users`](#users), [`user_invitations`](#user_invitations), [`user_password_resets`](#user_password_resets), [`user_sessions`](#user_sessions), [`user_mfa_devices`](#user_mfa_devices), [`user_mfa_recovery_codes`](#user_mfa_recovery_codes), [`user_passkeys`](#user_passkeys)
-- **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations)
+- **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations), [`support_access`](#support_access)
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts), [`clinical_privileges`](#clinical_privileges), [`staff_privileges`](#staff_privileges)
 - **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests), [`staffing_requirements`](#staffing_requirements), [`staffing_gap_alerts`](#staffing_gap_alerts), [`leave_entitlements`](#leave_entitlements), [`leave_balance_adjustments`](#leave_balance_adjustments)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
@@ -493,6 +493,7 @@ A login identity within this deployment.
 | `is_active` | boolean | no | `True` | — | Person | Internal: Business data | Switched on (true) or off (false); rows are switched off, not deleted |
 | `date_joined` | timestamp with time zone | no | now() | — | Person | Internal: Business data | Date joined |
 | `password_changed_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Password changed at |
+| `support_access_until` | timestamp with time zone | yes | — | — | Person | Internal: Business data | The supplier's support access runs until then; every request is recorded. |
 
 <a id="user_invitations"></a>
 ### `user_invitations`
@@ -787,6 +788,39 @@ Cover arrangement (spec 4.4 "delegated access"; HIMS-IAM-017): for a limited tim
 | `ended_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Ended at |
 | `ended_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Ended by |
 | `end_reason` | text | no | — | — | Person | Internal: Business data | End reason |
+
+<a id="support_access"></a>
+### `support_access`
+
+Supplier support access, the "locked box" (spec 7.2 "customer support access requests and approval workflow", 7.4 "emergency support access ... audit it"; HIMS-IAM-021).
+
+- **Model:** `access_control.SupportAccess`
+- **Lifecycle:** Never deleted; waiting -> given, refused or cancelled; given access ends by itself (`ends_at`) or early with a reason (HIMS-IAM-021).
+- **Rules:** `support_access_hours_range`: Check: (hours ≥ 1 AND hours ≤ 24); `support_access_granted_has_period`: Check: (NOT state = 'granted' OR (starts_at is set AND ends_at > starts_at)); `support_access_one_waiting`: Unique: requested_by where state = 'waiting'
+- **Extra indexes:** `support_access_state_idx`: state, -created_at; `support_access_person_idx`: requested_by, ends_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `requested_by_id` | uuid → users.id | no | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | The supplier's support account that asked. |
+| `role_id` | uuid → roles.id | no | — | on delete PROTECT | Person | Internal: Reference | The access asked for. |
+| `kind` | varchar(16) | no | `SupportAccess.Kind.STANDARD` | `standard` (Asked for, approved by the hospital), `emergency` (Emergency (opened at once)) | Person | Internal: Business data | Kind |
+| `reason` | text | no | — | — | Person | Restricted: Support note (no patient details) | Why the supplier needs access (no patient details). |
+| `hours` | smallint | no | — | — | Person | Internal: Business data | How long the access lasts once given. |
+| `state` | varchar(16) | no | `SupportAccess.State.WAITING` | `waiting` (Waiting for the hospital), `granted` (Access given), `refused` (Refused), `cancelled` (Cancelled by the supplier), `ended_early` (Ended early) | Person | Internal: Business data | State |
+| `decided_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Decided by |
+| `decided_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Decided at |
+| `decision_note` | text | no | — | — | Person | Restricted: Support note | Decision note |
+| `starts_at` | timestamp with time zone | yes | — | — | Person | Internal: Business data | Starts at |
+| `ends_at` | timestamp with time zone | yes | — | — | Person | Internal: Business data | Ends at |
+| `assignment_id` | uuid → role_assignments.id | yes | — | unique; on delete PROTECT | Person | Internal: Reference | The time-limited access given. |
+| `ended_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Ended at |
+| `ended_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Ended by |
+| `end_reason` | text | no | — | — | Person | Restricted: Support note | End reason |
 
 ## Staff and credentials
 

@@ -3743,6 +3743,129 @@ paths:
               schema:
                 $ref: '#/components/schemas/MySchedule'
           description: ''
+  /api/v1/my-support-access/:
+    get:
+      operationId: my_support_access_list
+      description: 'The supplier''s side: ask for access, see its own requests, cancel
+        or end them.'
+      parameters:
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - all
+          - current
+          - past
+        description: current (default) = waiting or running now; past = everything
+          else.
+      tags:
+      - my-support-access
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupportAccess'
+          description: ''
+    post:
+      operationId: my_support_access_create
+      description: Ask for access (waits for the hospital), or open it at once in
+        an emergency.
+      tags:
+      - my-support-access
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportAccessRequestRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAccess'
+          description: ''
+  /api/v1/my-support-access/{id}/cancel/:
+    post:
+      operationId: my_support_access_cancel_create
+      description: Withdraw a request the hospital has not answered yet.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this support access.
+        required: true
+      tags:
+      - my-support-access
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportAccessCancelRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAccess'
+          description: ''
+  /api/v1/my-support-access/{id}/end/:
+    post:
+      operationId: my_support_access_end_create
+      description: End your own running access when the work is done.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this support access.
+        required: true
+      tags:
+      - my-support-access
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportAccessEndRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAccess'
+          description: ''
+  /api/v1/my-support-access/options/:
+    get:
+      operationId: my_support_access_options_retrieve
+      description: What can be asked for, and for how long.
+      tags:
+      - my-support-access
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAccessOptions'
+          description: ''
   /api/v1/notifications/:
     get:
       operationId: notifications_list
@@ -5941,6 +6064,147 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StaffingRequirement'
+          description: ''
+  /api/v1/support-access/:
+    get:
+      operationId: support_access_list
+      description: 'The hospital''s side: every request from the software supplier,
+        emergency ones included.'
+      parameters:
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - all
+          - current
+          - past
+        description: current (default) = waiting or running now; past = everything
+          else.
+      tags:
+      - support-access
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupportAccess'
+          description: ''
+  /api/v1/support-access/{id}/:
+    get:
+      operationId: support_access_retrieve
+      description: 'The hospital''s side: every request from the software supplier,
+        emergency ones included.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this support access.
+        required: true
+      tags:
+      - support-access
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAccess'
+          description: ''
+  /api/v1/support-access/{id}/approve/:
+    post:
+      operationId: support_access_approve_create
+      description: Give the supplier the access it asked for, from now for the hours
+        it asked.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this support access.
+        required: true
+      tags:
+      - support-access
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportAccessDecisionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAccess'
+          description: ''
+  /api/v1/support-access/{id}/end/:
+    post:
+      operationId: support_access_end_create
+      description: End the supplier's running access now.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this support access.
+        required: true
+      tags:
+      - support-access
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportAccessEndRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAccess'
+          description: ''
+  /api/v1/support-access/{id}/refuse/:
+    post:
+      operationId: support_access_refuse_create
+      description: Refuse a waiting request, with the reason the supplier is told.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this support access.
+        required: true
+      tags:
+      - support-access
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportAccessDecisionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAccess'
           description: ''
   /api/v1/wards/:
     get:
@@ -12651,6 +12915,8 @@ components:
       - staff.manage
       - staff.privileges.manage
       - staff.view
+      - support.access.manage
+      - support.access.request
       type: string
       description: |-
         * `access.assignments.manage` - access.assignments.manage
@@ -12697,6 +12963,8 @@ components:
         * `staff.manage` - staff.manage
         * `staff.privileges.manage` - staff.privileges.manage
         * `staff.view` - staff.view
+        * `support.access.manage` - support.access.manage
+        * `support.access.request` - support.access.request
     Person:
       type: object
       properties:
@@ -15519,6 +15787,225 @@ components:
           description: The backup to restore and check.
       required:
       - backup
+    SupportAccess:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        requested_by:
+          allOf:
+          - $ref: '#/components/schemas/Person'
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/SupportRole'
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/SupportAccessKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+          description: Why the supplier needs access (no patient details).
+        hours:
+          type: integer
+          readOnly: true
+          description: How long the access lasts once given.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SupportAccessStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        decided_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        decision_note:
+          type: string
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ended_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        end_reason:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - decided_at
+      - decided_by_name
+      - decision_note
+      - end_reason
+      - ended_at
+      - ended_by_name
+      - ends_at
+      - hours
+      - id
+      - kind
+      - kind_label
+      - reason
+      - requested_by
+      - role
+      - starts_at
+      - status
+      - status_label
+      - version
+    SupportAccessCancelRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - version
+    SupportAccessDecisionRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        note:
+          type: string
+          default: ''
+          maxLength: 2000
+      required:
+      - version
+    SupportAccessEndRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+      - reason
+      - version
+    SupportAccessKindEnum:
+      enum:
+      - standard
+      - emergency
+      type: string
+      description: |-
+        * `standard` - Asked for, approved by the hospital
+        * `emergency` - Emergency (opened at once)
+    SupportAccessOptions:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupportRole'
+        default_hours:
+          type: integer
+        max_hours:
+          type: integer
+        emergency_notice:
+          type: boolean
+          description: Whether the hospital's administrators are emailed about emergency
+            access.
+      required:
+      - default_hours
+      - emergency_notice
+      - max_hours
+      - roles
+    SupportAccessRequestRequest:
+      type: object
+      properties:
+        role:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        hours:
+          type: integer
+          maximum: 24
+          minimum: 1
+        emergency:
+          type: boolean
+          default: false
+          description: Open the access at once without waiting for the hospital (emergencies
+            only).
+      required:
+      - reason
+      - role
+    SupportAccessStatusEnum:
+      enum:
+      - waiting
+      - active
+      - finished
+      - refused
+      - cancelled
+      - ended_early
+      type: string
+      description: |-
+        * `waiting` - Waiting for the hospital
+        * `active` - Active now
+        * `finished` - Finished (time ran out)
+        * `refused` - Refused
+        * `cancelled` - Cancelled by the supplier
+        * `ended_early` - Ended early
+    SupportRole:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - description
+      - id
+      - name
     TemplateVariable:
       type: object
       properties:

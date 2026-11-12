@@ -2,7 +2,7 @@
 
 # API endpoints (contracts index)
 
-244 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
+254 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
 
 ## [Hospital settings, logo and letterhead](organizations.md)
 
@@ -155,6 +155,11 @@
 | [`GET /api/v1/access-reviews/{pk}/export/`](access_control.md#get-api-v1-access-reviews-pk-export) | `access.reviews.view` | HIMS-IAM-012 |
 | [`GET /api/v1/access-reviews/{pk}/items/`](access_control.md#get-api-v1-access-reviews-pk-items) | `access.reviews.view` | HIMS-IAM-012 |
 | [`GET /api/v1/my-delegations/`](access_control.md#get-api-v1-my-delegations) | signed in | HIMS-IAM-017 |
+| [`GET /api/v1/my-support-access/`](access_control.md#get-api-v1-my-support-access) | `support.access.request` | HIMS-IAM-021 |
+| [`POST /api/v1/my-support-access/`](access_control.md#post-api-v1-my-support-access) | `support.access.request` | HIMS-IAM-021 |
+| [`GET /api/v1/my-support-access/options/`](access_control.md#get-api-v1-my-support-access-options) | `support.access.request` | HIMS-IAM-021 |
+| [`POST /api/v1/my-support-access/{pk}/cancel/`](access_control.md#post-api-v1-my-support-access-pk-cancel) | `support.access.request` | HIMS-IAM-021 |
+| [`POST /api/v1/my-support-access/{pk}/end/`](access_control.md#post-api-v1-my-support-access-pk-end) | `support.access.request` | HIMS-IAM-021 |
 | [`GET /api/v1/permissions/`](access_control.md#get-api-v1-permissions) | `access.roles.view` | HIMS-IAM-009, HIMS-IAM-013 |
 | [`GET /api/v1/role-assignments/`](access_control.md#get-api-v1-role-assignments) | `access.roles.view` | HIMS-IAM-009, HIMS-IAM-013 |
 | [`POST /api/v1/role-assignments/`](access_control.md#post-api-v1-role-assignments) | `access.assignments.manage` | HIMS-IAM-009, HIMS-IAM-013 |
@@ -164,6 +169,11 @@
 | [`POST /api/v1/roles/`](access_control.md#post-api-v1-roles) | `access.roles.manage` | HIMS-IAM-009, HIMS-IAM-013 |
 | [`GET /api/v1/roles/{pk}/`](access_control.md#get-api-v1-roles-pk) | `access.roles.view` | HIMS-IAM-009, HIMS-IAM-013 |
 | [`PATCH /api/v1/roles/{pk}/`](access_control.md#patch-api-v1-roles-pk) | `access.roles.manage` | HIMS-IAM-009, HIMS-IAM-013 |
+| [`GET /api/v1/support-access/`](access_control.md#get-api-v1-support-access) | `support.access.manage` | HIMS-IAM-021 |
+| [`GET /api/v1/support-access/{pk}/`](access_control.md#get-api-v1-support-access-pk) | `support.access.manage` | HIMS-IAM-021 |
+| [`POST /api/v1/support-access/{pk}/approve/`](access_control.md#post-api-v1-support-access-pk-approve) | `support.access.manage` | HIMS-IAM-021 |
+| [`POST /api/v1/support-access/{pk}/end/`](access_control.md#post-api-v1-support-access-pk-end) | `support.access.manage` | HIMS-IAM-021 |
+| [`POST /api/v1/support-access/{pk}/refuse/`](access_control.md#post-api-v1-support-access-pk-refuse) | `support.access.manage` | HIMS-IAM-021 |
 
 ## [Staff, credentials, documents, catalogs and privileges](staff.md)
 

@@ -269,3 +269,23 @@ Spec sections 4.4, 13.1, 13.2, 13.5. Format: [README](README.md). Endpoints:
 | Acceptance criteria | Cover never outlives its end date (daily job); never more than the arranger may grant |
 | Test evidence | `apps/access_control/tests/test_delegations.py`; manual test Parts 11 and 12 |
 | Release risk | Privacy if cover outlived its date (job tested). Rollback: end the cover |
+
+### HIMS-IAM-021
+
+| Field | Record |
+|---|---|
+| ID and title | HIMS-IAM-021 Supplier support access, the "locked box": ask, hospital approves (or emergency), ends by itself, every request audited |
+| Business/clinical reason | The software supplier supports every hospital and must be able to check that nothing illegal is done, without a permanent super-user (spec 7.2 "support access requests and approval workflow", 7.4 "emergency support access ... audit it"; [ADR-035](../decisions/ADR-035-supplier-support-access.md)). Owner: PO |
+| Actors | The supplier's support account (`support.access.request`, role Software supplier support); the hospital administrator (`support.access.manage`) |
+| Preconditions | The supplier's account exists (`provision_organization --support-email`); hospital administrators hold `support.access.manage` |
+| Main success path | The supplier asks for the administrator or auditor role for 1-8 hours with a reason; the hospital is emailed and approves; the role is given until `ends_at` and ends by itself; every request meanwhile is recorded |
+| Alternate/failure paths | Refused with a reason; cancelled by the supplier; emergency opens at once without an email to the hospital (`HIMS_SUPPORT_EMERGENCY_NOTICE` off); ended early by either side; another role, a blank reason or too many hours → 409; one waiting request at a time |
+| Data effects | `support_access`, `role_assignments`, `users` (its column support_access_until) |
+| Security classification | Access control (restricted); support notes restricted |
+| Audit requirement | `support.access.requested`, `support.access.emergency_opened`, `support.access.approved`, `support.access.refused`, `support.access.cancelled`, `support.access.ended`, `support.access.used`, `access.role.assigned`, `access.role.revoked` |
+| Idempotency/concurrency | Idempotency-Key on asking; row lock and version on every decision; one waiting request per account (database rule) |
+| Integration dependencies | Email (console locally) |
+| Acceptance criteria | No access before approval; access ends at `ends_at`; never counts as an administrator or lent as cover; every non-background request recorded without search words; console approves and ends with the same rules |
+| Test evidence | `apps/access_control/tests/test_support_access.py`, `frontend/src/features/accessControl/SupportAccessPage.test.tsx` |
+| Release risk | Emergency access without notice may conflict with contracts (legal note in ADR-035). Rollback: end the access; remove the supplier's role |
+

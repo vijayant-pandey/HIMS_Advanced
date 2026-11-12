@@ -627,3 +627,28 @@ def test_admin_console_plans_shifts_and_decides_leave_with_the_same_rules(
     recorded.refresh_from_db()
     assert recorded.status == "approved" and recorded.decided_by == admin_user
     assert time(17) == shift_type("general").end_time
+
+
+def test_admin_console_copies_a_week_with_the_same_rules(admin_user, person, department_a):
+    """The Rota page's "Copy a week" in the console too (console parity check, 2026-11-12)."""
+    asha = person(department_a)
+    monday = tomorrow() + timedelta(days=7 - tomorrow().weekday())
+    add_shifts(
+        actor=admin_user,
+        staff=asha,
+        department=department_a,
+        shift_type=shift_type(),
+        from_date=monday,
+        to_date=monday + timedelta(days=2),
+    )
+    console = Client()
+    console.force_login(admin_user)
+    assert b"copy-week/" in console.get("/admin/rosters/shift/").content
+    url = "/admin/rosters/shift/copy-week/"
+    form = {"department": str(department_a.pk), "from_start": monday.isoformat()}
+    page = console.post(url, {**form, "to_start": (monday + timedelta(days=7)).isoformat()})
+    assert page.status_code == 200 and b"Copied 3 shift(s)." in page.content
+    assert Shift.objects.filter(staff=asha).count() == 6
+    wrong = console.post(url, {**form, "to_start": (monday + timedelta(days=3)).isoformat()})
+    assert b"Copy into a later week" in wrong.content
+    assert AuditEvent.objects.filter(action=AuditAction.SHIFT_ADDED).count() == 6

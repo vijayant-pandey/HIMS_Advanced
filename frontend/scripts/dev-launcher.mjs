@@ -7,7 +7,9 @@
  * healthy and redirects the browser. Ctrl+C stops everything this launcher started.
  *
  * Each hospital is a separate deployment with its own database (ADR-003); this only automates
- * the commands documented in README.md. Security: binds to 127.0.0.1 only, accepts requests
+ * the commands documented in README.md. Real hospitals never see this page: each one has its own
+ * address and sees only itself. The demo hospitals (HIMS-QA-004) are listed from
+ * backend/apps/demo/hospitals.json once `setup_demo_hospitals` has created them. Security: binds to 127.0.0.1 only, accepts requests
  * only for its own host/origin (blocks DNS rebinding and cross-site requests), and can only run
  * the fixed commands defined in DEPLOYMENTS below.
  */
@@ -37,6 +39,7 @@ const ALLOWED_HOSTS = new Set([`localhost:${LAUNCHER_PORT}`, `127.0.0.1:${LAUNCH
 
 const DEPLOYMENTS = {
   in: {
+    group: "This PC's own hospitals",
     name: "IN Hospitals",
     flag: "🇮🇳",
     detail: "India deployment · INR · Asia/Kolkata",
@@ -46,6 +49,7 @@ const DEPLOYMENTS = {
     viteMode: "in",
   },
   us: {
+    group: "This PC's own hospitals",
     name: "US Hospitals",
     flag: "🇺🇸",
     detail: "US deployment · USD · America/New_York",
@@ -55,12 +59,41 @@ const DEPLOYMENTS = {
     viteMode: "us",
   },
   eu: {
+    group: "This PC's own hospitals",
     name: "European Hospitals",
     flag: "🇪🇺",
     detail: "Planned — not yet available",
     disabled: true,
   },
 };
+
+// Demo hospitals (HIMS-QA-004): 5 in India, 5 in the US, 3 branches each, synthetic data. Each has
+// its own database and settings file, made by `python manage.py setup_demo_hospitals`.
+const DEMO_FILE = path.join(BACKEND_DIR, "apps", "demo", "hospitals.json");
+if (existsSync(DEMO_FILE)) {
+  for (const h of JSON.parse(readFileSync(DEMO_FILE, "utf8")).hospitals) {
+    const envFile = `.env.demo-${h.key}`;
+    const ready = existsSync(path.join(BACKEND_DIR, envFile));
+    DEPLOYMENTS[`demo-${h.key}`] = {
+      group: h.country === "IN" ? "Demo hospitals: India" : "Demo hospitals: United States",
+      name: h.display_name,
+      flag: h.country === "IN" ? "🇮🇳" : "🇺🇸",
+      detail: ready
+        ? `${h.branches.map((b) => b.city).join(" · ")} · ${h.currency}`
+        : "Not set up yet: run setup_demo_hospitals (docs/testing/demo-hospitals.md)",
+      envFile,
+      backendPort: h.backend_port,
+      frontendPort: h.frontend_port,
+      viteMode: "demo",
+      viteEnv: {
+        VITE_DEV_PORT: String(h.frontend_port),
+        VITE_API_TARGET: `http://127.0.0.1:${h.backend_port}`,
+        VITE_CSRF_COOKIE: `hims_demo_${h.key.replace(/-/g, "_")}_csrftoken`,
+      },
+      disabled: !ready,
+    };
+  }
+}
 
 /** Running state per deployment: { backend, frontend } child processes and recent log lines. */
 const state = Object.fromEntries(
@@ -128,7 +161,7 @@ async function startDeployment(key) {
       "frontend",
       process.execPath,
       [VITE_BIN, "--mode", d.viteMode],
-      { cwd: FRONTEND_DIR, env: process.env },
+      { cwd: FRONTEND_DIR, env: { ...process.env, ...(d.viteEnv ?? {}) } },
     );
   }
 }
@@ -197,7 +230,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  const match = url.pathname.match(/^\/api\/(start|stop)\/([a-z]+)$/);
+  const match = url.pathname.match(/^\/api\/(start|stop)\/([a-z-]+)$/);
   if (req.method === "POST" && match) {
     // Same-origin POSTs only: other websites cannot make the launcher start processes.
     const origin = req.headers.origin ?? "";
@@ -301,6 +334,7 @@ const PAGE = `<!doctype html>
   main { max-width: 960px; margin: 0 auto; padding: 32px 16px; }
   h1 { margin:0 0 4px; font-size: 20px; font-weight:600; letter-spacing:-.01em; }
   p.lead { margin:0 0 24px; color:var(--muted); }
+  h2 { margin:24px 0 8px; font-size:14px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
   .grid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .card { background:var(--card); border:1px solid var(--border); border-top:3px solid var(--accent); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:8px; }
   .card.disabled { opacity:.55; }
@@ -326,18 +360,34 @@ const PAGE = `<!doctype html>
   <div class="themes" role="group" aria-label="Theme"><span class="current"></span></div>
 </div></header>
 <main>
-  <h1>HIMS — choose a hospital deployment</h1>
-  <p class="lead">Each region runs as its own deployment with its own database. Local development only.</p>
-  <div class="grid" id="grid"></div>
+  <h1>HIMS developer launcher</h1>
+  <p class="lead">Only on this PC, for developers. Real hospitals never see this page: each hospital has its own address,
+  its own database and sees only itself. Choose a hospital deployment to start it.</p>
+  <div id="groups"></div>
   <footer>Servers keep running until you stop them here or press Ctrl+C in the launcher terminal.</footer>
 </main>
 <script>
 const META = ${JSON.stringify(
   Object.fromEntries(
-    Object.entries(DEPLOYMENTS).map(([k, d]) => [k, { name: d.name, flag: d.flag, detail: d.detail, disabled: !!d.disabled }]),
+    Object.entries(DEPLOYMENTS).map(([k, d]) => [
+      k,
+      { group: d.group, name: d.name, flag: d.flag, detail: d.detail, disabled: !!d.disabled },
+    ]),
   ),
 )};
-const grid = document.getElementById("grid");
+const groups = document.getElementById("groups");
+const grids = {};
+function gridFor(name) {
+  if (!grids[name]) {
+    const heading = document.createElement("h2");
+    heading.textContent = name;
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    groups.append(heading, grid);
+    grids[name] = grid;
+  }
+  return grids[name];
+}
 const busy = new Set();
 
 // Theme: shared with both hospital apps and the Django admin via the hims_theme cookie.
@@ -385,13 +435,13 @@ function card(key, m) {
   const open = el.querySelector(".open");
   const stop = el.querySelector(".stop");
   if (m.disabled) {
-    open.textContent = "Coming later"; open.disabled = true; stop.hidden = true;
+    open.textContent = m.group.startsWith("Demo") ? "Not set up yet" : "Coming later"; open.disabled = true; stop.hidden = true;
   } else {
     open.textContent = "Open " + m.name;
     open.addEventListener("click", () => launch(key));
     stop.addEventListener("click", () => post("stop", key).then(refresh));
   }
-  grid.appendChild(el);
+  gridFor(m.group).appendChild(el);
   return el;
 }
 

@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     "apps.rosters",
     "apps.recovery",
     "apps.performance",
+    "apps.demo",  # demo hospitals with synthetic data, developer PC only (HIMS-QA-004)
 ]
 
 # Django admin is the HIMS operations console (ADR-016): gated by HIMS RBAC rather than
@@ -98,6 +99,8 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.identity.session_limits.SessionLimitsMiddleware",
+    # Every request the supplier makes during support access is audited (HIMS-IAM-021).
+    "apps.access_control.middleware.SupportAccessAuditMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -258,6 +261,13 @@ HIMS_ACCESS_REVIEW_INTERVAL_DAYS = env.int("HIMS_ACCESS_REVIEW_INTERVAL_DAYS", d
 HIMS_ACCESS_REVIEW_DEFAULT_DAYS_TO_FINISH = 14
 # Longest cover arrangement (delegated access, HIMS-IAM-017), in days. Arrange a new one after.
 HIMS_DELEGATION_MAX_DAYS = env.int("HIMS_DELEGATION_MAX_DAYS", default=30)
+# Supplier support access, the "locked box" (HIMS-IAM-021): how long access lasts once given
+# (the supplier may ask for less, up to the maximum), and whether the hospital's administrators
+# are emailed when the supplier opens emergency access. Off by product owner decision
+# (2026-11-12); emergency access is always in the audit log and on the Support access page.
+HIMS_SUPPORT_ACCESS_HOURS = env.int("HIMS_SUPPORT_ACCESS_HOURS", default=2)
+HIMS_SUPPORT_ACCESS_MAX_HOURS = env.int("HIMS_SUPPORT_ACCESS_MAX_HOURS", default=8)
+HIMS_SUPPORT_EMERGENCY_NOTICE = env.bool("HIMS_SUPPORT_EMERGENCY_NOTICE", default=False)
 # Tamper evidence for the audit log (HIMS-SEC-010, ADR-013). Keys for the keyed chain hash as
 # "key-id:secret", newest first; keep older keys listed so older links can still be checked.
 # They live outside the database (secret manager), so someone with database access alone
@@ -329,6 +339,9 @@ SPECTACULAR_SETTINGS = {
         "IntegrityOutcomeEnum": "apps.audit.models.AuditIntegrityCheck.Outcome",
         "TriggerEnum": "apps.audit.models.AuditIntegrityCheck.Trigger",
         "DelegationStatusEnum": "apps.access_control.models.AccessDelegation.Status",
+        # Supplier support access (HIMS-IAM-021).
+        "SupportAccessKindEnum": "apps.access_control.models.SupportAccess.Kind",
+        "SupportAccessStatusEnum": "apps.access_control.models.SupportAccess.Status",
         "ComplianceStatusEnum": "apps.compliance.models.ComplianceRequirement.Status",
         "RiskStatusEnum": "apps.compliance.models.RiskEntry.Status",
         "IncidentStatusEnum": "apps.compliance.models.SecurityIncident.Status",

@@ -2,7 +2,8 @@
 
 Run once per customer deployment by provisioning automation (control plane / release job),
 after migrations. Creates the organization, the system roles, default numbering schemes, the first
-organization administrator and, optionally, the first auditor.
+organization administrator and, optionally, the first auditor and the software supplier's support
+account (HIMS-IAM-021: no hospital access of its own; it asks for time-limited support access).
 
 Initial passwords are read from environment variables named on the command line, never from
 arguments (which leak into shell history and process listings). Without a password the
@@ -37,6 +38,11 @@ class Command(BaseCommand):
         parser.add_argument("--auditor-email")
         parser.add_argument("--auditor-name")
         parser.add_argument("--auditor-password-env")
+        parser.add_argument(
+            "--support-email", help="The software supplier's support account (optional)"
+        )
+        parser.add_argument("--support-name", default="HIMS Supplier Support")
+        parser.add_argument("--support-password-env")
 
     def _password(self, env_name: str | None) -> str | None:
         if not env_name:
@@ -83,6 +89,19 @@ class Command(BaseCommand):
                 user=auditor,
                 role=roles["auditor"],
                 reason="Initial auditor created at provisioning",
+            )
+
+        if opts["support_email"]:
+            supplier = create_user(
+                email=opts["support_email"],
+                display_name=opts["support_name"],
+                password=self._password(opts["support_password_env"]),
+            )
+            assign_role(
+                actor=None,
+                user=supplier,
+                role=roles["supplier-support"],
+                reason="Software supplier's support account created at provisioning",
             )
 
         self.stdout.write(self.style.SUCCESS(f"Provisioned {organization.display_name}."))

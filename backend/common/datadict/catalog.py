@@ -155,6 +155,8 @@ LIFECYCLE: dict[str, str] = {
     "deleted.",
     "access_review_reminders": "One per kind and due date (sent once); kept as history.",
     "access_delegations": "Never deleted; ends by date, or early with a reason.",
+    "support_access": "Never deleted; waiting -> given, refused or cancelled; given access ends by "
+    "itself (`ends_at`) or early with a reason (HIMS-IAM-021).",
     "specialties": "Catalog: never deleted; switched off (`is_active`).",
     "qualification_types": "Catalog: never deleted; switched off (`is_active`).",
     "designations": "Catalog: never deleted; switched off (`is_active`).",
@@ -304,6 +306,9 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "equipment_service_records.performed_by": (INTERNAL, "Technician or company"),
     "message_templates.body": (INTERNAL, "Message wording (no values, no patient details)"),
     "shifts.cancel_reason": (RESTRICTED, "Work note"),
+    "support_access.reason": (RESTRICTED, "Support note (no patient details)"),
+    "support_access.decision_note": (RESTRICTED, "Support note"),
+    "support_access.end_reason": (RESTRICTED, "Support note"),
 }
 # Column names, checked next: name -> (level, category).
 NAME_RULES: dict[str, tuple[str, str]] = {

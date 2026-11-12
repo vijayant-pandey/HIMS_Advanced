@@ -682,6 +682,25 @@ their "actors" are every caller and their evidence is the shared tests in `backe
 | Test evidence | `frontend/e2e/us/01-us-hospital.spec.ts`, `frontend/e2e/tests/05-admin-console.spec.ts` |
 | Release risk | None |
 
+### HIMS-QA-004
+
+| Field | Record |
+|---|---|
+| ID and title | HIMS-QA-004 Demo hospitals: 5 Indian and 5 US hospitals with 3 branches each and synthetic records for everything built |
+| Business/clinical reason | The product owner sees every screen working with realistic, invented data, each hospital as its own deployment (spec 19, 31.1 "synthetic data only"; ADR-003). Owner: PO |
+| Actors | Developer PC only (`setup_demo_hospitals`, the launcher) |
+| Preconditions | Local PostgreSQL whose owner user may create databases; a demo password in an environment variable |
+| Main success path | One database and settings file per demo hospital; migrate, provision (administrator, auditor, supplier support) and fill through the same services as the screens; the launcher lists them |
+| Alternate/failure paths | Refused outside local or outside demo deployments; refused when already built (use reset); a missing password stops before anything is made |
+| Data effects | Separate demo databases only; this PC's own hospitals are untouched |
+| Security classification | Synthetic data only; "(Demo)" in every name; no real identifiers |
+| Audit requirement | Everything made is in each demo hospital's own audit log, as made through the services |
+| Idempotency/concurrency | One run per hospital (refuses a second); reset builds again from scratch |
+| Integration dependencies | None |
+| Acceptance criteria | Ten hospitals, three branches each; every Phase 1 screen has records; invented patients ready for HIMS-PAT-001 |
+| Test evidence | `apps/demo/tests/test_demo_hospitals.py`; [demo hospitals](../testing/demo-hospitals.md) |
+| Release risk | None for hospitals (developer PC only) |
+
 ### HIMS-DOC-001
 
 | Field | Record |

@@ -2186,6 +2186,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/my-support-access/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The supplier's side: ask for access, see its own requests, cancel or end them. */
+        get: operations["my_support_access_list"];
+        put?: never;
+        /** @description Ask for access (waits for the hospital), or open it at once in an emergency. */
+        post: operations["my_support_access_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/my-support-access/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Withdraw a request the hospital has not answered yet. */
+        post: operations["my_support_access_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/my-support-access/{id}/end/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End your own running access when the work is done. */
+        post: operations["my_support_access_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/my-support-access/options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What can be asked for, and for how long. */
+        get: operations["my_support_access_options_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notifications/": {
         parameters: {
             query?: never;
@@ -3476,6 +3545,91 @@ export interface paths {
          *     both for the department.
          */
         patch: operations["staffing_requirements_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/support-access/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The hospital's side: every request from the software supplier, emergency ones included. */
+        get: operations["support_access_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support-access/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The hospital's side: every request from the software supplier, emergency ones included. */
+        get: operations["support_access_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support-access/{id}/approve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Give the supplier the access it asked for, from now for the hours it asked. */
+        post: operations["support_access_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support-access/{id}/end/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End the supplier's running access now. */
+        post: operations["support_access_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/support-access/{id}/refuse/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Refuse a waiting request, with the reason the supplier is told. */
+        post: operations["support_access_refuse_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/wards/": {
@@ -6259,9 +6413,11 @@ export interface components {
          *     * `staff.manage` - staff.manage
          *     * `staff.privileges.manage` - staff.privileges.manage
          *     * `staff.view` - staff.view
+         *     * `support.access.manage` - support.access.manage
+         *     * `support.access.request` - support.access.request
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
         Person: {
             /** Format: uuid */
             id: string;
@@ -7378,6 +7534,88 @@ export interface components {
              * @description The backup to restore and check.
              */
             backup: string;
+        };
+        SupportAccess: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly requested_by: components["schemas"]["Person"];
+            readonly role: components["schemas"]["SupportRole"];
+            readonly kind: components["schemas"]["SupportAccessKindEnum"];
+            readonly kind_label: string;
+            /** @description Why the supplier needs access (no patient details). */
+            readonly reason: string;
+            /** @description How long the access lasts once given. */
+            readonly hours: number;
+            readonly status: components["schemas"]["SupportAccessStatusEnum"];
+            readonly status_label: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly decided_by_name: string | null;
+            /** Format: date-time */
+            readonly decided_at: string | null;
+            readonly decision_note: string;
+            /** Format: date-time */
+            readonly starts_at: string | null;
+            /** Format: date-time */
+            readonly ends_at: string | null;
+            /** Format: date-time */
+            readonly ended_at: string | null;
+            readonly ended_by_name: string | null;
+            readonly end_reason: string;
+            readonly version: number;
+        };
+        SupportAccessCancelRequest: {
+            version: number;
+        };
+        SupportAccessDecisionRequest: {
+            version: number;
+            /** @default  */
+            note: string;
+        };
+        SupportAccessEndRequest: {
+            version: number;
+            reason: string;
+        };
+        /**
+         * @description * `standard` - Asked for, approved by the hospital
+         *     * `emergency` - Emergency (opened at once)
+         * @enum {string}
+         */
+        SupportAccessKindEnum: "standard" | "emergency";
+        SupportAccessOptions: {
+            roles: components["schemas"]["SupportRole"][];
+            default_hours: number;
+            max_hours: number;
+            /** @description Whether the hospital's administrators are emailed about emergency access. */
+            emergency_notice: boolean;
+        };
+        SupportAccessRequestRequest: {
+            /** Format: uuid */
+            role: string;
+            reason: string;
+            hours?: number;
+            /**
+             * @description Open the access at once without waiting for the hospital (emergencies only).
+             * @default false
+             */
+            emergency: boolean;
+        };
+        /**
+         * @description * `waiting` - Waiting for the hospital
+         *     * `active` - Active now
+         *     * `finished` - Finished (time ran out)
+         *     * `refused` - Refused
+         *     * `cancelled` - Cancelled by the supplier
+         *     * `ended_early` - Ended early
+         * @enum {string}
+         */
+        SupportAccessStatusEnum: "waiting" | "active" | "finished" | "refused" | "cancelled" | "ended_early";
+        SupportRole: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly name: string;
+            readonly description: string;
         };
         TemplateVariable: {
             name: string;
@@ -11040,6 +11278,122 @@ export interface operations {
             };
         };
     };
+    my_support_access_list: {
+        parameters: {
+            query?: {
+                /** @description current (default) = waiting or running now; past = everything else. */
+                status?: "all" | "current" | "past";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccess"][];
+                };
+            };
+        };
+    };
+    my_support_access_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportAccessRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccess"];
+                };
+            };
+        };
+    };
+    my_support_access_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this support access. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportAccessCancelRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccess"];
+                };
+            };
+        };
+    };
+    my_support_access_end_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this support access. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportAccessEndRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccess"];
+                };
+            };
+        };
+    };
+    my_support_access_options_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccessOptions"];
+                };
+            };
+        };
+    };
     notifications_list: {
         parameters: {
             query?: {
@@ -13110,6 +13464,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffingRequirement"];
+                };
+            };
+        };
+    };
+    support_access_list: {
+        parameters: {
+            query?: {
+                /** @description current (default) = waiting or running now; past = everything else. */
+                status?: "all" | "current" | "past";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccess"][];
+                };
+            };
+        };
+    };
+    support_access_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this support access. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccess"];
+                };
+            };
+        };
+    };
+    support_access_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this support access. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportAccessDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccess"];
+                };
+            };
+        };
+    };
+    support_access_end_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this support access. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportAccessEndRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccess"];
+                };
+            };
+        };
+    };
+    support_access_refuse_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this support access. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupportAccessDecisionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportAccess"];
                 };
             };
         };

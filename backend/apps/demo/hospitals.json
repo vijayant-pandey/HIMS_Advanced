@@ -1,0 +1,155 @@
+{
+  "_about": "Demo hospitals for the developer PC (HIMS-QA-004). Every name, address and person is invented; '(Demo)' marks each hospital. Read by apps/demo (setup_demo_hospitals) and by frontend/scripts/dev-launcher.mjs.",
+  "hospitals": [
+    {
+      "key": "in-sunrise",
+      "country": "IN",
+      "display_name": "Sunrise Hospitals (Demo)",
+      "legal_name": "Sunrise Health Demo Pvt Ltd (synthetic)",
+      "timezone": "Asia/Kolkata",
+      "currency": "INR",
+      "backend_port": 8201,
+      "frontend_port": 5201,
+      "branches": [
+        {"code": "DWK", "name": "Sunrise Dwarka", "city": "New Delhi", "state": "Delhi", "postal_code": "110075", "address": "Plot 4, Sector 12, Dwarka"},
+        {"code": "NOI", "name": "Sunrise Noida", "city": "Noida", "state": "Uttar Pradesh", "postal_code": "201301", "address": "C-21, Sector 62"},
+        {"code": "GGN", "name": "Sunrise Gurugram", "city": "Gurugram", "state": "Haryana", "postal_code": "122002", "address": "18 Golf Course Road"}
+      ]
+    },
+    {
+      "key": "in-ganga",
+      "country": "IN",
+      "display_name": "Ganga Care Hospitals (Demo)",
+      "legal_name": "Ganga Care Demo Healthcare LLP (synthetic)",
+      "timezone": "Asia/Kolkata",
+      "currency": "INR",
+      "backend_port": 8202,
+      "frontend_port": 5202,
+      "branches": [
+        {"code": "LKO", "name": "Ganga Care Lucknow", "city": "Lucknow", "state": "Uttar Pradesh", "postal_code": "226010", "address": "7 Shaheed Path, Gomti Nagar"},
+        {"code": "VNS", "name": "Ganga Care Varanasi", "city": "Varanasi", "state": "Uttar Pradesh", "postal_code": "221005", "address": "B-14 Lanka Road"},
+        {"code": "PRY", "name": "Ganga Care Prayagraj", "city": "Prayagraj", "state": "Uttar Pradesh", "postal_code": "211001", "address": "22 Civil Lines"}
+      ]
+    },
+    {
+      "key": "in-deccan",
+      "country": "IN",
+      "display_name": "Deccan Health (Demo)",
+      "legal_name": "Deccan Health Demo Pvt Ltd (synthetic)",
+      "timezone": "Asia/Kolkata",
+      "currency": "INR",
+      "backend_port": 8203,
+      "frontend_port": 5203,
+      "branches": [
+        {"code": "HYD", "name": "Deccan Health Banjara Hills", "city": "Hyderabad", "state": "Telangana", "postal_code": "500034", "address": "Road No. 3, Banjara Hills"},
+        {"code": "SEC", "name": "Deccan Health Secunderabad", "city": "Secunderabad", "state": "Telangana", "postal_code": "500003", "address": "45 SD Road"},
+        {"code": "WGL", "name": "Deccan Health Warangal", "city": "Warangal", "state": "Telangana", "postal_code": "506002", "address": "9 Hanamkonda Main Road"}
+      ]
+    },
+    {
+      "key": "in-westernghats",
+      "country": "IN",
+      "display_name": "Western Ghats Hospitals (Demo)",
+      "legal_name": "Western Ghats Demo Hospitals Pvt Ltd (synthetic)",
+      "timezone": "Asia/Kolkata",
+      "currency": "INR",
+      "backend_port": 8204,
+      "frontend_port": 5204,
+      "branches": [
+        {"code": "PUN", "name": "Western Ghats Pune", "city": "Pune", "state": "Maharashtra", "postal_code": "411004", "address": "12 Karve Road, Erandwane"},
+        {"code": "MUM", "name": "Western Ghats Mumbai", "city": "Mumbai", "state": "Maharashtra", "postal_code": "400050", "address": "3 Hill Road, Bandra West"},
+        {"code": "NSK", "name": "Western Ghats Nashik", "city": "Nashik", "state": "Maharashtra", "postal_code": "422005", "address": "88 Gangapur Road"}
+      ]
+    },
+    {
+      "key": "in-baycoast",
+      "country": "IN",
+      "display_name": "Bay Coast Medical (Demo)",
+      "legal_name": "Bay Coast Demo Medical Services Pvt Ltd (synthetic)",
+      "timezone": "Asia/Kolkata",
+      "currency": "INR",
+      "backend_port": 8205,
+      "frontend_port": 5205,
+      "branches": [
+        {"code": "CHN", "name": "Bay Coast Chennai", "city": "Chennai", "state": "Tamil Nadu", "postal_code": "600006", "address": "110 Greams Road"},
+        {"code": "CBE", "name": "Bay Coast Coimbatore", "city": "Coimbatore", "state": "Tamil Nadu", "postal_code": "641018", "address": "5 Race Course Road"},
+        {"code": "MDU", "name": "Bay Coast Madurai", "city": "Madurai", "state": "Tamil Nadu", "postal_code": "625020", "address": "31 KK Nagar Main Road"}
+      ]
+    },
+    {
+      "key": "us-lakeside",
+      "country": "US",
+      "display_name": "Lakeside Health (Demo)",
+      "legal_name": "Lakeside Health Demo Inc. (synthetic)",
+      "timezone": "America/Chicago",
+      "currency": "USD",
+      "backend_port": 8206,
+      "frontend_port": 5206,
+      "branches": [
+        {"code": "CHI", "name": "Lakeside Chicago", "city": "Chicago", "state": "Illinois", "postal_code": "60611", "address": "200 E Lakeshore Avenue"},
+        {"code": "EVA", "name": "Lakeside Evanston", "city": "Evanston", "state": "Illinois", "postal_code": "60201", "address": "1500 Maple Street"},
+        {"code": "NAP", "name": "Lakeside Naperville", "city": "Naperville", "state": "Illinois", "postal_code": "60540", "address": "75 River Bend Drive"}
+      ]
+    },
+    {
+      "key": "us-harborpoint",
+      "country": "US",
+      "display_name": "Harbor Point Medical (Demo)",
+      "legal_name": "Harbor Point Medical Demo LLC (synthetic)",
+      "timezone": "America/New_York",
+      "currency": "USD",
+      "backend_port": 8207,
+      "frontend_port": 5207,
+      "branches": [
+        {"code": "BOS", "name": "Harbor Point Boston", "city": "Boston", "state": "Massachusetts", "postal_code": "02114", "address": "40 Wharf Lane"},
+        {"code": "CAM", "name": "Harbor Point Cambridge", "city": "Cambridge", "state": "Massachusetts", "postal_code": "02139", "address": "9 Elm Square"},
+        {"code": "QUI", "name": "Harbor Point Quincy", "city": "Quincy", "state": "Massachusetts", "postal_code": "02169", "address": "300 Shore Drive"}
+      ]
+    },
+    {
+      "key": "us-desertbloom",
+      "country": "US",
+      "display_name": "Desert Bloom Health (Demo)",
+      "legal_name": "Desert Bloom Health Demo Inc. (synthetic)",
+      "timezone": "America/Phoenix",
+      "currency": "USD",
+      "backend_port": 8208,
+      "frontend_port": 5208,
+      "branches": [
+        {"code": "PHX", "name": "Desert Bloom Phoenix", "city": "Phoenix", "state": "Arizona", "postal_code": "85004", "address": "1200 Saguaro Way"},
+        {"code": "TMP", "name": "Desert Bloom Tempe", "city": "Tempe", "state": "Arizona", "postal_code": "85281", "address": "60 Canyon Road"},
+        {"code": "MES", "name": "Desert Bloom Mesa", "city": "Mesa", "state": "Arizona", "postal_code": "85201", "address": "455 Mesquite Avenue"}
+      ]
+    },
+    {
+      "key": "us-pacificcrest",
+      "country": "US",
+      "display_name": "Pacific Crest Hospitals (Demo)",
+      "legal_name": "Pacific Crest Hospitals Demo Corp. (synthetic)",
+      "timezone": "America/Los_Angeles",
+      "currency": "USD",
+      "backend_port": 8209,
+      "frontend_port": 5209,
+      "branches": [
+        {"code": "SAN", "name": "Pacific Crest San Diego", "city": "San Diego", "state": "California", "postal_code": "92101", "address": "800 Harbor View Drive"},
+        {"code": "IRV", "name": "Pacific Crest Irvine", "city": "Irvine", "state": "California", "postal_code": "92618", "address": "25 Oak Grove Parkway"},
+        {"code": "LGB", "name": "Pacific Crest Long Beach", "city": "Long Beach", "state": "California", "postal_code": "90802", "address": "140 Ocean Crest Boulevard"}
+      ]
+    },
+    {
+      "key": "us-bluegrass",
+      "country": "US",
+      "display_name": "Bluegrass Regional (Demo)",
+      "legal_name": "Bluegrass Regional Demo Health System (synthetic)",
+      "timezone": "America/New_York",
+      "currency": "USD",
+      "backend_port": 8210,
+      "frontend_port": 5210,
+      "branches": [
+        {"code": "LOU", "name": "Bluegrass Louisville", "city": "Louisville", "state": "Kentucky", "postal_code": "40202", "address": "500 Meadow Lane"},
+        {"code": "LEX", "name": "Bluegrass Lexington", "city": "Lexington", "state": "Kentucky", "postal_code": "40507", "address": "220 Paddock Street"},
+        {"code": "FRA", "name": "Bluegrass Frankfort", "city": "Frankfort", "state": "Kentucky", "postal_code": "40601", "address": "36 Capital Hill Road"}
+      ]
+    }
+  ]
+}

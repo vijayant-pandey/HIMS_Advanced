@@ -424,6 +424,146 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Automated test cases | `apps/access_control/tests/test_delegations.py::test_lists_filters_and_my_cover` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
+### GET /api/v1/my-support-access/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `my_support_access_list` |
+| Method and path | `GET /api/v1/my-support-access/` |
+| Business purpose | List (my support access). The supplier's side: ask for access, see its own requests, cancel or end them. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.request` (Ask the hospital for time-limited support access (the software supplier's support account only)). System roles holding it: Software supplier support. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | No body; query: `status` |
+| Response schema | 200 list of `SupportAccess` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`); pages of 25 (`page_size` up to 100) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/access_control/tests/test_support_access.py::test_the_supplier_sees_only_its_own_requests_and_the_options` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/my-support-access/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `my_support_access_create` |
+| Method and path | `POST /api/v1/my-support-access/` |
+| Business purpose | Add (my support access). Ask for access (waits for the hospital), or open it at once in an emergency. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.request` (Ask the hospital for time-limited support access (the software supplier's support account only)). System roles holding it: Software supplier support. Privileged roles must have passed two-factor in this session; a "confirm it's you" within the last 15 minutes is required |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | `SupportAccessRequestRequest`: `role` (required, uuid), `reason` (required, ≤ 2000 characters), `hours`, `emergency` |
+| Response schema | 201 `SupportAccess` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Refused in the wrong state with `ALREADY_HELD`, `ALREADY_WAITING`, `NOT_SUPPLIER`, `ROLE_NOT_ASKABLE` |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | `Idempotency-Key` header (optional; operation `support_access.create`): the same key with the same body replays the stored answer (`Idempotent-Replayed: true`); with a different body 409 `IDEMPOTENCY_KEY_REUSED`; kept 48 hours |
+| Concurrency control | The row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `access.role.assigned`, `access.role.revoked`, `support.access.emergency_opened`, `support.access.requested` |
+| Outbox / domain event | None |
+| External calls | Messages (email; SMS printed on the console until a gateway is chosen): tried at once and logged; a failure never undoes the action |
+| Timeout and retry policy | messages: email timeout 20 s; a failed message is retried every few minutes with a growing pause, up to 5 tries, then shows as failed with Send again; the client may retry a lost answer with the same Idempotency-Key |
+| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `REAUTH_REQUIRED`, 409 `ALREADY_HELD`, 409 `ALREADY_WAITING`, 409 `CONFLICT`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `NOT_SUPPLIER`, 409 `REASON_REQUIRED`, 409 `ROLE_NOT_ASKABLE`, 409 `SELF_ASSIGNMENT`, 409 `TOO_LONG`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### GET /api/v1/my-support-access/options/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `my_support_access_options_retrieve` |
+| Method and path | `GET /api/v1/my-support-access/options/` |
+| Business purpose | What can be asked for, and for how long. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.request` (Ask the hospital for time-limited support access (the software supplier's support account only)). System roles holding it: Software supplier support. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | No body |
+| Response schema | 200 `SupportAccessOptions` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/access_control/tests/test_support_access.py::test_the_supplier_sees_only_its_own_requests_and_the_options` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/my-support-access/{pk}/cancel/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `my_support_access_cancel_create` |
+| Method and path | `POST /api/v1/my-support-access/{pk}/cancel/` |
+| Business purpose | Withdraw a request the hospital has not answered yet. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.request` (Ask the hospital for time-limited support access (the software supplier's support account only)). System roles holding it: Software supplier support. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | `SupportAccessCancelRequest`: `version` (required) |
+| Response schema | 200 `SupportAccess` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Refused in the wrong state with `ALREADY_DECIDED`, `NOT_YOURS` |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved; the row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `support.access.cancelled` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `ALREADY_DECIDED`, 409 `CONFLICT`, 409 `NOT_YOURS`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/access_control/tests/test_support_access.py::test_one_request_waits_at_a_time_and_the_supplier_can_cancel_it` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/my-support-access/{pk}/end/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `my_support_access_end_create` |
+| Method and path | `POST /api/v1/my-support-access/{pk}/end/` |
+| Business purpose | End your own running access when the work is done. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.request` (Ask the hospital for time-limited support access (the software supplier's support account only)). System roles holding it: Software supplier support. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | `SupportAccessEndRequest`: `version` (required), `reason` (required, ≤ 2000 characters) |
+| Response schema | 200 `SupportAccess` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Refused in the wrong state with `NOT_ACTIVE` |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved; the row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `access.role.revoked`, `support.access.ended` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `NOT_ACTIVE`, 409 `REASON_REQUIRED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/access_control/tests/test_support_access.py::test_either_side_ends_running_access_early` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### GET /api/v1/permissions/
 
 | Field | Contract |
@@ -674,4 +814,144 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `apps/staff/tests/test_staff_screens.py::test_custom_role_can_be_edited_with_audit_and_version`, `apps/staff/tests/test_staff_screens.py::test_system_roles_and_escalation_are_refused` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### GET /api/v1/support-access/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `support_access_list` |
+| Method and path | `GET /api/v1/support-access/` |
+| Business purpose | List (support access). The hospital's side: every request from the software supplier, emergency ones included. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.manage` (See the software supplier's support access, approve or refuse its requests, end it early). System roles holding it: Organization administrator. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | No body; query: `status` |
+| Response schema | 200 list of `SupportAccess` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`); pages of 25 (`page_size` up to 100) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/access_control/tests/test_support_access.py::test_asking_waits_for_the_hospital_and_emails_its_administrators`, `apps/access_control/tests/test_support_access.py::test_the_access_ends_by_itself`, `apps/access_control/tests/test_support_access.py::test_emergency_access_opens_at_once_without_telling_the_hospital`, `apps/access_control/tests/test_support_access.py::test_only_the_supplier_asks_and_only_the_hospital_decides` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### GET /api/v1/support-access/{pk}/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `support_access_retrieve` |
+| Method and path | `GET /api/v1/support-access/{pk}/` |
+| Business purpose | Open one (support access). The hospital's side: every request from the software supplier, emergency ones included. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.manage` (See the software supplier's support access, approve or refuse its requests, end it early). System roles holding it: Organization administrator. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | No body |
+| Response schema | 200 `SupportAccess` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/support-access/{pk}/approve/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `support_access_approve_create` |
+| Method and path | `POST /api/v1/support-access/{pk}/approve/` |
+| Business purpose | Give the supplier the access it asked for, from now for the hours it asked. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.manage` (See the software supplier's support access, approve or refuse its requests, end it early). System roles holding it: Organization administrator. Privileged roles must have passed two-factor in this session; a "confirm it's you" within the last 15 minutes is required |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | `SupportAccessDecisionRequest`: `version` (required), `note` (≤ 2000 characters) |
+| Response schema | 200 `SupportAccess` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Refused in the wrong state with `ACCOUNT_INACTIVE`, `ALREADY_DECIDED`, `ALREADY_HELD` |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved; the row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `access.role.assigned`, `access.role.revoked`, `support.access.approved` |
+| Outbox / domain event | None |
+| External calls | Messages (email; SMS printed on the console until a gateway is chosen): tried at once and logged; a failure never undoes the action |
+| Timeout and retry policy | messages: email timeout 20 s; a failed message is retried every few minutes with a growing pause, up to 5 tries, then shows as failed with Send again; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `REAUTH_REQUIRED`, 404 `NOT_FOUND`, 409 `ACCOUNT_INACTIVE`, 409 `ALREADY_DECIDED`, 409 `ALREADY_HELD`, 409 `CONFLICT`, 409 `SELF_ASSIGNMENT`, 409 `SELF_DECISION`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/access_control/tests/test_support_access.py::test_approving_gives_the_role_for_the_hours_asked`, `apps/access_control/tests/test_support_access.py::test_the_access_ends_by_itself`, `apps/access_control/tests/test_support_access.py::test_every_request_during_support_access_is_recorded`, `apps/access_control/tests/test_support_access.py::test_only_the_supplier_asks_and_only_the_hospital_decides` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/support-access/{pk}/end/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `support_access_end_create` |
+| Method and path | `POST /api/v1/support-access/{pk}/end/` |
+| Business purpose | End the supplier's running access now. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.manage` (See the software supplier's support access, approve or refuse its requests, end it early). System roles holding it: Organization administrator. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | `SupportAccessEndRequest`: `version` (required), `reason` (required, ≤ 2000 characters) |
+| Response schema | 200 `SupportAccess` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Refused in the wrong state with `NOT_ACTIVE` |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved; the row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `access.role.revoked`, `support.access.ended` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `NOT_ACTIVE`, 409 `REASON_REQUIRED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/access_control/tests/test_support_access.py::test_either_side_ends_running_access_early` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/support-access/{pk}/refuse/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `support_access_refuse_create` |
+| Method and path | `POST /api/v1/support-access/{pk}/refuse/` |
+| Business purpose | Refuse a waiting request, with the reason the supplier is told. |
+| Requirements | [HIMS-IAM-021](../../../requirements/identity-and-access.md#hims-iam-021) |
+| Actor / permission required | `support.access.manage` (See the software supplier's support access, approve or refuse its requests, end it early). System roles holding it: Organization administrator. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Whole hospital: the grant must cover the whole organization |
+| Request schema | `SupportAccessDecisionRequest`: `version` (required), `note` (≤ 2000 characters) |
+| Response schema | 200 `SupportAccess` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Refused in the wrong state with `ALREADY_DECIDED` |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved; the row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `support.access.refused` |
+| Outbox / domain event | None |
+| External calls | Messages (email; SMS printed on the console until a gateway is chosen): tried at once and logged; a failure never undoes the action |
+| Timeout and retry policy | messages: email timeout 20 s; a failed message is retried every few minutes with a growing pause, up to 5 tries, then shows as failed with Send again; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `ALREADY_DECIDED`, 409 `CONFLICT`, 409 `REASON_REQUIRED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/access_control/tests/test_support_access.py::test_refusing_needs_a_reason_and_tells_the_supplier` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |

@@ -30,6 +30,7 @@ def active_administrators():
         revoked_at__isnull=True,
         valid_from__lte=now,
         delegation__isnull=True,  # access lent for cover does not make someone an administrator
+        support_access__isnull=True,  # nor does the supplier's support access (HIMS-IAM-021)
     ).values("user_id")
     return User.objects.filter(is_active=True, pk__in=holders)
 

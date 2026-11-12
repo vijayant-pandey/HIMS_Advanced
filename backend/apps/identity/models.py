@@ -36,6 +36,13 @@ class User(UUIDPrimaryKeyModel, AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(default=timezone.now)
     password_changed_at = models.DateTimeField(null=True, blank=True)
+    # Supplier support access (HIMS-IAM-021): until this time every request the account makes is
+    # recorded in the audit log. Kept here so the check costs no extra query per request.
+    support_access_until = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="The supplier's support access runs until then; every request is recorded.",
+    )
 
     objects = UserManager()
 

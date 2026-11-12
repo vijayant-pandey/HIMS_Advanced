@@ -5,6 +5,8 @@ section 20 (phases), 4 (domains), 21 (vertical slice), 26–27 (P0/P1), 36 (deci
 [tracker](spec-status.md) and backlogs ([Phase 1](../backlog/phase-1-foundation.md),
 [Phase 2](../backlog/phase-2-patients.md)). The tracker stays the detailed record; this page is the
 ordered plan. **Last updated:** 2026-11-10 (after PR #47, with the retention purge built).
+**Update 2026-11-12:** supplier support access (HIMS-IAM-021) and the ten demo hospitals
+(HIMS-QA-004) built as group 9; the counts below are corrected where marked "2026-11-12".
 
 **2026-11-08 decisions** ([decisions log](decisions-log.md)): CLIN, LEGAL and PO approved the pending documents
 **for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
@@ -27,6 +29,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
+| Phase 1 tickets (2026-11-12) | 129: ✅ 102 done or approved (97 Done + 5 compliance documents approved for now) · 27 left: 4 🔓 optional, 16 hosting stage (HIMS-OPS-024 in progress; HIMS-OPS-025 owner console new), 2 deferred by the PO, 5 moved to Phase 2 (HIMS-IAM-010, -011, -018, -020, HIMS-DATA-003) |
 | Phase 1 tickets | 126: ✅ 103 done or approved · 23 left: 4 🔓 can be built now (all optional or later), 15 hosting stage (now: the free Development environment on Render + Neon, HIMS-OPS-024), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
@@ -38,7 +41,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~20% | 103 (PR #1–#52 and #30, ready for Northflank, 2 approvals) | The free Development environment on Northflank (HIMS-OPS-024); 4 optional items | Hosting: free Development without a card first (ADR-034); paid hosting before real data | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~20% (2026-11-12: 102 of 129 = 79%; free Development environment live on Render + Neon, HIMS-OPS-024 nearly done; supplier support access and demo hospitals added) | 103 (PR #1–#52 and #30, ready for Northflank, 2 approvals) | The free Development environment on Northflank (HIMS-OPS-024); 4 optional items | Hosting: free Development without a card first (ADR-034); paid hosting before real data | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -106,6 +109,7 @@ fit, so nothing is forgotten.
 | 6 | Measuring and tests | HIMS-DATA-002, HIMS-OPS-017, HIMS-QA-003 | 28, 18, 19.2 | ✅ done |
 | 7 | Docs (last: describes everything built) | HIMS-DOC-001 | 25, 29 | ✅ done |
 | 8 | Ready for a free host (found by the hosting analysis) | HIMS-OPS-022, HIMS-OPS-023 | 17, 31, 14 | ✅ done |
+| 9 | Supplier support access and demo hospitals (PO request 2026-11-12) | HIMS-IAM-021, HIMS-QA-004 (and the console's "Copy a week", HIMS-STAFF-012) | 7.2, 7.4, 13, 19, 31.1 | ✅ done |
 
 **Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step), and the hosting analysis (HIMS-OPS-020) is done. Group 8 (ready for the free host) is done too. **Now: the free Development environment on Render + Neon (HIMS-OPS-024, section 4b), in progress.** The table below keeps each task's own row.
 
@@ -139,6 +143,8 @@ fit, so nothing is forgotten.
 | — | 4.3 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head | ⬜ optional | When hospitals ask |
 | — | 4.25 | HIMS-SEC-017 | Integrity check as a background job | ⬜ later | When the audit log nears ~1 million records |
 | — | 19.2 | HIMS-QA-002 | Make browser tests a required check | ⬜ PO | You, in the GitHub branch rules |
+| 19f | 7.2, 7.4, 13 | HIMS-IAM-021 | Supplier support access, the "locked box": ask, hospital approves, emergency opens at once (hospital not emailed), ends by itself, every request audited | ✅ done (group 9) | PO request 2026-11-12 ([support access](../workflows/support-access.md)) |
+| 19g | 19, 31.1 | HIMS-QA-004 | Ten demo hospitals (5 India, 5 US, 3 branches each, own database each) with synthetic data for everything built | ✅ done (group 9) | PO request 2026-11-12 ([demo hospitals](../testing/demo-hospitals.md)); every later ticket adds its demo records |
 
 ### 4b. Phase 1: not buildable now (hosting stage at the end, deferred, moved, or unblocked on 2026-11-08)
 
@@ -146,6 +152,7 @@ fit, so nothing is forgotten.
 |---|---|---|---|
 | 17, 30, 34 | HIMS-OPS-020 | Hosting analysis | ✅ done 2026-11-11 ([analysis](../architecture/hosting/hosting-analysis.md)) |
 | 17, 31, 33 | HIMS-OPS-024 | The first free Development environment (no payment card): Render + Neon + cron-job.org, deploy from `development` ([guide](../workflows/render-neon-hosting.md)) | 🟡 in progress: code ready; the PO creates the service |
+| 7.2 | HIMS-OPS-025 | Owner console (control plane): every hospital in one list (country, version, health, audit integrity), a link to each one's Support access page, no patient data (gap found in HIMS-IAM-021) | Hosting stage (needs the hospitals online) |
 | 17, 30 | HIMS-OPS-003 | Terraform modules (network, ECS, RDS, Redis, S3, KMS, secrets, monitoring) | AWS |
 | 17.2, 30.5 | HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | AWS |
 | 17, 18 | HIMS-OPS-004 | Alarms and runbooks (errors, latency, database, queues, outbox) | AWS |
@@ -213,7 +220,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 | 4.1 | Hospital and branches | 1 | 🟡 97% | logo and letterhead done (HIMS-ORG-006) · 🔒 tax rules (LEGAL) |
 | 4.2 | Departments | 1 | 🟡 85% | 🔒 pricing, slots, escalation (CLIN) |
 | 4.3 | Staff and credentials | 1 | ✅ 100% | ✅ shifts, leave, on-call, clinical privileges, leave balances, minimum staffing · optional: shift swaps · enforcing privileges with clinical actions (Phase 2) |
-| 4.4 | Identity and access | 1 | 🟡 99% (department-level staff view done) | 🔒 SSO (PO), break-glass (Phase 2) |
+| 4.4 | Identity and access | 1 | 🟡 99% (department-level staff view done; supplier support access done 2026-11-12, HIMS-IAM-021) | 🔒 SSO (PO), break-glass (Phase 2) |
 | 4.5 | Patient registration and MPI | 2 | ⬜ designed | 🔒 sign-off |
 | 4.6 | Appointments and OPD | 2 | ⬜ designed | 🔒 sign-off |
 | 4.7 | Encounters and admissions | 2, 3 | ⬜ outpatient part designed | 🔒 sign-off; Phase 3 P0 |
@@ -237,6 +244,9 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 | 4.25 | Audit and governance | 1 | 🟡 95% | retention periods and legal holds done (HIMS-COMP-006; periods set by the hospital, LEGAL approved for now) · 🔒 write-once copy and audit log archive (AWS, HIMS-SEC-016, HIMS-COMP-007) |
 
 ## 6. Done so far
+
+**2026-11-12:** 102 Phase 1 items done or approved (count corrected; see section 1): PR #1–#54, the
+compliance pack and approvals, and group 9 (HIMS-IAM-021, HIMS-QA-004).
 
 99 Phase 1 items: tickets delivered in PR #1–#50 (and #30) and the security review PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
 tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and

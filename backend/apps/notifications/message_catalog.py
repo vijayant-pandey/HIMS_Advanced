@@ -172,6 +172,71 @@ MESSAGES: tuple[MessageSpec, ...] = (
         ),
     ),
     MessageSpec(
+        code="access.support_requested",
+        name="Supplier support: access asked for",
+        when="The software supplier asks for support access (sent to the hospital's "
+        "administrators, who approve or refuse it).",
+        category="access",
+        subject="{{hospital}}: the software supplier asks for support access",
+        body=(
+            "{{supplier}} asks for {{role}} access for {{hours}} hour(s).\n\n"
+            "Reason: {{reason}}\n\n"
+            "Approve or refuse it on the Support access page. Nothing is opened until you do.\n\n"
+            + _OPEN_HIMS
+        ),
+        variables=(
+            Variable("supplier", "The supplier's support account", "HIMS Support"),
+            Variable("role", "The access asked for", "Organization administrator"),
+            Variable("hours", "How long it would last", "2"),
+            Variable("reason", "Why the supplier needs it", "Check the rota error you reported"),
+            HOSPITAL,
+            LINK,
+        ),
+        required=frozenset({"supplier", "role", "link"}),
+    ),
+    MessageSpec(
+        code="access.support_decided",
+        name="Supplier support: decision",
+        when="The hospital approves or refuses the supplier's request (sent to the supplier).",
+        category="access",
+        subject="{{hospital}}: your support access request was {{decision}}",
+        body=(
+            "Your request for {{role}} access was {{decision}} by {{decided_by}}.\n\n{{details}}\n"
+        ),
+        variables=(
+            Variable("role", "The access asked for", "Organization administrator"),
+            Variable("decision", "approved or refused", "approved"),
+            Variable("decided_by", "Who decided", "Asha Verma"),
+            Variable(
+                "details", "Until when, or the reason", "It lasts until 12 Nov 2026 16:00 IST."
+            ),
+            HOSPITAL,
+        ),
+        required=frozenset({"decision"}),
+    ),
+    MessageSpec(
+        code="access.support_emergency_opened",
+        name="Supplier support: emergency access opened",
+        when="The supplier opens emergency support access without asking first. Sent only when "
+        "the deployment setting HIMS_SUPPORT_EMERGENCY_NOTICE is on (off by default).",
+        category="access",
+        subject="{{hospital}}: the software supplier opened emergency support access",
+        body=(
+            "{{supplier}} opened {{role}} access in an emergency, until {{until}}.\n\n"
+            "Reason: {{reason}}\n\n"
+            "Everything the supplier does is recorded in the audit log. You can end the access "
+            "early on the Support access page.\n"
+        ),
+        variables=(
+            Variable("supplier", "The supplier's support account", "HIMS Support"),
+            Variable("role", "The access opened", "Organization administrator"),
+            Variable("until", "When it ends by itself", "12 Nov 2026 16:00 IST"),
+            Variable("reason", "Why", "Sign-in outage for all staff"),
+            HOSPITAL,
+        ),
+        required=frozenset({"supplier", "role"}),
+    ),
+    MessageSpec(
         code="access.review_overdue",
         name="Access review overdue",
         when="The access review in progress is past its finish date.",

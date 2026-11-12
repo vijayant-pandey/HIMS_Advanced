@@ -40,6 +40,7 @@ erDiagram
     access_review_items
     access_review_reminders
     access_delegations
+    support_access
     specialties
     qualification_types
     designations
@@ -156,6 +157,12 @@ erDiagram
     users ||--o{ access_delegations : "delegate_id"
     users |o--o{ access_delegations : "created_by_id"
     users |o--o{ access_delegations : "ended_by_id"
+    organizations ||--o{ support_access : "organization_id"
+    users ||--o{ support_access : "requested_by_id"
+    roles ||--o{ support_access : "role_id"
+    users |o--o{ support_access : "decided_by_id"
+    role_assignments |o--o| support_access : "assignment_id"
+    users |o--o{ support_access : "ended_by_id"
     organizations ||--o{ staff_members : "organization_id"
     users |o--o| staff_members : "user_id"
     organizations ||--o{ staff_department_assignments : "organization_id"
@@ -592,6 +599,7 @@ erDiagram
         boolean is_active
         timestamptz date_joined
         timestamptz password_changed_at
+        timestamptz support_access_until
     }
     user_invitations {
         uuid id PK
@@ -759,6 +767,28 @@ erDiagram
         uuid ended_by_id FK
         text end_reason
     }
+    support_access {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid requested_by_id FK
+        uuid role_id FK
+        varchar kind
+        text reason
+        smallint hours
+        varchar state
+        uuid decided_by_id FK
+        timestamptz decided_at
+        text decision_note
+        timestamptz starts_at
+        timestamptz ends_at
+        uuid assignment_id FK, UK
+        timestamptz ended_at
+        uuid ended_by_id FK
+        text end_reason
+    }
     departments
     facilities
     organizations
@@ -788,6 +818,12 @@ erDiagram
     users ||--o{ access_delegations : "delegate_id"
     users |o--o{ access_delegations : "created_by_id"
     users |o--o{ access_delegations : "ended_by_id"
+    organizations ||--o{ support_access : "organization_id"
+    users ||--o{ support_access : "requested_by_id"
+    roles ||--o{ support_access : "role_id"
+    users |o--o{ support_access : "decided_by_id"
+    role_assignments |o--o| support_access : "assignment_id"
+    users |o--o{ support_access : "ended_by_id"
 ```
 
 Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `users`.
