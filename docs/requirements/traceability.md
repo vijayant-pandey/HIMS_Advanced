@@ -4,7 +4,7 @@
 
 Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-requirement-ids-and-contract-docs.md)) traced to its requirement record, the API endpoints that deliver it ([contracts](../architecture/api-and-integrations/endpoints/README.md)), the backend test files that name it or call its endpoints, and the pull requests that delivered it (spec 25.3). Browser tests and manual steps are named in each record.
 
-97 of 129 marked Done in the backlog; 102 requirement records (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
+98 of 129 marked Done in the backlog; 103 requirement records (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
@@ -70,7 +70,7 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-IAM-018 | Clinical delegation (a consultant's patients, orders, signing rights) on top of cover arrangements (gap found in HIMS-IAM-017) | Moves to Phase 2 | — | — | — | — |
 | HIMS-IAM-019 | Self-service cover requests: the away person proposes cover, an administrator approves (optional; gap found in HIMS-IAM-017) | To do | — | — | — | — |
 | HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | Done | [record](identity-and-access.md#hims-iam-014) | 7 | 1 files | #47 |
-| HIMS-IAM-021 | Supplier support access, the "locked box" (spec 7.2, 7.4): the software supplier's support account holds no access, asks for the administrator or auditor role for a few hours with a reason; the hospital approves or refuses; emergency opens at once (hospital not emailed, PO 2026-11-12); ends by itself; every request audited (PO request 2026-11-12) | Done | [record](identity-and-access.md#hims-iam-021) | 10 | 1 files | this PR |
+| HIMS-IAM-021 | Supplier support access, the "locked box" (spec 7.2, 7.4): the software supplier's support account holds no access, asks for the administrator or auditor role for a few hours with a reason; the hospital approves or refuses; emergency opens at once (hospital not emailed, PO 2026-11-12); ends by itself; every request audited (PO request 2026-11-12) | Done | [record](identity-and-access.md#hims-iam-021) | 10 | 1 files | #55 |
 | HIMS-STAFF-001 | Staff members, department assignments, qualifications, credentials (spec 9.4) | Done | [record](staff-and-rota.md#hims-staff-001) | 13 | 16 files | before PRs |
 | HIMS-STAFF-002 | Controlled specialty/qualification catalogs (starter set — clinical informatics to own) | Done | [record](staff-and-rota.md#hims-staff-002) | 6 | 2 files | before PRs |
 | HIMS-STAFF-003 | Credential verification with segregation of duties | Done | [record](staff-and-rota.md#hims-staff-003) | 3 | 5 files | before PRs |
@@ -80,7 +80,7 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-STAFF-007 | Staff detail/onboarding UI | Done | [record](staff-and-rota.md#hims-staff-007) | 13 | 16 files | #14 |
 | HIMS-STAFF-010 | Catalog screens: designations, specialties, qualification types (add/edit/deactivate in the app) | Done | [record](staff-and-rota.md#hims-staff-010) | 9 | 3 files | #19 |
 | HIMS-STAFF-008 | Department-scoped staff directory visibility; staff documents a separate permission ([how-to](../workflows/staff-visibility.md)) | Done | [record](staff-and-rota.md#hims-staff-008) | 15 | 17 files | #36 |
-| HIMS-STAFF-012 | Shift schedules, leave and on-call rotations (spec 4.3): Rota, Leave and My schedule pages, admin console, no double booking enforced by the database ([design](../architecture/data-architecture/rotas-and-leave.md), [ADR-024](../decisions/ADR-024-rotas-no-overlap-in-the-database.md)) | Done | [record](staff-and-rota.md#hims-staff-012) | 17 | 3 files | #35, this PR |
+| HIMS-STAFF-012 | Shift schedules, leave and on-call rotations (spec 4.3): Rota, Leave and My schedule pages, admin console, no double booking enforced by the database ([design](../architecture/data-architecture/rotas-and-leave.md), [ADR-024](../decisions/ADR-024-rotas-no-overlap-in-the-database.md)) | Done | [record](staff-and-rota.md#hims-staff-012) | 17 | 3 files | #35, #55 |
 | HIMS-STAFF-013 | Leave balances and entitlements (days per year, carry-over) (gap found in HIMS-STAFF-012) | Done | [record](staff-and-rota.md#hims-staff-013) | 13 | 2 files | #45 |
 | HIMS-STAFF-014 | Shift swaps requested by staff, approved by the head (gap found in HIMS-STAFF-012) | To do | — | — | — | — |
 | HIMS-STAFF-015 | Minimum staffing per shift and alerts for gaps (gap found in HIMS-STAFF-012) | Done | [record](staff-and-rota.md#hims-staff-015) | 4 | 2 files | #45 |
@@ -106,7 +106,7 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-DATA-003 | Artifact A for each P0 domain before release (patients/MPI first; spec 28.8) | To do | — | — | — | — |
 | HIMS-QA-001 | Playwright browser tests for Phase 1 flows with axe accessibility checks; CI workflow ([how-to](../testing/browser-tests.md)) | Done | [record](platform-and-operations.md#hims-qa-001) | — | 1 files | #27 |
 | HIMS-QA-002 | Make `browser-tests` a required check once it has run green for two weeks | To do | — | — | — | — |
-| HIMS-QA-004 | Demo hospitals: 5 Indian and 5 US hospitals, 3 branches each, every one its own database, with synthetic records for everything built; the launcher lists them; invented patients ready for Phase 2 (PO request 2026-11-12) | Done | [record](platform-and-operations.md#hims-qa-004) | — | 1 files | this PR |
+| HIMS-QA-004 | Demo hospitals: 5 Indian and 5 US hospitals, 3 branches each, every one its own database, with synthetic records for everything built; the launcher lists them; invented patients ready for Phase 2 (PO request 2026-11-12) | Done | [record](platform-and-operations.md#hims-qa-004) | — | 1 files | #55 |
 | HIMS-QA-003 | Browser tests for the US deployment and the admin console | Done | [record](platform-and-operations.md#hims-qa-003) | — | 1 files | #49 |
 | HIMS-NOTIF-001 | Notification service: email + SMS, delivery log, retries, hidden secrets, Messages page, admin console ([how-to](../workflows/notifications.md)) | Done | [record](notifications-and-compliance.md#hims-notif-001) | 4 | 2 files | #29 |
 | HIMS-NOTIF-002 | SMS gateway (India DLT-registered; US provider) | Deferred | — | — | — | — |
@@ -129,7 +129,7 @@ Every Phase 1 requirement (backlog ticket; ID scheme in [ADR-032](../decisions/A
 | HIMS-OPS-020 | Hosting analysis: map the specification's hosting needs (sections 17, 30, 31, 34) to Oracle Cloud's free offering, its limits and gaps ([ADR-027](../decisions/ADR-027-hosting-on-oracle-cloud.md)) | Done | [record](platform-and-operations.md#hims-ops-020) | 1 | 1 files | #52 |
 | HIMS-OPS-022 | Serve the screens from the same server as the API (built React app through WhiteNoise, with the screens' security headers), so one free service and one address are enough (gap found in HIMS-OPS-020) | Done | [record](platform-and-operations.md#hims-ops-022) | — | 1 files | #53 |
 | HIMS-OPS-023 | Scheduled jobs without a worker: run every due job once from an outside clock (host cron or GitHub Actions), never twice at the same time (gap found in HIMS-OPS-020) | Done | [record](platform-and-operations.md#hims-ops-023) | 1 | 1 files | #53 |
-| HIMS-OPS-024 | The first free Development environment without a payment card (Northflank, or Render + Neon + GitHub Actions): settings, deploy from `development`, `hosting_check` in the pipeline (gap found in HIMS-OPS-020) | In progress | — | 1 | 2 files | #54 |
+| HIMS-OPS-024 | The first free Development environment without a payment card (Northflank, or Render + Neon + GitHub Actions): settings, deploy from `development`, `hosting_check` in the pipeline (gap found in HIMS-OPS-020) | Done 2026-11-12 | [record](platform-and-operations.md#hims-ops-024) | 1 | 3 files | #54, this PR |
 | HIMS-OPS-008 | Customer provisioning automation in the control plane | To do | — | — | — | — |
 | HIMS-OPS-025 | Owner console (control plane, spec 7.2): one list of every hospital the supplier runs (country, version, health, audit integrity) with a link to each hospital's Support access page; no patient data in it (gap found in HIMS-IAM-021) | To do | — | — | — | — |
 | HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | Done | [record](platform-and-operations.md#hims-ops-009) | 7 | 3 files | #38 |

@@ -120,7 +120,7 @@ New tickets (in the [backlog](../../backlog/phase-1-foundation.md) and the hosti
 |---|---|---|
 | HIMS-OPS-022 (done) | Serve the screens from the same server as the API (the built React app through WhiteNoise, with the screens' security headers) | One free service; sign-in cookies need one address; also sends the screens' headers (most of HIMS-SEC-018) |
 | HIMS-OPS-023 (done) | Scheduled jobs without a worker: a command that runs every due job once, safe to start from an outside clock | Free hosts have no always-on scheduler; the audit log must still be sealed |
-| HIMS-OPS-024 | The first free Development environment: account, settings, deploy from `development`, `hosting_check` in the pipeline, the PO's sign-in | The goal of this stage |
+| HIMS-OPS-024 (done 2026-11-12) | The first free Development environment: account, settings, deploy from `development`, `hosting_check` in the pipeline, the PO's sign-in | The goal of this stage. Live on Render + Neon + cron-job.org ([guide](../../workflows/render-neon-hosting.md)); Render also has Cloudflare in front, whose ranges are trusted proxies |
 
 The existing hosting-stage tickets keep their purpose and move to whichever host is chosen for real
 data: infrastructure as code (HIMS-OPS-003), alarms (HIMS-OPS-004), the deploy pipeline

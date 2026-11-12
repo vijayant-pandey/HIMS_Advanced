@@ -604,6 +604,25 @@ their "actors" are every caller and their evidence is the shared tests in `backe
 | Test evidence | `common/tests/test_scheduled_jobs.py`; frontend `BackgroundJobsPage.test.tsx`; manual test Part 18u |
 | Release risk | Low. Rollback: run Celery beat instead |
 
+### HIMS-OPS-024
+
+| Field | Record |
+|---|---|
+| ID and title | HIMS-OPS-024 The first free Development environment without a payment card (Render + Neon + cron-job.org) |
+| Business/clinical reason | The product owner and testers use HIMS on the internet with synthetic data before paid hosting (spec 17, 31, 33; ADR-034). Owner: PO |
+| Actors | The PO (creates the services, signs in); Render (deploys `development` on each merge); cron-job.org (the timer); CI |
+| Preconditions | Free Render, Neon and cron-job.org accounts; the environment's own keys in Render's settings |
+| Main success path | Merge to `development` → Render builds the one image and deploys; the PO runs `migrate` against Neon; the timer runs the scheduled jobs every minute; every pull request runs `hosting_check` with the hosted settings |
+| Alternate/failure paths | A "Must fix" in the hosted settings fails the pull request; a wrong timer token gets 403; the first timer calls may time out while the free service wakes up |
+| Data effects | Synthetic records in the Neon database only |
+| Security classification | Synthetic data only; secrets only in Render's settings and an ignored file on the PO's PC |
+| Audit requirement | As every environment; the timer's runs are on the Background jobs page |
+| Idempotency/concurrency | Scheduled jobs under one lock (HIMS-OPS-023) |
+| Integration dependencies | Render, Neon, cron-job.org (free tiers); Cloudflare in front of Render (its ranges are trusted proxies) |
+| Acceptance criteria | Live at the hosted address with two-factor; all 13 scheduled jobs finished; Hosting readiness has no "Must fix"; My sign-ins shows the person's own address (all checked by the PO on 2026-11-12) |
+| Test evidence | `common/tests/test_ci_workflows.py`; [the guide](../workflows/render-neon-hosting.md), section 7 |
+| Release risk | Low (test environment). Rollback: Render's previous deploy |
+
 ## Data, tests and documents
 
 ### HIMS-DATA-001

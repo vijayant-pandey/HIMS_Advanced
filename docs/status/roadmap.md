@@ -7,6 +7,10 @@ section 20 (phases), 4 (domains), 21 (vertical slice), 26–27 (P0/P1), 36 (deci
 ordered plan. **Last updated:** 2026-11-10 (after PR #47, with the retention purge built).
 **Update 2026-11-12:** supplier support access (HIMS-IAM-021) and the ten demo hospitals
 (HIMS-QA-004) built as group 9; the counts below are corrected where marked "2026-11-12".
+**Update 2026-11-12, later:** the free Development environment is live (HIMS-OPS-024 done:
+Render + Neon + cron-job.org, https://hims-dev.onrender.com). **Phase 1's application part is
+finished**; what is left of Phase 1 is the hosting stage at the end, 4 optional items and 2 PO
+deferrals, none of which blocks Phase 2. **Next: Phase 2, Slice 2A, HIMS-PAT-001** (section 4c).
 
 **2026-11-08 decisions** ([decisions log](decisions-log.md)): CLIN, LEGAL and PO approved the pending documents
 **for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
@@ -29,6 +33,7 @@ PACS/LIS/drug database/SMS.
 | Phases not started | 5 (Phase 2 design approved for now on 2026-11-08: it can be built) |
 | Spec sections (1–36) | 36: ✅ 2 · 🟡 27 · ⬜ 6 · not applicable 1 (section 24, links) |
 | Functional domains (section 4.1–4.25) | 25: 🟡 9 started · ⬜ 16 not started |
+| Phase 1 tickets (2026-11-12, after HIMS-OPS-024) | 129: ✅ 103 done or approved (98 Done + 5 compliance documents approved for now) = 80% · 26 left, none blocking Phase 2: 4 🔓 optional (HIMS-IAM-019, HIMS-STAFF-014, HIMS-SEC-017, HIMS-QA-002), 15 hosting stage at the end (paid hosting / AWS), 2 deferred by the PO (SMS gateway, single sign-on), 5 moved to Phase 2 |
 | Phase 1 tickets (2026-11-12) | 129: ✅ 102 done or approved (97 Done + 5 compliance documents approved for now) · 27 left: 4 🔓 optional, 16 hosting stage (HIMS-OPS-024 in progress; HIMS-OPS-025 owner console new), 2 deferred by the PO, 5 moved to Phase 2 (HIMS-IAM-010, -011, -018, -020, HIMS-DATA-003) |
 | Phase 1 tickets | 126: ✅ 103 done or approved · 23 left: 4 🔓 can be built now (all optional or later), 15 hosting stage (now: the free Development environment on Render + Neon, HIMS-OPS-024), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
@@ -41,7 +46,7 @@ PACS/LIS/drug database/SMS.
 
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
-| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~20% (2026-11-12: 102 of 129 = 79%; free Development environment live on Render + Neon, HIMS-OPS-024 nearly done; supplier support access and demo hospitals added) | 103 (PR #1–#52 and #30, ready for Northflank, 2 approvals) | The free Development environment on Northflank (HIMS-OPS-024); 4 optional items | Hosting: free Development without a card first (ADR-034); paid hosting before real data | Hospital configured, staff onboarded, isolation enforced |
+| **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~20% (2026-11-12: 102 of 129 = 79%; free Development environment live on Render + Neon, HIMS-OPS-024 nearly done; supplier support access and demo hospitals added; later 2026-11-12: HIMS-OPS-024 done, 103 of 129 = 80%, application part finished, only the hosting stage at the end left) | 103 (PR #1–#52 and #30, ready for Northflank, 2 approvals) | The free Development environment on Northflank (HIMS-OPS-024); 4 optional items | Hosting: free Development without a card first (ADR-034); paid hosting before real data | Hospital configured, staff onboarded, isolation enforced |
 | **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
@@ -111,7 +116,7 @@ fit, so nothing is forgotten.
 | 8 | Ready for a free host (found by the hosting analysis) | HIMS-OPS-022, HIMS-OPS-023 | 17, 31, 14 | ✅ done |
 | 9 | Supplier support access and demo hospitals (PO request 2026-11-12) | HIMS-IAM-021, HIMS-QA-004 (and the console's "Copy a week", HIMS-STAFF-012) | 7.2, 7.4, 13, 19, 31.1 | ✅ done |
 
-**Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step), and the hosting analysis (HIMS-OPS-020) is done. Group 8 (ready for the free host) is done too. **Now: the free Development environment on Render + Neon (HIMS-OPS-024, section 4b), in progress.** The table below keeps each task's own row.
+**Everything buildable before hosting is done** (the security review, HIMS-SEC-011, was the last step), and the hosting analysis (HIMS-OPS-020) is done. Group 8 (ready for the free host) is done too. **Now: the free Development environment on Render + Neon (HIMS-OPS-024, section 4b), in progress.** The table below keeps each task's own row. **2026-11-12: HIMS-OPS-024 done (live at https://hims-dev.onrender.com); next is Phase 2, Slice 2A (section 4c).**
 
 | Step | Spec § | Ticket | Task | Status | Why this order |
 |---|---|---|---|---|---|
@@ -151,7 +156,7 @@ fit, so nothing is forgotten.
 | Spec § | Ticket | Task | Blocked by |
 |---|---|---|---|
 | 17, 30, 34 | HIMS-OPS-020 | Hosting analysis | ✅ done 2026-11-11 ([analysis](../architecture/hosting/hosting-analysis.md)) |
-| 17, 31, 33 | HIMS-OPS-024 | The first free Development environment (no payment card): Render + Neon + cron-job.org, deploy from `development` ([guide](../workflows/render-neon-hosting.md)) | 🟡 in progress: code ready; the PO creates the service |
+| 17, 31, 33 | HIMS-OPS-024 | The first free Development environment (no payment card): Render + Neon + cron-job.org, deploy from `development` ([guide](../workflows/render-neon-hosting.md)) | 🟡 in progress: code ready; the PO creates the service → ✅ done 2026-11-12: live, timer running, no "Must fix", hosting check in every pull request |
 | 7.2 | HIMS-OPS-025 | Owner console (control plane): every hospital in one list (country, version, health, audit integrity), a link to each one's Support access page, no patient data (gap found in HIMS-IAM-021) | Hosting stage (needs the hospitals online) |
 | 17, 30 | HIMS-OPS-003 | Terraform modules (network, ECS, RDS, Redis, S3, KMS, secrets, monitoring) | AWS |
 | 17.2, 30.5 | HIMS-OPS-019 | Database activity logging (pgaudit) for owner and break-glass sessions; alarm when break-glass signs in (gap found in HIMS-OPS-007) | AWS |
@@ -185,7 +190,7 @@ fit, so nothing is forgotten.
 | Step | Phase | Spec § | Tickets | Task | Status | Blocked by |
 |---|---|---|---|---|---|---|
 | 19 | 2 | 26 | HIMS-PAT-000 | Sign off the Phase 2 P0 design (26 decisions) | ✅ approved for now 2026-11-08 | — (may be revisited) |
-| 20 | 2 | 4.5, 13 | HIMS-PAT-001, 002, 005, 006; HIMS-IAM-010; HIMS-DATA-003 | Slice 2A: registration with MRN, search, chart header, restricted records, patient scope | ⬜ | Step 19 |
+| 20 | 2 | 4.5, 13 | HIMS-PAT-001, 002, 005, 006; HIMS-IAM-010; HIMS-DATA-003 | Slice 2A: registration with MRN, search, chart header, restricted records, patient scope | ⬜ **next** (2026-11-12; first HIMS-PAT-001, which also registers the demo hospitals' invented patients) | Step 19 (done) |
 | 21 | 2 | 4.6, 4.23 | HIMS-OPD-001…004 | Slice 2B: schedules (uses step 1 rotas), appointments without double booking, walk-ins, queue, reminders | ⬜ | Step 20 |
 | 22 | 2 | 4.7, 4.8 | HIMS-CLIN-001…007; HIMS-IAM-011, 020 | Slice 2C: visits, vitals, allergies, diagnoses (ICD), notes with sign/amend, emergency access, confirm-it's-you for clinical actions | ⬜ | Step 21; CLIN (terminology) |
 | 23 | 2 | 4.5, 4.24 | HIMS-PAT-003, 004; HIMS-RPT-001, 002 | Slice 2D: duplicates and merge, visit summary, OPD lists; Phase 2 exit check | ⬜ | Step 22 |
@@ -206,7 +211,7 @@ fit, so nothing is forgotten.
 | 38 | 6 | 4.24, 7.6 | — | Reporting and analytics | ⬜ | Domains; LEGAL for cross-hospital |
 | 39 | 6 | 12 | — | FHIR, ABDM (ABHA), external EHRs | ⬜ | Partners, LEGAL |
 | 40 | 6 | 4.15, 4.16 | — | PACS, LIS and device integrations | ⬜ | VENDOR |
-| 41 | 6 | 17, 27, 30 | HIMS-OPS-020 (done), HIMS-OPS-022/023/024, then the Phase 1 hosting items | Hosting stage: free Development first (ADR-034), paid hosting before real data: backups, disaster recovery, alarms | 🟡 analysis done | At the very end (PO 2026-11-08) |
+| 41 | 6 | 17, 27, 30 | HIMS-OPS-020 (done), HIMS-OPS-022/023/024, then the Phase 1 hosting items | Hosting stage: free Development first (ADR-034), paid hosting before real data: backups, disaster recovery, alarms | 🟡 analysis done; free Development live 2026-11-12 (HIMS-OPS-022, -023, -024 done) | At the very end (PO 2026-11-08) |
 | 42 | 6 | 18, 19, 27 | — | Performance, security and recovery tests; clinical validation | ⬜ | Hosting, CLIN |
 | 43 | 6 | 20, 35 | — | Hospital acceptance testing, training, controlled rollout | ⬜ | Everything above |
 
@@ -247,6 +252,9 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 
 **2026-11-12:** 102 Phase 1 items done or approved (count corrected; see section 1): PR #1–#54, the
 compliance pack and approvals, and group 9 (HIMS-IAM-021, HIMS-QA-004).
+
+**2026-11-12, later:** 103: group 9 merged as PR #55, and HIMS-OPS-024 done (the free Development
+environment live on Render + Neon; hosting check with the hosted settings in every pull request).
 
 99 Phase 1 items: tickets delivered in PR #1–#50 (and #30) and the security review PR, plus the two approvals of 2026-11-08. The full list with what each PR did is in the
 tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and
