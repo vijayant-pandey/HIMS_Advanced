@@ -74,6 +74,29 @@ jobs:
         run: |
           pip-audit -r requirements/base.txt
           pip-audit -r requirements/dev.txt
+      - name: Hosting check with the hosted settings (HIMS-OPS-024)
+        # The settings of the free Development host (docs/workflows/render-neon-hosting.md, step 3)
+        # with throwaway keys: nothing may be "Must fix". Last, so the OpenAPI step above still
+        # sees an empty database.
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+          HIMS_ENVIRONMENT: development
+          HIMS_DATABASE_ENVIRONMENT: development
+          HIMS_DEPLOYMENT_ID: ci-hosting-check
+          DJANGO_ALLOWED_HOSTS: ci.invalid
+          DJANGO_CSRF_TRUSTED_ORIGINS: https://ci.invalid
+          HIMS_APP_BASE_URL: https://ci.invalid
+          HIMS_TRUSTED_PROXIES: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10,127.0.0.1
+          HIMS_ENABLE_ADMIN: "false"
+          HIMS_ACCEPT_LOCAL_DOCUMENT_STORAGE: "true"
+          HIMS_ACCEPT_UNSCANNED_UPLOADS: "true"
+        run: |
+          export DJANGO_SECRET_KEY="$(openssl rand -hex 32)"
+          export HIMS_FIELD_ENCRYPTION_KEYS="$(openssl rand -base64 32 | tr '+/' '-_')"
+          export HIMS_AUDIT_CHAIN_KEYS="ci:$(openssl rand -hex 32)"
+          export HIMS_SCHEDULER_TOKEN="$(openssl rand -hex 32)"
+          python manage.py migrate --no-input
+          python manage.py hosting_check
 
   frontend:
     runs-on: ubuntu-latest

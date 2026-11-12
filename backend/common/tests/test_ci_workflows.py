@@ -76,3 +76,16 @@ def test_backend_tests_run_the_real_restore_drill():
     step = next(s for s in workflow["jobs"]["backend"]["steps"] if s.get("run") == "pytest -q")
     container = step.get("env", {}).get("HIMS_PG_DOCKER_CONTAINER")
     assert container == "${{ job.services.postgres.id }}"
+
+
+def test_backend_job_runs_the_hosting_check_with_the_hosted_settings():
+    """HIMS-OPS-024: every pull request proves the free Development host's settings have no
+    "Must fix" item, after the OpenAPI step (which needs an empty database)."""
+    workflow = _load(ROOT / ".github" / "workflows" / "pull-request-ci.yml")
+    steps = workflow["jobs"]["backend"]["steps"]
+    names = [step.get("name", "") for step in steps]
+    check = next(s for s in steps if "hosting_check" in s.get("run", ""))
+    assert check["env"]["DJANGO_SETTINGS_MODULE"] == "config.settings.production"
+    assert check["env"]["HIMS_ENVIRONMENT"] == "development"
+    assert "--real-data" not in check["run"]  # test data only: "Before real data" is expected
+    assert names.index(check["name"]) > names.index("OpenAPI contract is up to date")

@@ -151,7 +151,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `scheduled_jobs_run_create` |
 | Method and path | `POST /api/v1/scheduled-jobs/run/` |
 | Business purpose | Run the scheduled jobs that are due, for an outside timer calling every minute. |
-| Requirements | [HIMS-OPS-023](../../../requirements/platform-and-operations.md#hims-ops-023), HIMS-OPS-024 |
+| Requirements | [HIMS-OPS-023](../../../requirements/platform-and-operations.md#hims-ops-023), [HIMS-OPS-024](../../../requirements/platform-and-operations.md#hims-ops-024) |
 | Actor / permission required | Anyone, without signing in (the answer reveals nothing about accounts or records) |
 | Customer / facility scope | — |
 | Request schema | No body |
