@@ -8,7 +8,7 @@ from datetime import timedelta
 
 from django import forms
 from django.contrib import admin, messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.forms.models import construct_instance
 from django.template.response import TemplateResponse
 from django.urls import path
@@ -145,6 +145,54 @@ class ShiftAdmin(HimsModelAdmin):
                 self.message_user(request, f"{shift}: cancelled.")
             except DomainError as exc:
                 self.message_user(request, f"{shift}: {exc.detail}", messages.ERROR)
+
+    # "Copy a week", as on the Rota page (same service and rules; gap found 2026-11-12).
+    def get_urls(self):
+        return [
+            path(
+                "copy-week/",
+                self.admin_site.admin_view(self.copy_week_view),
+                name="rosters_shift_copy_week",
+            ),
+            *super().get_urls(),
+        ]
+
+    def copy_week_view(self, request):
+        if not self.has_add_permission(request):
+            raise PermissionDenied
+        form = CopyWeekForm(request.POST or None)
+        result = None
+        if request.method == "POST" and form.is_valid():
+            data = form.cleaned_data
+            try:
+                created, skipped = services.copy_week(
+                    actor=request.user,
+                    department=data["department"],
+                    from_start=data["from_start"],
+                    to_start=data["to_start"],
+                    request=request,
+                )
+                result = {"created": len(created), "skipped": skipped}
+            except DomainError as exc:
+                form.add_error(None, str(exc.detail))
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Copy a week of shifts",
+            "form": form,
+            "result": result,
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/rosters/shift/copy_week.html", context)
+
+
+class CopyWeekForm(forms.Form):
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.filter(status=Department.Status.ACTIVE)
+        .select_related("facility")
+        .order_by("facility__name", "name")
+    )
+    from_start = forms.DateField(help_text="First day of the week to copy.")
+    to_start = forms.DateField(help_text="Same weekday, one or more weeks later.")
 
 
 class LeaveRequestForm(forms.ModelForm):

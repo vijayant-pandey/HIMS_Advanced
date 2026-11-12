@@ -193,6 +193,8 @@ def _ensure_not_last_administrator_grant(assignment: RoleAssignment) -> None:
     role = assignment.role
     if assignment.delegation_id is not None:
         return  # lent cover access never counts as one of the hospital's administrators
+    if hasattr(assignment, "support_access"):
+        return  # nor does the supplier's time-limited support access (HIMS-IAM-021)
     if role.code != ADMIN_ROLE or not role.is_system or assignment.facility_id is not None:
         return
     if not active_administrators().exclude(pk=assignment.user_id).exists():

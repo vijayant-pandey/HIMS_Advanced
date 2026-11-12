@@ -1545,6 +1545,45 @@ Optionally repeat Parts 9, 15 and 17 for the US with the US auditor.
 
 ---
 
+## Part 22: demo hospitals (HIMS-QA-004)
+
+First make them once: [demo hospitals](demo-hospitals.md) ("Make them"). Then restart
+`npm run dev`.
+
+- [ ] **Expect:** the launcher's title is **HIMS developer launcher** and it says real hospitals
+      never see this page. Under **Demo hospitals: India** and **Demo hospitals: United States**
+      there are 5 cards each.
+- [ ] **Do:** **Open Sunrise Hospitals (Demo)**; sign in as `admin@in-sunrise.demo.test` with
+      your demo password.
+- [ ] **Expect:** **Facilities** shows Sunrise Dwarka, Noida and Gurugram. **Bed board** shows
+      beds in several colours. **Staff**, **Rota**, **Leave**, **Equipment** and
+      **Licence expiry** all have records. None of your own PC hospital's data is there.
+- [ ] **Do:** open a second demo hospital, e.g. **Lakeside Health (Demo)**, in another tab.
+- [ ] **Expect:** only Lakeside's US branches (Chicago, Evanston, Naperville). Sunrise's accounts
+      do not work here.
+- [ ] **Do:** sign in as `nurse.dwk@in-sunrise.demo.test`.
+- [ ] **Expect:** a short menu. A nurse with basic access sees only a few pages.
+
+## Part 23: supplier support access, the "locked box" (HIMS-IAM-021)
+
+Use a demo hospital, e.g. Sunrise. Window A is the hospital's administrator; window B (a private
+window) is you as the software supplier.
+
+| # | Do | Expect |
+|---|---|---|
+| 23.1 | B: sign in as `support@hims-supplier.demo.test` | Only **Support access** in the menu. The supplier sees nothing else |
+| 23.2 | B: **Ask for access** → Organization administrator, 2 hours, reason "Check the rota error" → **Ask the hospital** | "Your request is waiting for the hospital" |
+| 23.3 | A: sign in as `admin@in-sunrise.demo.test` → **Support access** | The request is under **Waiting and running**. The email is in the launcher window |
+| 23.4 | A: **Approve** → **Approve** | Status **Active now**, with the end time 2 hours later |
+| 23.5 | B: reload | The full menu appears. Open **Staff** and **Rota** |
+| 23.6 | A (auditor `auditor@in-sunrise.demo.test`): **Audit log**, area **Supplier support access** | One line per page the supplier opened, and the approval |
+| 23.7 | A: **Support access** → **End now** with a reason | B's menu is back to **Support access** only after a reload |
+| 23.8 | B: **Ask for access** → tick **Emergency** → **Open emergency access now** | The warning says the hospital is not emailed. Access opens at once |
+| 23.9 | A: **Support access** | The emergency access is listed (with an **Emergency** badge). No email was sent for it |
+| 23.10 | Console http://localhost:8201/admin/ (admin) → **Support access** | The same records; actions Approve, Refuse, End |
+
+---
+
 ## Stop HIMS
 
 1. Click in the **launcher window** and press `Ctrl+C`. Answer `Y` if asked.

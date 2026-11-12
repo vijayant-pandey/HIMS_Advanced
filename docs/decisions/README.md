@@ -40,3 +40,4 @@ default, awaiting the named approver), **Superseded**.
 | [032](ADR-032-requirement-ids-and-contract-docs.md) | Ticket IDs as requirement IDs; endpoint contracts generated from the code | Proposed |
 | [033](ADR-033-session-limits-and-sign-in-pause.md) | Session limits background refreshes cannot defeat, and a sign-in pause per account | Proposed |
 | [034](ADR-034-free-hosting-without-a-card.md) | A free Development environment on a host that needs no payment card (puts ADR-027 on hold) | Proposed |
+| [035](ADR-035-supplier-support-access.md) | Supplier support access, the "locked box": ask, hospital approves, emergency at once, ends by itself, every request audited | Proposed |

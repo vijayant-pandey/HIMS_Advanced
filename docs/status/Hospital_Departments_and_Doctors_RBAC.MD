@@ -516,3 +516,13 @@ switched off, so the hospital cannot lock itself out.
   `platform.jobs.manage` (send a failed event again or dismiss it, with a reason; two-factor
   required). Only the administrator has them. Runbook:
   [background jobs](../runbooks/outbox-and-background-jobs.md).
+
+## Update 2026-11-12: the software supplier's support account (HIMS-IAM-021)
+
+| Role | Where | Permissions | What it is for | Typical holder |
+|---|---|---|---|---|
+| **Software supplier support** (`supplier-support`) | Whole hospital | `support.access.request` only | Holds no hospital access. Asks for the hospital administrator or auditor role for a few hours with a reason; the hospital approves or refuses, or the supplier opens it at once in an emergency. Every request it makes while the access lasts is recorded in the audit log ([support access](../workflows/support-access.md)) | The company that supplies HIMS |
+
+The **Organization administrator** role now also holds `support.access.manage` (approve, refuse or
+end the supplier's access), but never `support.access.request`. Both permissions need two-factor
+sign-in.

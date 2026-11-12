@@ -8,7 +8,8 @@ export const MENU_ACTIVE_SHADE = 0.22;
 export interface NavItem {
   to: string;
   label: string;
-  permission: string;
+  /** Holding this permission (or any of these) shows the item. */
+  permission: string | readonly string[];
 }
 
 /** Main menu. Items appear only for users holding the permission (the API still enforces it). */
@@ -30,6 +31,8 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/accounts", label: "Accounts", permission: "access.roles.view" },
   { to: "/access-reviews", label: "Access reviews", permission: "access.reviews.view" },
   { to: "/cover", label: "Cover", permission: "access.roles.view" },
+  // The hospital decides, the software supplier asks (HIMS-IAM-021).
+  { to: "/support-access", label: "Support access", permission: ["support.access.manage", "support.access.request"] },
   { to: "/notifications", label: "Messages", permission: "notifications.view" },
   { to: "/message-wording", label: "Message wording", permission: "notifications.view" },
   { to: "/compliance", label: "Compliance", permission: "compliance.view" },
@@ -46,5 +49,7 @@ export function hasNestedItem(item: NavItem): boolean {
 }
 
 export function visibleNavItems(user: CurrentUser | null | undefined): NavItem[] {
-  return NAV_ITEMS.filter((item) => hasPermission(user, item.permission));
+  return NAV_ITEMS.filter((item) =>
+    (typeof item.permission === "string" ? [item.permission] : item.permission).some((p) => hasPermission(user, p)),
+  );
 }

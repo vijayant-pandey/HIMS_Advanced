@@ -46,8 +46,9 @@ logger = logging.getLogger(__name__)
 Status = AccessDelegation.Status
 
 # Roles holding any of these are never lent (auditors must stay independent of the people they
-# audit; ADR-013 separation of duties).
-NOT_DELEGABLE_PERMISSIONS = frozenset({P.AUDIT_VIEW})
+# audit; ADR-013 separation of duties). The supplier's support role is not lent either
+# (HIMS-IAM-021).
+NOT_DELEGABLE_PERMISSIONS = frozenset({P.AUDIT_VIEW, P.SUPPORT_ACCESS_REQUEST})
 # A start time this far in the past is still accepted (the form was open for a while).
 START_GRACE = timedelta(minutes=5)
 
@@ -64,12 +65,14 @@ def own_current_assignments(user):
             user=user, revoked_at__isnull=True, valid_from__lte=now, delegation__isnull=True
         )
         .filter(Q(valid_until__isnull=True) | Q(valid_until__gt=now))
-        .select_related("role", "facility", "department")
+        .select_related("role", "facility", "department", "support_access")
         .order_by("role__name")
     )
 
 
 def why_not_delegable(assignment: RoleAssignment) -> str:
+    if hasattr(assignment, "support_access"):
+        return "The software supplier's support access is never lent."
     codes = set(assignment.role.permissions.values_list("codename", flat=True))
     if codes & NOT_DELEGABLE_PERMISSIONS:
         return "Auditor access is never lent: auditors must stay independent."

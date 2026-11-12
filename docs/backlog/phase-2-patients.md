@@ -3,12 +3,16 @@
 Design: [Phase 2 P0 draft](../p0/phase-2-patients/README.md). **No ticket starts before PO and
 doctor sign-off** (spec 26). Legal items must close before real patient data.
 
+**2026-11-08:** PO, CLIN and LEGAL approved the P0 design **for now** ([decisions log](../status/decisions-log.md),
+row 3), so Phase 2 can be built. **2026-11-12:** every ticket also adds its records to the demo
+hospitals (`backend/apps/demo/seed.py`; [demo hospitals](../testing/demo-hospitals.md), HIMS-QA-004).
+
 ## EPIC HIMS-PAT: Patients (slice 2A, 2D)
 
 | ID | Ticket | Status |
 |---|---|---|
-| HIMS-PAT-000 | P0 design sign-off (PO + reviewing doctor; legal items D6, D7, D9, D18, D24) | Waiting for sign-off |
-| HIMS-PAT-001 | Patient registration with MRN, contacts, relationships, identifiers (encrypted/masked), consents | To do |
+| HIMS-PAT-000 | P0 design sign-off (PO + reviewing doctor; legal items D6, D7, D9, D18, D24) | Waiting for sign-off → approved for now 2026-11-08 (decisions log row 3) |
+| HIMS-PAT-001 | Patient registration with MRN, contacts, relationships, identifiers (encrypted/masked), consents | To do (also registers the invented demo patients, `apps/demo/patients.py`) |
 | HIMS-PAT-002 | Patient search (MRN, phone, ID, similar name) with minimal results; chart read auditing | To do |
 | HIMS-PAT-003 | Duplicate detection at registration and possible-duplicates list | To do |
 | HIMS-PAT-004 | Two-person merge with 30-day undo | To do |

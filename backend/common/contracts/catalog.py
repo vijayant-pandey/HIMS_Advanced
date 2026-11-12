@@ -76,6 +76,8 @@ VIEW_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     _A + "views.AccessReviewViewSet": ("HIMS-IAM-012",),
     _A + "delegation_views.AccessDelegationViewSet": ("HIMS-IAM-017",),
     _A + "delegation_views.MyDelegationsView": ("HIMS-IAM-017",),
+    _A + "support_views.SupportAccessViewSet": ("HIMS-IAM-021",),
+    _A + "support_views.MySupportAccessViewSet": ("HIMS-IAM-021",),
     # Staff, credentials, documents, catalogs and privileges
     _S + "StaffMemberViewSet": (
         "HIMS-STAFF-001",

@@ -51,6 +51,8 @@ class P:
     PERFORMANCE_VIEW = "platform.performance.view"
     PERFORMANCE_MANAGE = "platform.performance.manage"
     ADMIN_CONSOLE = "platform.admin_console"
+    SUPPORT_ACCESS_REQUEST = "support.access.request"
+    SUPPORT_ACCESS_MANAGE = "support.access.manage"
 
 
 PERMISSIONS: dict[str, str] = {
@@ -112,7 +114,18 @@ PERMISSIONS: dict[str, str] = {
         "Add sign-in accounts for people who are not staff, switch accounts off or on, "
         "reset their two-factor and sign them out"
     ),
+    P.SUPPORT_ACCESS_REQUEST: (
+        "Ask the hospital for time-limited support access (the software supplier's support "
+        "account only)"
+    ),
+    P.SUPPORT_ACCESS_MANAGE: (
+        "See the software supplier's support access, approve or refuse its requests, end it early"
+    ),
 }
+
+# Never part of the hospital administrator role: only the software supplier's support account
+# asks for support access (HIMS-IAM-021), and auditors stay separate (ADR-013).
+NOT_FOR_ADMINISTRATORS: frozenset[str] = frozenset({P.AUDIT_VIEW, P.SUPPORT_ACCESS_REQUEST})
 
 # Holding any of these makes two-factor sign-in mandatory (spec 13.1: "MFA for privileged
 # users"; HIMS-IAM-005). Add clinical permissions here when clinical governance decides which
@@ -141,6 +154,8 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.COMPLIANCE_MANAGE,
         P.RECOVERY_MANAGE,
         P.JOBS_MANAGE,
+        P.SUPPORT_ACCESS_REQUEST,
+        P.SUPPORT_ACCESS_MANAGE,
     }
 )
 
@@ -151,7 +166,7 @@ SYSTEM_ROLES: dict[str, dict] = {
     "organization-administrator": {
         "name": "Organization administrator",
         "description": "Full administrative access to organization configuration.",
-        "permissions": [code for code in PERMISSIONS if code != P.AUDIT_VIEW],
+        "permissions": [code for code in PERMISSIONS if code not in NOT_FOR_ADMINISTRATORS],
     },
     "auditor": {
         "name": "Auditor / compliance officer",
@@ -235,6 +250,16 @@ SYSTEM_ROLES: dict[str, dict] = {
         "description": "Keeps beds usable: marks beds for maintenance, blocked or out of "
         "service. Bed allocation to patients is added in Phase 3. Assign at facility scope.",
         "permissions": [P.FACILITIES_VIEW, P.LOCATIONS_VIEW, P.BEDS_STATUS_MANAGE],
+    },
+    # The software supplier's support account (HIMS-IAM-021): no hospital access of its own, only
+    # the right to ask for time-limited support access, which the hospital approves.
+    "supplier-support": {
+        "name": "Software supplier support",
+        "description": "The software supplier's support account. Holds no hospital access: it "
+        "asks for time-limited support access (Support access page), which the hospital "
+        "approves, or opens it at once in an emergency. Every request it makes while the access "
+        "lasts is recorded in the audit log.",
+        "permissions": [P.SUPPORT_ACCESS_REQUEST],
     },
     "equipment-officer": {
         "name": "Equipment / biomedical officer",

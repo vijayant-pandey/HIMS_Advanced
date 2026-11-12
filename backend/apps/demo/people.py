@@ -1,0 +1,186 @@
+"""Invented names for demo people (HIMS-QA-004). Combined at random with a fixed seed, so the same
+hospital always gets the same people. Any match with a real person is a coincidence."""
+
+import random
+
+INDIAN = {
+    "female": [
+        "Aarti",
+        "Ananya",
+        "Deepa",
+        "Divya",
+        "Fatima",
+        "Gayatri",
+        "Ishita",
+        "Kavya",
+        "Lakshmi",
+        "Meera",
+        "Neha",
+        "Nisha",
+        "Pooja",
+        "Priya",
+        "Radhika",
+        "Rekha",
+        "Sana",
+        "Shalini",
+        "Sneha",
+        "Sunita",
+        "Swati",
+        "Tanvi",
+        "Usha",
+        "Vandana",
+    ],
+    "male": [
+        "Aarav",
+        "Abhishek",
+        "Aditya",
+        "Amit",
+        "Anil",
+        "Arjun",
+        "Deepak",
+        "Farhan",
+        "Gaurav",
+        "Harish",
+        "Imran",
+        "Karan",
+        "Manish",
+        "Nikhil",
+        "Pranav",
+        "Rahul",
+        "Rajesh",
+        "Rohan",
+        "Sandeep",
+        "Sanjay",
+        "Suresh",
+        "Varun",
+        "Vikram",
+        "Yusuf",
+    ],
+    "family": [
+        "Agarwal",
+        "Bhat",
+        "Chatterjee",
+        "Das",
+        "Desai",
+        "Gupta",
+        "Iyer",
+        "Jain",
+        "Joshi",
+        "Kapoor",
+        "Khan",
+        "Kulkarni",
+        "Menon",
+        "Mishra",
+        "Nair",
+        "Patel",
+        "Pillai",
+        "Rao",
+        "Reddy",
+        "Saxena",
+        "Sharma",
+        "Singh",
+        "Srinivasan",
+        "Verma",
+    ],
+}
+
+AMERICAN = {
+    "female": [
+        "Abigail",
+        "Amelia",
+        "Ava",
+        "Chloe",
+        "Danielle",
+        "Elena",
+        "Emily",
+        "Grace",
+        "Hannah",
+        "Isabella",
+        "Jasmine",
+        "Laura",
+        "Madison",
+        "Maria",
+        "Megan",
+        "Natalie",
+        "Olivia",
+        "Rachel",
+        "Samantha",
+        "Sofia",
+        "Taylor",
+        "Victoria",
+        "Zoe",
+        "Keisha",
+    ],
+    "male": [
+        "Aiden",
+        "Andrew",
+        "Brandon",
+        "Carlos",
+        "Daniel",
+        "David",
+        "Ethan",
+        "Gabriel",
+        "Henry",
+        "Isaac",
+        "Jacob",
+        "James",
+        "Jordan",
+        "Kevin",
+        "Lucas",
+        "Marcus",
+        "Matthew",
+        "Michael",
+        "Nathan",
+        "Noah",
+        "Ryan",
+        "Samuel",
+        "Tyler",
+        "William",
+    ],
+    "family": [
+        "Anderson",
+        "Brooks",
+        "Carter",
+        "Chen",
+        "Clark",
+        "Davis",
+        "Garcia",
+        "Hall",
+        "Harris",
+        "Johnson",
+        "Kim",
+        "Lee",
+        "Lopez",
+        "Martinez",
+        "Miller",
+        "Nguyen",
+        "Parker",
+        "Patel",
+        "Robinson",
+        "Smith",
+        "Thompson",
+        "Walker",
+        "Washington",
+        "Young",
+    ],
+}
+
+
+class NameMaker:
+    """Gives each new person a different invented name (deterministic per seed)."""
+
+    def __init__(self, country: str, seed: str):
+        self.names = INDIAN if country == "IN" else AMERICAN
+        self.random = random.Random(seed)  # noqa: S311 - invented names, not security
+        self.used: set[tuple[str, str]] = set()
+
+    def person(self, sex: str | None = None) -> tuple[str, str, str]:
+        """(given name, family name, sex) never used before in this hospital."""
+        for _ in range(500):
+            chosen = sex or self.random.choice(("female", "male"))
+            given = self.random.choice(self.names[chosen])
+            family = self.random.choice(self.names["family"])
+            if (given, family) not in self.used:
+                self.used.add((given, family))
+                return given, family, chosen
+        raise RuntimeError("Ran out of invented names; add more to apps/demo/people.py.")

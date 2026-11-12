@@ -15,7 +15,7 @@ from common.admin.options import (
 )
 from common.exceptions import DomainError
 
-from . import delegations, reviews
+from . import delegations, reviews, support
 from .catalog import P
 from .models import (
     AccessDelegation,
@@ -26,6 +26,7 @@ from .models import (
     Role,
     RoleAssignment,
     RolePermission,
+    SupportAccess,
 )
 from .review_export import review_csv_response
 from .selectors import has_permission
@@ -497,3 +498,111 @@ class AccessDelegationAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
                 self.message_user(request, f"{delegation}: ended.")
             except DomainError as exc:
                 self.message_user(request, f"{delegation}: {exc.detail}", messages.ERROR)
+
+
+# --- Supplier support access, the "locked box" (HIMS-IAM-021) ------------------------------------
+# Same service as the app: approving gives the role from now for the hours asked; refusing and
+# ending need a reason (a fixed one here). Requests are made by the supplier in the app. Nothing
+# is deleted.
+
+
+@admin.register(SupportAccess)
+class SupportAccessAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin):
+    list_display = (
+        "requested_by",
+        "role",
+        "kind",
+        "status_label",
+        "created_at",
+        "starts_at",
+        "ends_at",
+        "decided_by",
+    )
+    list_filter = ("state", "kind")
+    search_fields = ("requested_by__email", "requested_by__display_name", "reason")
+    actions = ["approve_selected", "refuse_selected", "end_selected"]
+    fields = (
+        "requested_by",
+        "role",
+        "kind",
+        "reason",
+        "hours",
+        "status_label",
+        "created_at",
+        "decided_by",
+        "decided_at",
+        "decision_note",
+        "starts_at",
+        "ends_at",
+        "assignment",
+        "ended_at",
+        "ended_by",
+        "end_reason",
+        "version",
+    )
+
+    @admin.display(description="Status")
+    def status_label(self, obj):
+        return SupportAccess.Status(obj.status).label
+
+    def has_add_permission(self, request, *args):
+        return False  # the supplier asks in the app (Support access page)
+
+    def get_readonly_fields(self, request, obj=None):
+        return self.fields
+
+    def save_model(self, request, obj, form, change):
+        return  # a record of what happened: decide or end it with the actions
+
+    def _each(self, request, queryset, act, done: str):
+        for access in queryset:
+            try:
+                act(access)
+                self.message_user(request, f"{access}: {done}.")
+            except DomainError as exc:
+                self.message_user(request, f"{access}: {exc.detail}", messages.ERROR)
+
+    @admin.action(description="Approve selected requests (access starts now)")
+    def approve_selected(self, request, queryset):
+        self._each(
+            request,
+            queryset,
+            lambda access: support.approve(
+                actor=request.user,
+                access_id=access.pk,
+                version=access.version,
+                note="Approved in the admin console",
+                request=request,
+            ),
+            "approved",
+        )
+
+    @admin.action(description="Refuse selected requests")
+    def refuse_selected(self, request, queryset):
+        self._each(
+            request,
+            queryset,
+            lambda access: support.refuse(
+                actor=request.user,
+                access_id=access.pk,
+                version=access.version,
+                note="Refused in the admin console",
+                request=request,
+            ),
+            "refused",
+        )
+
+    @admin.action(description="End selected access now")
+    def end_selected(self, request, queryset):
+        self._each(
+            request,
+            queryset,
+            lambda access: support.end(
+                actor=request.user,
+                access_id=access.pk,
+                version=access.version,
+                reason="Ended in the admin console",
+                request=request,
+            ),
+            "ended",
+        )

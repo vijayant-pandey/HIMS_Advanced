@@ -151,11 +151,22 @@ class UserAdmin(ConfirmIdentityAdminMixin, HimsModelAdmin, DjangoUserAdmin):
     search_fields = ("email", "display_name")
     ordering = ("email",)
     filter_horizontal = ()
-    readonly_fields = ("last_login", "date_joined", "password_changed_at")
+    readonly_fields = ("last_login", "date_joined", "password_changed_at", "support_access_until")
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Profile", {"fields": ("display_name",)}),
-        ("Status", {"fields": ("is_active", "last_login", "date_joined", "password_changed_at")}),
+        (
+            "Status",
+            {
+                "fields": (
+                    "is_active",
+                    "last_login",
+                    "date_joined",
+                    "password_changed_at",
+                    "support_access_until",
+                )
+            },
+        ),
     )
     add_fieldsets = (
         (

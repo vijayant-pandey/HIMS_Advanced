@@ -135,3 +135,8 @@ access-denied entry in the audit log.
 Render sleeps after 15 minutes without visits (the timer keeps it awake; 750 free hours a month
 cover one service all month); uploaded documents vanish on each deploy; Neon keeps 6 hours of
 restore history; no email or SMS is sent. Fine for testing, never for real patients.
+
+**Note (2026-11-12):** the 750 free hours a month are shared by every free service in the same
+Render workspace. With other free services there, the timer keeping HIMS awake every minute can
+use them up; run the timer only in working hours, or keep HIMS in a workspace of its own. Behind
+Render's proxy the server sees `127.0.0.1`: add `,127.0.0.1` to `HIMS_TRUSTED_PROXIES` (step 3).

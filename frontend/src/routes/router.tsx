@@ -107,6 +107,13 @@ export const routes = [
                 lazy: screen(() => import("../features/accessControl/CoverPage"), (m) => m.CoverPage),
               },
               {
+                path: "support-access",
+                lazy: screen(
+                  () => import("../features/accessControl/SupportAccessPage"),
+                  (m) => m.SupportAccessPage,
+                ),
+              },
+              {
                 path: "accounts",
                 lazy: screen(() => import("../features/accounts/AccountsPage"), (m) => m.AccountsPage),
               },

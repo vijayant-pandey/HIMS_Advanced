@@ -61,6 +61,11 @@ Ctrl+C in that terminal stops everything it started.
 | India | http://localhost:5175 | http://localhost:8000/admin/ | `backend/.env` | `HIMS` |
 | US | http://localhost:5174 | http://localhost:8001/admin/ | `backend/.env.us` | `HIMS_US` |
 | Europe | planned | — | — | — |
+| 10 demo hospitals (5 India, 5 US) | http://localhost:5201 … 5210 | http://localhost:8201 … 8210/admin/ | `backend/.env.demo-<key>` | `hims_demo_<key>` |
+
+The launcher is a developer tool on this PC only: real hospitals never see it. Each real
+hospital gets its own address and database and sees only itself. The demo hospitals appear once
+made with `setup_demo_hospitals`: [docs/testing/demo-hospitals.md](docs/testing/demo-hospitals.md).
 
 Each hospital organization has its own deployment and database (ADR-003). To add another
 local deployment, create `backend/.env.<x>` (own `HIMS_DEPLOYMENT_ID`, database and cookie
@@ -190,6 +195,20 @@ Every endpoint's contract is generated from the code by `python manage.py api_co
 ## Hosting
 
 Where HIMS can run, including free hosts that need no payment card, is in the [hosting analysis](docs/architecture/hosting/hosting-analysis.md) ([ADR-034](docs/decisions/ADR-034-free-hosting-without-a-card.md)). The free stage is a Development environment with synthetic data only. Any server can be checked with `python manage.py hosting_check` or on the Compliance page's **Hosting readiness** tab. The hosted image (root `Dockerfile`) serves the screens, API and console from one address, and `python manage.py run_scheduled_jobs` runs the scheduled jobs from the host's timer: [docs/workflows/one-server-hosting.md](docs/workflows/one-server-hosting.md). The free Development environment runs on Render + Neon: [docs/workflows/render-neon-hosting.md](docs/workflows/render-neon-hosting.md).
+
+## Supplier support access (the "locked box")
+
+The software supplier's support account in each hospital holds no access. It asks for a few
+hours of administrator or auditor access with a reason; the hospital approves or refuses; in an
+emergency it opens at once. It ends by itself, and every request the supplier makes meanwhile is
+in the audit log (HIMS-IAM-021): [docs/workflows/support-access.md](docs/workflows/support-access.md),
+[ADR-035](docs/decisions/ADR-035-supplier-support-access.md).
+
+## Demo hospitals
+
+`python manage.py setup_demo_hospitals --password-env HIMS_DEMO_PASSWORD` makes 5 Indian and 5
+US hospitals with 3 branches each, every one with its own database and synthetic data for every
+screen (HIMS-QA-004): [docs/testing/demo-hospitals.md](docs/testing/demo-hospitals.md).
 
 ## Security review
 

@@ -29,3 +29,12 @@ Cloud's free offering, after an analysis of what that deployment needs.
 
 Names of the approvers are to be filled in on the sign-off tables when given; they are not
 guessed here.
+
+## 2026-11-12 (the PO)
+
+| # | Decision | Who | Answer | What it changes |
+|---|---|---|---|---|
+| 13 | How the software supplier gets into a hospital's system | PO | **The "locked box"**: the supplier asks with a reason, the hospital's administrator approves; in an emergency the supplier opens it at once and **the hospital is not told** (no email); it ends by itself after a few hours (2 by default); every request the supplier makes is recorded in the hospital's audit log, which nobody can change ("fine, can change later") | Built as HIMS-IAM-021 ([ADR-035](../decisions/ADR-035-supplier-support-access.md)). Emergency access still shows on the hospital's Support access page and audit log; the email can be switched on later (`HIMS_SUPPORT_EMERGENCY_NOTICE`). **LEGAL to review before real patient data** (spec 7.2 says the supplier "should not silently gain access"; contracts may require notice) |
+| 14 | Demo data | PO | 5 Indian and 5 US hospitals, 3 branches each, demo data for everything built and for later phases | Built as HIMS-QA-004 ([demo hospitals](../testing/demo-hospitals.md)); patients are invented now and registered with HIMS-PAT-001; every later ticket adds its demo records |
+| 15 | One hospital must never see another; each hospital its own admin console | PO | Confirmed as already built: each hospital is its own deployment and database (ADR-003, ADR-009); the "choose a hospital" page is the developer launcher on the PO's PC only. A list of all hospitals for the supplier is the owner console (HIMS-OPS-025, hosting stage) | Launcher page now says so; HIMS-OPS-025 added |
+| 16 | Approvals, SMS, security review, AWS | PO, CLIN, LEGAL | Repeated: CLIN, LEGAL and PO approvals of 2026-11-08 stand "for now"; SMS stays on the console; the security review after all of Phase 1; AWS at the very end (the free Development environment runs on Render + Neon) | No change |

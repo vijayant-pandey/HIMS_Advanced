@@ -83,6 +83,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-018 | Clinical delegation (a consultant's patients, orders, signing rights) on top of cover arrangements (gap found in HIMS-IAM-017) | Moves to Phase 2 (needs clinical actions; 2026-11-08) |
 | HIMS-IAM-019 | Self-service cover requests: the away person proposes cover, an administrator approves (optional; gap found in HIMS-IAM-017) | To do (when hospitals ask) |
 | HIMS-IAM-014 | Passkeys / WebAuthn as an additional second factor | Done ([passkeys](../workflows/passkeys.md)); the admin console keeps the code |
+| HIMS-IAM-021 | Supplier support access, the "locked box" (spec 7.2, 7.4): the software supplier's support account holds no access, asks for the administrator or auditor role for a few hours with a reason; the hospital approves or refuses; emergency opens at once (hospital not emailed, PO 2026-11-12); ends by itself; every request audited (PO request 2026-11-12) | Done ([support access](../workflows/support-access.md), [ADR-035](../decisions/ADR-035-supplier-support-access.md); Support access page and console) |
 
 ## EPIC HIMS-STAFF — Staff and credentials
 
@@ -138,6 +139,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 |---|---|---|
 | HIMS-QA-001 | Playwright browser tests for Phase 1 flows with axe accessibility checks; CI workflow ([how-to](../testing/browser-tests.md)) | Done |
 | HIMS-QA-002 | Make `browser-tests` a required check once it has run green for two weeks | To do (PO: branch ruleset) |
+| HIMS-QA-004 | Demo hospitals: 5 Indian and 5 US hospitals, 3 branches each, every one its own database, with synthetic records for everything built; the launcher lists them; invented patients ready for Phase 2 (PO request 2026-11-12) | Done ([demo hospitals](../testing/demo-hospitals.md); `setup_demo_hospitals`) |
 | HIMS-QA-003 | Browser tests for the US deployment and the admin console | Done (`npm run e2e:us`: a separate US hospital, 12 tests; `05-admin-console.spec.ts`: 4 console tests; both in the `browser-tests` workflow; found the New facility form starting in India for a US hospital, fixed; [how-to](../testing/browser-tests.md)) |
 
 ## EPIC HIMS-NOTIF — Notifications
@@ -152,11 +154,11 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 
 | ID | Ticket | Status |
 |---|---|---|
-| HIMS-COMP-001 | US: HIPAA Security Rule risk analysis, policies and procedures, BAA list | Drafted + built; counsel/hospital review pending |
-| HIMS-COMP-002 | India: DPDP Act 2023 / DPDP Rules 2025 assessment, privacy notice, consent and breach-notification procedure | Drafted + built; counsel/hospital review pending |
-| HIMS-COMP-003 | India: ABDM Health Data Management Policy and IT Act security practices assessment | Drafted + built; counsel/hospital review pending |
-| HIMS-COMP-004 | Both: data retention schedule, incident response runbook, access-control policy, vendor list | Drafted + built; counsel/hospital review pending |
-| HIMS-COMP-005 | Threat model and risk register (spec 23) | Drafted + built; counsel/hospital review pending |
+| HIMS-COMP-001 | US: HIPAA Security Rule risk analysis, policies and procedures, BAA list | Drafted + built; counsel/hospital review pending · approved for now 2026-11-08 ([decisions log](../status/decisions-log.md)) |
+| HIMS-COMP-002 | India: DPDP Act 2023 / DPDP Rules 2025 assessment, privacy notice, consent and breach-notification procedure | Drafted + built; counsel/hospital review pending · approved for now 2026-11-08 ([decisions log](../status/decisions-log.md)) |
+| HIMS-COMP-003 | India: ABDM Health Data Management Policy and IT Act security practices assessment | Drafted + built; counsel/hospital review pending · approved for now 2026-11-08 ([decisions log](../status/decisions-log.md)) |
+| HIMS-COMP-004 | Both: data retention schedule, incident response runbook, access-control policy, vendor list | Drafted + built; counsel/hospital review pending · approved for now 2026-11-08 ([decisions log](../status/decisions-log.md)) |
+| HIMS-COMP-005 | Threat model and risk register (spec 23) | Drafted + built; counsel/hospital review pending · approved for now 2026-11-08 ([decisions log](../status/decisions-log.md)) |
 | HIMS-COMP-006 | Retention purge job with legal hold, once periods are set | Done 2026-11-10 (unblocked 2026-11-08: the hospital sets the periods; nothing deleted until set; [how-to](../workflows/retention-purge.md)) |
 | HIMS-COMP-007 | Archive the audit log outside the database with an "archived up to link N" marker, then purge it by its period (gap found in HIMS-COMP-006) | To do (hosting stage: needs write-once storage) |
 
@@ -177,6 +179,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-OPS-023 | Scheduled jobs without a worker: run every due job once from an outside clock (host cron or GitHub Actions), never twice at the same time (gap found in HIMS-OPS-020) | Done (`run_scheduled_jobs`; last runs on the Background jobs page and in the console) |
 | HIMS-OPS-024 | The first free Development environment without a payment card (Northflank, or Render + Neon + GitHub Actions): settings, deploy from `development`, `hosting_check` in the pipeline (gap found in HIMS-OPS-020) | In progress (Render + Neon + cron-job.org; code and [guide](../workflows/render-neon-hosting.md) ready; the PO creates the service) |
 | HIMS-OPS-008 | Customer provisioning automation in the control plane | To do |
+| HIMS-OPS-025 | Owner console (control plane, spec 7.2): one list of every hospital the supplier runs (country, version, health, audit integrity) with a link to each hospital's Support access page; no patient data in it (gap found in HIMS-IAM-021) | To do (hosting stage: needs the hospitals online) |
 | HIMS-OPS-009 | Backup/restore drill with audit and relationship verification | Done ([how-to](../workflows/backup-and-restore.md): Backups page, admin console, commands; restore into a separate copy checked against the backup's inventory incl. audit chain and documents) |
 | HIMS-OPS-018 | Restore drill of a cloud database snapshot into a separate database, with the same checks as HIMS-OPS-009 (gap found in HIMS-OPS-009) | To do (🔒 AWS) |
 | HIMS-OPS-017 | Response-time targets (SLOs) measured locally, before hosting (spec 18) | Done (300 ms for pages, 500 ms for searches, 95 of 100 answers; `measure_response_times` on 24 main screens and 6 console lists, alone or in the volume check; query count per screen must not grow with the records (CI); [how-to](../workflows/performance-checks.md)) |
