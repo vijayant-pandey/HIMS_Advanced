@@ -1,9 +1,8 @@
 """Invented patients for each demo branch (HIMS-QA-004), ready for Phase 2.
 
-HIMS has no patient tables yet: registration comes with HIMS-PAT-001 (Phase 2). Until then the
-``demo_patients`` command shows the patients that will be registered, so the product owner can
-see and check them. When HIMS-PAT-001 is built, ``seed.py`` registers them through the patient
-service (the same names, every time).
+Since HIMS-PAT-001 (2026-11-12) ``seed.py`` registers them through the patient registration
+service (the same names, every time); the ``demo_patients`` command still lists them without a
+database.
 
 No real identifiers: no Aadhaar, ABHA or Social Security numbers, only made-up phone numbers in
 ranges kept for fiction or testing.
@@ -46,7 +45,8 @@ def patients_for(hospital: Hospital, per_branch: int = 40, today: date | None = 
             if hospital.country == "IN":
                 phone = f"+91 90000 {pick.randint(10000, 99999)}"
             else:
-                phone = f"+1 555 01{pick.randint(0, 99):02d}"  # 555-0100..0199: fictional
+                # 555-0100..0199 is kept for fiction; with an area code it is a full US number.
+                phone = f"+1 312 555 01{pick.randint(0, 99):02d}"
             yield DemoPatient(
                 branch=branch["code"],
                 given_name=given,

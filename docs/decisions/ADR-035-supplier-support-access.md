@@ -65,3 +65,7 @@ that one stolen password opens every hospital at once.
 * New table `support_access` and a new column `users.support_access_until`; three new message
   wordings; two permissions and one system role. Existing hospitals get them at their next
   `migrate`.
+
+## Update 2026-11-12 (HIMS-PAT-001): no patient records
+
+With patients built, the administrator role holds `patients.search` and `patients.view`. Spec 7.2 says support "should not silently gain access to patient records", and an emergency opening is not told to the hospital (decision 13). So the supplier's account **never holds patient permissions** (`PATIENT_DATA_PERMISSIONS` in `apps/access_control/catalog.py`, held back in `selectors.py`), whatever role it is lent; it still gets every other permission of that role. A hospital-approved exception, if the PO ever wants one: HIMS-IAM-022.

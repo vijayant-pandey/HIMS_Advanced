@@ -116,14 +116,18 @@ FEATURES: tuple[Feature, ...] = (
         scope=FACILITY,
         default=True,
     ),
-    # --- Planned (spec 20): visible so hospitals can plan, not switchable until built -------------
-    _planned(
-        "patients.registration",
-        "Patient registration",
-        "Register patients, MRN, duplicate detection and patient search.",
-        CLINICAL,
-        "Phase 2",
+    Feature(
+        key="patients.registration",
+        name="Patient registration",
+        description="Register patients (the MRN is issued at once) with contacts, guardians, ID "
+        "numbers and consents (HIMS-PAT-001). When off for a facility, no patient can be "
+        "registered there; patients already registered can still be found and opened. Patient "
+        "search and the duplicate check follow in Phase 2.",
+        category=CLINICAL,
+        scope=FACILITY,
+        default=True,
     ),
+    # --- Planned (spec 20): visible so hospitals can plan, not switchable until built -------------
     _planned(
         "outpatient.appointments",
         "Appointments and outpatient visits",
@@ -218,3 +222,4 @@ class F:
     LOCATIONS = BY_KEY["locations.module"].key
     ROTAS = BY_KEY["staff.rotas"].key
     EQUIPMENT = BY_KEY["equipment.module"].key
+    PATIENTS = BY_KEY["patients.registration"].key

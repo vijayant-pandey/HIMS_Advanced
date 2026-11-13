@@ -17,10 +17,13 @@ What one hospital gets (``small`` shrinks it for the automated test):
   managers, equipment officers;
 * two weeks of rota, on-call, leave (waiting, approved, refused), minimum staffing;
 * equipment with service history (some overdue, one under repair);
-* a cover arrangement, an open access review and supplier support access requests.
+* a cover arrangement, an open access review and supplier support access requests;
+* patients (HIMS-PAT-001): the invented patients of ``patients.py`` registered at their branch by
+  its front desk, with MRNs, address, a parent for children, next of kin for some, a previous
+  hospital's MRN for some, consents, and one unknown (unconscious) patient per branch.
 
-Patients and clinical records come with Phase 2 (HIMS-PAT-001 onwards); ``patients.py`` already
-invents them. Every later ticket adds its own records here (docs/testing/demo-hospitals.md).
+Clinical records come with the later Phase 2 tickets. Every later ticket adds its own records
+here (docs/testing/demo-hospitals.md).
 """
 
 import random
@@ -50,9 +53,12 @@ from apps.facilities.services import (
 )
 from apps.identity.accounts import active_administrators
 from apps.identity.models import User
+from apps.numbering.services import ensure_default_schemes
 from apps.organizations.dates import hospital_today
 from apps.organizations.models import Organization
 from apps.organizations.services import update_organization
+from apps.patients.demographics import years_between
+from apps.patients.services import register_patient
 from apps.rosters import balances, staffing
 from apps.rosters.models import LeaveRequest, ShiftType
 from apps.rosters.services import add_shifts, approve_leave, reject_leave, request_leave
@@ -70,6 +76,7 @@ from apps.staff.services import (
 from common.environment import LOCAL_ENVIRONMENTS
 
 from .hospitals import Hospital
+from .patients import DemoPatient, patients_for
 from .people import NameMaker
 
 SUPPLIER_EMAIL = "support@hims-supplier.demo.test"
@@ -394,6 +401,7 @@ class Context:
     registrations: int = 0
     counts: dict = field(default_factory=dict)
     logins: list = field(default_factory=list)
+    desks: dict = field(default_factory=dict)  # facility id -> front desk account
 
     @property
     def country(self) -> str:
@@ -821,6 +829,17 @@ def _staff(ctx: Context, facility: Facility, departments: dict, branch: dict) ->
             facility=facility,
             reason="Demo: equipment officer",
         )
+    # The front office executive registers this branch's patients (HIMS-PAT-001).
+    desk = team["ADMN"][1] if len(team.get("ADMN", [])) >= 2 else team["EMR"][1]
+    user = _account(ctx, desk, f"frontdesk.{code}", f"{facility.name}: front desk (patients)")
+    assign_role(
+        actor=None,
+        user=user,
+        role=roles["receptionist"],
+        facility=facility,
+        reason="Demo: front desk",
+    )
+    ctx.desks[facility.pk] = user
     return team
 
 
@@ -1017,6 +1036,85 @@ def _equipment(ctx: Context, facility: Facility, departments: dict, wards: dict)
 # --- Access: cover, review, supplier support ------------------------------------------------------
 
 
+def _demo_phone(ctx: Context, pick: random.Random) -> str:
+    if ctx.country == "IN":
+        return f"+91 90000 {pick.randint(10000, 99999)}"
+    return f"+1 312 555 01{pick.randint(0, 99):02d}"  # 555-0100..0199: fictional
+
+
+def _patients(ctx: Context, facility: Facility, branch: dict, invented: list[DemoPatient]) -> None:
+    """Register the branch's invented patients through the registration service, as its front
+    desk would (MRN issued, audited). No real identifiers: only an invented old-clinic MRN."""
+    desk = ctx.desks[facility.pk]
+    relatives = NameMaker(ctx.country, f"{ctx.hospital.key}-relatives-{branch['code']}")
+    pick = random.Random(f"{ctx.hospital.key}-{branch['code']}-patients")  # noqa: S311 - demo data
+    street = "Demo Colony" if ctx.country == "IN" else "Demo Street"
+    for n, person in enumerate(invented):
+        relationships = []
+        if years_between(person.date_of_birth, ctx.today) < 18:
+            given, _family, sex = relatives.person()
+            relationships.append(
+                {
+                    "relation": "mother" if sex == "female" else "father",
+                    "name": f"{given} {person.family_name}",
+                    "phone": person.phone,
+                    "is_legal_guardian": True,
+                    "is_emergency_contact": True,
+                }
+            )
+        elif n % 4 == 0:
+            given, family, _sex = relatives.person()
+            relationships.append(
+                {
+                    "relation": "next_of_kin",
+                    "name": f"{given} {family}",
+                    "phone": _demo_phone(ctx, pick),
+                    "is_emergency_contact": True,
+                }
+            )
+        old_mrn = {
+            "kind": "previous_mrn",
+            "value": f"OLD-{branch['code']}-{n + 1:05d}",
+            "issuer": f"{branch['city']} Demo Clinic (invented)",
+        }
+        register_patient(
+            actor=desk,
+            facility=facility,
+            data={
+                "given_name": person.given_name,
+                "family_name": person.family_name,
+                "sex": person.sex,
+                "date_of_birth": person.date_of_birth,
+                "blood_group_reported": person.blood_group,
+                "preferred_language": "hi" if ctx.country == "IN" and n % 2 else "en",
+            },
+            mobile=person.phone,
+            address={
+                "address_line1": f"House {n + 1}, {street}",
+                "city": person.city,
+                "state": branch["state"],
+                "postal_code": branch["postal_code"],
+            },
+            relationships=relationships,
+            identifier_items=[old_mrn] if n % 5 == 0 else [],
+            privacy_notice="given",
+            sms_consent=n % 3 != 0,
+            email_consent=None,
+        )
+        ctx.add("patients")
+    register_patient(
+        actor=desk,
+        facility=facility,
+        data={
+            "is_unknown": True,
+            "sex": "male",
+            "age_years": 45,
+            "identification_note": "Demo: brought in by ambulance, unconscious, no papers",
+        },
+    )
+    ctx.add("patients")
+
+
 def _access_examples(ctx: Context, teams: list[dict]) -> None:
     from apps.access_control.models import RoleAssignment
 
@@ -1081,6 +1179,8 @@ def seed_hospital(hospital: Hospital, *, password: str | None, small: bool = Fal
         random=random.Random(hospital.key),  # noqa: S311 - demo data, not security
         today=hospital_today(),
     )
+    ensure_default_schemes(organization)  # MRN numbering (provisioning makes it too)
+    invented = list(patients_for(hospital, per_branch=6 if small else 40, today=ctx.today))
     _hospital_settings(ctx)
     ctx.organization.refresh_from_db()
     hr_done = False
@@ -1102,10 +1202,22 @@ def seed_hospital(hospital: Hospital, *, password: str | None, small: bool = Fal
                 role=Role.objects.get(code="hr-credentialing-officer"),
                 reason="Demo: HR officer",
             )
+            records = _new_staff(
+                ctx, WARD_CLERK, departments.get("ADMN", departments["EMR"]), None, branch
+            )
+            user = _account(ctx, records, "records", "Medical records officer (whole hospital)")
+            assign_role(
+                actor=None,
+                user=user,
+                role=Role.objects.get(code="medical-records-officer"),
+                reason="Demo: medical records officer",
+            )
             hr_done = True
         _privileges(ctx, team, departments)
         _rota(ctx, team, departments)
         _leave(ctx, team, departments)
         _equipment(ctx, facility, departments, wards)
+        mine = [p for p in invented if p.branch == branch["code"]]
+        _patients(ctx, facility, branch, mine)
     _access_examples(ctx, teams)
     return ctx

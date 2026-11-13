@@ -12,12 +12,13 @@ hospitals (`backend/apps/demo/seed.py`; [demo hospitals](../testing/demo-hospita
 | ID | Ticket | Status |
 |---|---|---|
 | HIMS-PAT-000 | P0 design sign-off (PO + reviewing doctor; legal items D6, D7, D9, D18, D24) | Waiting for sign-off → approved for now 2026-11-08 (decisions log row 3) |
-| HIMS-PAT-001 | Patient registration with MRN, contacts, relationships, identifiers (encrypted/masked), consents | To do (also registers the invented demo patients, `apps/demo/patients.py`) |
+| HIMS-PAT-001 | Patient registration with MRN, contacts, relationships, identifiers (encrypted/masked), consents | Done 2026-11-12 (screens Patients, Register new patient and the patient record; admin console; roles Receptionist / front desk and Medical records officer; ID numbers encrypted, masked and refused on a second patient; reading audited; the demo hospitals' invented patients registered) · earlier: To do (also registers the invented demo patients, `apps/demo/patients.py`) |
 | HIMS-PAT-002 | Patient search (MRN, phone, ID, similar name) with minimal results; chart read auditing | To do |
 | HIMS-PAT-003 | Duplicate detection at registration and possible-duplicates list | To do |
 | HIMS-PAT-004 | Two-person merge with 30-day undo | To do |
 | HIMS-PAT-005 | Patient chart header and overview | To do |
 | HIMS-PAT-006 | Restricted (VIP/staff) records and emergency access with review | To do |
+| HIMS-PAT-007 | Record a patient's death (date and time, by a doctor); the record becomes read-only except medical-records corrections (P0 part 01 §1; gap found in HIMS-PAT-001) | To do |
 
 ## EPIC HIMS-OPD: Scheduling and outpatient department (slice 2B)
 
@@ -58,3 +59,9 @@ hospitals (`backend/apps/demo/seed.py`; [demo hospitals](../testing/demo-hospita
 | ID | Ticket | Status |
 |---|---|---|
 | HIMS-STAFF-017 | Check clinical privileges in clinical actions with `holds_privilege`, and remind HR before a privilege's review date (spec 4.3; gap found in HIMS-STAFF-016, which keeps the record) | To do |
+
+## EPIC HIMS-IAM: Access to patient records
+
+| ID | Ticket | Status |
+|---|---|---|
+| HIMS-IAM-022 | Supplier support and patient records: today the supplier's support account never holds patient permissions, even with a lent administrator role (spec 7.2). If the PO wants support to see patients in some cases, add a separate, hospital-approved "include patient records" choice that the hospital is always told about (gap found in HIMS-PAT-001; decisions log row 20) | To do (PO to decide) |

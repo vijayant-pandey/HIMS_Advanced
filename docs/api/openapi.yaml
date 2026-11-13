@@ -4247,6 +4247,357 @@ paths:
               schema:
                 $ref: '#/components/schemas/Organization'
           description: ''
+  /api/v1/patients/:
+    get:
+      operationId: patients_list
+      description: 'Patients, newest registration first: the short list only (minimum
+        necessary).'
+      parameters:
+      - in: query
+        name: facility
+        schema:
+          type: string
+        description: Registered at this facility
+      - in: query
+        name: mrn
+        schema:
+          type: string
+        description: Exact MRN (look-up is audited)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - patients
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientListList'
+          description: ''
+    post:
+      operationId: patients_create
+      description: Register a patient; the MRN is issued in the same step.
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientRegisterRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientDetail'
+          description: ''
+  /api/v1/patients/{id}/:
+    get:
+      operationId: patients_retrieve
+      description: |-
+        One patient's record: details, contacts, people, ID numbers (masked) and consents.
+        Every opening is audited.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientDetail'
+          description: ''
+    patch:
+      operationId: patients_partial_update
+      description: Correct the patient's details; an old name stays findable as an
+        alias.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientDetail'
+          description: ''
+  /api/v1/patients/{id}/consents/:
+    post:
+      operationId: patients_consents_create
+      description: Record a consent decision (privacy notice, SMS, email); earlier
+        ones stay as history.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /api/v1/patients/{id}/contacts/:
+    post:
+      operationId: patients_contacts_create
+      description: Add a phone, email or address.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+          description: ''
+  /api/v1/patients/{id}/contacts/{contact_id}/:
+    patch:
+      operationId: patients_contacts_partial_update
+      description: Correct a contact, make it the main one, or end it (kept on record).
+      parameters:
+      - in: path
+        name: contact_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]+$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedContactUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+          description: ''
+  /api/v1/patients/{id}/identifiers/:
+    post:
+      operationId: patients_identifiers_create
+      description: |-
+        Add an ID number: checked, stored encrypted, shown masked; one-per-person kinds are
+        refused when another patient has the number.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentifierInputRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identifier'
+          description: ''
+  /api/v1/patients/{id}/identifiers/{identifier_id}/end/:
+    post:
+      operationId: patients_identifiers_end_create
+      description: End a wrong or replaced ID number, with a reason (kept on record,
+        never deleted).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      - in: path
+        name: identifier_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]+$
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentifierEndRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identifier'
+          description: ''
+  /api/v1/patients/{id}/relationships/:
+    post:
+      operationId: patients_relationships_create
+      description: Add a parent, guardian, next of kin, emergency contact or caregiver.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelationshipCreateRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Relationship'
+          description: ''
+  /api/v1/patients/{id}/relationships/{relationship_id}/:
+    patch:
+      operationId: patients_relationships_partial_update
+      description: Correct a relationship or end it (kept on record).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      - in: path
+        name: relationship_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]+$
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRelationshipUpdateRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Relationship'
+          description: ''
+  /api/v1/patients/registration-options/:
+    get:
+      operationId: patients_registration_options_retrieve
+      description: What the registration form offers in this hospital's country (ID
+        number kinds).
+      tags:
+      - patients
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationOptions'
+          description: ''
   /api/v1/performance-checks/:
     get:
       operationId: performance_checks_list
@@ -6979,6 +7330,37 @@ components:
         * `adult` - Adults
         * `pediatric` - Children
         * `neonatal` - Newborns
+    Alias:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PatientAliasKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        mrn:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - kind
+      - kind_label
+      - mrn
+      - name
     ApiEndpoint:
       type: object
       properties:
@@ -7661,6 +8043,26 @@ components:
     BlankEnum:
       enum:
       - ''
+    BloodGroupEnum:
+      enum:
+      - A+
+      - A-
+      - B+
+      - B-
+      - O+
+      - O-
+      - AB+
+      - AB-
+      type: string
+      description: |-
+        * `A+` - A+
+        * `A-` - A-
+        * `B+` - B+
+        * `B-` - B-
+        * `O+` - O+
+        * `O-` - O-
+        * `AB+` - AB+
+        * `AB-` - AB-
     BoardBed:
       type: object
       properties:
@@ -8157,6 +8559,81 @@ components:
       - needs_code
       - passkey_available
       - window_minutes
+    Consent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PatientConsentKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PatientConsentStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        method:
+          allOf:
+          - $ref: '#/components/schemas/ConsentMethodEnum'
+          readOnly: true
+        method_label:
+          type: string
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        recorded_by_name:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - kind
+      - kind_label
+      - method
+      - method_label
+      - note
+      - recorded_by_name
+      - status
+      - status_label
+    ConsentCreateRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/PatientConsentKindEnum'
+        status:
+          $ref: '#/components/schemas/PatientConsentStatusEnum'
+        method:
+          $ref: '#/components/schemas/ConsentMethodEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - kind
+      - method
+      - status
+    ConsentMethodEnum:
+      enum:
+      - verbal
+      - signed_form
+      type: string
+      description: |-
+        * `verbal` - Told the front desk
+        * `signed_form` - Signed a form
     ConsoleAccess:
       type: object
       properties:
@@ -8251,6 +8728,130 @@ components:
           maxLength: 2000
       required:
       - version
+    Contact:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PatientContactKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+          description: International format (E.164), e.g. +919876543210
+        email:
+          type: string
+          format: email
+          readOnly: true
+        address_line1:
+          type: string
+          readOnly: true
+        address_line2:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        district:
+          type: string
+          readOnly: true
+          description: District (IN) / county (US)
+        state:
+          type: string
+          readOnly: true
+        postal_code:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+        is_primary:
+          type: boolean
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+          description: Ended contacts are kept, not deleted
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address_line1
+      - address_line2
+      - city
+      - country
+      - created_at
+      - district
+      - email
+      - id
+      - is_active
+      - is_primary
+      - kind
+      - kind_label
+      - phone
+      - postal_code
+      - state
+      - version
+    ContactCreateRequest:
+      type: object
+      properties:
+        address_line1:
+          type: string
+          default: ''
+          maxLength: 255
+        address_line2:
+          type: string
+          default: ''
+          maxLength: 255
+        city:
+          type: string
+          default: ''
+          maxLength: 100
+        district:
+          type: string
+          default: ''
+          maxLength: 100
+        state:
+          type: string
+          default: ''
+          maxLength: 100
+        postal_code:
+          type: string
+          default: ''
+          maxLength: 10
+        country:
+          type: string
+          default: ''
+          maxLength: 2
+        kind:
+          $ref: '#/components/schemas/PatientContactKindEnum'
+        phone:
+          type: string
+          default: ''
+          maxLength: 30
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        is_primary:
+          type: boolean
+          default: false
+      required:
+      - kind
     CopyWeekRequest:
       type: object
       properties:
@@ -9862,6 +10463,145 @@ components:
       - closes_at
       - opens_at
       - weekday
+    Identifier:
+      type: object
+      description: 'Masked only: the full number never leaves the server.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PatientIdentifierKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        value_display:
+          type: string
+          readOnly: true
+          description: Masked, e.g. XXXX XXXX 1234
+        issuer:
+          type: string
+          readOnly: true
+          description: e.g. the issuing country or state, or hospital
+        verification:
+          allOf:
+          - $ref: '#/components/schemas/IdentifierVerificationEnum'
+          readOnly: true
+          description: |-
+            Checking with UIDAI / ABDM comes later; typed numbers are not verified
+
+            * `unverified` - Not verified
+            * `verified` - Verified
+        verification_label:
+          type: string
+          readOnly: true
+        valid_until:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        is_active:
+          type: boolean
+          readOnly: true
+        ended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ended_by_name:
+          type: string
+          nullable: true
+          readOnly: true
+        end_reason:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - end_reason
+      - ended_at
+      - ended_by_name
+      - id
+      - is_active
+      - issuer
+      - kind
+      - kind_label
+      - valid_until
+      - value_display
+      - verification
+      - verification_label
+      - version
+    IdentifierEndRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - reason
+      - version
+    IdentifierInputRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/PatientIdentifierKindEnum'
+        value:
+          type: string
+          minLength: 1
+          description: As typed; stored encrypted
+          maxLength: 64
+        issuer:
+          type: string
+          default: ''
+          maxLength: 100
+        valid_until:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - kind
+      - value
+    IdentifierKind:
+      type: object
+      properties:
+        kind:
+          type: string
+        label:
+          type: string
+        example:
+          type: string
+        needs_issuer:
+          type: boolean
+        one_per_person:
+          type: boolean
+          description: The same number on a second patient is refused
+      required:
+      - example
+      - kind
+      - label
+      - needs_issuer
+      - one_per_person
+    IdentifierVerificationEnum:
+      enum:
+      - unverified
+      - verified
+      type: string
+      description: |-
+        * `unverified` - Not verified
+        * `verified` - Verified
     IncidentNotification:
       type: object
       properties:
@@ -10767,6 +11507,22 @@ components:
           description: PNG or JPG, up to 2 MB
       required:
       - file
+    MaritalStatusEnum:
+      enum:
+      - single
+      - married
+      - divorced
+      - separated
+      - widowed
+      - other
+      type: string
+      description: |-
+        * `single` - Single
+        * `married` - Married
+        * `divorced` - Divorced
+        * `separated` - Separated
+        * `widowed` - Widowed
+        * `other` - Other
     MessagePreview:
       type: object
       properties:
@@ -11822,6 +12578,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Notification'
+    PaginatedPatientListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatientList'
     PaginatedRoleAssignmentList:
       type: object
       required:
@@ -12103,6 +12882,47 @@ components:
           maxLength: 1000
         is_active:
           type: boolean
+    PatchedContactUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        phone:
+          type: string
+          maxLength: 30
+        email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        address_line1:
+          type: string
+          maxLength: 255
+        address_line2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        district:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 10
+        country:
+          type: string
+          maxLength: 2
+        is_primary:
+          type: boolean
+        is_active:
+          type: boolean
+          description: False ends it (kept on record)
     PatchedDepartmentServiceUpdateRequest:
       type: object
       properties:
@@ -12419,6 +13239,61 @@ components:
         letterhead_footer:
           type: string
           maxLength: 255
+    PatchedPatientUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          maxLength: 20
+        given_name:
+          type: string
+          maxLength: 150
+        middle_name:
+          type: string
+          maxLength: 150
+        family_name:
+          type: string
+          maxLength: 150
+        preferred_name:
+          type: string
+          maxLength: 150
+        date_of_birth:
+          type: string
+          format: date
+        birth_date_estimated:
+          type: boolean
+        sex:
+          $ref: '#/components/schemas/PatientSexEnum'
+        gender_identity:
+          type: string
+          maxLength: 60
+        pronouns:
+          type: string
+          maxLength: 60
+        preferred_language:
+          type: string
+          maxLength: 35
+        marital_status:
+          oneOf:
+          - $ref: '#/components/schemas/MaritalStatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        occupation:
+          type: string
+          maxLength: 100
+        blood_group_reported:
+          oneOf:
+          - $ref: '#/components/schemas/BloodGroupEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        has_no_phone:
+          type: boolean
+        is_unknown:
+          type: boolean
+        identification_note:
+          type: string
+          maxLength: 255
     PatchedQualificationTypeUpdateRequest:
       type: object
       properties:
@@ -12441,6 +13316,35 @@ components:
             maxLength: 0
         is_active:
           type: boolean
+    PatchedRelationshipUpdateRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        relation:
+          $ref: '#/components/schemas/PatientRelationEnum'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 30
+        is_legal_guardian:
+          type: boolean
+        is_emergency_contact:
+          type: boolean
+        related_patient:
+          type: string
+          format: uuid
+          nullable: true
+        note:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+          description: False ends it (kept on record)
     PatchedRequirementUpdateRequest:
       type: object
       properties:
@@ -12617,6 +13521,530 @@ components:
           $ref: '#/components/schemas/AgeGroupEnum'
         is_active:
           type: boolean
+    PatientAliasKindEnum:
+      enum:
+      - previous_name
+      - merged_mrn
+      - other_name
+      type: string
+      description: |-
+        * `previous_name` - Previous name
+        * `merged_mrn` - MRN of a merged record
+        * `other_name` - Other name
+    PatientConsentKindEnum:
+      enum:
+      - privacy_notice
+      - sms
+      - email
+      type: string
+      description: |-
+        * `privacy_notice` - Privacy notice given; agrees to processing for care
+        * `sms` - Messages by SMS
+        * `email` - Messages by email
+    PatientConsentStatusEnum:
+      enum:
+      - given
+      - refused
+      - withdrawn
+      type: string
+      description: |-
+        * `given` - Given
+        * `refused` - Refused
+        * `withdrawn` - Withdrawn
+    PatientContactKindEnum:
+      enum:
+      - mobile
+      - phone
+      - email
+      - address
+      type: string
+      description: |-
+        * `mobile` - Mobile
+        * `phone` - Other phone
+        * `email` - Email
+        * `address` - Address
+    PatientDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        mrn:
+          type: string
+          readOnly: true
+          description: Issued by the MRN numbering scheme; never changes
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PatientStatusEnum'
+          readOnly: true
+        merged_into:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Set only by a completed merge (HIMS-PAT-004).
+        merged_into_mrn:
+          type: string
+          readOnly: true
+          nullable: true
+        name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        given_name:
+          type: string
+          readOnly: true
+          description: One name is enough
+        middle_name:
+          type: string
+          readOnly: true
+        family_name:
+          type: string
+          readOnly: true
+        preferred_name:
+          type: string
+          readOnly: true
+        date_of_birth:
+          type: string
+          format: date
+          readOnly: true
+        birth_date_estimated:
+          type: boolean
+          readOnly: true
+          description: Entered as an age, so the date is approximate
+        age:
+          type: string
+          readOnly: true
+        sex:
+          allOf:
+          - $ref: '#/components/schemas/PatientSexEnum'
+          readOnly: true
+        gender_identity:
+          type: string
+          readOnly: true
+        pronouns:
+          type: string
+          readOnly: true
+        preferred_language:
+          type: string
+          readOnly: true
+          description: e.g. hi, en-US
+        marital_status:
+          allOf:
+          - $ref: '#/components/schemas/MaritalStatusEnum'
+          readOnly: true
+        occupation:
+          type: string
+          readOnly: true
+        blood_group_reported:
+          allOf:
+          - $ref: '#/components/schemas/BloodGroupEnum'
+          readOnly: true
+          description: |-
+            As the patient says; not a laboratory result
+
+            * `A+` - A+
+            * `A-` - A-
+            * `B+` - B+
+            * `B-` - B-
+            * `O+` - O+
+            * `O-` - O-
+            * `AB+` - AB+
+            * `AB-` - AB-
+        has_no_phone:
+          type: boolean
+          readOnly: true
+          description: The patient has no phone (ticked instead of a mobile number)
+        is_unknown:
+          type: boolean
+          readOnly: true
+          description: Registered as unknown or unconscious; details completed later
+        identification_note:
+          type: string
+          readOnly: true
+          description: 'For an unknown patient: how they arrived, e.g. ''Brought by
+            ambulance, MG Road'''
+        registered_facility:
+          type: string
+          format: uuid
+          readOnly: true
+        registered_facility_name:
+          type: string
+          readOnly: true
+        registered_by_name:
+          type: string
+          nullable: true
+          readOnly: true
+        needs_guardian:
+          type: boolean
+          readOnly: true
+          description: Under 18 with no current parent or guardian recorded
+        contacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
+          readOnly: true
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/Relationship'
+          readOnly: true
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Identifier'
+          readOnly: true
+        consents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Consent'
+          readOnly: true
+          description: Every decision, newest first
+        aliases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alias'
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - age
+      - aliases
+      - birth_date_estimated
+      - blood_group_reported
+      - consents
+      - contacts
+      - created_at
+      - date_of_birth
+      - family_name
+      - gender_identity
+      - given_name
+      - has_no_phone
+      - id
+      - identification_note
+      - identifiers
+      - is_unknown
+      - marital_status
+      - merged_into
+      - merged_into_mrn
+      - middle_name
+      - mrn
+      - name
+      - needs_guardian
+      - occupation
+      - preferred_language
+      - preferred_name
+      - pronouns
+      - registered_by_name
+      - registered_facility
+      - registered_facility_name
+      - relationships
+      - sex
+      - status
+      - title
+      - updated_at
+      - version
+    PatientIdentifierKindEnum:
+      enum:
+      - abha_number
+      - abha_address
+      - aadhaar
+      - passport
+      - voter_id
+      - driving_licence
+      - ssn
+      - previous_mrn
+      type: string
+      description: |-
+        * `abha_number` - ABHA number
+        * `abha_address` - ABHA address
+        * `aadhaar` - Aadhaar number
+        * `passport` - Passport
+        * `voter_id` - Voter ID (EPIC)
+        * `driving_licence` - Driving licence
+        * `ssn` - Social Security number
+        * `previous_mrn` - Previous hospital's MRN
+    PatientList:
+      type: object
+      description: 'The short list (P0 part 01 §2, minimum necessary): no address,
+        ID numbers or full phone.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        mrn:
+          type: string
+          readOnly: true
+          description: Issued by the MRN numbering scheme; never changes
+        name:
+          type: string
+          readOnly: true
+        sex:
+          allOf:
+          - $ref: '#/components/schemas/PatientSexEnum'
+          readOnly: true
+        age:
+          type: string
+          readOnly: true
+        birth_date_estimated:
+          type: boolean
+          readOnly: true
+          description: Entered as an age, so the date is approximate
+        phone_last4:
+          type: string
+          readOnly: true
+          description: The mobile's last 4 digits
+        is_unknown:
+          type: boolean
+          readOnly: true
+          description: Registered as unknown or unconscious; details completed later
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PatientStatusEnum'
+          readOnly: true
+        registered_facility:
+          type: string
+          format: uuid
+          readOnly: true
+        registered_facility_name:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - age
+      - birth_date_estimated
+      - created_at
+      - id
+      - is_unknown
+      - mrn
+      - name
+      - phone_last4
+      - registered_facility
+      - registered_facility_name
+      - sex
+      - status
+    PatientRegisterRequest:
+      type: object
+      description: 'Register a patient: name, sex, date of birth **or** age, mobile
+        **or** "no phone" (D2).'
+      properties:
+        address_line1:
+          type: string
+          default: ''
+          maxLength: 255
+        address_line2:
+          type: string
+          default: ''
+          maxLength: 255
+        city:
+          type: string
+          default: ''
+          maxLength: 100
+        district:
+          type: string
+          default: ''
+          maxLength: 100
+        state:
+          type: string
+          default: ''
+          maxLength: 100
+        postal_code:
+          type: string
+          default: ''
+          maxLength: 10
+        country:
+          type: string
+          default: ''
+          maxLength: 2
+        facility:
+          type: string
+          format: uuid
+          description: Where the patient is registered
+        title:
+          type: string
+          default: ''
+          maxLength: 20
+        given_name:
+          type: string
+          default: ''
+          maxLength: 150
+        middle_name:
+          type: string
+          default: ''
+          maxLength: 150
+        family_name:
+          type: string
+          default: ''
+          maxLength: 150
+        preferred_name:
+          type: string
+          default: ''
+          maxLength: 150
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+        age_years:
+          type: integer
+          minimum: 0
+          nullable: true
+        age_months:
+          type: integer
+          minimum: 0
+          nullable: true
+        age_days:
+          type: integer
+          minimum: 0
+          nullable: true
+        sex:
+          $ref: '#/components/schemas/PatientSexEnum'
+        gender_identity:
+          type: string
+          default: ''
+          maxLength: 60
+        pronouns:
+          type: string
+          default: ''
+          maxLength: 60
+        preferred_language:
+          type: string
+          default: ''
+          maxLength: 35
+        marital_status:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/MaritalStatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        occupation:
+          type: string
+          default: ''
+          maxLength: 100
+        blood_group_reported:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/BloodGroupEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        is_unknown:
+          type: boolean
+          default: false
+        identification_note:
+          type: string
+          default: ''
+          maxLength: 255
+        mobile:
+          type: string
+          default: ''
+          maxLength: 30
+        has_no_phone:
+          type: boolean
+          default: false
+        alternate_phone:
+          type: string
+          default: ''
+          maxLength: 30
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        relationships:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelationshipInputRequest'
+        identifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentifierInputRequest'
+        privacy_notice:
+          default: ''
+          description: |-
+            Privacy notice given and the patient agrees to processing for care (D9)
+
+            * `given` - Given
+            * `refused` - Refused
+          oneOf:
+          - $ref: '#/components/schemas/PrivacyNoticeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        sms_consent:
+          type: boolean
+          nullable: true
+        email_consent:
+          type: boolean
+          nullable: true
+        consent_method:
+          allOf:
+          - $ref: '#/components/schemas/ConsentMethodEnum'
+          default: verbal
+        no_guardian_reason:
+          type: string
+          default: ''
+          description: 'Under 18 without a parent or guardian: why (e.g. emergency)'
+          maxLength: 255
+      required:
+      - facility
+      - sex
+    PatientRelationEnum:
+      enum:
+      - mother
+      - father
+      - guardian
+      - spouse
+      - child
+      - sibling
+      - next_of_kin
+      - caregiver
+      - emergency_contact
+      - other
+      type: string
+      description: |-
+        * `mother` - Mother
+        * `father` - Father
+        * `guardian` - Guardian
+        * `spouse` - Spouse / partner
+        * `child` - Son / daughter
+        * `sibling` - Brother / sister
+        * `next_of_kin` - Next of kin
+        * `caregiver` - Caregiver
+        * `emergency_contact` - Emergency contact
+        * `other` - Other
+    PatientSexEnum:
+      enum:
+      - male
+      - female
+      - intersex
+      - unknown
+      type: string
+      description: |-
+        * `male` - Male
+        * `female` - Female
+        * `intersex` - Intersex
+        * `unknown` - Unknown
+    PatientStatusEnum:
+      enum:
+      - active
+      - merged
+      type: string
+      description: |-
+        * `active` - Active
+        * `merged` - Merged into another record
     PerformanceCheck:
       type: object
       properties:
@@ -12901,6 +14329,9 @@ components:
       - numbering.view
       - organization.manage
       - organization.view
+      - patients.register
+      - patients.search
+      - patients.view
       - platform.admin_console
       - platform.jobs.manage
       - platform.jobs.view
@@ -12949,6 +14380,9 @@ components:
         * `numbering.view` - numbering.view
         * `organization.manage` - organization.manage
         * `organization.view` - organization.view
+        * `patients.register` - patients.register
+        * `patients.search` - patients.search
+        * `patients.view` - patients.view
         * `platform.admin_console` - platform.admin_console
         * `platform.jobs.manage` - platform.jobs.manage
         * `platform.jobs.view` - platform.jobs.view
@@ -13004,6 +14438,14 @@ components:
       description: |-
         * `enforcing` - enforcing
         * `report_only` - report_only
+    PrivacyNoticeEnum:
+      enum:
+      - given
+      - refused
+      type: string
+      description: |-
+        * `given` - Given
+        * `refused` - Refused
     QualificationType:
       type: object
       properties:
@@ -13177,6 +14619,139 @@ components:
       - last_passed_drill
       - tools
       - tools_problem
+    RegistrationOptions:
+      type: object
+      properties:
+        country:
+          type: string
+        identifier_kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdentifierKind'
+      required:
+      - country
+      - identifier_kinds
+    Relationship:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        relation:
+          allOf:
+          - $ref: '#/components/schemas/PatientRelationEnum'
+          readOnly: true
+        relation_label:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          readOnly: true
+          description: International format (E.164)
+        is_legal_guardian:
+          type: boolean
+          readOnly: true
+        is_emergency_contact:
+          type: boolean
+          readOnly: true
+        related_patient:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: When this person is also a patient here
+        related_patient_mrn:
+          type: string
+          readOnly: true
+          nullable: true
+        note:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+          description: Ended relationships are kept
+        version:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_active
+      - is_emergency_contact
+      - is_legal_guardian
+      - name
+      - note
+      - phone
+      - related_patient
+      - related_patient_mrn
+      - relation
+      - relation_label
+      - version
+    RelationshipCreateRequest:
+      type: object
+      properties:
+        relation:
+          $ref: '#/components/schemas/PatientRelationEnum'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        phone:
+          type: string
+          default: ''
+          maxLength: 30
+        is_legal_guardian:
+          type: boolean
+          default: false
+        is_emergency_contact:
+          type: boolean
+          default: false
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+        related_patient:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - name
+      - relation
+    RelationshipInputRequest:
+      type: object
+      properties:
+        relation:
+          $ref: '#/components/schemas/PatientRelationEnum'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        phone:
+          type: string
+          default: ''
+          maxLength: 30
+        is_legal_guardian:
+          type: boolean
+          default: false
+        is_emergency_contact:
+          type: boolean
+          default: false
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - name
+      - relation
     RestoreDrill:
       type: object
       properties:

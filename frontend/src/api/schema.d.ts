@@ -2484,6 +2484,184 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patients/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Patients, newest registration first: the short list only (minimum necessary). */
+        get: operations["patients_list"];
+        put?: never;
+        /** @description Register a patient; the MRN is issued in the same step. */
+        post: operations["patients_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One patient's record: details, contacts, people, ID numbers (masked) and consents.
+         *     Every opening is audited.
+         */
+        get: operations["patients_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Correct the patient's details; an old name stays findable as an alias. */
+        patch: operations["patients_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/consents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Record a consent decision (privacy notice, SMS, email); earlier ones stay as history. */
+        post: operations["patients_consents_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/contacts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add a phone, email or address. */
+        post: operations["patients_contacts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/contacts/{contact_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Correct a contact, make it the main one, or end it (kept on record). */
+        patch: operations["patients_contacts_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/identifiers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Add an ID number: checked, stored encrypted, shown masked; one-per-person kinds are
+         *     refused when another patient has the number.
+         */
+        post: operations["patients_identifiers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/identifiers/{identifier_id}/end/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End a wrong or replaced ID number, with a reason (kept on record, never deleted). */
+        post: operations["patients_identifiers_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/relationships/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add a parent, guardian, next of kin, emergency contact or caregiver. */
+        post: operations["patients_relationships_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/relationships/{relationship_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Correct a relationship or end it (kept on record). */
+        patch: operations["patients_relationships_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/patients/registration-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What the registration form offers in this hospital's country (ID number kinds). */
+        get: operations["patients_registration_options_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/performance-checks/": {
         parameters: {
             query?: never;
@@ -3944,6 +4122,16 @@ export interface components {
          * @enum {string}
          */
         AgeGroupEnum: "any" | "adult" | "pediatric" | "neonatal";
+        Alias: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["PatientAliasKindEnum"];
+            readonly kind_label: string;
+            readonly name: string;
+            readonly mrn: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         ApiEndpoint: {
             method: string;
             path: string;
@@ -4206,6 +4394,18 @@ export interface components {
         BedTypeEnum: "general" | "semi_private" | "private" | "deluxe" | "icu" | "hdu" | "nicu" | "picu" | "isolation" | "day_care" | "labour" | "recovery" | "emergency_trolley";
         /** @enum {unknown} */
         BlankEnum: "";
+        /**
+         * @description * `A+` - A+
+         *     * `A-` - A-
+         *     * `B+` - B+
+         *     * `B-` - B-
+         *     * `O+` - O+
+         *     * `O-` - O-
+         *     * `AB+` - AB+
+         *     * `AB-` - AB-
+         * @enum {string}
+         */
+        BloodGroupEnum: "A+" | "A-" | "B+" | "B-" | "O+" | "O-" | "AB+" | "AB-";
         BoardBed: {
             /** Format: uuid */
             id: string;
@@ -4400,6 +4600,33 @@ export interface components {
             needs_code: boolean;
             passkey_available: boolean;
         };
+        Consent: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["PatientConsentKindEnum"];
+            readonly kind_label: string;
+            readonly status: components["schemas"]["PatientConsentStatusEnum"];
+            readonly status_label: string;
+            readonly method: components["schemas"]["ConsentMethodEnum"];
+            readonly method_label: string;
+            readonly note: string;
+            readonly recorded_by_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ConsentCreateRequest: {
+            kind: components["schemas"]["PatientConsentKindEnum"];
+            status: components["schemas"]["PatientConsentStatusEnum"];
+            method: components["schemas"]["ConsentMethodEnum"];
+            /** @default  */
+            note: string;
+        };
+        /**
+         * @description * `verbal` - Told the front desk
+         *     * `signed_form` - Signed a form
+         * @enum {string}
+         */
+        ConsentMethodEnum: "verbal" | "signed_form";
         ConsoleAccess: {
             /** @description The admin console is switched on here. */
             enabled: boolean;
@@ -4431,6 +4658,52 @@ export interface components {
         ConsoleBlockReviewRequest: {
             version: number;
             note?: string;
+        };
+        Contact: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["PatientContactKindEnum"];
+            readonly kind_label: string;
+            /** @description International format (E.164), e.g. +919876543210 */
+            readonly phone: string;
+            /** Format: email */
+            readonly email: string;
+            readonly address_line1: string;
+            readonly address_line2: string;
+            readonly city: string;
+            /** @description District (IN) / county (US) */
+            readonly district: string;
+            readonly state: string;
+            readonly postal_code: string;
+            readonly country: string;
+            readonly is_primary: boolean;
+            /** @description Ended contacts are kept, not deleted */
+            readonly is_active: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ContactCreateRequest: {
+            /** @default  */
+            address_line1: string;
+            /** @default  */
+            address_line2: string;
+            /** @default  */
+            city: string;
+            /** @default  */
+            district: string;
+            /** @default  */
+            state: string;
+            /** @default  */
+            postal_code: string;
+            /** @default  */
+            country: string;
+            kind: components["schemas"]["PatientContactKindEnum"];
+            /** @default  */
+            phone: string;
+            email?: string;
+            /** @default false */
+            is_primary: boolean;
         };
         CopyWeekRequest: {
             /** Format: uuid */
@@ -5090,6 +5363,62 @@ export interface components {
             /** Format: time */
             closes_at: string;
         };
+        /** @description Masked only: the full number never leaves the server. */
+        Identifier: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["PatientIdentifierKindEnum"];
+            readonly kind_label: string;
+            /** @description Masked, e.g. XXXX XXXX 1234 */
+            readonly value_display: string;
+            /** @description e.g. the issuing country or state, or hospital */
+            readonly issuer: string;
+            /**
+             * @description Checking with UIDAI / ABDM comes later; typed numbers are not verified
+             *
+             *     * `unverified` - Not verified
+             *     * `verified` - Verified
+             */
+            readonly verification: components["schemas"]["IdentifierVerificationEnum"];
+            readonly verification_label: string;
+            /** Format: date */
+            readonly valid_until: string | null;
+            readonly is_active: boolean;
+            /** Format: date-time */
+            readonly ended_at: string | null;
+            readonly ended_by_name: string | null;
+            readonly end_reason: string;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        IdentifierEndRequest: {
+            version: number;
+            reason: string;
+        };
+        IdentifierInputRequest: {
+            kind: components["schemas"]["PatientIdentifierKindEnum"];
+            /** @description As typed; stored encrypted */
+            value: string;
+            /** @default  */
+            issuer: string;
+            /** Format: date */
+            valid_until?: string | null;
+        };
+        IdentifierKind: {
+            kind: string;
+            label: string;
+            example: string;
+            needs_issuer: boolean;
+            /** @description The same number on a second patient is refused */
+            one_per_person: boolean;
+        };
+        /**
+         * @description * `unverified` - Not verified
+         *     * `verified` - Verified
+         * @enum {string}
+         */
+        IdentifierVerificationEnum: "unverified" | "verified";
         IncidentNotification: {
             /** Format: uuid */
             readonly id: string;
@@ -5460,6 +5789,16 @@ export interface components {
              */
             file: string;
         };
+        /**
+         * @description * `single` - Single
+         *     * `married` - Married
+         *     * `divorced` - Divorced
+         *     * `separated` - Separated
+         *     * `widowed` - Widowed
+         *     * `other` - Other
+         * @enum {string}
+         */
+        MaritalStatusEnum: "single" | "married" | "divorced" | "separated" | "widowed" | "other";
         MessagePreview: {
             subject: string;
             body: string;
@@ -5919,6 +6258,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Notification"][];
         };
+        PaginatedPatientListList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["PatientList"][];
+        };
         PaginatedRoleAssignmentList: {
             /** @example 123 */
             count: number;
@@ -6070,6 +6424,21 @@ export interface components {
             description?: string;
             is_active?: boolean;
         };
+        PatchedContactUpdateRequest: {
+            version?: number;
+            phone?: string;
+            email?: string;
+            address_line1?: string;
+            address_line2?: string;
+            city?: string;
+            district?: string;
+            state?: string;
+            postal_code?: string;
+            country?: string;
+            is_primary?: boolean;
+            /** @description False ends it (kept on record) */
+            is_active?: boolean;
+        };
         PatchedDepartmentServiceUpdateRequest: {
             version?: number;
             name?: string;
@@ -6194,12 +6563,46 @@ export interface components {
             letterhead_registration?: string;
             letterhead_footer?: string;
         };
+        PatchedPatientUpdateRequest: {
+            version?: number;
+            title?: string;
+            given_name?: string;
+            middle_name?: string;
+            family_name?: string;
+            preferred_name?: string;
+            /** Format: date */
+            date_of_birth?: string;
+            birth_date_estimated?: boolean;
+            sex?: components["schemas"]["PatientSexEnum"];
+            gender_identity?: string;
+            pronouns?: string;
+            preferred_language?: string;
+            marital_status?: components["schemas"]["MaritalStatusEnum"] | components["schemas"]["BlankEnum"];
+            occupation?: string;
+            blood_group_reported?: components["schemas"]["BloodGroupEnum"] | components["schemas"]["BlankEnum"];
+            has_no_phone?: boolean;
+            is_unknown?: boolean;
+            identification_note?: string;
+        };
         PatchedQualificationTypeUpdateRequest: {
             version?: number;
             name?: string;
             category?: components["schemas"]["QualificationTypeCategoryEnum"];
             /** @description IN, US, or blank for both countries */
             country?: string;
+            is_active?: boolean;
+        };
+        PatchedRelationshipUpdateRequest: {
+            version?: number;
+            relation?: components["schemas"]["PatientRelationEnum"];
+            name?: string;
+            phone?: string;
+            is_legal_guardian?: boolean;
+            is_emergency_contact?: boolean;
+            /** Format: uuid */
+            related_patient?: string | null;
+            note?: string;
+            /** @description False ends it (kept on record) */
             is_active?: boolean;
         };
         PatchedRequirementUpdateRequest: {
@@ -6277,6 +6680,245 @@ export interface components {
             age_group?: components["schemas"]["AgeGroupEnum"];
             is_active?: boolean;
         };
+        /**
+         * @description * `previous_name` - Previous name
+         *     * `merged_mrn` - MRN of a merged record
+         *     * `other_name` - Other name
+         * @enum {string}
+         */
+        PatientAliasKindEnum: "previous_name" | "merged_mrn" | "other_name";
+        /**
+         * @description * `privacy_notice` - Privacy notice given; agrees to processing for care
+         *     * `sms` - Messages by SMS
+         *     * `email` - Messages by email
+         * @enum {string}
+         */
+        PatientConsentKindEnum: "privacy_notice" | "sms" | "email";
+        /**
+         * @description * `given` - Given
+         *     * `refused` - Refused
+         *     * `withdrawn` - Withdrawn
+         * @enum {string}
+         */
+        PatientConsentStatusEnum: "given" | "refused" | "withdrawn";
+        /**
+         * @description * `mobile` - Mobile
+         *     * `phone` - Other phone
+         *     * `email` - Email
+         *     * `address` - Address
+         * @enum {string}
+         */
+        PatientContactKindEnum: "mobile" | "phone" | "email" | "address";
+        PatientDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description Issued by the MRN numbering scheme; never changes */
+            readonly mrn: string;
+            readonly status: components["schemas"]["PatientStatusEnum"];
+            /**
+             * Format: uuid
+             * @description Set only by a completed merge (HIMS-PAT-004).
+             */
+            readonly merged_into: string | null;
+            readonly merged_into_mrn: string | null;
+            readonly name: string;
+            readonly title: string;
+            /** @description One name is enough */
+            readonly given_name: string;
+            readonly middle_name: string;
+            readonly family_name: string;
+            readonly preferred_name: string;
+            /** Format: date */
+            readonly date_of_birth: string;
+            /** @description Entered as an age, so the date is approximate */
+            readonly birth_date_estimated: boolean;
+            readonly age: string;
+            readonly sex: components["schemas"]["PatientSexEnum"];
+            readonly gender_identity: string;
+            readonly pronouns: string;
+            /** @description e.g. hi, en-US */
+            readonly preferred_language: string;
+            readonly marital_status: components["schemas"]["MaritalStatusEnum"];
+            readonly occupation: string;
+            /**
+             * @description As the patient says; not a laboratory result
+             *
+             *     * `A+` - A+
+             *     * `A-` - A-
+             *     * `B+` - B+
+             *     * `B-` - B-
+             *     * `O+` - O+
+             *     * `O-` - O-
+             *     * `AB+` - AB+
+             *     * `AB-` - AB-
+             */
+            readonly blood_group_reported: components["schemas"]["BloodGroupEnum"];
+            /** @description The patient has no phone (ticked instead of a mobile number) */
+            readonly has_no_phone: boolean;
+            /** @description Registered as unknown or unconscious; details completed later */
+            readonly is_unknown: boolean;
+            /** @description For an unknown patient: how they arrived, e.g. 'Brought by ambulance, MG Road' */
+            readonly identification_note: string;
+            /** Format: uuid */
+            readonly registered_facility: string;
+            readonly registered_facility_name: string;
+            readonly registered_by_name: string | null;
+            /** @description Under 18 with no current parent or guardian recorded */
+            readonly needs_guardian: boolean;
+            readonly contacts: components["schemas"]["Contact"][];
+            readonly relationships: components["schemas"]["Relationship"][];
+            readonly identifiers: components["schemas"]["Identifier"][];
+            /** @description Every decision, newest first */
+            readonly consents: components["schemas"]["Consent"][];
+            readonly aliases: components["schemas"]["Alias"][];
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /**
+         * @description * `abha_number` - ABHA number
+         *     * `abha_address` - ABHA address
+         *     * `aadhaar` - Aadhaar number
+         *     * `passport` - Passport
+         *     * `voter_id` - Voter ID (EPIC)
+         *     * `driving_licence` - Driving licence
+         *     * `ssn` - Social Security number
+         *     * `previous_mrn` - Previous hospital's MRN
+         * @enum {string}
+         */
+        PatientIdentifierKindEnum: "abha_number" | "abha_address" | "aadhaar" | "passport" | "voter_id" | "driving_licence" | "ssn" | "previous_mrn";
+        /** @description The short list (P0 part 01 §2, minimum necessary): no address, ID numbers or full phone. */
+        PatientList: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description Issued by the MRN numbering scheme; never changes */
+            readonly mrn: string;
+            readonly name: string;
+            readonly sex: components["schemas"]["PatientSexEnum"];
+            readonly age: string;
+            /** @description Entered as an age, so the date is approximate */
+            readonly birth_date_estimated: boolean;
+            /** @description The mobile's last 4 digits */
+            readonly phone_last4: string;
+            /** @description Registered as unknown or unconscious; details completed later */
+            readonly is_unknown: boolean;
+            readonly status: components["schemas"]["PatientStatusEnum"];
+            /** Format: uuid */
+            readonly registered_facility: string;
+            readonly registered_facility_name: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /** @description Register a patient: name, sex, date of birth **or** age, mobile **or** "no phone" (D2). */
+        PatientRegisterRequest: {
+            /** @default  */
+            address_line1: string;
+            /** @default  */
+            address_line2: string;
+            /** @default  */
+            city: string;
+            /** @default  */
+            district: string;
+            /** @default  */
+            state: string;
+            /** @default  */
+            postal_code: string;
+            /** @default  */
+            country: string;
+            /**
+             * Format: uuid
+             * @description Where the patient is registered
+             */
+            facility: string;
+            /** @default  */
+            title: string;
+            /** @default  */
+            given_name: string;
+            /** @default  */
+            middle_name: string;
+            /** @default  */
+            family_name: string;
+            /** @default  */
+            preferred_name: string;
+            /** Format: date */
+            date_of_birth?: string | null;
+            age_years?: number | null;
+            age_months?: number | null;
+            age_days?: number | null;
+            sex: components["schemas"]["PatientSexEnum"];
+            /** @default  */
+            gender_identity: string;
+            /** @default  */
+            pronouns: string;
+            /** @default  */
+            preferred_language: string;
+            /** @default  */
+            marital_status: components["schemas"]["MaritalStatusEnum"] | components["schemas"]["BlankEnum"];
+            /** @default  */
+            occupation: string;
+            /** @default  */
+            blood_group_reported: components["schemas"]["BloodGroupEnum"] | components["schemas"]["BlankEnum"];
+            /** @default false */
+            is_unknown: boolean;
+            /** @default  */
+            identification_note: string;
+            /** @default  */
+            mobile: string;
+            /** @default false */
+            has_no_phone: boolean;
+            /** @default  */
+            alternate_phone: string;
+            email?: string;
+            relationships?: components["schemas"]["RelationshipInputRequest"][];
+            identifiers?: components["schemas"]["IdentifierInputRequest"][];
+            /**
+             * @description Privacy notice given and the patient agrees to processing for care (D9)
+             *
+             *     * `given` - Given
+             *     * `refused` - Refused
+             * @default
+             */
+            privacy_notice: components["schemas"]["PrivacyNoticeEnum"] | components["schemas"]["BlankEnum"];
+            sms_consent?: boolean | null;
+            email_consent?: boolean | null;
+            /** @default verbal */
+            consent_method: components["schemas"]["ConsentMethodEnum"];
+            /**
+             * @description Under 18 without a parent or guardian: why (e.g. emergency)
+             * @default
+             */
+            no_guardian_reason: string;
+        };
+        /**
+         * @description * `mother` - Mother
+         *     * `father` - Father
+         *     * `guardian` - Guardian
+         *     * `spouse` - Spouse / partner
+         *     * `child` - Son / daughter
+         *     * `sibling` - Brother / sister
+         *     * `next_of_kin` - Next of kin
+         *     * `caregiver` - Caregiver
+         *     * `emergency_contact` - Emergency contact
+         *     * `other` - Other
+         * @enum {string}
+         */
+        PatientRelationEnum: "mother" | "father" | "guardian" | "spouse" | "child" | "sibling" | "next_of_kin" | "caregiver" | "emergency_contact" | "other";
+        /**
+         * @description * `male` - Male
+         *     * `female` - Female
+         *     * `intersex` - Intersex
+         *     * `unknown` - Unknown
+         * @enum {string}
+         */
+        PatientSexEnum: "male" | "female" | "intersex" | "unknown";
+        /**
+         * @description * `active` - Active
+         *     * `merged` - Merged into another record
+         * @enum {string}
+         */
+        PatientStatusEnum: "active" | "merged";
         PerformanceCheck: {
             /** Format: uuid */
             readonly id: string;
@@ -6399,6 +7041,9 @@ export interface components {
          *     * `numbering.view` - numbering.view
          *     * `organization.manage` - organization.manage
          *     * `organization.view` - organization.view
+         *     * `patients.register` - patients.register
+         *     * `patients.search` - patients.search
+         *     * `patients.view` - patients.view
          *     * `platform.admin_console` - platform.admin_console
          *     * `platform.jobs.manage` - platform.jobs.manage
          *     * `platform.jobs.view` - platform.jobs.view
@@ -6417,7 +7062,7 @@ export interface components {
          *     * `support.access.request` - support.access.request
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "patients.register" | "patients.search" | "patients.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
         Person: {
             /** Format: uuid */
             id: string;
@@ -6437,6 +7082,12 @@ export interface components {
          * @enum {string}
          */
         PolicyModeEnum: "enforcing" | "report_only";
+        /**
+         * @description * `given` - Given
+         *     * `refused` - Refused
+         * @enum {string}
+         */
+        PrivacyNoticeEnum: "given" | "refused";
         QualificationType: {
             /** Format: uuid */
             readonly id: string;
@@ -6499,6 +7150,59 @@ export interface components {
             last_backup: components["schemas"]["Backup"] | null;
             last_drill: components["schemas"]["RestoreDrill"] | null;
             last_passed_drill: components["schemas"]["RestoreDrill"] | null;
+        };
+        RegistrationOptions: {
+            country: string;
+            identifier_kinds: components["schemas"]["IdentifierKind"][];
+        };
+        Relationship: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly relation: components["schemas"]["PatientRelationEnum"];
+            readonly relation_label: string;
+            readonly name: string;
+            /** @description International format (E.164) */
+            readonly phone: string;
+            readonly is_legal_guardian: boolean;
+            readonly is_emergency_contact: boolean;
+            /**
+             * Format: uuid
+             * @description When this person is also a patient here
+             */
+            readonly related_patient: string | null;
+            readonly related_patient_mrn: string | null;
+            readonly note: string;
+            /** @description Ended relationships are kept */
+            readonly is_active: boolean;
+            readonly version: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        RelationshipCreateRequest: {
+            relation: components["schemas"]["PatientRelationEnum"];
+            name: string;
+            /** @default  */
+            phone: string;
+            /** @default false */
+            is_legal_guardian: boolean;
+            /** @default false */
+            is_emergency_contact: boolean;
+            /** @default  */
+            note: string;
+            /** Format: uuid */
+            related_patient?: string | null;
+        };
+        RelationshipInputRequest: {
+            relation: components["schemas"]["PatientRelationEnum"];
+            name: string;
+            /** @default  */
+            phone: string;
+            /** @default false */
+            is_legal_guardian: boolean;
+            /** @default false */
+            is_emergency_contact: boolean;
+            /** @default  */
+            note: string;
         };
         RestoreDrill: {
             /** Format: uuid */
@@ -11749,6 +12453,309 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Organization"];
+                };
+            };
+        };
+    };
+    patients_list: {
+        parameters: {
+            query?: {
+                /** @description Registered at this facility */
+                facility?: string;
+                /** @description Exact MRN (look-up is audited) */
+                mrn?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPatientListList"];
+                };
+            };
+        };
+    };
+    patients_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatientRegisterRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientDetail"];
+                };
+            };
+        };
+    };
+    patients_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientDetail"];
+                };
+            };
+        };
+    };
+    patients_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPatientUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientDetail"];
+                };
+            };
+        };
+    };
+    patients_consents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Consent"];
+                };
+            };
+        };
+    };
+    patients_contacts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contact"];
+                };
+            };
+        };
+    };
+    patients_contacts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contact_id: string;
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedContactUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Contact"];
+                };
+            };
+        };
+    };
+    patients_identifiers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentifierInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Identifier"];
+                };
+            };
+        };
+    };
+    patients_identifiers_end_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+                identifier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentifierEndRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Identifier"];
+                };
+            };
+        };
+    };
+    patients_relationships_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationshipCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Relationship"];
+                };
+            };
+        };
+    };
+    patients_relationships_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+                relationship_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRelationshipUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Relationship"];
+                };
+            };
+        };
+    };
+    patients_registration_options_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationOptions"];
                 };
             };
         };

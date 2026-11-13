@@ -526,3 +526,16 @@ switched off, so the hospital cannot lock itself out.
 The **Organization administrator** role now also holds `support.access.manage` (approve, refuse or
 end the supplier's access), but never `support.access.request`. Both permissions need two-factor
 sign-in.
+
+## Update 2026-11-12: patients (HIMS-PAT-001)
+
+| Role | Where | Patient permissions | What it is for | Typical holder |
+|---|---|---|---|---|
+| **Receptionist / front desk** (`receptionist`) | One facility | `patients.search`, `patients.view`, `patients.register` (+ facilities and departments view) | Registers patients at that branch (MRN given at once) and corrects their details, contacts, people, ID numbers and consents; finds every patient of the hospital | Front office executive, receptionist |
+| **Medical records officer** (`medical-records-officer`) | Whole hospital or one facility | the same three | Keeps patient records right; merging duplicates and reviewing emergency access come with HIMS-PAT-003/004/006 | Medical records officer, HIM technician |
+
+**Organization administrator** and **Head of department** now also hold `patients.search` and `patients.view` (look patients up, open the record), **not** `patients.register` (P0 part 04, approved for now on 2026-11-08). None of the patient permissions needs two-factor today (they change no settings or access); clinical permissions are decided with their tickets.
+
+**The software supplier's support account never holds patient permissions**, even when the hospital lends it the administrator role (spec 7.2; decisions log row 20).
+
+**Giving patient roles (2026-11-12):** the usual rule is that you can only give permissions you hold yourself. Patient permissions are the exception: anyone who may open patient records at that branch (`patients.view`, e.g. the hospital administrator) may give the Receptionist / front desk or Medical records role, without being able to register patients themselves. Decisions log row 21.

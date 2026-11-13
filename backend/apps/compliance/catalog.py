@@ -134,8 +134,8 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "45 CFR 164.312(b)",
         "Audit controls",
         "Record and examine activity in systems holding patient data.",
-        "Append-only audit log with a tamper-evident chain. Chart-read auditing comes with "
-        "Phase 2.",
+        "Append-only audit log with a tamper-evident chain. Opening a patient's record is "
+        "audited since HIMS-PAT-001 (2026-11-12); clinical chart reads come with Phase 2.",
         DONE,
     ),
     (
@@ -218,8 +218,9 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "45 CFR 164.520",
         "Notice of Privacy Practices",
         "Give patients the notice and record acknowledgment.",
-        "Recorded at registration in Phase 2 (design decision D9).",
-        NS,
+        "Recorded at registration since HIMS-PAT-001 (2026-11-12, D9): privacy notice given, "
+        "with history of every decision. Counsel confirms the wording.",
+        IP,
     ),
     (
         "HIPAA-PRIV-MIN-NECESSARY",
@@ -228,7 +229,8 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "45 CFR 164.502(b)",
         "Minimum necessary",
         "Use and show only the patient data needed for the task.",
-        "Least-privilege roles and scopes today; patient-level rules designed for Phase 2.",
+        "Least-privilege roles and scopes; the patient list shows the minimum and ID numbers "
+        "are masked (HIMS-PAT-001); clinical patient-level rules come with Phase 2.",
         IP,
     ),
     (
@@ -259,8 +261,9 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "Sections 5, 6; Rule 3",
         "Notice and consent",
         "Tell people what data is processed and why; obtain consent or rely on a lawful use.",
-        "Designed for registration in Phase 2 (D9). Counsel confirms the basis for treatment.",
-        NS,
+        "Recorded at registration since HIMS-PAT-001 (D9): privacy notice, SMS and email "
+        "consent with history and withdrawal. Counsel confirms the basis for treatment.",
+        IP,
     ),
     (
         "DPDP-SECURITY",
@@ -322,8 +325,9 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "Section 9; Rule 10",
         "Children's data",
         "Verifiable parental consent for children; counsel checks health exemptions.",
-        "Guardian recorded at registration in Phase 2.",
-        NS,
+        "A parent or guardian is asked for at registration under 18 (or a reason is recorded), "
+        "since HIMS-PAT-001. Counsel confirms consent by guardians.",
+        IP,
     ),
     (
         "DPDP-PROCESSORS",
@@ -393,7 +397,8 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "ABDM participation",
         "Consent-based exchange and security rules for ABHA and health records, if the hospital "
         "joins.",
-        "ABHA numbers recorded as not verified in Phase 2; ABDM integration in Phase 6.",
+        "ABHA numbers recorded as not verified since HIMS-PAT-001 (encrypted, masked); ABDM "
+        "integration in Phase 6.",
         NS,
     ),
     (
@@ -403,7 +408,8 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "Counsel to confirm",
         "Storing Aadhaar numbers",
         "UIDAI rules restrict storing full Aadhaar numbers. Decision D6 allows entry for now.",
-        "Encrypted and masked when built in Phase 2. Must be settled before real patients.",
+        "Encrypted, masked and marked not verified since HIMS-PAT-001 (ADR-036). Must be "
+        "settled before real patients.",
         NS,
     ),
     (
@@ -491,8 +497,8 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         "access",
         3,
         5,
-        "Audit log. Planned in Phase 2: patient-level rules, chart-read audit, "
-        "restricted records, emergency access review.",
+        "Audit log; opening a patient's record audited (HIMS-PAT-001). Planned in Phase 2: "
+        "patient-level rules, restricted records, emergency access review.",
     ),
     (
         "R-004",

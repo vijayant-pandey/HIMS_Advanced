@@ -68,3 +68,5 @@ is append-only and sealed every minute.
 
 Later, in the hosting stage, an owner console (HIMS-OPS-025) will list every hospital and open
 its Support access page from one place.
+
+**Update 2026-11-12 (HIMS-PAT-001):** the supplier never sees patients. Even with the hospital administrator role lent, the Patients menu does not appear for the support account and the patient addresses answer 403 (spec 7.2). Everything else of the lent role works as before.

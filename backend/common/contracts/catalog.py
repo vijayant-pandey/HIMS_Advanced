@@ -33,6 +33,8 @@ VIEW_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     _B + "FacilityLocationsView": ("HIMS-FAC-005",),
     _B + "BedBoardView": ("HIMS-FAC-008",),
     "apps.equipment.api.views.EquipmentViewSet": ("HIMS-FAC-009",),
+    # Patients (Phase 2)
+    "apps.patients.api.views.PatientViewSet": ("HIMS-PAT-001",),
     # Numbering and features
     "apps.numbering.api.views.NumberingSchemeViewSet": ("HIMS-ORG-003",),
     "apps.numbering.api.views.IssuedNumberViewSet": ("HIMS-ORG-003",),

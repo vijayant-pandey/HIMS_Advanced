@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "apps.staff",
     "apps.beds",
     "apps.equipment",
+    "apps.patients",  # Phase 2: patients and their master record (HIMS-PAT-001)
     "apps.numbering",
     "apps.features",
     "apps.notifications",
@@ -367,6 +368,19 @@ SPECTACULAR_SETTINGS = {
         "EquipmentCategoryEnum": "apps.equipment.models.Equipment.Category",
         "EquipmentStatusEnum": "apps.equipment.models.Equipment.Status",
         "EquipmentServiceKindEnum": "apps.equipment.models.EquipmentServiceRecord.Kind",
+        # Patients (HIMS-PAT-001).
+        "PatientSexEnum": "apps.patients.models.Sex",
+        "PatientStatusEnum": "apps.patients.models.Patient.Status",
+        "MaritalStatusEnum": "apps.patients.models.Patient.MaritalStatus",
+        "BloodGroupEnum": "apps.patients.models.Patient.BloodGroup",
+        "PatientContactKindEnum": "apps.patients.models.PatientContact.Kind",
+        "PatientRelationEnum": "apps.patients.models.PatientRelationship.Relation",
+        "PatientIdentifierKindEnum": "apps.patients.models.PatientIdentifier.Kind",
+        "IdentifierVerificationEnum": "apps.patients.models.PatientIdentifier.Verification",
+        "PatientConsentKindEnum": "apps.patients.models.PatientConsent.Kind",
+        "PatientConsentStatusEnum": "apps.patients.models.PatientConsent.Status",
+        "ConsentMethodEnum": "apps.patients.models.PatientConsent.Method",
+        "PatientAliasKindEnum": "apps.patients.models.PatientAlias.Kind",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)

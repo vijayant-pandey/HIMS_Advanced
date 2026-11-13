@@ -19,6 +19,7 @@ from apps.numbering.services import ensure_default_schemes
 # Models deliberately not shown, with the reason.
 NOT_IN_CONSOLE = {
     "identity.MfaRecoveryCode": "secret hashes; counts are shown on the two-factor device page",
+    "patients.IdentifierHashKey": "a secret key (encrypted); rotation is on the Compliance page",
 }
 
 

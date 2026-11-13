@@ -15,6 +15,7 @@ from apps.equipment.models import Equipment
 from apps.facilities.location_models import Building, Ward
 from apps.facilities.models import Department, Facility
 from apps.identity.models import User
+from apps.patients.models import Patient
 from apps.rosters.models import Shift
 from apps.staff.models import StaffCredential, StaffMember
 
@@ -65,6 +66,13 @@ def test_a_small_demo_hospital_gets_records_for_every_screen(provisioned):
     assert Equipment.objects.filter(status=Equipment.Status.MAINTENANCE).exists()
     assert AccessDelegation.objects.count() == 0  # one branch administrator only
     assert SupportAccess.objects.count() == 2
+    # Patients (HIMS-PAT-001): six invented ones and one unknown, registered by the front desk.
+    assert Patient.objects.count() == 7
+    assert Patient.objects.filter(mrn="MRN-00000001").exists()
+    assert Patient.objects.filter(is_unknown=True).count() == 1
+    desk = User.objects.get(email="frontdesk.dwk@in-sunrise.demo.test")
+    assert Patient.objects.filter(registered_by=desk).count() == 7
+    assert "records@in-sunrise.demo.test" in dict(ctx.logins)
     # Sign-in accounts work with the demo password and are listed for the product owner.
     accounts = dict(ctx.logins)
     assert "admin.dwk@in-sunrise.demo.test" in accounts
@@ -102,7 +110,7 @@ def test_patients_are_invented_the_same_way_every_time(capsys):
     call_command("demo_patients", "--hospital=us-bluegrass", "--per-branch=2")
     out = capsys.readouterr().out
     assert out.splitlines()[0].startswith("branch,given_name,family_name")
-    assert out.count("+1 555 01") == 6
+    assert out.count("+1 312 555 01") == 6
 
 
 def test_setup_needs_the_password_first(monkeypatch):

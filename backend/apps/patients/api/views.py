@@ -1,0 +1,358 @@
+"""Patient API (HIMS-PAT-001; P0 part 06 section 2).
+
+Patients belong to the whole hospital (one MRN in every facility), so a grant anywhere lets a
+person look patients up and open them; registering checks the facility of registration. Every
+opening of a record and every MRN look-up is in the audit log (spec 13.4); the list itself shows
+only the minimum (P0 part 01 section 2). Patient search by phone, ID number and similar name
+comes with HIMS-PAT-002.
+"""
+
+from django.db.models import Prefetch
+from django.http import Http404
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from apps.access_control.catalog import P
+from apps.access_control.selectors import check_permission
+from apps.audit.services import AuditAction, record_audit_event
+from apps.features.catalog import F
+from apps.features.services import require_enabled
+from apps.organizations.selectors import get_deployment_organization
+from common.idempotency.decorators import idempotent
+from common.pagination import StandardPagination
+from common.permissions import ANY_GRANT
+
+from .. import identifiers, services
+from ..models import (
+    UNIQUE_IDENTIFIER_KINDS,
+    Patient,
+    PatientConsent,
+    PatientContact,
+    PatientIdentifier,
+    PatientRelationship,
+)
+from .serializers import (
+    ConsentCreateSerializer,
+    ConsentSerializer,
+    ContactCreateSerializer,
+    ContactSerializer,
+    ContactUpdateSerializer,
+    IdentifierEndSerializer,
+    IdentifierInputSerializer,
+    IdentifierSerializer,
+    PatientDetailSerializer,
+    PatientListSerializer,
+    PatientRegisterSerializer,
+    PatientUpdateSerializer,
+    RegistrationOptionsSerializer,
+    RelationshipCreateSerializer,
+    RelationshipSerializer,
+    RelationshipUpdateSerializer,
+)
+
+ADDRESS_FIELDS = (
+    "address_line1",
+    "address_line2",
+    "city",
+    "district",
+    "state",
+    "postal_code",
+    "country",
+)
+REGISTRATION_EXTRAS = (
+    "facility",
+    "mobile",
+    "alternate_phone",
+    "email",
+    "relationships",
+    "identifiers",
+    "privacy_notice",
+    "sms_consent",
+    "email_consent",
+    "consent_method",
+    "no_guardian_reason",
+    *ADDRESS_FIELDS,
+)
+
+
+class PatientPagination(StandardPagination):
+    max_page_size = 50  # P0 part 01 §2: at most 50 results
+
+
+class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    permission_scope = ANY_GRANT
+    pagination_class = PatientPagination
+    required_permissions = {
+        "list": P.PATIENTS_SEARCH,
+        "retrieve": P.PATIENTS_VIEW,
+        "create": P.PATIENTS_REGISTER,
+        "partial_update": P.PATIENTS_REGISTER,
+        "registration_options": P.PATIENTS_REGISTER,
+        "add_contact": P.PATIENTS_REGISTER,
+        "update_contact": P.PATIENTS_REGISTER,
+        "add_relationship": P.PATIENTS_REGISTER,
+        "update_relationship": P.PATIENTS_REGISTER,
+        "add_identifier": P.PATIENTS_REGISTER,
+        "end_identifier": P.PATIENTS_REGISTER,
+        "record_consent": P.PATIENTS_REGISTER,
+    }
+    http_method_names = ["get", "post", "patch", "head"]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Patient.objects.none()
+        queryset = Patient.objects.select_related("registered_facility")
+        if self.action == "list":
+            mobiles = PatientContact.objects.filter(kind="mobile", is_active=True).order_by(
+                "-is_primary", "created_at"
+            )
+            queryset = queryset.prefetch_related(Prefetch("contacts", queryset=mobiles))
+            facility = self.request.query_params.get("facility")
+            if facility:
+                queryset = queryset.filter(registered_facility_id=facility)
+            mrn = (self.request.query_params.get("mrn") or "").strip().upper()
+            if mrn:
+                queryset = queryset.filter(mrn=mrn)
+        return queryset.order_by("-created_at")
+
+    def get_serializer_class(self):
+        return PatientListSerializer
+
+    def _patient(self, pk) -> Patient:
+        queryset = Patient.objects.select_related(
+            "registered_facility", "registered_by", "merged_into"
+        ).prefetch_related(
+            "contacts",
+            Prefetch(
+                "relationships",
+                queryset=PatientRelationship.objects.select_related("related_patient"),
+            ),
+            Prefetch("identifiers", queryset=PatientIdentifier.objects.select_related("ended_by")),
+            Prefetch(
+                "consents",
+                queryset=PatientConsent.objects.select_related("recorded_by").order_by(
+                    "-created_at"
+                ),
+            ),
+            "aliases",
+        )
+        patient = get_object_or_404(queryset, pk=pk)
+        self.check_object_permissions(self.request, patient)
+        return patient
+
+    def _detail(self, pk) -> Response:
+        return Response(PatientDetailSerializer(self._patient(pk)).data)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("mrn", str, description="Exact MRN (look-up is audited)"),
+            OpenApiParameter("facility", str, description="Registered at this facility"),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """Patients, newest registration first: the short list only (minimum necessary)."""
+        if request.query_params.get("mrn"):
+            # What was looked up is not kept (it could identify someone); that a look-up happened
+            # and how many matched is.
+            response = super().list(request, *args, **kwargs)
+            record_audit_event(
+                action=AuditAction.PATIENT_LIST_SEARCHED,
+                resource_type="patient",
+                request=request,
+                metadata={"by": "mrn", "results": response.data.get("count", 0)},
+            )
+            return response
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(responses=PatientDetailSerializer)
+    def retrieve(self, request, pk=None):
+        """One patient's record: details, contacts, people, ID numbers (masked) and consents.
+        Every opening is audited."""
+        patient = self._patient(pk)
+        services.record_viewed(patient, actor=request.user, request=request)
+        return Response(PatientDetailSerializer(patient).data)
+
+    @extend_schema(request=PatientRegisterSerializer, responses={201: PatientDetailSerializer})
+    @idempotent("patients.register")
+    def create(self, request):
+        """Register a patient; the MRN is issued in the same step."""
+        serializer = PatientRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        facility = data.pop("facility")
+        check_permission(request.user, P.PATIENTS_REGISTER, facility_id=facility.pk)
+        require_enabled(F.PATIENTS, facility_id=facility.pk, request=request)
+        extras = {name: data.pop(name) for name in REGISTRATION_EXTRAS if name in data}
+        patient = services.register_patient(
+            actor=request.user,
+            facility=facility,
+            data=data,
+            mobile=extras.get("mobile", ""),
+            alternate_phone=extras.get("alternate_phone", ""),
+            email=extras.get("email", ""),
+            address={name: extras.get(name, "") for name in ADDRESS_FIELDS},
+            relationships=[dict(item) for item in extras.get("relationships", [])],
+            identifier_items=[dict(item) for item in extras.get("identifiers", [])],
+            privacy_notice=extras.get("privacy_notice", ""),
+            sms_consent=extras.get("sms_consent"),
+            email_consent=extras.get("email_consent"),
+            consent_method=extras.get("consent_method", PatientConsent.Method.VERBAL),
+            no_guardian_reason=extras.get("no_guardian_reason", ""),
+            request=request,
+        )
+        return Response(
+            PatientDetailSerializer(self._patient(patient.pk)).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(request=PatientUpdateSerializer, responses=PatientDetailSerializer)
+    def partial_update(self, request, pk=None):
+        """Correct the patient's details; an old name stays findable as an alias."""
+        patient = self._patient(pk)
+        serializer = PatientUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        services.update_patient(
+            actor=request.user,
+            patient_id=patient.pk,
+            version=data.pop("version"),
+            request=request,
+            **data,
+        )
+        return self._detail(patient.pk)
+
+    @extend_schema(responses=RegistrationOptionsSerializer)
+    @action(detail=False, methods=["get"], url_path="registration-options", pagination_class=None)
+    def registration_options(self, request):
+        """What the registration form offers in this hospital's country (ID number kinds)."""
+        country = get_deployment_organization().country
+        kinds = [
+            {
+                "kind": kind,
+                "label": PatientIdentifier.Kind(kind).label,
+                "example": identifiers.RULES[kind].example,
+                "needs_issuer": identifiers.RULES[kind].needs_issuer,
+                "one_per_person": kind in UNIQUE_IDENTIFIER_KINDS,
+            }
+            for kind in identifiers.kinds_for(country)
+        ]
+        return Response(
+            RegistrationOptionsSerializer({"country": country, "identifier_kinds": kinds}).data
+        )
+
+    @extend_schema(request=ContactCreateSerializer, responses={201: ContactSerializer})
+    @action(detail=True, methods=["post"], url_path="contacts")
+    @idempotent("patients.contacts.add")
+    def add_contact(self, request, pk=None):
+        """Add a phone, email or address."""
+        patient = self._patient(pk)
+        serializer = ContactCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        contact = services.add_contact(
+            actor=request.user, patient_id=patient.pk, request=request, **serializer.validated_data
+        )
+        return Response(ContactSerializer(contact).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=ContactUpdateSerializer, responses=ContactSerializer)
+    @action(detail=True, methods=["patch"], url_path=r"contacts/(?P<contact_id>[0-9a-f-]+)")
+    def update_contact(self, request, pk=None, contact_id=None):
+        """Correct a contact, make it the main one, or end it (kept on record)."""
+        patient = self._patient(pk)
+        contact = patient.contacts.filter(pk=contact_id).first()
+        if contact is None:
+            raise Http404
+        serializer = ContactUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        contact = services.update_contact(
+            actor=request.user,
+            contact_id=contact.pk,
+            version=data.pop("version"),
+            request=request,
+            **data,
+        )
+        return Response(ContactSerializer(contact).data)
+
+    @extend_schema(request=RelationshipCreateSerializer, responses={201: RelationshipSerializer})
+    @action(detail=True, methods=["post"], url_path="relationships")
+    @idempotent("patients.relationships.add")
+    def add_relationship(self, request, pk=None):
+        """Add a parent, guardian, next of kin, emergency contact or caregiver."""
+        patient = self._patient(pk)
+        serializer = RelationshipCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        relationship = services.add_relationship(
+            actor=request.user, patient_id=patient.pk, request=request, **serializer.validated_data
+        )
+        return Response(RelationshipSerializer(relationship).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=RelationshipUpdateSerializer, responses=RelationshipSerializer)
+    @action(
+        detail=True, methods=["patch"], url_path=r"relationships/(?P<relationship_id>[0-9a-f-]+)"
+    )
+    def update_relationship(self, request, pk=None, relationship_id=None):
+        """Correct a relationship or end it (kept on record)."""
+        patient = self._patient(pk)
+        relationship = patient.relationships.filter(pk=relationship_id).first()
+        if relationship is None:
+            raise Http404
+        serializer = RelationshipUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        relationship = services.update_relationship(
+            actor=request.user,
+            relationship_id=relationship.pk,
+            version=data.pop("version"),
+            request=request,
+            **data,
+        )
+        return Response(RelationshipSerializer(relationship).data)
+
+    @extend_schema(request=IdentifierInputSerializer, responses={201: IdentifierSerializer})
+    @action(detail=True, methods=["post"], url_path="identifiers")
+    @idempotent("patients.identifiers.add")
+    def add_identifier(self, request, pk=None):
+        """Add an ID number: checked, stored encrypted, shown masked; one-per-person kinds are
+        refused when another patient has the number."""
+        patient = self._patient(pk)
+        serializer = IdentifierInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        row = services.add_identifier(
+            actor=request.user, patient_id=patient.pk, request=request, **serializer.validated_data
+        )
+        return Response(IdentifierSerializer(row).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=IdentifierEndSerializer, responses=IdentifierSerializer)
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"identifiers/(?P<identifier_id>[0-9a-f-]+)/end",
+    )
+    def end_identifier(self, request, pk=None, identifier_id=None):
+        """End a wrong or replaced ID number, with a reason (kept on record, never deleted)."""
+        patient = self._patient(pk)
+        row = patient.identifiers.filter(pk=identifier_id).first()
+        if row is None:
+            raise Http404
+        serializer = IdentifierEndSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        row = services.end_identifier(
+            actor=request.user, identifier_id=row.pk, request=request, **serializer.validated_data
+        )
+        return Response(IdentifierSerializer(row).data)
+
+    @extend_schema(request=ConsentCreateSerializer, responses={201: ConsentSerializer})
+    @action(detail=True, methods=["post"], url_path="consents")
+    @idempotent("patients.consents.record")
+    def record_consent(self, request, pk=None):
+        """Record a consent decision (privacy notice, SMS, email); earlier ones stay as history."""
+        patient = self._patient(pk)
+        serializer = ConsentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        consent = services.record_consent(
+            actor=request.user, patient_id=patient.pk, request=request, **serializer.validated_data
+        )
+        return Response(ConsentSerializer(consent).data, status=status.HTTP_201_CREATED)

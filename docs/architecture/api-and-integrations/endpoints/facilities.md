@@ -152,7 +152,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/departments/` |
 | Business purpose | List (departments). |
 | Requirements | [HIMS-FAC-002](../../../requirements/organization-and-facilities.md#hims-fac-002), [HIMS-FAC-006](../../../requirements/organization-and-facilities.md#hims-fac-006), [HIMS-FAC-007](../../../requirements/organization-and-facilities.md#hims-fac-007) |
-| Actor / permission required | `departments.view` (View departments). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `departments.view` (View departments). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Receptionist / front desk, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `facility`, `page`, `page_size`, `status` |
 | Response schema | 200 `PaginatedDepartmentList` |
@@ -208,7 +208,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/departments/{pk}/` |
 | Business purpose | Open one (departments). |
 | Requirements | [HIMS-FAC-002](../../../requirements/organization-and-facilities.md#hims-fac-002), [HIMS-FAC-006](../../../requirements/organization-and-facilities.md#hims-fac-006), [HIMS-FAC-007](../../../requirements/organization-and-facilities.md#hims-fac-007) |
-| Actor / permission required | `departments.view` (View departments). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `departments.view` (View departments). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Receptionist / front desk, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body |
 | Response schema | 200 `DepartmentDetail` |
@@ -348,7 +348,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/facilities/` |
 | Business purpose | List (facilities). |
 | Requirements | [HIMS-FAC-001](../../../requirements/organization-and-facilities.md#hims-fac-001), [HIMS-FAC-003](../../../requirements/organization-and-facilities.md#hims-fac-003), [HIMS-FAC-006](../../../requirements/organization-and-facilities.md#hims-fac-006) |
-| Actor / permission required | `facilities.view` (View facilities). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Bed manager / ward clerk, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `facilities.view` (View facilities). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Bed manager / ward clerk, Receptionist / front desk, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `page`, `page_size` |
 | Response schema | 200 `PaginatedFacilityList` |
@@ -365,7 +365,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`); pages of 25 (`page_size` up to 100) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
-| Automated test cases | `apps/access_control/tests/test_authorization.py::test_user_without_any_role_is_denied`, `apps/access_control/tests/test_authorization.py::test_facility_scoped_user_only_sees_their_facility`, `apps/access_control/tests/test_support_access.py::test_every_request_during_support_access_is_recorded`, `apps/facilities/tests/test_departments_and_closing.py::test_lists_show_counts_names_and_filter`, `apps/facilities/tests/test_facilities_api.py::test_create_facility_is_audited`, `apps/features/tests/test_features.py::test_two_factor_for_everyone`, `apps/identity/tests/test_mfa.py::test_privileged_user_must_set_up_two_factor_before_using_the_api`, `apps/identity/tests/test_mfa.py::test_regular_staff_are_not_forced` and 10 more |
+| Automated test cases | `apps/access_control/tests/test_authorization.py::test_user_without_any_role_is_denied`, `apps/access_control/tests/test_authorization.py::test_facility_scoped_user_only_sees_their_facility`, `apps/access_control/tests/test_support_access.py::test_every_request_during_support_access_is_recorded`, `apps/facilities/tests/test_departments_and_closing.py::test_lists_show_counts_names_and_filter`, `apps/facilities/tests/test_facilities_api.py::test_create_facility_is_audited`, `apps/features/tests/test_features.py::test_two_factor_for_everyone`, `apps/identity/tests/test_mfa.py::test_privileged_user_must_set_up_two_factor_before_using_the_api`, `apps/identity/tests/test_mfa.py::test_regular_staff_are_not_forced` and 11 more |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
 ### POST /api/v1/facilities/
@@ -404,7 +404,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/facilities/{pk}/` |
 | Business purpose | Open one (facilities). |
 | Requirements | [HIMS-FAC-001](../../../requirements/organization-and-facilities.md#hims-fac-001), [HIMS-FAC-003](../../../requirements/organization-and-facilities.md#hims-fac-003), [HIMS-FAC-006](../../../requirements/organization-and-facilities.md#hims-fac-006) |
-| Actor / permission required | `facilities.view` (View facilities). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Bed manager / ward clerk, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `facilities.view` (View facilities). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Bed manager / ward clerk, Receptionist / front desk, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body |
 | Response schema | 200 `Facility` |

@@ -20,6 +20,8 @@ from common import crypto
 ENCRYPTED_FIELDS = (
     ("identity.MfaDevice", "secret_encrypted", "Authenticator app secrets"),
     ("notifications.Notification", "body_encrypted", "Messages not yet delivered"),
+    ("patients.PatientIdentifier", "value_encrypted", "Patient ID numbers"),
+    ("patients.IdentifierHashKey", "key_encrypted", "Key for ID-number fingerprints"),
 )
 
 

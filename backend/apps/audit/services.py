@@ -158,6 +158,18 @@ class AuditAction:
     OUTBOX_CLEANED_UP = "outbox.cleaned_up"
     OUTBOX_EVENT_SENT_AGAIN = "outbox.event_sent_again"
     OUTBOX_EVENT_DISMISSED = "outbox.event_dismissed"
+    # Patients (HIMS-PAT-001). Reading a record is audited too (spec 13.4).
+    PATIENT_REGISTERED = "patient.registered"
+    PATIENT_UPDATED = "patient.updated"
+    PATIENT_RECORD_VIEWED = "patient.record.viewed"
+    PATIENT_LIST_SEARCHED = "patient.searched"
+    PATIENT_CONTACT_ADDED = "patient.contact.added"
+    PATIENT_CONTACT_UPDATED = "patient.contact.updated"
+    PATIENT_RELATIONSHIP_ADDED = "patient.relationship.added"
+    PATIENT_RELATIONSHIP_UPDATED = "patient.relationship.updated"
+    PATIENT_IDENTIFIER_ADDED = "patient.identifier.added"
+    PATIENT_IDENTIFIER_ENDED = "patient.identifier.ended"
+    PATIENT_CONSENT_RECORDED = "patient.consent.recorded"
 
 
 def _jsonable(value):
