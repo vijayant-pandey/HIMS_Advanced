@@ -5,6 +5,9 @@ only for people who may register them (``patients.register``): administrators lo
 desk and medical records change (P0 part 04). Every change goes through the same services as the
 app (MRN issued, phone and ID checks, audit); opening a patient's page is audited like opening the
 record in the app. ID numbers are shown masked; the full number cannot be read here either.
+
+Searching Patients uses the app's patient search (HIMS-PAT-002): MRN, phone, ID number or a
+similar name, at most 50 results, audited. Patient identifiers can be searched by the number.
 """
 
 from django import forms
@@ -14,12 +17,13 @@ from django.utils import timezone
 
 from apps.access_control.catalog import P
 from apps.access_control.selectors import has_permission
+from apps.audit.services import AuditAction, record_audit_event
 from apps.organizations.selectors import get_deployment_organization
 from common.admin.options import HimsModelAdmin, ReadOnlyModelAdmin
 from common.admin.site import can_use_console
 from common.exceptions import DomainError
 
-from . import demographics, identifiers, services
+from . import demographics, identifiers, search, services
 from .models import (
     Patient,
     PatientAlias,
@@ -53,6 +57,17 @@ class PatientConsoleAccess:
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+def _audit_search(request, matched_on: str, results: int) -> None:
+    """A console search, like one in the app: its kind and count, never what was typed."""
+    record_audit_event(
+        action=AuditAction.PATIENT_LIST_SEARCHED,
+        resource_type="patient",
+        actor=request.user,
+        request=request,
+        metadata={"by": matched_on, "results": results, "in": "console"},
+    )
 
 
 def _service_error(model_admin, request, exc) -> None:
@@ -169,8 +184,26 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
         "created_at",
     )
     list_filter = ("sex", "is_unknown", "status", "registered_facility")
-    search_fields = ("=mrn", "given_name", "family_name")
+    search_fields = ("=mrn", "given_name", "family_name")  # replaced by patient search, below
+    search_help_text = (
+        "MRN, phone number, ID number or name (similar spelling, any order; add an age: "
+        "'sunita 45'). At most 50 results. Every search is in the audit log."
+    )
     inlines = (ContactInline, RelationshipInline, IdentifierInline, ConsentInline, AliasInline)
+
+    def get_search_results(self, request, queryset, search_term):
+        """The same patient search as the app (HIMS-PAT-002), audited the same way."""
+        if not " ".join(search_term.split()):
+            return queryset, False
+        try:
+            found = search.find(search_term, queryset=queryset)
+        except ValidationError as exc:
+            if not request.path.endswith("/autocomplete/"):
+                self.message_user(request, " ".join(exc.messages), messages.WARNING)
+            return queryset.none(), False
+        ids = list(found.patients.values_list("pk", flat=True)[: search.MAX_RESULTS])
+        _audit_search(request, found.matched_on, len(ids))
+        return queryset.filter(pk__in=ids), False
 
     def get_fieldsets(self, request, obj=None):
         person = [
@@ -421,7 +454,19 @@ class PatientIdentifierAdmin(PatientConsoleAccess, HimsModelAdmin):
     list_display = ("patient", "kind", "value_display", "verification", "is_active", "created_at")
     list_filter = ("kind", "verification", "is_active")
     search_fields = ("=patient__mrn",)
+    search_help_text = "The patient's MRN, or the whole ID number (found by its fingerprint)."
     raw_id_fields = ("patient",)
+
+    def get_search_results(self, request, queryset, search_term):
+        """By MRN, or by the number itself (HIMS-PAT-002): compared by fingerprint, audited."""
+        term = " ".join(search_term.split())
+        if not term:
+            return queryset, False
+        by_mrn, _ = super().get_search_results(request, queryset, term)
+        country = get_deployment_organization().country
+        rows = queryset.filter(search.identifier_query(term, country)) | by_mrn
+        _audit_search(request, search.MatchedOn.ID_NUMBER, rows.count())
+        return rows, False
 
     def get_fields(self, request, obj=None):
         if obj is None:

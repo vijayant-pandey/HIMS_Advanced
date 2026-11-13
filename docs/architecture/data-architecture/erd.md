@@ -502,6 +502,7 @@ erDiagram
         uuid registered_facility_id FK
         uuid registered_by_id FK
         varchar search_name
+        varchar search_sounds
     }
     patient_aliases {
         uuid id PK

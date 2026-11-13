@@ -80,6 +80,7 @@ to end.
 - Still open: the remaining decisions and the formal sign-off below.
 - **2026-11-08, PO, reviewing doctor and legal (relayed by the PO): approved for now, as proposed**, to be changed later if required. D6, D7, D8 as decided on 2026-10-30; D21 as its first option (patient-reported current medicines only; prescriptions in Phase 4). Slice 2A may start. [Decisions log](../../status/decisions-log.md).
 - **2026-11-12: slice 2A started.** HIMS-PAT-001 built as designed (registration with MRN, contacts, people, ID numbers encrypted and masked, consents; D1 roles Receptionist and Medical records; D2 required fields; D3 unknown patients; D6/D7/D8 numbers "not verified"; D9 consents; D26 any script). Restricted records (D23), duplicates (D4) and merge (D5) follow in HIMS-PAT-006, -003, -004. [How-to](../../workflows/patient-registration.md).
+- **2026-11-13:** HIMS-PAT-002 built as part 01 §2 describes: one search box (MRN, phone, ID number, or a name by similar spelling in any order, with age or sex), at most 50 results, a too-broad search asks for more detail, every search audited. Not yet: "last visit date and department" in the results (needs visits, HIMS-CLIN-001) and restricted records hidden from search (HIMS-PAT-006). Name matching: [ADR-037](../../decisions/ADR-037-patient-search.md); [how-to](../../workflows/patient-search.md).
 
 ## Sign-off (spec 26.10)
 

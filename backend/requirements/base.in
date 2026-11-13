@@ -17,13 +17,13 @@ gunicorn==26.2.0
 whitenoise==6.12.0
 drf-spectacular-sidecar==2026.10.1
 # Tracing (spec 6, 18; HIMS-PLAT-016). Off unless HIMS_TRACING_EXPORTER is set.
-opentelemetry-api==1.45.1
-opentelemetry-sdk==1.45.1
-opentelemetry-exporter-otlp-proto-http==1.45.1
-opentelemetry-instrumentation-django==0.66b1
-opentelemetry-instrumentation-celery==0.66b1
-opentelemetry-instrumentation-psycopg==0.66b1
-opentelemetry-instrumentation-urllib3==0.66b1
+opentelemetry-api==1.45.2  # 1.45.1: CVE-2026-126360 (2026-11-13)
+opentelemetry-sdk==1.45.2
+opentelemetry-exporter-otlp-proto-http==1.45.2
+opentelemetry-instrumentation-django==0.66b2
+opentelemetry-instrumentation-celery==0.66b2
+opentelemetry-instrumentation-psycopg==0.66b2
+opentelemetry-instrumentation-urllib3==0.66b2
 # Passkeys as a second factor (spec 13.1; HIMS-IAM-014): WebAuthn checks by Duo Labs' library.
 webauthn==3.0.1
 # webauthn needs cbor2. Held at a release at least two weeks old (6.2.x was days old when added).

@@ -3,8 +3,14 @@
 Patients belong to the whole hospital (one MRN in every facility), so a grant anywhere lets a
 person look patients up and open them; registering checks the facility of registration. Every
 opening of a record and every MRN look-up is in the audit log (spec 13.4); the list itself shows
-only the minimum (P0 part 01 section 2). Patient search by phone, ID number and similar name
-comes with HIMS-PAT-002.
+only the minimum (P0 part 01 section 2).
+
+Patient search (HIMS-PAT-002; spec endpoint ``GET /api/v1/patients/?search=``): one box for the
+MRN, a phone number, an ID number or a name (similar spelling, any order, earlier names too),
+with optional sex and age (a date of birth would travel in the address, so it is not a filter).
+At most 50 results, best match first; ``count`` says
+how many matched, so the screen can ask for more detail when it is more than 50. Every search is
+audited with its kind and the number of results, never what was typed.
 """
 
 from django.db.models import Prefetch
@@ -25,7 +31,7 @@ from common.idempotency.decorators import idempotent
 from common.pagination import StandardPagination
 from common.permissions import ANY_GRANT
 
-from .. import identifiers, services
+from .. import identifiers, search, services
 from ..models import (
     UNIQUE_IDENTIFIER_KINDS,
     Patient,
@@ -46,6 +52,7 @@ from .serializers import (
     PatientDetailSerializer,
     PatientListSerializer,
     PatientRegisterSerializer,
+    PatientSearchQuerySerializer,
     PatientUpdateSerializer,
     RegistrationOptionsSerializer,
     RelationshipCreateSerializer,
@@ -78,6 +85,13 @@ REGISTRATION_EXTRAS = (
 )
 
 
+def _mobiles():
+    """The active mobiles, main one first: the list shows its last 4 digits."""
+    return PatientContact.objects.filter(kind="mobile", is_active=True).order_by(
+        "-is_primary", "created_at"
+    )
+
+
 class PatientPagination(StandardPagination):
     max_page_size = 50  # P0 part 01 §2: at most 50 results
 
@@ -106,10 +120,7 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             return Patient.objects.none()
         queryset = Patient.objects.select_related("registered_facility")
         if self.action == "list":
-            mobiles = PatientContact.objects.filter(kind="mobile", is_active=True).order_by(
-                "-is_primary", "created_at"
-            )
-            queryset = queryset.prefetch_related(Prefetch("contacts", queryset=mobiles))
+            queryset = queryset.prefetch_related(Prefetch("contacts", queryset=_mobiles()))
             facility = self.request.query_params.get("facility")
             if facility:
                 queryset = queryset.filter(registered_facility_id=facility)
@@ -148,12 +159,24 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     @extend_schema(
         parameters=[
+            OpenApiParameter(
+                "search",
+                str,
+                description="MRN, phone number, ID number or name (similar spelling, any order; "
+                "a number among the words is an age). At most 50 results, best match first. "
+                "Audited.",
+            ),
+            OpenApiParameter("sex", str, description="With search: this sex only"),
+            OpenApiParameter("age", int, description="With search: age in years, give or take 1"),
             OpenApiParameter("mrn", str, description="Exact MRN (look-up is audited)"),
             OpenApiParameter("facility", str, description="Registered at this facility"),
         ]
     )
     def list(self, request, *args, **kwargs):
-        """Patients, newest registration first: the short list only (minimum necessary)."""
+        """Patients, newest registration first, or a patient search (``search``): the short list
+        only (minimum necessary)."""
+        if (request.query_params.get("search") or "").strip():
+            return self._search(request)
         if request.query_params.get("mrn"):
             # What was looked up is not kept (it could identify someone); that a look-up happened
             # and how many matched is.
@@ -166,6 +189,34 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             )
             return response
         return super().list(request, *args, **kwargs)
+
+    def _search(self, request) -> Response:
+        params = PatientSearchQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        data = params.validated_data
+        filters = search.Filters(sex=data.get("sex", ""), age=data.get("age"))
+        queryset = Patient.objects.select_related("registered_facility").prefetch_related(
+            Prefetch("contacts", queryset=_mobiles())
+        )
+        if data.get("facility"):
+            queryset = queryset.filter(registered_facility_id=data["facility"])
+        found = search.find(data["search"], filters, queryset=queryset)
+        patients = list(found.patients[: search.MAX_RESULTS])
+        count = len(patients)
+        if count == search.MAX_RESULTS:
+            count = found.patients.count()
+        record_audit_event(
+            action=AuditAction.PATIENT_LIST_SEARCHED,
+            resource_type="patient",
+            request=request,
+            metadata={"by": found.matched_on, "results": count, "filters": filters.used},
+        )
+        serializer = PatientListSerializer(
+            patients, many=True, context={"request": request, "matched_on": found.matched_on}
+        )
+        return Response(
+            {"count": count, "next": None, "previous": None, "results": serializer.data}
+        )
 
     @extend_schema(responses=PatientDetailSerializer)
     def retrieve(self, request, pk=None):

@@ -20,7 +20,13 @@ What one hospital gets (``small`` shrinks it for the automated test):
 * a cover arrangement, an open access review and supplier support access requests;
 * patients (HIMS-PAT-001): the invented patients of ``patients.py`` registered at their branch by
   its front desk, with MRNs, address, a parent for children, next of kin for some, a previous
-  hospital's MRN for some, consents, and one unknown (unconscious) patient per branch.
+  hospital's MRN for some, consents, and one unknown (unconscious) patient per branch;
+* patient search (HIMS-PAT-002): one woman per branch changed her family name (the earlier name
+  still finds her), and the command prints searches to try (MRN, number only, another spelling,
+  any order, phone, previous MRN).
+
+The hosted Development hospital (Render and Neon, synthetic data only) can get the same records
+when asked for by name (``seed_demo_hospital --hosted-development``, 2026-11-13).
 
 Clinical records come with the later Phase 2 tickets. Every later ticket adds its own records
 here (docs/testing/demo-hospitals.md).
@@ -58,7 +64,7 @@ from apps.organizations.dates import hospital_today
 from apps.organizations.models import Organization
 from apps.organizations.services import update_organization
 from apps.patients.demographics import years_between
-from apps.patients.services import register_patient
+from apps.patients.services import register_patient, update_patient
 from apps.rosters import balances, staffing
 from apps.rosters.models import LeaveRequest, ShiftType
 from apps.rosters.services import add_shifts, approve_leave, reject_leave, request_leave
@@ -80,6 +86,7 @@ from .patients import DemoPatient, patients_for
 from .people import NameMaker
 
 SUPPLIER_EMAIL = "support@hims-supplier.demo.test"
+HOSTED_DEVELOPMENT = "development"  # the free hosted environment: synthetic data only
 
 STATE_CODES = {
     "Delhi": "IN-DL",
@@ -376,8 +383,29 @@ class DemoError(Exception):
     pass
 
 
-def check_safe() -> None:
-    """Only demo deployments on a developer PC: never a real hospital's database."""
+def _spelling_variant(name: str) -> str:
+    """The same name spelt another way that sounds alike (Sunita -> Suneeta, Rohan -> Roohan),
+    to show patient search finding it (HIMS-PAT-002)."""
+    for old, new in (("i", "ee"), ("u", "oo"), ("e", "i"), ("o", "oo"), ("a", "aa")):
+        at = name.find(old, 1)
+        if at > 0:
+            return name[:at] + new + name[at + 1 :]
+    return name + "h"
+
+
+def check_safe(*, hosted_development: bool = False) -> None:
+    """Only demo deployments on a developer PC: never a real hospital's database.
+
+    Or, asked for by name (``hosted_development``), the hosted Development environment (Render
+    and Neon, HIMS-OPS-024), which holds synthetic data only. Never QA, staging or production.
+    """
+    if hosted_development:
+        if settings.HIMS_ENVIRONMENT != HOSTED_DEVELOPMENT:
+            raise DemoError(
+                "Refused: demo records go only into the hosted Development environment "
+                f"(HIMS_ENVIRONMENT=development), not '{settings.HIMS_ENVIRONMENT}'."
+            )
+        return
     if settings.HIMS_ENVIRONMENT not in LOCAL_ENVIRONMENTS:
         raise DemoError(f"Refused: HIMS_ENVIRONMENT is '{settings.HIMS_ENVIRONMENT}'.")
     deployment = settings.HIMS_DEPLOYMENT_ID
@@ -402,10 +430,26 @@ class Context:
     counts: dict = field(default_factory=dict)
     logins: list = field(default_factory=list)
     desks: dict = field(default_factory=dict)  # facility id -> front desk account
+    examples: list = field(default_factory=list)  # (type this, what it finds): patient search
 
     @property
     def country(self) -> str:
         return self.organization.country
+
+    def search_examples(self, branch: dict, patient, person: DemoPatient, old_mrn: str) -> None:
+        """Searches to try on the Patients screen (HIMS-PAT-002), from the first branch."""
+        if branch is not self.hospital.branches[0]:
+            return
+        name = f"{person.given_name} {person.family_name}"
+        number = patient.mrn.rsplit("-", 1)[-1].lstrip("0")
+        self.examples += [
+            (patient.mrn, f"MRN: finds {name}"),
+            (number, f"only the MRN's number: finds {name}"),
+            (_spelling_variant(person.given_name), f"another spelling: finds {name} and others"),
+            (f"{person.family_name} {person.given_name}", f"name in any order: finds {name}"),
+            (person.phone, f"phone: finds {name}"),
+            (old_mrn, f"previous hospital's MRN (ID number): finds {name}"),
+        ]
 
     @property
     def domain(self) -> str:
@@ -1042,6 +1086,17 @@ def _demo_phone(ctx: Context, pick: random.Random) -> str:
     return f"+1 312 555 01{pick.randint(0, 99):02d}"  # 555-0100..0199: fictional
 
 
+def _new_family_name(ctx: Context, desk: User, patient, relatives: NameMaker) -> str:
+    """Correct the family name after a marriage, as the front desk would: the old name is kept
+    as an earlier name and still finds her (HIMS-PAT-002)."""
+    family = relatives.person()[1]
+    while family == patient.family_name:
+        family = relatives.person()[1]
+    update_patient(actor=desk, patient_id=patient.pk, version=patient.version, family_name=family)
+    ctx.add("patients with an earlier name")
+    return f"{patient.given_name} {family}"
+
+
 def _patients(ctx: Context, facility: Facility, branch: dict, invented: list[DemoPatient]) -> None:
     """Register the branch's invented patients through the registration service, as its front
     desk would (MRN issued, audited). No real identifiers: only an invented old-clinic MRN."""
@@ -1049,6 +1104,7 @@ def _patients(ctx: Context, facility: Facility, branch: dict, invented: list[Dem
     relatives = NameMaker(ctx.country, f"{ctx.hospital.key}-relatives-{branch['code']}")
     pick = random.Random(f"{ctx.hospital.key}-{branch['code']}-patients")  # noqa: S311 - demo data
     street = "Demo Colony" if ctx.country == "IN" else "Demo Street"
+    renamed = ""  # one woman per branch changes her family name (HIMS-PAT-002: earlier names)
     for n, person in enumerate(invented):
         relationships = []
         if years_between(person.date_of_birth, ctx.today) < 18:
@@ -1077,7 +1133,7 @@ def _patients(ctx: Context, facility: Facility, branch: dict, invented: list[Dem
             "value": f"OLD-{branch['code']}-{n + 1:05d}",
             "issuer": f"{branch['city']} Demo Clinic (invented)",
         }
-        register_patient(
+        patient = register_patient(
             actor=desk,
             facility=facility,
             data={
@@ -1102,6 +1158,18 @@ def _patients(ctx: Context, facility: Facility, branch: dict, invented: list[Dem
             email_consent=None,
         )
         ctx.add("patients")
+        if n == 0:
+            ctx.search_examples(branch, patient, person, old_mrn["value"])
+        if (
+            not renamed
+            and person.sex == "female"
+            and years_between(person.date_of_birth, ctx.today) >= 25
+        ):
+            renamed = _new_family_name(ctx, desk, patient, relatives)
+            if branch is ctx.hospital.branches[0]:
+                ctx.examples.append(
+                    (person.family_name, f"earlier name: finds {renamed} (name changed)")
+                )
     register_patient(
         actor=desk,
         facility=facility,
@@ -1160,12 +1228,23 @@ def _access_examples(ctx: Context, teams: list[dict]) -> None:
 
 
 @transaction.atomic
-def seed_hospital(hospital: Hospital, *, password: str | None, small: bool = False) -> Context:
+def seed_hospital(
+    hospital: Hospital,
+    *,
+    password: str | None,
+    small: bool = False,
+    hosted_development: bool = False,
+) -> Context:
     """Fill this deployment's (already provisioned) hospital. Refuses a second run."""
-    check_safe()
+    check_safe(hosted_development=hosted_development)
     organization = Organization.objects.get()
     if Facility.objects.exists():
         raise DemoError("This hospital already has branches: the demo records are already in.")
+    if organization.country != hospital.country:
+        raise DemoError(
+            f"This hospital is in {organization.country}; choose a demo hospital of that country "
+            f"(not {hospital.key}, which is in {hospital.country})."
+        )
     admin = active_administrators().order_by("date_joined").first()
     if admin is None:
         raise DemoError("Provision the hospital first (provision_organization).")

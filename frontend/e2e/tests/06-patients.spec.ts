@@ -1,7 +1,8 @@
 // Patients (HIMS-PAT-001; spec 4.5, 13): the administrator makes the nurse from test 03 the front
 // desk; she registers a patient with an age, a mobile and an ID number; the record opens with its
 // MRN and the number masked; the same number on a second patient is refused; the administrator can
-// look but not register. Every person and number is invented.
+// look but not register; then she finds the patient again by another spelling, phone and ID number
+// (HIMS-PAT-002). Every person and number is invented.
 import { type Browser, type Page, expect, test } from "@playwright/test";
 
 import { NEW_STAFF_PASSWORD } from "../config.mjs";
@@ -84,4 +85,29 @@ test("the administrator looks the patient up but does not register", async ({ br
   await openMenu(admin, "Patients");
   await expect(admin.getByRole("table", { name: "Patients" }).getByText("Leela Kumari")).toBeVisible();
   await expect(admin.getByRole("link", { name: "Register new patient" })).toHaveCount(0);
+});
+
+// HIMS-PAT-002: one search box finds her by another spelling (in any order, with her age), by
+// phone and by ID number; a name nobody has offers registration.
+test("the front desk finds the patient by spelling, phone and ID number", async ({ browser }) => {
+  const page = await asDesk(browser);
+  await page.goto("/patients");
+  const table = page.getByRole("table", { name: "Patients" });
+  const searchFor = async (text: string) => {
+    await page.getByRole("textbox", { name: "Search" }).fill(text);
+    await page.getByRole("button", { name: "Search", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Search results" })).toBeVisible();
+  };
+  await searchFor("Kumaari Leelaa 41");
+  await expect(table.getByText("Leela Kumari")).toBeVisible();
+  await expect(table.getByRole("cell", { name: "Name", exact: true })).toBeVisible(); // found by
+  await expectAccessible(page, "Patient search results");
+  await searchFor("98765 40001");
+  await expect(table.getByText("Leela Kumari")).toBeVisible();
+  await expect(table.getByRole("cell", { name: "Phone", exact: true })).toBeVisible();
+  await searchFor(AADHAAR);
+  await expect(table.getByText("Leela Kumari")).toBeVisible();
+  await expect(table.getByText(AADHAAR)).toHaveCount(0); // only the minimum is shown
+  await searchFor("Zebedee Quartermaine");
+  await expect(page.getByText(/No patient found/)).toBeVisible();
 });

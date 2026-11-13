@@ -30,6 +30,14 @@ Design: [Phase 2 P0 part 02](../../p0/phase-2-patients/02-database-design.md) (a
 * **Reading is audited**: opening a record (`patient.record.viewed`), an MRN look-up
   (`patient.searched`, without what was typed). Patient search by phone, ID and similar name
   arrives with HIMS-PAT-002 (it adds the trigram index on `search_name`).
+* **Patient search (2026-11-13, HIMS-PAT-002, [ADR-037](../../decisions/ADR-037-patient-search.md)).** Migration
+  `patients.0002` adds the `pg_trgm` extension, the column `search_sounds` (an array of the sound
+  keys of every name and earlier name, e.g. Lakshmi and Laxmi are both `lxm`; filled for existing
+  patients) and two GIN indexes: `patients_search_name_trgm` (trigram, on `search_name`) and
+  `patients_search_sounds_idx`. Both columns are refreshed at registration and every name change.
+  Exact look-ups use the existing indexes: `patients_mrn_unique`, `patient_contacts_phone_idx`,
+  `patient_identifiers_hash_idx`. Every search is audited (`patient.searched`: kind, result count
+  and filter names only).
 * **ID numbers**: [ADR-036](../../decisions/ADR-036-patient-id-numbers.md).
 * **History tables**: `patient_consents` and `patient_aliases` refuse updates and deletes in the
   database (`patient_history_guard()`), except a change of `patient_id`, which only a merge

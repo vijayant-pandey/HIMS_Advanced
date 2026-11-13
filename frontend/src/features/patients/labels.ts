@@ -15,6 +15,14 @@ export const SEX: Record<PatientSexEnum, string> = {
   unknown: "Unknown",
 };
 
+/** What found a patient in a search (HIMS-PAT-002). */
+export const MATCHED_ON: Record<string, string> = {
+  mrn: "MRN",
+  phone: "Phone",
+  id_number: "ID number",
+  name: "Name",
+};
+
 /** Short form for lists: "34 y F". */
 export const SEX_SHORT: Record<PatientSexEnum, string> = { male: "M", female: "F", intersex: "I", unknown: "U" };
 

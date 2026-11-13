@@ -105,7 +105,8 @@ async function pick(dialog: HTMLElement, label: RegExp, name: string) {
   fireEvent.click(await screen.findByRole("option", { name: new RegExp(name) }));
 }
 
-describe("CoverPage (HIMS-IAM-017)", () => {
+// Arranging cover fills a long form: just over 5 s when the whole suite runs at once (2026-11-13).
+describe("CoverPage (HIMS-IAM-017)", { timeout: 20_000 }, () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("lists who covers for whom, with the access lent", async () => {

@@ -321,7 +321,7 @@ One person who is, or was, a patient of the hospital: one MRN in every facility.
 - **Model:** `patients.Patient`
 - **Lifecycle:** Never deleted (D24; retention set by legal before go-live). Corrections are versioned and audited before/after; an old name is kept as an alias. A merged record stays, read-only (HIMS-PAT-004).
 - **Rules:** `patients_mrn_unique`: Unique: organization, mrn; `patients_merged_has_target`: Check: (NOT status = 'merged' OR merged_into is set); `patients_not_merged_into_self`: Check: (merged_into is empty OR NOT merged_into = id)
-- **Extra indexes:** `patients_dob_idx`: date_of_birth; `patients_facility_idx`: registered_facility, -created_at
+- **Extra indexes:** `patients_dob_idx`: date_of_birth; `patients_facility_idx`: registered_facility, -created_at; `patients_search_name_trgm`: search_name; `patients_search_sounds_idx`: search_sounds
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
 |---|---|---|---|---|---|---|---|
@@ -353,6 +353,7 @@ One person who is, or was, a patient of the hospital: one MRN in every facility.
 | `registered_facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Registered facility |
 | `registered_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Registered by |
 | `search_name` | varchar(500) | no | — | up to 500 characters | System | Restricted: Patient names, for search | All names (and earlier names) in lower case, for patient search |
+| `search_sounds` | varchar(150)[] | no | list() | — | System | Restricted: How the patient's names sound, for search | How each name word sounds (Lakshmi and Laxmi alike), for patient search |
 
 <a id="patient_aliases"></a>
 ### `patient_aliases`

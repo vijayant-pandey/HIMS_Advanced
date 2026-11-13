@@ -6,7 +6,7 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 
 ## Phase 1
 
-98 of 129 marked Done in the backlog; 104 requirement records in all phases (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
+98 of 129 marked Done in the backlog; 105 requirement records in all phases (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
@@ -28,7 +28,7 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 | HIMS-UI-001 | Theme selector (white & blue/red/green, minimal black & white) across launcher, apps and admin | Done | [record](platform-and-operations.md#hims-ui-001) | — | 1 files | #5, before PRs |
 | HIMS-UI-002 | "No access yet" welcome page and permission-aware navigation for users without roles; show the reference number (already stored as request_id on the `access.denied` audit event); plus 6 more colour themes (10 total) and a compact modern design | Done | [record](platform-and-operations.md#hims-ui-002) | 2 | 12 files | #5 |
 | HIMS-PLAT-016 | OpenTelemetry tracing for API, database, Celery and outbound HTTP; off by default, PHI-safe ([ADR-021](../decisions/ADR-021-tracing.md)) | Done | [record](platform-and-operations.md#hims-plat-016) | — | 1 files | #24, before PRs |
-| HIMS-PLAT-019 | Send traces to AWS (ADOT collector sidecar → X-Ray/CloudWatch), sampling and retention per environment (gap found in HIMS-PLAT-016) | To do | — | — | — | before PRs |
+| HIMS-PLAT-019 | Send traces to AWS (ADOT collector sidecar → X-Ray/CloudWatch), sampling and retention per environment (gap found in HIMS-PLAT-016). Also: the load balancer's access logs must leave out query strings, as the server's own logs do, because patient search words travel in the address (ADR-037; gap found in HIMS-PAT-002) | To do | — | — | — | before PRs |
 | HIMS-PLAT-017 | Django admin operations console: RBAC-gated, audited, no deletion (ADR-016) | Done | [record](platform-and-operations.md#hims-plat-017) | — | 1 files | before PRs |
 | HIMS-PLAT-018 | Admin console coverage: every model manageable (test-enforced), password-reset action, full bed status, location drill-down | Done | [record](platform-and-operations.md#hims-plat-018) | 7 | 4 files | #11, before PRs |
 | HIMS-SEC-015 | Console network restriction (IP allow-list/VPN) before enabling outside local | Done | [record](audit-and-security.md#hims-sec-015) | 4 | 4 files | #42 |
@@ -142,13 +142,13 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 
 ## Phase 2
 
-1 of 24 marked Done in the Phase 2 backlog ([phase-2-patients.md](../backlog/phase-2-patients.md)).
+2 of 24 marked Done in the Phase 2 backlog ([phase-2-patients.md](../backlog/phase-2-patients.md)).
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
 | HIMS-PAT-000 | P0 design sign-off (PO + reviewing doctor; legal items D6, D7, D9, D18, D24) | Waiting for sign-off → approved for now 2026-11-08 | — | — | — | #28 |
-| HIMS-PAT-001 | Patient registration with MRN, contacts, relationships, identifiers (encrypted/masked), consents | Done 2026-11-12 | [record](patients.md#hims-pat-001) | 12 | 4 files | this PR |
-| HIMS-PAT-002 | Patient search (MRN, phone, ID, similar name) with minimal results; chart read auditing | To do | — | — | — | — |
+| HIMS-PAT-001 | Patient registration with MRN, contacts, relationships, identifiers (encrypted/masked), consents | Done 2026-11-12 | [record](patients.md#hims-pat-001) | 12 | 5 files | #57 |
+| HIMS-PAT-002 | Patient search (MRN, phone, ID, similar name) with minimal results; chart read auditing | Done 2026-11-13 | [record](patients.md#hims-pat-002) | 12 | 3 files | this PR |
 | HIMS-PAT-003 | Duplicate detection at registration and possible-duplicates list | To do | — | — | — | — |
 | HIMS-PAT-004 | Two-person merge with 30-day undo | To do | — | — | — | — |
 | HIMS-PAT-005 | Patient chart header and overview | To do | — | — | — | — |

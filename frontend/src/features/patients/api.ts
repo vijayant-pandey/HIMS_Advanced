@@ -25,19 +25,26 @@ export const PAGE_SIZE = 50;
 
 export interface PatientFilters {
   facility: string;
-  mrn: string;
+  /** MRN, phone, ID number or name (HIMS-PAT-002); empty: newest registrations. */
+  search: string;
+  sex: string;
+  age: string;
 }
 
-/** Newest registrations first; an exact MRN narrows it to one (the look-up is audited). */
+/**
+ * Newest registrations first, or a patient search (HIMS-PAT-002): at most 50 results, best match
+ * first; `count` above 50 means "add more detail". Every search is audited on the server.
+ */
 export function usePatients(filters: PatientFilters, page: number) {
+  const searching = filters.search.trim() !== "";
+  const query = searching
+    ? { search: filters.search.trim(), sex: filters.sex, age: filters.age, facility: filters.facility }
+    : { facility: filters.facility, page, page_size: PAGE_SIZE };
   return useQuery<PaginatedPatientList, ApiError>({
-    queryKey: [...patientsKey, "list", filters, page],
-    queryFn: ({ signal }) =>
-      api.get<PaginatedPatientList>("/patients/", {
-        query: { ...filters, page, page_size: PAGE_SIZE },
-        signal,
-      }),
+    queryKey: [...patientsKey, "list", query],
+    queryFn: ({ signal }) => api.get<PaginatedPatientList>("/patients/", { query, signal }),
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: !searching, // each search is an audited event; repeat it on purpose only
   });
 }
 
