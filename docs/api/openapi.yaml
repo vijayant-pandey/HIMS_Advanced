@@ -4250,9 +4250,15 @@ paths:
   /api/v1/patients/:
     get:
       operationId: patients_list
-      description: 'Patients, newest registration first: the short list only (minimum
-        necessary).'
+      description: |-
+        Patients, newest registration first, or a patient search (``search``): the short list
+        only (minimum necessary).
       parameters:
+      - in: query
+        name: age
+        schema:
+          type: integer
+        description: 'With search: age in years, give or take 1'
       - in: query
         name: facility
         schema:
@@ -4275,6 +4281,18 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: MRN, phone number, ID number or name (similar spelling, any order;
+          a number among the words is an age). At most 50 results, best match first.
+          Audited.
+      - in: query
+        name: sex
+        schema:
+          type: string
+        description: 'With search: this sex only'
       tags:
       - patients
       security:
@@ -13826,12 +13844,19 @@ components:
           type: string
           format: date-time
           readOnly: true
+        matched_on:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 'In a search: what found the patient (mrn, phone, id_number
+            or name)'
       required:
       - age
       - birth_date_estimated
       - created_at
       - id
       - is_unknown
+      - matched_on
       - mrn
       - name
       - phone_last4

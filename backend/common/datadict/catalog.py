@@ -339,6 +339,7 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "patients.blood_group_reported": (CLINICAL, "Patient health-related data (as reported)"),
     "patients.date_of_birth": (RESTRICTED, "Patient personal data"),
     "patients.search_name": (RESTRICTED, "Patient names, for search"),
+    "patients.search_sounds": (RESTRICTED, "How the patient's names sound, for search"),
     "patients.identification_note": (RESTRICTED, "Patient personal data (how they arrived)"),
     "patient_aliases.mrn": (RESTRICTED, "Patient identifier (earlier MRN)"),
     "patient_identifiers.value_encrypted": (RESTRICTED, "Patient ID number (encrypted)"),

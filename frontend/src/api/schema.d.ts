@@ -2491,7 +2491,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Patients, newest registration first: the short list only (minimum necessary). */
+        /**
+         * @description Patients, newest registration first, or a patient search (``search``): the short list
+         *     only (minimum necessary).
+         */
         get: operations["patients_list"];
         put?: never;
         /** @description Register a patient; the MRN is issued in the same step. */
@@ -6810,6 +6813,8 @@ export interface components {
             readonly registered_facility_name: string;
             /** Format: date-time */
             readonly created_at: string;
+            /** @description In a search: what found the patient (mrn, phone, id_number or name) */
+            readonly matched_on: string | null;
         };
         /** @description Register a patient: name, sex, date of birth **or** age, mobile **or** "no phone" (D2). */
         PatientRegisterRequest: {
@@ -12460,6 +12465,8 @@ export interface operations {
     patients_list: {
         parameters: {
             query?: {
+                /** @description With search: age in years, give or take 1 */
+                age?: number;
                 /** @description Registered at this facility */
                 facility?: string;
                 /** @description Exact MRN (look-up is audited) */
@@ -12468,6 +12475,10 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /** @description MRN, phone number, ID number or name (similar spelling, any order; a number among the words is an age). At most 50 results, best match first. Audited. */
+                search?: string;
+                /** @description With search: this sex only */
+                sex?: string;
             };
             header?: never;
             path?: never;

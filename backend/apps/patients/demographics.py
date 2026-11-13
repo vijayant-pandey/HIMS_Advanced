@@ -36,6 +36,40 @@ def search_name(*names: str) -> str:
     return " ".join(dict.fromkeys(words))[:500]
 
 
+# Spellings of one sound in names written in Latin letters (ADR-037): Lakshmi / Laxmi,
+# Mohammad / Muhammad, Sunita / Suneeta / Sunitha, Sharma / Sarma, Waseem / Vaseem.
+_SOUND_SPELLINGS = (("ksh", "x"), ("ks", "x"), ("ph", "f"), ("ck", "k"), ("q", "k"), ("w", "v"))
+_VOWELS = frozenset("aeiouy")
+
+
+def sound_key(word: str) -> str:
+    """A name word as it sounds, so spelling variants meet (HIMS-PAT-002, ADR-037).
+
+    The first letter stays (any first vowel counts as "a"); after it, ``h`` and vowels are
+    dropped and doubled letters count once. Words in other scripts are kept as they are
+    (casefolded): they are found by their exact spelling and by similar spelling.
+    """
+    word = word.casefold()
+    latin = "".join(char for char in unicodedata.normalize("NFKD", word) if "a" <= char <= "z")
+    if not latin:
+        return word
+    for spelling, sound in _SOUND_SPELLINGS:
+        latin = latin.replace(spelling, sound)
+    first = "a" if latin[0] in _VOWELS else latin[0]
+    rest = [char for char in latin[1:] if char not in _VOWELS and char != "h"]
+    key = first
+    for char in rest:
+        if char != key[-1]:
+            key += char
+    return key
+
+
+def search_sounds(*names: str) -> list[str]:
+    """The sound keys of every word of the names (and earlier names), each once."""
+    words = search_name(*names).split()
+    return list(dict.fromkeys(sound_key(word) for word in words))
+
+
 def years_between(born: date, today: date) -> int:
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 

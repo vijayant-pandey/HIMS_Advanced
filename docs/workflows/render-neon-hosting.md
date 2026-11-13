@@ -158,3 +158,37 @@ published ranges (cloudflare.com/ips-v4 and /ips-v6) to the end of `HIMS_TRUSTED
 
 Cloudflare changes this list rarely; check it again before any later hosting work. Fine for the
 free test environment. On AWS the load balancer is the only proxy and this list is not used.
+
+## 8. Demo records on the hosted Development hospital (HIMS-PAT-002)
+
+Added 2026-11-13. The hosted hospital starts empty. One command run from your PC fills it with the
+same invented records as the **Sunrise Hospitals (Demo)** hospital on your PC: 3 branches,
+departments, wards and beds, staff and their accounts, rota, leave, equipment and 123 patients.
+It works only here (`HIMS_ENVIRONMENT=development`) and refuses QA, staging and production, and a
+hospital that already has branches.
+
+Every step crosses the internet to Neon, so it takes **20 to 30 minutes**. Keep the PC awake. It is
+one transaction: if it stops half-way, nothing is kept, and you can run it again. Run it **after**
+the merge has deployed on Render and `migrate` has run on Neon (step 4's lines).
+
+From the HIMS folder (CMD window 2):
+
+```
+cd backend
+.venv\Scripts\activate.bat
+set HIMS_ENV_FILE=.env.hosted-dev
+set DJANGO_SETTINGS_MODULE=config.settings.production
+set HIMS_DEMO_PASSWORD=<the demo password from your login.md>
+python manage.py seed_demo_hospital --hospital in-sunrise --hosted-development --password-env HIMS_DEMO_PASSWORD
+set HIMS_DEMO_PASSWORD=
+set DJANGO_SETTINGS_MODULE=
+set HIMS_ENV_FILE=
+deactivate
+cd ..
+```
+
+It ends with "Filled HIMS Dev", the sign-in accounts and "Try these on Patients -> Search". The
+accounts are the same names as on the PC (`frontdesk.dwk@in-sunrise.demo.test`, ...). On Render,
+the branch administrator, HR and similar managing accounts must set up two-factor at their first
+sign-in (as on any real hospital); the front desk, medical records and nurse accounts do not. A quicker, smaller version: add `--small` (one branch,
+six patients, a few minutes).

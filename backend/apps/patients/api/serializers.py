@@ -11,6 +11,7 @@ from ..models import (
     PatientContact,
     PatientIdentifier,
     PatientRelationship,
+    Sex,
 )
 
 
@@ -30,6 +31,9 @@ class PatientListSerializer(serializers.ModelSerializer):
     registered_facility_name = serializers.CharField(
         source="registered_facility.name", read_only=True
     )
+    matched_on = serializers.SerializerMethodField(
+        help_text="In a search: what found the patient (mrn, phone, id_number or name)"
+    )
 
     class Meta:
         model = Patient
@@ -46,6 +50,7 @@ class PatientListSerializer(serializers.ModelSerializer):
             "registered_facility",
             "registered_facility_name",
             "created_at",
+            "matched_on",
         ]
         read_only_fields = fields
 
@@ -55,6 +60,20 @@ class PatientListSerializer(serializers.ModelSerializer):
     def get_phone_last4(self, obj) -> str:
         mobiles = [c.phone for c in obj.contacts.all() if c.kind == "mobile" and c.is_active]
         return demographics.phone_last4(mobiles[0]) if mobiles else ""
+
+    def get_matched_on(self, obj) -> str | None:
+        return self.context.get("matched_on")
+
+
+class PatientSearchQuerySerializer(serializers.Serializer):
+    """What a patient search may ask (HIMS-PAT-002); see apps/patients/search.py."""
+
+    search = serializers.CharField(max_length=200)
+    sex = serializers.ChoiceField(choices=Sex.choices, required=False)
+    age = serializers.IntegerField(
+        min_value=0, max_value=demographics.MAX_AGE_YEARS, required=False
+    )
+    facility = serializers.UUIDField(required=False)
 
 
 class ContactSerializer(serializers.ModelSerializer):

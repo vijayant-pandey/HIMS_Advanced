@@ -42,3 +42,4 @@ default, awaiting the named approver), **Superseded**.
 | [034](ADR-034-free-hosting-without-a-card.md) | A free Development environment on a host that needs no payment card (puts ADR-027 on hold) | Proposed |
 | [035](ADR-035-supplier-support-access.md) | Supplier support access, the "locked box": ask, hospital approves, emergency at once, ends by itself, every request audited | Proposed |
 | [036](ADR-036-patient-id-numbers.md) | Patient ID numbers: encrypted, masked, found by a keyed fingerprint; one-per-person numbers refused on a second patient | Proposed |
+| [037](ADR-037-patient-search.md) | Patient search: exact numbers first (MRN, phone, ID number by fingerprint), then names by similar spelling (trigram) and by sound key; at most 50, audited | Proposed |

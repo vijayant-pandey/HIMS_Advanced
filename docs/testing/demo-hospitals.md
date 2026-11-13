@@ -91,6 +91,7 @@ quickly. Real hospitals always require it.
 | Access, Accounts, Cover, Access reviews | The accounts above with their roles, one cover arrangement, one open access review |
 | Support access | One finished request and one waiting for the hospital |
 | Patients (2026-11-12, HIMS-PAT-001) | 40 invented patients per branch with MRNs, address, a parent for every child, next of kin for some, an invented previous clinic MRN for some, privacy notice and SMS consent; one unknown (unconscious) patient per branch. All registered by that branch's front desk, so the audit log shows who |
+| Patient search (2026-11-13, HIMS-PAT-002) | One woman per branch with an earlier family name (still found by it); example searches printed by the rebuild |
 | Audit log | Everything above, recorded as it was made |
 
 ## Patients and later phases
@@ -118,3 +119,15 @@ set HIMS_DEMO_PASSWORD=<your demo password>
 python manage.py setup_demo_hospitals --password-env HIMS_DEMO_PASSWORD --reset
 set HIMS_DEMO_PASSWORD=
 ```
+
+**Update 2026-11-13 (HIMS-PAT-002, patient search):** in each branch one woman of 25 or more
+changed her family name after registering (the front desk corrected it), so her **earlier name
+still finds her**. At the end of each hospital the rebuild prints **"Try these on Patients ->
+Search"**: an MRN, only its number, another spelling of a first name (e.g. `ee` for `i`), a name in
+reverse order, a phone, a previous hospital's MRN and the earlier family name, each with the
+patient it finds. Build the demo hospitals again with `--reset` after this merge (the new search
+column is filled by `migrate`, but the earlier-name patients come from the rebuild). How to search:
+[patient search](../workflows/patient-search.md).
+
+The **hosted Development hospital** (Render + Neon) can get the same records as Sunrise Hospitals
+(Demo) with one command from the PC: [Render + Neon, section 8](../workflows/render-neon-hosting.md).

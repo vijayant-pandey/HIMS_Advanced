@@ -22,6 +22,7 @@ const ROW: PatientListItem = {
   registered_facility: "f1",
   registered_facility_name: "Facility A",
   created_at: "2026-11-12T05:00:00Z",
+  matched_on: null,
 };
 
 const DETAIL: PatientDetail = {
@@ -192,17 +193,46 @@ const sentTo = (fetchMock: ReturnType<typeof renderAt>, ending: string) => {
 describe("Patients (HIMS-PAT-001)", { timeout: 20_000 }, () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("lists the minimum and looks an MRN up", async () => {
-    const fetchMock = renderAt("/patients", DESK);
+  it("lists the minimum, then searches by a name spelt another way with sex and age (HIMS-PAT-002)", async () => {
+    const fetchMock = renderAt("/patients", DESK, (url) =>
+      url.includes("search=") ? json({ count: 1, next: null, previous: null, results: [{ ...ROW, matched_on: "name" }] }) : undefined,
+    );
     const table = await screen.findByRole("table", { name: "Patients" });
     const row = (await within(table).findByRole("link", { name: "MRN-00000001" })).closest("tr")!;
     expect(row).toHaveTextContent("Asha Verma");
     expect(row).toHaveTextContent("~34 y F");
     expect(row).toHaveTextContent("…3210");
-    fireEvent.change(screen.getByLabelText("MRN"), { target: { value: "mrn-00000001" } });
-    fireEvent.click(screen.getByRole("button", { name: "Look up" }));
-    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("mrn=mrn-00000001"))).toBe(true));
+    expect(screen.getByRole("heading", { name: "Newest registrations" })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox", { name: "Search" }), { target: { value: " aasha  " } });
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "Sex" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Female" }));
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Age (years)" }), { target: { value: "34" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    await screen.findByRole("heading", { name: "Search results" });
+    const url = String(fetchMock.mock.calls.map(([called]) => called).find((called) => String(called).includes("search=")));
+    expect(url).toContain("search=aasha");
+    expect(url).toContain("sex=female");
+    expect(url).toContain("age=34");
+    expect(url).not.toContain("page="); // at most 50, best first: no pages
+    const found = (await within(table).findByRole("link", { name: "MRN-00000001" })).closest("tr")!;
+    expect(found).toHaveTextContent("Name"); // found by
     expect(screen.getByRole("link", { name: "Register new patient" })).toBeInTheDocument();
+  });
+
+  it("asks for more detail when more than 50 match, and offers registration when nobody does", async () => {
+    let answer = { count: 75, next: null, previous: null, results: [ROW] };
+    renderAt("/patients", DESK, (url) => (url.includes("search=") ? json(answer) : undefined));
+    await screen.findByRole("link", { name: "MRN-00000001" });
+    fireEvent.change(screen.getByRole("textbox", { name: "Search" }), { target: { value: "verma" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(await screen.findByText(/75 patients match; the best 1 are shown/)).toBeInTheDocument();
+    answer = { count: 0, next: null, previous: null, results: [] };
+    fireEvent.change(screen.getByRole("textbox", { name: "Search" }), { target: { value: "zebedee" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(await screen.findByText(/No patient found/)).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Register new patient" })).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(await screen.findByRole("heading", { name: "Newest registrations" })).toBeInTheDocument();
   });
 
   it("does not offer registration without the permission", async () => {

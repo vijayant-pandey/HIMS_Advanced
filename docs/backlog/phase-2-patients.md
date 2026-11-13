@@ -13,11 +13,11 @@ hospitals (`backend/apps/demo/seed.py`; [demo hospitals](../testing/demo-hospita
 |---|---|---|
 | HIMS-PAT-000 | P0 design sign-off (PO + reviewing doctor; legal items D6, D7, D9, D18, D24) | Waiting for sign-off → approved for now 2026-11-08 (decisions log row 3) |
 | HIMS-PAT-001 | Patient registration with MRN, contacts, relationships, identifiers (encrypted/masked), consents | Done 2026-11-12 (screens Patients, Register new patient and the patient record; admin console; roles Receptionist / front desk and Medical records officer; ID numbers encrypted, masked and refused on a second patient; reading audited; the demo hospitals' invented patients registered) · earlier: To do (also registers the invented demo patients, `apps/demo/patients.py`) |
-| HIMS-PAT-002 | Patient search (MRN, phone, ID, similar name) with minimal results; chart read auditing | To do |
+| HIMS-PAT-002 | Patient search (MRN, phone, ID, similar name) with minimal results; chart read auditing | Done 2026-11-13 (one search box on Patients and in the admin console: MRN or only its number, phone, ID number by fingerprint, names by similar spelling and by sound in any order with earlier names, age and sex filters; at most 50, best first; every search audited without its words; trigram and sound-key indexes, [ADR-037](../decisions/ADR-037-patient-search.md); demo: one earlier family name per branch and printed example searches; the hosted Development hospital can get the demo records) · earlier: To do |
 | HIMS-PAT-003 | Duplicate detection at registration and possible-duplicates list | To do |
 | HIMS-PAT-004 | Two-person merge with 30-day undo | To do |
 | HIMS-PAT-005 | Patient chart header and overview | To do |
-| HIMS-PAT-006 | Restricted (VIP/staff) records and emergency access with review | To do |
+| HIMS-PAT-006 | Restricted (VIP/staff) records and emergency access with review | To do (also: hide restricted records from patient search, in the app and the console search, for people without `patients.restricted`; from HIMS-PAT-002) |
 | HIMS-PAT-007 | Record a patient's death (date and time, by a doctor); the record becomes read-only except medical-records corrections (P0 part 01 §1; gap found in HIMS-PAT-001) | To do |
 
 ## EPIC HIMS-OPD: Scheduling and outpatient department (slice 2B)
@@ -33,7 +33,7 @@ hospitals (`backend/apps/demo/seed.py`; [demo hospitals](../testing/demo-hospita
 
 | ID | Ticket | Status |
 |---|---|---|
-| HIMS-CLIN-001 | Outpatient encounter lifecycle with visit numbers | To do |
+| HIMS-CLIN-001 | Outpatient encounter lifecycle with visit numbers | To do (also: add the last visit date and department to the patient search results, P0 part 01 §2; gap found in HIMS-PAT-002) |
 | HIMS-CLIN-002 | Vitals with plausibility and abnormal flags (LOINC/UCUM) | To do |
 | HIMS-CLIN-003 | Allergies incl. explicit "no known allergies" | To do |
 | HIMS-CLIN-004 | ICD-10 / ICD-10-CM catalogue import and coded diagnoses | To do |

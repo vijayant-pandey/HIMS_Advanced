@@ -15,7 +15,8 @@ from apps.equipment.models import Equipment
 from apps.facilities.location_models import Building, Ward
 from apps.facilities.models import Department, Facility
 from apps.identity.models import User
-from apps.patients.models import Patient
+from apps.patients import search
+from apps.patients.models import Patient, PatientAlias
 from apps.rosters.models import Shift
 from apps.staff.models import StaffCredential, StaffMember
 
@@ -79,8 +80,33 @@ def test_a_small_demo_hospital_gets_records_for_every_screen(provisioned):
     assert "hr@in-sunrise.demo.test" in accounts
     user = User.objects.get(email="hod.dwk@in-sunrise.demo.test")
     assert user.check_password("Synthetic-Demo-Passw0rd-0004")
+    # Patient search (HIMS-PAT-002): every example printed for the product owner finds someone.
+    assert len(ctx.examples) >= 6
+    for typed, finds in ctx.examples:
+        assert search.find(typed).patients.exists(), (typed, finds)
+    if PatientAlias.objects.exists():  # a woman of 25 or more changed her family name
+        alias = PatientAlias.objects.get()
+        assert search.find(alias.family_name).patients.filter(pk=alias.patient_id).exists()
     with pytest.raises(DemoError, match="already"):
         seed_hospital(by_key("in-sunrise"), password=None, small=True)
+
+
+def test_demo_records_fit_only_a_hospital_of_the_same_country(provisioned):
+    with pytest.raises(DemoError, match="choose a demo hospital of that country"):
+        seed_hospital(by_key("us-lakeside"), password=None, small=True)
+    assert not Facility.objects.exists()
+
+
+def test_hosted_development_only_when_asked_and_only_there(settings):
+    settings.HIMS_ENVIRONMENT = "development"
+    settings.HIMS_DEPLOYMENT_ID = "hims-dev-in"
+    check_safe(hosted_development=True)  # the free hosted Development environment
+    with pytest.raises(DemoError, match="Refused: HIMS_ENVIRONMENT is 'development'"):
+        check_safe()  # not without asking for it by name
+    for environment in ("qa", "staging", "production"):
+        settings.HIMS_ENVIRONMENT = environment
+        with pytest.raises(DemoError, match="hosted Development environment"):
+            check_safe(hosted_development=True)
 
 
 def test_settings_file_and_child_processes_never_reuse_this_pcs_hospital(monkeypatch):

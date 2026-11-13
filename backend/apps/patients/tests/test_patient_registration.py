@@ -430,8 +430,10 @@ def test_the_list_shows_only_the_minimum(desk, facility_a):
         "registered_facility",
         "registered_facility_name",
         "created_at",
+        "matched_on",  # HIMS-PAT-002: what found the patient in a search (none here)
     }
     assert row["phone_last4"] == "…3210"
+    assert row["matched_on"] is None
 
 
 # --- Corrections ---------------------------------------------------------------------------

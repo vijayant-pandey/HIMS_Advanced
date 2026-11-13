@@ -63,4 +63,8 @@ Each demo branch has 40 invented patients and one unknown patient, registered by
 `frontdesk.<branch>@<key>.demo.test`; `records@<key>.demo.test` is the medical records officer.
 After this merge run the demo set-up again with `--reset` ([demo hospitals](../testing/demo-hospitals.md)).
 
+**Update 2026-11-13 (HIMS-PAT-002):** step 1 now has the full search: the MRN (or only its
+number), a phone number, an ID number or a name in any spelling and order, with sex and age. See
+[patient search](patient-search.md).
+
 **Note (2026-11-12):** administrators cannot register patients, but they can give the Receptionist / front desk role (anyone who may open patient records may hand out patient roles; decisions log row 21). The supplier's support account cannot.

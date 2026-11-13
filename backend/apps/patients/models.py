@@ -7,10 +7,13 @@ relationships and ID numbers are ended, consents get a new row, names keep their
 as an alias (spec 28.2).
 
 Clinical tables (visits, allergies, diagnoses, notes) come in later Phase 2 tickets; duplicate
-detection, merging and restricted records too (HIMS-PAT-003, -004, -006).
+detection, merging and restricted records too (HIMS-PAT-003, -004, -006). Patient search
+(HIMS-PAT-002) uses ``search_name`` and ``search_sounds`` and their indexes (ADR-037).
 """
 
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.db.models import F, Q
 
@@ -107,6 +110,13 @@ class Patient(OrganizationOwnedModel, VersionedModel):
         editable=False,
         help_text="All names (and earlier names) in lower case, for patient search",
     )
+    search_sounds = ArrayField(
+        models.CharField(max_length=150),
+        default=list,
+        blank=True,
+        editable=False,
+        help_text="How each name word sounds (Lakshmi and Laxmi alike), for patient search",
+    )
 
     class Meta:
         db_table = "patients"
@@ -127,6 +137,11 @@ class Patient(OrganizationOwnedModel, VersionedModel):
             models.Index(
                 fields=["registered_facility", "-created_at"], name="patients_facility_idx"
             ),
+            # Patient search (HIMS-PAT-002, spec 28.6): similar spelling and sound-alike names.
+            GinIndex(
+                fields=["search_name"], name="patients_search_name_trgm", opclasses=["gin_trgm_ops"]
+            ),
+            GinIndex(fields=["search_sounds"], name="patients_search_sounds_idx"),
         ]
 
     def __str__(self) -> str:

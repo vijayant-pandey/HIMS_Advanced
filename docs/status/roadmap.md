@@ -13,6 +13,8 @@ finished**; what is left of Phase 1 is the hosting stage at the end, 4 optional 
 deferrals, none of which blocks Phase 2. **Next: Phase 2, Slice 2A, HIMS-PAT-001** (section 4c).
 **Update 2026-11-12, Phase 2 started:** HIMS-PAT-001 done (patient registration with MRN, contacts, people, ID numbers encrypted and masked, consents; screens, console, roles, demo patients). **Next: Phase 2 → Spec §4.5, §13 → Slice 2A → HIMS-PAT-002** (patient search).
 
+**Update 2026-11-13:** HIMS-PAT-002 done (patient search: MRN, phone, ID number or a name by similar spelling and sound, any order, earlier names; at most 50 minimal results; every search audited; console search; demo examples; demo records can also fill the hosted Development hospital). **Next: Phase 2 → Spec §4.5, §13 → Slice 2A → HIMS-PAT-005** (patient chart header and overview).
+
 **2026-11-08 decisions** ([decisions log](decisions-log.md)): CLIN, LEGAL and PO approved the pending documents
 **for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
 comes at the end of Phase 1; hosting is **Oracle Cloud at the very end** instead of AWS
@@ -38,7 +40,7 @@ PACS/LIS/drug database/SMS.
 | Phase 1 tickets (2026-11-12) | 129: ✅ 102 done or approved (97 Done + 5 compliance documents approved for now) · 27 left: 4 🔓 optional, 16 hosting stage (HIMS-OPS-024 in progress; HIMS-OPS-025 owner console new), 2 deferred by the PO, 5 moved to Phase 2 (HIMS-IAM-010, -011, -018, -020, HIMS-DATA-003) |
 | Phase 1 tickets | 126: ✅ 103 done or approved · 23 left: 4 🔓 can be built now (all optional or later), 15 hosting stage (now: the free Development environment on Render + Neon, HIMS-OPS-024), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
-| Phase 2 tickets (2026-11-12, after HIMS-PAT-001) | 24 (2 gaps added: HIMS-PAT-007 recording a death, HIMS-IAM-022 supplier support and patient records): ✅ 1 done (HIMS-PAT-001) + the P0 sign-off (HIMS-PAT-000) approved for now · 22 left |
+| Phase 2 tickets (2026-11-12, after HIMS-PAT-001) | 24 (2 gaps added: HIMS-PAT-007 recording a death, HIMS-IAM-022 supplier support and patient records): ✅ 1 done (HIMS-PAT-001) + the P0 sign-off (HIMS-PAT-000) approved for now · 22 left · **2026-11-13:** ✅ 2 done (HIMS-PAT-001, HIMS-PAT-002) · 21 left |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
 | Open decisions (section 36) | 19: 0 closed |
@@ -192,7 +194,7 @@ fit, so nothing is forgotten.
 | Step | Phase | Spec § | Tickets | Task | Status | Blocked by |
 |---|---|---|---|---|---|---|
 | 19 | 2 | 26 | HIMS-PAT-000 | Sign off the Phase 2 P0 design (26 decisions) | ✅ approved for now 2026-11-08 | — (may be revisited) |
-| 20 | 2 | 4.5, 13 | HIMS-PAT-001, 002, 005, 006; HIMS-IAM-010; HIMS-DATA-003 | Slice 2A: registration with MRN, search, chart header, restricted records, patient scope | ⬜ **next** (2026-11-12; first HIMS-PAT-001, which also registers the demo hospitals' invented patients) | Step 19 (done) → 🟡 **2026-11-12: HIMS-PAT-001 ✅ done** (registration with MRN, contacts, people, ID numbers, consents; demo patients registered); **next HIMS-PAT-002** (search), then PAT-005, PAT-006, HIMS-IAM-010, HIMS-DATA-003 |
+| 20 | 2 | 4.5, 13 | HIMS-PAT-001, 002, 005, 006; HIMS-IAM-010; HIMS-DATA-003 | Slice 2A: registration with MRN, search, chart header, restricted records, patient scope | ⬜ **next** (2026-11-12; first HIMS-PAT-001, which also registers the demo hospitals' invented patients) | Step 19 (done) → 🟡 **2026-11-12: HIMS-PAT-001 ✅ done** (registration with MRN, contacts, people, ID numbers, consents; demo patients registered); **next HIMS-PAT-002** (search), then PAT-005, PAT-006, HIMS-IAM-010, HIMS-DATA-003 · **2026-11-13: HIMS-PAT-002 ✅ done** (search); **next HIMS-PAT-005** (chart header), then PAT-006, HIMS-IAM-010, HIMS-DATA-003 |
 | 21 | 2 | 4.6, 4.23 | HIMS-OPD-001…004 | Slice 2B: schedules (uses step 1 rotas), appointments without double booking, walk-ins, queue, reminders | ⬜ | Step 20 |
 | 22 | 2 | 4.7, 4.8 | HIMS-CLIN-001…007; HIMS-IAM-011, 020 | Slice 2C: visits, vitals, allergies, diagnoses (ICD), notes with sign/amend, emergency access, confirm-it's-you for clinical actions | ⬜ | Step 21; CLIN (terminology) |
 | 23 | 2 | 4.5, 4.24 | HIMS-PAT-003, 004; HIMS-RPT-001, 002 | Slice 2D: duplicates and merge, visit summary, OPD lists; Phase 2 exit check | ⬜ | Step 22 |
@@ -228,7 +230,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 | 4.2 | Departments | 1 | 🟡 85% | 🔒 pricing, slots, escalation (CLIN) |
 | 4.3 | Staff and credentials | 1 | ✅ 100% | ✅ shifts, leave, on-call, clinical privileges, leave balances, minimum staffing · optional: shift swaps · enforcing privileges with clinical actions (Phase 2) |
 | 4.4 | Identity and access | 1 | 🟡 99% (department-level staff view done; supplier support access done 2026-11-12, HIMS-IAM-021) | 🔒 SSO (PO), break-glass (Phase 2) |
-| 4.5 | Patient registration and MPI | 2 | ⬜ designed | 🔒 sign-off · **2026-11-12: 🟡 registration with MRN done (HIMS-PAT-001)**; next search (PAT-002) |
+| 4.5 | Patient registration and MPI | 2 | ⬜ designed | 🔒 sign-off · **2026-11-12: 🟡 registration with MRN done (HIMS-PAT-001)**; next search (PAT-002) · **2026-11-13: search done (HIMS-PAT-002)**; next chart header (PAT-005) |
 | 4.6 | Appointments and OPD | 2 | ⬜ designed | 🔒 sign-off |
 | 4.7 | Encounters and admissions | 2, 3 | ⬜ outpatient part designed | 🔒 sign-off; Phase 3 P0 |
 | 4.8 | EHR/EMR | 2 | ⬜ | 🔒 CLIN |
@@ -267,3 +269,5 @@ HIMS-ORG-006, HIMS-DOC-001, HIMS-OPS-017, and HIMS-SEC-020, HIMS-OPS-018, HIMS-O
 on 2026-11-08) are also in the Phase 1 backlog.
 
 **2026-11-12, Phase 2:** HIMS-PAT-001 done: patient registration with MRN, contacts, people, ID numbers (encrypted, masked) and consents, with screens, the admin console section, the Receptionist and Medical records roles and the demo hospitals' invented patients. Phase 1 stays at 103 of 129. Next: HIMS-PAT-002.
+
+**2026-11-13, Phase 2:** HIMS-PAT-002 done: patient search on the Patients screen and in the admin console (MRN or only its number, phone, ID number by fingerprint, names by similar spelling and by sound in any order with earlier names, age and sex), at most 50 minimal results, every search audited ([ADR-037](../decisions/ADR-037-patient-search.md)). Next: HIMS-PAT-005.

@@ -118,6 +118,14 @@ def _audit(action, patient, *, actor, request, changes=None, reason="", metadata
     )
 
 
+def _set_search_fields(patient: Patient, earlier_names=()) -> None:
+    """What patient search compares (HIMS-PAT-002): every name and earlier name, as written and
+    as it sounds."""
+    names = (*(getattr(patient, f) for f in NAME_FIELDS[1:]), *earlier_names)
+    patient.search_name = demographics.search_name(*names)
+    patient.search_sounds = demographics.search_sounds(*names)
+
+
 def _refuse_if_merged(patient: Patient) -> None:
     if patient.status == Patient.Status.MERGED:
         raise PatientMerged("This record was merged into another one; change that record instead.")
@@ -318,7 +326,7 @@ def register_patient(
         registered_by=actor,
         **data,
     )
-    patient.search_name = demographics.search_name(*(getattr(patient, f) for f in NAME_FIELDS[1:]))
+    _set_search_fields(patient)
     no_guardian = _needs_guardian(patient, today) and not _has_guardian(relationships)
     if no_guardian and not no_guardian_reason.strip():
         raise ValidationError(
@@ -443,9 +451,7 @@ def update_patient(*, actor, patient_id, version: int, request=None, **changes) 
     aliases = patient.aliases.filter(kind=PatientAlias.Kind.PREVIOUS_NAME).values_list(
         "given_name", "middle_name", "family_name"
     )
-    patient.search_name = demographics.search_name(
-        *(getattr(patient, f) for f in NAME_FIELDS[1:]), *(n for row in aliases for n in row)
-    )
+    _set_search_fields(patient, [n for row in aliases for n in row])
     after = snapshot(patient, EDITABLE_FIELDS)
     if after == before:
         return patient
