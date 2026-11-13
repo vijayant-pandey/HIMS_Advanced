@@ -177,6 +177,8 @@ def classify(table: str, field) -> tuple[str, str]:
         return catalog.INTERNAL, "Reference"
     if field.primary_key or field.name in ("created_at", "updated_at", "version"):
         return catalog.INTERNAL, "System metadata"
+    if table in catalog.PATIENT_TABLES:
+        return catalog.RESTRICTED, "Patient personal data"
     return catalog.INTERNAL, "Business data"
 
 

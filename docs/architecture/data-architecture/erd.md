@@ -19,6 +19,13 @@ erDiagram
     rooms
     beds
     bed_status_changes
+    patients
+    patient_aliases
+    patient_contacts
+    patient_relationships
+    patient_identifiers
+    patient_consents
+    patient_identifier_keys
     equipment
     equipment_service_records
     numbering_schemes
@@ -107,6 +114,27 @@ erDiagram
     facilities ||--o{ bed_status_changes : "facility_id"
     wards ||--o{ bed_status_changes : "ward_id"
     users |o--o{ bed_status_changes : "changed_by_id"
+    organizations ||--o{ patients : "organization_id"
+    patients |o--o{ patients : "merged_into_id"
+    facilities ||--o{ patients : "registered_facility_id"
+    users |o--o{ patients : "registered_by_id"
+    organizations ||--o{ patient_aliases : "organization_id"
+    patients ||--o{ patient_aliases : "patient_id"
+    users |o--o{ patient_aliases : "recorded_by_id"
+    organizations ||--o{ patient_contacts : "organization_id"
+    patients ||--o{ patient_contacts : "patient_id"
+    users |o--o{ patient_contacts : "created_by_id"
+    organizations ||--o{ patient_relationships : "organization_id"
+    patients ||--o{ patient_relationships : "patient_id"
+    patients |o--o{ patient_relationships : "related_patient_id"
+    users |o--o{ patient_relationships : "created_by_id"
+    organizations ||--o{ patient_identifiers : "organization_id"
+    patients ||--o{ patient_identifiers : "patient_id"
+    users |o--o{ patient_identifiers : "ended_by_id"
+    users |o--o{ patient_identifiers : "created_by_id"
+    organizations ||--o{ patient_consents : "organization_id"
+    patients ||--o{ patient_consents : "patient_id"
+    users |o--o{ patient_consents : "recorded_by_id"
     organizations ||--o{ equipment : "organization_id"
     facilities ||--o{ equipment : "facility_id"
     departments |o--o{ equipment : "department_id"
@@ -440,6 +468,155 @@ erDiagram
 ```
 
 Tables from other domains are shown without columns: `facilities`, `organizations`, `rooms`, `users`, `wards`.
+
+## Patients (master patient record) (logical)
+
+```mermaid
+erDiagram
+    patients {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        varchar mrn
+        varchar status
+        uuid merged_into_id FK
+        varchar title
+        varchar given_name
+        varchar middle_name
+        varchar family_name
+        varchar preferred_name
+        date date_of_birth
+        boolean birth_date_estimated
+        varchar sex
+        varchar gender_identity
+        varchar pronouns
+        varchar preferred_language
+        varchar marital_status
+        varchar occupation
+        varchar blood_group_reported
+        boolean has_no_phone
+        boolean is_unknown
+        varchar identification_note
+        uuid registered_facility_id FK
+        uuid registered_by_id FK
+        varchar search_name
+    }
+    patient_aliases {
+        uuid id PK
+        uuid organization_id FK
+        uuid patient_id FK
+        varchar kind
+        varchar given_name
+        varchar middle_name
+        varchar family_name
+        varchar mrn
+        uuid recorded_by_id FK
+        timestamptz created_at
+    }
+    patient_contacts {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid patient_id FK
+        varchar kind
+        varchar phone
+        varchar email
+        varchar address_line1
+        varchar address_line2
+        varchar city
+        varchar district
+        varchar state
+        varchar postal_code
+        varchar country
+        boolean is_primary
+        boolean is_active
+        uuid created_by_id FK
+    }
+    patient_relationships {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid patient_id FK
+        varchar relation
+        varchar name
+        varchar phone
+        boolean is_legal_guardian
+        boolean is_emergency_contact
+        uuid related_patient_id FK
+        varchar note
+        boolean is_active
+        uuid created_by_id FK
+    }
+    patient_identifiers {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid patient_id FK
+        varchar kind
+        text value_encrypted
+        varchar value_hash
+        varchar value_display
+        varchar issuer
+        varchar verification
+        date valid_until
+        boolean is_active
+        timestamptz ended_at
+        uuid ended_by_id FK
+        varchar end_reason
+        uuid created_by_id FK
+    }
+    patient_consents {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        uuid organization_id FK
+        uuid patient_id FK
+        varchar kind
+        varchar status
+        varchar method
+        varchar note
+        uuid recorded_by_id FK
+    }
+    patient_identifier_keys {
+        uuid id PK
+        text key_encrypted
+        timestamptz created_at
+    }
+    facilities
+    organizations
+    users
+    organizations ||--o{ patients : "organization_id"
+    patients |o--o{ patients : "merged_into_id"
+    facilities ||--o{ patients : "registered_facility_id"
+    users |o--o{ patients : "registered_by_id"
+    organizations ||--o{ patient_aliases : "organization_id"
+    patients ||--o{ patient_aliases : "patient_id"
+    users |o--o{ patient_aliases : "recorded_by_id"
+    organizations ||--o{ patient_contacts : "organization_id"
+    patients ||--o{ patient_contacts : "patient_id"
+    users |o--o{ patient_contacts : "created_by_id"
+    organizations ||--o{ patient_relationships : "organization_id"
+    patients ||--o{ patient_relationships : "patient_id"
+    patients |o--o{ patient_relationships : "related_patient_id"
+    users |o--o{ patient_relationships : "created_by_id"
+    organizations ||--o{ patient_identifiers : "organization_id"
+    patients ||--o{ patient_identifiers : "patient_id"
+    users |o--o{ patient_identifiers : "ended_by_id"
+    users |o--o{ patient_identifiers : "created_by_id"
+    organizations ||--o{ patient_consents : "organization_id"
+    patients ||--o{ patient_consents : "patient_id"
+    users |o--o{ patient_consents : "recorded_by_id"
+```
+
+Tables from other domains are shown without columns: `facilities`, `organizations`, `users`.
 
 ## Equipment register (logical)
 

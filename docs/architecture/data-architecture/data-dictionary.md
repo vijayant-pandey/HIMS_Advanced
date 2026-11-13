@@ -11,6 +11,7 @@ Every table and column HIMS stores, generated from the code (spec 28.1 items 2, 
 | **Secret** | Credentials and keys. Stored only hashed or encrypted; never shown, exported or logged. |
 | **Restricted** | Personal data or security records: names, contact details, registration numbers, documents, IP addresses, audit content. Need-to-know access by permission; kept out of logs, traces and URLs. |
 | **Internal** | Hospital configuration and system data. Visible to staff with the right permission. |
+| **Clinical** | Patient health information (PHI), from Phase 2: minimum necessary, every read audited, never in logs, traces, URLs or emails (P0 part 02). |
 
 **Set by:** *System* = HIMS fills it in; *Person* = entered on a screen, in the admin console or through the API (always checked by the services); *System (who did it)* = the signed-in person who made the change.
 
@@ -21,6 +22,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Hospital (organization)**: [`organizations`](#organizations)
 - **Facilities, departments and locations**: [`facilities`](#facilities), [`departments`](#departments), [`department_services`](#department_services), [`department_hours`](#department_hours), [`buildings`](#buildings), [`floors`](#floors), [`wards`](#wards), [`rooms`](#rooms)
 - **Beds**: [`beds`](#beds), [`bed_status_changes`](#bed_status_changes)
+- **Patients (master patient record)**: [`patients`](#patients), [`patient_aliases`](#patient_aliases), [`patient_contacts`](#patient_contacts), [`patient_relationships`](#patient_relationships), [`patient_identifiers`](#patient_identifiers), [`patient_consents`](#patient_consents), [`patient_identifier_keys`](#patient_identifier_keys)
 - **Equipment register**: [`equipment`](#equipment), [`equipment_service_records`](#equipment_service_records)
 - **Numbering (MRN, visit, invoice, claim numbers)**: [`numbering_schemes`](#numbering_schemes), [`numbering_counters`](#numbering_counters), [`issued_numbers`](#issued_numbers)
 - **Feature settings**: [`feature_flags`](#feature_flags)
@@ -306,6 +308,198 @@ One change of a bed's status: from, to, why, who and when (spec 4.10; HIMS-FAC-0
 | `reason` | varchar(255) | no | — | up to 255 characters | Person | Internal: Bed status reason (no patient details) | No patient details. |
 | `changed_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Changed by |
 | `changed_at` | timestamp with time zone | no | now() | — | System | Internal: Business data | Changed at |
+
+## Patients (master patient record)
+
+**Owner (source of truth):** Patient domain: front desk and medical records (HIMS-PAT-001). **Design:** [02-database-design](../../p0/phase-2-patients/02-database-design.md), [patients](patients.md).
+
+<a id="patients"></a>
+### `patients`
+
+One person who is, or was, a patient of the hospital: one MRN in every facility.
+
+- **Model:** `patients.Patient`
+- **Lifecycle:** Never deleted (D24; retention set by legal before go-live). Corrections are versioned and audited before/after; an old name is kept as an alias. A merged record stays, read-only (HIMS-PAT-004).
+- **Rules:** `patients_mrn_unique`: Unique: organization, mrn; `patients_merged_has_target`: Check: (NOT status = 'merged' OR merged_into is set); `patients_not_merged_into_self`: Check: (merged_into is empty OR NOT merged_into = id)
+- **Extra indexes:** `patients_dob_idx`: date_of_birth; `patients_facility_idx`: registered_facility, -created_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `mrn` | varchar(40) | no | — | up to 40 characters | System | Restricted: Patient identifier (MRN) | Issued by the MRN numbering scheme; never changes |
+| `status` | varchar(16) | no | `Patient.Status.ACTIVE` | `active` (Active), `merged` (Merged into another record) | System | Restricted: Patient personal data | Status |
+| `merged_into_id` | uuid → patients.id | yes | — | on delete PROTECT | System | Internal: Reference | Set only by a completed merge (HIMS-PAT-004). |
+| `title` | varchar(20) | no | — | up to 20 characters | Person | Restricted: Patient personal data | Title |
+| `given_name` | varchar(150) | no | — | up to 150 characters | Person | Restricted: Personal identifier | One name is enough |
+| `middle_name` | varchar(150) | no | — | up to 150 characters | Person | Restricted: Patient personal data | Middle name |
+| `family_name` | varchar(150) | no | — | up to 150 characters | Person | Restricted: Personal identifier | Family name |
+| `preferred_name` | varchar(150) | no | — | up to 150 characters | Person | Restricted: Patient personal data | Preferred name |
+| `date_of_birth` | date | no | — | — | Person | Restricted: Patient personal data | Date of birth |
+| `birth_date_estimated` | boolean | no | `False` | — | Person | Restricted: Patient personal data | Entered as an age, so the date is approximate |
+| `sex` | varchar(16) | no | — | `male` (Male), `female` (Female), `intersex` (Intersex), `unknown` (Unknown) | Person | Clinical: Patient health-related data | Sex |
+| `gender_identity` | varchar(60) | no | — | up to 60 characters | Person | Clinical: Patient health-related data | Gender identity |
+| `pronouns` | varchar(60) | no | — | up to 60 characters | Person | Clinical: Patient health-related data | Pronouns |
+| `preferred_language` | varchar(35) | no | — | up to 35 characters | Person | Restricted: Patient personal data | e.g. hi, en-US |
+| `marital_status` | varchar(30) | no | — | `single` (Single), `married` (Married), `divorced` (Divorced), `separated` (Separated), `widowed` (Widowed), `other` (Other) | Person | Restricted: Patient personal data | Marital status |
+| `occupation` | varchar(100) | no | — | up to 100 characters | Person | Restricted: Patient personal data | Occupation |
+| `blood_group_reported` | varchar(5) | no | — | `A+` (A+), `A-` (A-), `B+` (B+), `B-` (B-), `O+` (O+), `O-` (O-), `AB+` (AB+), `AB-` (AB-) | Person | Clinical: Patient health-related data (as reported) | As the patient says; not a laboratory result |
+| `has_no_phone` | boolean | no | `False` | — | Person | Restricted: Patient personal data | The patient has no phone (ticked instead of a mobile number) |
+| `is_unknown` | boolean | no | `False` | — | Person | Restricted: Patient personal data | Registered as unknown or unconscious; details completed later |
+| `identification_note` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Patient personal data (how they arrived) | For an unknown patient: how they arrived, e.g. 'Brought by ambulance, MG Road' |
+| `registered_facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Registered facility |
+| `registered_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Registered by |
+| `search_name` | varchar(500) | no | — | up to 500 characters | System | Restricted: Patient names, for search | All names (and earlier names) in lower case, for patient search |
+
+<a id="patient_aliases"></a>
+### `patient_aliases`
+
+An earlier name (or, after a merge, an earlier MRN) that still finds the patient.
+
+- **Model:** `patients.PatientAlias`
+- **Lifecycle:** Append-only history (database trigger); only a merge may move a row to the kept patient.
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `patient_id` | uuid → patients.id | no | — | on delete PROTECT | Person | Internal: Reference | Patient |
+| `kind` | varchar(16) | no | — | `previous_name` (Previous name), `merged_mrn` (MRN of a merged record), `other_name` (Other name) | Person | Restricted: Patient personal data | Kind |
+| `given_name` | varchar(150) | no | — | up to 150 characters | Person | Restricted: Personal identifier | Given name |
+| `middle_name` | varchar(150) | no | — | up to 150 characters | Person | Restricted: Patient personal data | Middle name |
+| `family_name` | varchar(150) | no | — | up to 150 characters | Person | Restricted: Personal identifier | Family name |
+| `mrn` | varchar(40) | no | — | up to 40 characters | Person | Restricted: Patient identifier (earlier MRN) | Mrn |
+| `recorded_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Recorded by |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+
+<a id="patient_contacts"></a>
+### `patient_contacts`
+
+A way to reach the patient: a mobile or other phone, an email or an address.
+
+- **Model:** `patients.PatientContact`
+- **Lifecycle:** Never deleted; ended (`is_active`) and kept. Changes audited.
+- **Rules:** `patient_contacts_phone_has_number`: Check: (NOT kind in ['mobile', 'phone'] OR NOT phone = ''); `patient_contacts_email_has_address`: Check: (NOT kind = 'email' OR NOT email = '')
+- **Extra indexes:** `patient_contacts_phone_idx`: phone
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `patient_id` | uuid → patients.id | no | — | on delete PROTECT | Person | Internal: Reference | Patient |
+| `kind` | varchar(16) | no | — | `mobile` (Mobile), `phone` (Other phone), `email` (Email), `address` (Address) | Person | Restricted: Patient personal data | Kind |
+| `phone` | varchar(16) | no | — | up to 16 characters | Person | Restricted: Patient personal data | International format (E.164), e.g. +919876543210 |
+| `email` | varchar(254) | no | — | up to 254 characters | Person | Restricted: Contact | Email |
+| `address_line1` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Patient personal data | Address line1 |
+| `address_line2` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Patient personal data | Address line2 |
+| `city` | varchar(100) | no | — | up to 100 characters | Person | Restricted: Patient personal data | City |
+| `district` | varchar(100) | no | — | up to 100 characters | Person | Restricted: Patient personal data | District (IN) / county (US) |
+| `state` | varchar(100) | no | — | up to 100 characters | Person | Restricted: Patient personal data | State |
+| `postal_code` | varchar(10) | no | — | up to 10 characters | Person | Restricted: Patient personal data | Postal code |
+| `country` | varchar(2) | no | — | up to 2 characters | Person | Restricted: Patient personal data | Country |
+| `is_primary` | boolean | no | `False` | — | Person | Restricted: Patient personal data | Is primary |
+| `is_active` | boolean | no | `True` | — | Person | Restricted: Patient personal data | Ended contacts are kept, not deleted |
+| `created_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Created by |
+
+<a id="patient_relationships"></a>
+### `patient_relationships`
+
+A guardian, parent, next of kin, emergency contact or caregiver of the patient.
+
+- **Model:** `patients.PatientRelationship`
+- **Lifecycle:** Never deleted; ended (`is_active`) and kept. Changes audited.
+- **Rules:** `patient_relationships_not_self`: Check: (related_patient is empty OR NOT related_patient = patient)
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `patient_id` | uuid → patients.id | no | — | on delete PROTECT | Person | Internal: Reference | Patient |
+| `relation` | varchar(20) | no | — | `mother` (Mother), `father` (Father), `guardian` (Guardian), `spouse` (Spouse / partner), `child` (Son / daughter), `sibling` (Brother / sister), `next_of_kin` (Next of kin), `caregiver` (Caregiver), `emergency_contact` (Emergency contact), `other` (Other) | Person | Restricted: Patient personal data | Relation |
+| `name` | varchar(200) | no | — | up to 200 characters | Person | Restricted: Patient personal data | Name |
+| `phone` | varchar(16) | no | — | up to 16 characters | Person | Restricted: Patient personal data | International format (E.164) |
+| `is_legal_guardian` | boolean | no | `False` | — | Person | Restricted: Patient personal data | Is legal guardian |
+| `is_emergency_contact` | boolean | no | `False` | — | Person | Restricted: Patient personal data | Is emergency contact |
+| `related_patient_id` | uuid → patients.id | yes | — | on delete PROTECT | Person | Internal: Reference | When this person is also a patient here |
+| `note` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Patient personal data | Note |
+| `is_active` | boolean | no | `True` | — | Person | Restricted: Patient personal data | Ended relationships are kept |
+| `created_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Created by |
+
+<a id="patient_identifiers"></a>
+### `patient_identifiers`
+
+An identity document number: stored encrypted, shown masked, found by a keyed fingerprint.
+
+- **Model:** `patients.PatientIdentifier`
+- **Lifecycle:** Never deleted; a wrong or replaced number is ended with a reason. The number is encrypted; screens, the console and the audit log only see it masked.
+- **Rules:** `patient_identifiers_unique_number`: Unique: organization, kind, value_hash where (is_active = True AND kind in ('abha_number', 'abha_address', 'aadhaar', 'passport', 'ssn'))
+- **Extra indexes:** `patient_identifiers_hash_idx`: value_hash
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `patient_id` | uuid → patients.id | no | — | on delete PROTECT | Person | Internal: Reference | Patient |
+| `kind` | varchar(20) | no | — | `abha_number` (ABHA number), `abha_address` (ABHA address), `aadhaar` (Aadhaar number), `passport` (Passport), `voter_id` (Voter ID (EPIC)), `driving_licence` (Driving licence), `ssn` (Social Security number), `previous_mrn` (Previous hospital's MRN) | Person | Restricted: Patient personal data | Kind |
+| `value_encrypted` | text | no | — | — | Person | Restricted: Patient ID number (encrypted) | The full number, encrypted; never shown |
+| `value_hash` | varchar(64) | no | — | up to 64 characters | Person | Internal: Keyed fingerprint (no number recoverable) | Keyed fingerprint of the number, to find it and refuse duplicates |
+| `value_display` | varchar(40) | no | — | up to 40 characters | Person | Restricted: Patient ID number (masked) | Masked, e.g. XXXX XXXX 1234 |
+| `issuer` | varchar(100) | no | — | up to 100 characters | Person | Restricted: Patient personal data | e.g. the issuing country or state, or hospital |
+| `verification` | varchar(16) | no | `PatientIdentifier.Verification.UNVERIFIED` | `unverified` (Not verified), `verified` (Verified) | System | Restricted: Patient personal data | Checking with UIDAI / ABDM comes later; typed numbers are not verified |
+| `valid_until` | date | yes | — | — | Person | Restricted: Patient personal data | Valid until |
+| `is_active` | boolean | no | `True` | — | System | Restricted: Patient personal data | Switched on (true) or off (false); rows are switched off, not deleted |
+| `ended_at` | timestamp with time zone | yes | — | — | System | Restricted: Patient personal data | Ended at |
+| `ended_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Ended by |
+| `end_reason` | varchar(255) | no | — | up to 255 characters | System | Restricted: Patient personal data | End reason |
+| `created_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Created by |
+
+<a id="patient_consents"></a>
+### `patient_consents`
+
+A consent decision: a new row for every change, so the history stays (D9).
+
+- **Model:** `patients.PatientConsent`
+- **Lifecycle:** Append-only history (database trigger): every decision is a new row; the latest per kind is current. Only a merge may move a row.
+- **Extra indexes:** `patient_consents_idx`: patient, kind, -created_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `patient_id` | uuid → patients.id | no | — | on delete PROTECT | Person | Internal: Reference | Patient |
+| `kind` | varchar(20) | no | — | `privacy_notice` (Privacy notice given; agrees to processing for care), `sms` (Messages by SMS), `email` (Messages by email) | Person | Restricted: Patient personal data | Kind |
+| `status` | varchar(16) | no | — | `given` (Given), `refused` (Refused), `withdrawn` (Withdrawn) | Person | Restricted: Patient personal data | Status |
+| `method` | varchar(16) | no | `PatientConsent.Method.VERBAL` | `verbal` (Told the front desk), `signed_form` (Signed a form) | Person | Restricted: Patient personal data | Method |
+| `note` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Patient personal data | Note |
+| `recorded_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Recorded by |
+
+<a id="patient_identifier_keys"></a>
+### `patient_identifier_keys`
+
+The hospital's random key for ID-number fingerprints, stored encrypted (one row).
+
+- **Model:** `patients.IdentifierHashKey`
+- **Lifecycle:** One row: the hospital's random key for ID-number fingerprints, encrypted with the field keys (re-encrypted on key rotation). Never changes or deleted.
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `key_encrypted` | text | no | — | — | Person | Secret: Key (encrypted) | Key encrypted |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
 
 ## Equipment register
 

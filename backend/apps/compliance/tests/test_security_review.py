@@ -153,6 +153,9 @@ def test_old_encryption_keys_can_be_retired_after_rotation(make_user):
         assert encryption.rotate(dry_run=True) == {
             "Authenticator app secrets": 1,
             "Messages not yet delivered": 0,
+            # HIMS-PAT-001: patient ID numbers and their fingerprint key are rotated too.
+            "Patient ID numbers": 0,
+            "Key for ID-number fingerprints": 0,
         }
         assert encryption.status()["on_older_keys"] == 1  # a dry run changes nothing
         encryption.rotate()

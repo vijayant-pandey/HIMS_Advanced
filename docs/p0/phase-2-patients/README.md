@@ -79,6 +79,7 @@ to end.
 - 2026-10-30, reviewing doctor (via PO): "production grade, not a toy": compliance documentation (HIPAA; India DPDP, ABDM, IT Act) is part of the work (backlog HIMS-COMP).
 - Still open: the remaining decisions and the formal sign-off below.
 - **2026-11-08, PO, reviewing doctor and legal (relayed by the PO): approved for now, as proposed**, to be changed later if required. D6, D7, D8 as decided on 2026-10-30; D21 as its first option (patient-reported current medicines only; prescriptions in Phase 4). Slice 2A may start. [Decisions log](../../status/decisions-log.md).
+- **2026-11-12: slice 2A started.** HIMS-PAT-001 built as designed (registration with MRN, contacts, people, ID numbers encrypted and masked, consents; D1 roles Receptionist and Medical records; D2 required fields; D3 unknown patients; D6/D7/D8 numbers "not verified"; D9 consents; D26 any script). Restricted records (D23), duplicates (D4) and merge (D5) follow in HIMS-PAT-006, -003, -004. [How-to](../../workflows/patient-registration.md).
 
 ## Sign-off (spec 26.10)
 

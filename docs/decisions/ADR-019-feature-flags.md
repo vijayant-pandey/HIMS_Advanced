@@ -54,7 +54,7 @@ administrators, not environment variables changed by engineers.
 | `auth.self_service_password_reset` | Forgot-password emails | Hospital | On | All | Live: when off, `POST /auth/password-reset/request/` → 409 for every address (no account enumeration); the sign-in page hides the link; admin-sent reset links still work |
 | `auth.two_factor_for_everyone` | Two-factor sign-in for all staff | Hospital | Off | All | Live: when on, every user must use an authenticator app (`mfa.is_required`); same effect as the server setting `HIMS_MFA_REQUIRED_FOR_ALL` |
 | `locations.module` | Locations and beds | Per facility | On | All | Live: when off for a facility, its locations are left out of lists, and its tree, items, creates and bed changes → 409; the admin console still shows them |
-| `patients.registration` | Patient registration | Per facility | Off | All | Phase 2 |
+| `patients.registration` | Patient registration | Per facility | Off | All | Phase 2 → **Live 2026-11-12 (HIMS-PAT-001), default On**: when off for a facility, nobody registers patients there; patients already registered are still found and opened |
 | `outpatient.appointments` | Appointments and outpatient visits | Per facility | Off | All | Phase 2 |
 | `inpatient.admissions` | Admissions, transfers and discharge | Per facility | Off | All | Phase 3 |
 | `nursing.care` | Nursing care | Per facility | Off | All | Phase 3 |

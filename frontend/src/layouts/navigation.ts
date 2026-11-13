@@ -14,6 +14,8 @@ export interface NavItem {
 
 /** Main menu. Items appear only for users holding the permission (the API still enforces it). */
 export const NAV_ITEMS: NavItem[] = [
+  // Patients first: the front desk's main screen (HIMS-PAT-001).
+  { to: "/patients", label: "Patients", permission: "patients.search" },
   { to: "/settings", label: "Hospital settings", permission: "organization.view" },
   { to: "/facilities", label: "Facilities", permission: "facilities.view" },
   { to: "/departments", label: "Departments", permission: "departments.view" },

@@ -24,6 +24,7 @@ const audit = () => import("../features/audit/AuditIntegrityPage");
 const recovery = () => import("../features/recovery/RecoveryPage");
 const performance = () => import("../features/performance/PerformancePage");
 const staff = () => import("../features/staff/StaffDetailPage");
+const patients = () => import("../features/patients/PatientsPage");
 
 export const routes = [
   { path: "/login", element: <LoginPage /> },
@@ -82,6 +83,15 @@ export const routes = [
               {
                 path: "features",
                 lazy: screen(() => import("../features/featureFlags/FeaturesPage"), (m) => m.FeaturesPage),
+              },
+              { path: "patients", lazy: screen(patients, (m) => m.PatientsPage) },
+              {
+                path: "patients/register",
+                lazy: screen(() => import("../features/patients/RegisterPatientPage"), (m) => m.RegisterPatientPage),
+              },
+              {
+                path: "patients/:id",
+                lazy: screen(() => import("../features/patients/PatientDetailPage"), (m) => m.PatientDetailPage),
               },
               { path: "staff", lazy: screen(() => import("../features/staff/StaffPage"), (m) => m.StaffPage) },
               { path: "staff/:id", lazy: screen(staff, (m) => m.StaffDetailPage) },

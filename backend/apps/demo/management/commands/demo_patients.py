@@ -1,7 +1,7 @@
 """Show the invented patients of a demo hospital (HIMS-QA-004), ready for Phase 2.
 
-HIMS has no patient tables until HIMS-PAT-001; this prints (or saves as CSV) the patients that
-will be registered then. No database is used.
+Prints (or saves as CSV) the invented patients; no database is used. Since HIMS-PAT-001 the demo
+seed registers these same patients, so they are also on the Patients screen.
 """
 
 import csv

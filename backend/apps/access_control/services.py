@@ -6,7 +6,7 @@ from apps.facilities.models import Department, Facility
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError, ScopeViolation
 
-from .catalog import PERMISSIONS, SYSTEM_ROLES
+from .catalog import PATIENT_DATA_PERMISSIONS, PERMISSIONS, SYSTEM_ROLES, P
 from .models import Permission, Role, RoleAssignment
 from .selectors import clear_permission_cache, has_permission
 
@@ -23,13 +23,21 @@ def sync_permission_catalog() -> None:
 
 def _require_grantable(actor, permission_codenames, *, facility_id=None, department_id=None):
     """Prevent privilege escalation: an actor can only hand out permissions they hold
-    themselves at the target scope."""
+    themselves at the target scope.
+
+    One exception (HIMS-PAT-001): administrators look patients up but do not register them (P0
+    part 04), yet appointing the front desk is their job. Someone who may open patient records
+    there (``patients.view``) may hand out the patient permissions. The supplier's support
+    account holds no patient permission, so it cannot (spec 7.2)."""
     if actor is None:
         return  # provisioning/system context
+    scope = {"facility_id": facility_id, "department_id": department_id}
+    may_appoint = has_permission(actor, P.PATIENTS_VIEW, **scope)
     missing = [
         code
         for code in permission_codenames
-        if not has_permission(actor, code, facility_id=facility_id, department_id=department_id)
+        if not has_permission(actor, code, **scope)
+        and not (may_appoint and code in PATIENT_DATA_PERMISSIONS)
     ]
     if missing:
         raise ScopeViolation("You cannot grant permissions you do not hold for this scope.")

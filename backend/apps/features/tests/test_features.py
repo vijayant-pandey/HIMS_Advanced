@@ -58,7 +58,7 @@ def test_defaults_hospital_and_facility_settings(rows, admin_user, facility_a, f
 def test_planned_and_other_country_features_cannot_be_switched_on(rows, admin_user, client_for):
     with pytest.raises(Exception, match="Not available yet"):
         set_feature(
-            actor=admin_user, key="patients.registration", enabled=True, reason="x", version=1
+            actor=admin_user, key="outpatient.appointments", enabled=True, reason="x", version=1
         )
     Organization.objects.update(country="US")
     features = {f["key"]: f for f in client_for(admin_user).get(f"{API}/features/").json()}
@@ -185,7 +185,9 @@ def test_admin_sees_every_feature_and_changes_one(rows, admin_user, client_for):
     features = client.get(f"{API}/features/").json()
     assert len(features) == len(FEATURES)
     registration = next(f for f in features if f["key"] == "patients.registration")
-    assert registration["available"] is False and registration["planned_phase"] == "Phase 2"
+    assert registration["available"] is True  # built with HIMS-PAT-001
+    appointments = next(f for f in features if f["key"] == "outpatient.appointments")
+    assert appointments["available"] is False and appointments["planned_phase"] == "Phase 2"
     abdm = next(f for f in features if f["key"] == "integrations.abdm")
     assert abdm["offered_in_country"] is True  # India hospital
     stedi = next(f for f in features if f["key"] == "insurance.us_payers")
@@ -205,7 +207,7 @@ def test_admin_sees_every_feature_and_changes_one(rows, admin_user, client_for):
 def test_planned_feature_change_is_refused_by_the_api(rows, admin_user, client_for):
     response = change(
         client_for(admin_user),
-        "patients.registration",
+        "outpatient.appointments",
         {"setting": "on", "reason": "Try", "version": 1},
     )
     assert response.status_code == 400

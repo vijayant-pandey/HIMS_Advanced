@@ -14,7 +14,7 @@ from rest_framework import permissions as drf_permissions
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from common.permissions import FACILITY, ScopedPermission
+from common.permissions import ANY_GRANT, FACILITY, ScopedPermission
 
 from . import catalog
 
@@ -231,5 +231,10 @@ def scope_label(endpoint: Endpoint) -> str:
         return (
             "Facility or department: a grant at one facility or department is enough; rows "
             "outside it stay hidden (404)"
+        )
+    if endpoint.scope == ANY_GRANT:
+        return (
+            "Any grant: a grant at any facility or department is enough, and every record of the "
+            "hospital is reached (patients keep one MRN in every facility)"
         )
     return "Whole hospital: the grant must cover the whole organization"

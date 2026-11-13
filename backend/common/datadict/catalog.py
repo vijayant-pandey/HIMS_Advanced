@@ -23,6 +23,11 @@ DOMAINS: dict[str, dict] = {
         "owner": "Bed domain (occupancy will come from bed assignments, Phase 3)",
         "docs": ["locations-and-beds.md"],
     },
+    "patients": {
+        "name": "Patients (master patient record)",
+        "owner": "Patient domain: front desk and medical records (HIMS-PAT-001)",
+        "docs": ["../../p0/phase-2-patients/02-database-design.md", "patients.md"],
+    },
     "equipment": {
         "name": "Equipment register",
         "owner": "Organization/facility domain (requests and job orders wait for the PO)",
@@ -122,6 +127,19 @@ LIFECYCLE: dict[str, str] = {
     "equipment": "Never deleted; retired with a reason. Status and date changes in the audit log.",
     "equipment_service_records": "Append-only (database trigger); a mistake is corrected by adding "
     "another record. Kept with the equipment.",
+    "patients": "Never deleted (D24; retention set by legal before go-live). Corrections are "
+    "versioned and audited before/after; an old name is kept as an alias. A merged record stays, "
+    "read-only (HIMS-PAT-004).",
+    "patient_aliases": "Append-only history (database trigger); only a merge may move a row to "
+    "the kept patient.",
+    "patient_contacts": "Never deleted; ended (`is_active`) and kept. Changes audited.",
+    "patient_relationships": "Never deleted; ended (`is_active`) and kept. Changes audited.",
+    "patient_identifiers": "Never deleted; a wrong or replaced number is ended with a reason. The "
+    "number is encrypted; screens, the console and the audit log only see it masked.",
+    "patient_consents": "Append-only history (database trigger): every decision is a new row; "
+    "the latest per kind is current. Only a merge may move a row.",
+    "patient_identifier_keys": "One row: the hospital's random key for ID-number fingerprints, "
+    "encrypted with the field keys (re-encrypted on key rotation). Never changes or deleted.",
     "message_templates": "One row per message in the catalog; blank wording means the standard. "
     "Every change is in the audit log, before and after.",
     "bed_status_changes": "Append-only (database trigger); one row per bed status change, from, "
@@ -227,6 +245,7 @@ LIFECYCLE: dict[str, str] = {
 SECRET = "Secret"  # noqa: S105 - a sensitivity level name, not a password
 RESTRICTED = "Restricted"
 INTERNAL = "Internal"
+CLINICAL = "Clinical"
 LEVELS = {
     SECRET: "Credentials and keys. Stored only hashed or encrypted; never shown, exported or "
     "logged.",
@@ -234,8 +253,11 @@ LEVELS = {
     "numbers, documents, IP addresses, audit content. Need-to-know access by permission; kept "
     "out of logs, traces and URLs.",
     INTERNAL: "Hospital configuration and system data. Visible to staff with the right permission.",
+    CLINICAL: "Patient health information (PHI), from Phase 2: minimum necessary, every read "
+    "audited, never in logs, traces, URLs or emails (P0 part 02).",
 }
 # Patient data (PHI) will add a "Clinical" level with stricter rules (Phase 2, spec 26 P0).
+# Added 2026-11-12 with HIMS-PAT-001; other patient columns are Restricted (personal).
 
 # Exact columns, checked first: "table.column" -> (level, category).
 COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
@@ -309,6 +331,20 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "support_access.reason": (RESTRICTED, "Support note (no patient details)"),
     "support_access.decision_note": (RESTRICTED, "Support note"),
     "support_access.end_reason": (RESTRICTED, "Support note"),
+    # Patients (HIMS-PAT-001; P0 part 02 sensitivity column).
+    "patients.mrn": (RESTRICTED, "Patient identifier (MRN)"),
+    "patients.sex": (CLINICAL, "Patient health-related data"),
+    "patients.gender_identity": (CLINICAL, "Patient health-related data"),
+    "patients.pronouns": (CLINICAL, "Patient health-related data"),
+    "patients.blood_group_reported": (CLINICAL, "Patient health-related data (as reported)"),
+    "patients.date_of_birth": (RESTRICTED, "Patient personal data"),
+    "patients.search_name": (RESTRICTED, "Patient names, for search"),
+    "patients.identification_note": (RESTRICTED, "Patient personal data (how they arrived)"),
+    "patient_aliases.mrn": (RESTRICTED, "Patient identifier (earlier MRN)"),
+    "patient_identifiers.value_encrypted": (RESTRICTED, "Patient ID number (encrypted)"),
+    "patient_identifiers.value_hash": (INTERNAL, "Keyed fingerprint (no number recoverable)"),
+    "patient_identifiers.value_display": (RESTRICTED, "Patient ID number (masked)"),
+    "patient_identifier_keys.key_encrypted": (SECRET, "Key (encrypted)"),
 }
 # Column names, checked next: name -> (level, category).
 NAME_RULES: dict[str, tuple[str, str]] = {
@@ -324,6 +360,15 @@ NAME_RULES: dict[str, tuple[str, str]] = {
     "user_agent": (RESTRICTED, "Online identifier"),
     "file": (RESTRICTED, "Document"),
     "last_login": (RESTRICTED, "Account activity"),
+}
+# Whole tables whose remaining business columns are patient personal data (HIMS-PAT-001).
+PATIENT_TABLES = {
+    "patients",
+    "patient_aliases",
+    "patient_contacts",
+    "patient_relationships",
+    "patient_identifiers",
+    "patient_consents",
 }
 # Whole tables whose remaining columns are security records.
 RESTRICTED_TABLES = {

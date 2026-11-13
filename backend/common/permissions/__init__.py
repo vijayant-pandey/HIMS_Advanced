@@ -9,6 +9,10 @@ method for plain APIViews) to a permission codename. Anything not declared is de
 * ``"facility"``: a grant at any facility/department lets the request through; querysets must
   then be filtered with ``visible_facility_ids`` and objects are checked against their own
   facility/department via ``get_permission_context(obj)``.
+* ``"any_grant"``: a grant anywhere lets the request through and every record of the hospital
+  is visible. For hospital-wide records such as patients (one MRN in every facility, HIMS-PAT-001):
+  a receptionist of one branch finds a patient registered at another. Writes that happen at a
+  facility (registering there) check that facility in the view.
 
 Hidden UI controls are never a security boundary; this class is.
 """
@@ -17,6 +21,7 @@ from rest_framework.permissions import BasePermission
 
 ORGANIZATION = "organization"
 FACILITY = "facility"
+ANY_GRANT = "any_grant"
 
 
 def required_permission(request, view) -> str | None:
@@ -71,7 +76,7 @@ class ScopedPermission(BasePermission):
         from apps.access_control.selectors import get_permission_scope
 
         scope = get_permission_scope(user, codename)
-        if getattr(view, "permission_scope", ORGANIZATION) == FACILITY:
+        if getattr(view, "permission_scope", ORGANIZATION) in (FACILITY, ANY_GRANT):
             allowed = not scope.is_empty
         else:
             allowed = scope.org_wide

@@ -51,7 +51,7 @@ def test_every_api_view_traces_to_a_requirement():
         {ticket for tickets in catalog.VIEW_REQUIREMENTS.values() for ticket in tickets}
         - set(backlog)
     )
-    assert not unknown, f"Not in the Phase 1 backlog: {unknown}"
+    assert not unknown, f"Not in the Phase 1 or Phase 2 backlog: {unknown}"
 
 
 def test_every_endpoint_says_what_it_is_for():

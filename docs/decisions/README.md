@@ -41,3 +41,4 @@ default, awaiting the named approver), **Superseded**.
 | [033](ADR-033-session-limits-and-sign-in-pause.md) | Session limits background refreshes cannot defeat, and a sign-in pause per account | Proposed |
 | [034](ADR-034-free-hosting-without-a-card.md) | A free Development environment on a host that needs no payment card (puts ADR-027 on hold) | Proposed |
 | [035](ADR-035-supplier-support-access.md) | Supplier support access, the "locked box": ask, hospital approves, emergency at once, ends by itself, every request audited | Proposed |
+| [036](ADR-036-patient-id-numbers.md) | Patient ID numbers: encrypted, masked, found by a keyed fingerprint; one-per-person numbers refused on a second patient | Proposed |

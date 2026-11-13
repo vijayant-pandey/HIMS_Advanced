@@ -18,6 +18,8 @@ EXPECTED_SYSTEM_ROLES = {
     "compliance-officer",
     "equipment-officer",
     "supplier-support",
+    "receptionist",
+    "medical-records-officer",
 }
 
 

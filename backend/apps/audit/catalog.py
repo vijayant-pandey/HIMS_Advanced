@@ -29,6 +29,7 @@ CATEGORIES: dict[str, str] = {
     "database": "Database access",
     "outbox": "Background jobs",
     "support": "Supplier support access",
+    "patient": "Patients",
 }
 
 LABELS: dict[str, str] = {
@@ -164,6 +165,17 @@ LABELS: dict[str, str] = {
     A.OUTBOX_CLEANED_UP: "Old background events cleaned up",
     A.OUTBOX_EVENT_SENT_AGAIN: "Failed background event sent again",
     A.OUTBOX_EVENT_DISMISSED: "Failed background event dismissed",
+    A.PATIENT_REGISTERED: "Patient registered (MRN issued)",
+    A.PATIENT_UPDATED: "Patient details corrected",
+    A.PATIENT_RECORD_VIEWED: "Patient record opened",
+    A.PATIENT_LIST_SEARCHED: "Patients looked up by MRN",
+    A.PATIENT_CONTACT_ADDED: "Patient phone, email or address added",
+    A.PATIENT_CONTACT_UPDATED: "Patient phone, email or address changed or ended",
+    A.PATIENT_RELATIONSHIP_ADDED: "Patient's guardian, relative or contact person added",
+    A.PATIENT_RELATIONSHIP_UPDATED: "Patient's guardian, relative or contact person changed",
+    A.PATIENT_IDENTIFIER_ADDED: "Patient ID number added (stored encrypted)",
+    A.PATIENT_IDENTIFIER_ENDED: "Patient ID number ended",
+    A.PATIENT_CONSENT_RECORDED: "Patient consent recorded",
 }
 
 

@@ -67,6 +67,8 @@ e.g. `dwk`.
 | `nurse.<branch>@<key>.demo.test` | A nurse with basic access |
 | `beds.<branch>@<key>.demo.test` | Bed manager |
 | `equipment.<branch>@<key>.demo.test` | Equipment officer |
+| `frontdesk.<branch>@<key>.demo.test` | Front desk of that branch: registers patients (HIMS-PAT-001) |
+| `records@<key>.demo.test` | Medical records officer (whole hospital): registers and corrects patients |
 | `support@hims-supplier.demo.test` | **You, the software supplier**: asks for Support access ([how](../workflows/support-access.md)) |
 
 Two-factor setup is switched off in the demo hospitals only
@@ -88,6 +90,7 @@ quickly. Real hospitals always require it.
 | Rota and leave | Two weeks of morning/evening/night shifts and on-call; leave waiting, approved and refused; minimum staffing for ICU and Emergency |
 | Access, Accounts, Cover, Access reviews | The accounts above with their roles, one cover arrangement, one open access review |
 | Support access | One finished request and one waiting for the hospital |
+| Patients (2026-11-12, HIMS-PAT-001) | 40 invented patients per branch with MRNs, address, a parent for every child, next of kin for some, an invented previous clinic MRN for some, privacy notice and SMS consent; one unknown (unconscious) patient per branch. All registered by that branch's front desk, so the audit log shows who |
 | Audit log | Everything above, recorded as it was made |
 
 ## Patients and later phases
@@ -105,3 +108,13 @@ python manage.py demo_patients --hospital us-lakeside --csv lakeside-patients.cs
 `backend/apps/demo/seed.py`, so the demo hospitals always show everything built so far. For
 example, patients and visits come with Phase 2; admissions to these beds with Phase 3;
 prescriptions and lab orders with Phase 4; bills with Phase 5.
+
+**Update 2026-11-12 (HIMS-PAT-001):** the invented patients above are now **registered** in each demo hospital (Patients menu), by `frontdesk.<branch>@<key>.demo.test`. Still no Aadhaar, ABHA or Social Security numbers: the only ID number is an invented previous-clinic MRN. US demo phones now carry an area code (`+1 312 555 01xx`, still the fictional 555-01xx range). **After this merge, build the demo hospitals again with `--reset`** (the new tables and patients need it):
+
+```
+cd backend
+.venv\Scripts\activate.bat
+set HIMS_DEMO_PASSWORD=<your demo password>
+python manage.py setup_demo_hospitals --password-env HIMS_DEMO_PASSWORD --reset
+set HIMS_DEMO_PASSWORD=
+```

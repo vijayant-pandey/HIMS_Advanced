@@ -11,6 +11,7 @@ ordered plan. **Last updated:** 2026-11-10 (after PR #47, with the retention pur
 Render + Neon + cron-job.org, https://hims-dev.onrender.com). **Phase 1's application part is
 finished**; what is left of Phase 1 is the hosting stage at the end, 4 optional items and 2 PO
 deferrals, none of which blocks Phase 2. **Next: Phase 2, Slice 2A, HIMS-PAT-001** (section 4c).
+**Update 2026-11-12, Phase 2 started:** HIMS-PAT-001 done (patient registration with MRN, contacts, people, ID numbers encrypted and masked, consents; screens, console, roles, demo patients). **Next: Phase 2 → Spec §4.5, §13 → Slice 2A → HIMS-PAT-002** (patient search).
 
 **2026-11-08 decisions** ([decisions log](decisions-log.md)): CLIN, LEGAL and PO approved the pending documents
 **for now** (roles and permissions, compliance pack, Phase 2 design); SMS stays on the console; the security review
@@ -37,6 +38,7 @@ PACS/LIS/drug database/SMS.
 | Phase 1 tickets (2026-11-12) | 129: ✅ 102 done or approved (97 Done + 5 compliance documents approved for now) · 27 left: 4 🔓 optional, 16 hosting stage (HIMS-OPS-024 in progress; HIMS-OPS-025 owner console new), 2 deferred by the PO, 5 moved to Phase 2 (HIMS-IAM-010, -011, -018, -020, HIMS-DATA-003) |
 | Phase 1 tickets | 126: ✅ 103 done or approved · 23 left: 4 🔓 can be built now (all optional or later), 15 hosting stage (now: the free Development environment on Render + Neon, HIMS-OPS-024), 2 deferred by the PO (SMS gateway, single sign-on), 2 moved to Phase 2 and 5 |
 | Phase 2 tickets (already written) | 22: all ⬜; buildable after the Phase 1 queue (P0 approved for now 2026-11-08) |
+| Phase 2 tickets (2026-11-12, after HIMS-PAT-001) | 24 (2 gaps added: HIMS-PAT-007 recording a death, HIMS-IAM-022 supplier support and patient records): ✅ 1 done (HIMS-PAT-001) + the P0 sign-off (HIMS-PAT-000) approved for now · 22 left |
 | Phases 3–6 tickets | Written after each phase's P0 design (spec 26) |
 | Vertical slice (section 21) | 14 steps: 4 done, 10 left |
 | Open decisions (section 36) | 19: 0 closed |
@@ -47,7 +49,7 @@ PACS/LIS/drug database/SMS.
 | Phase | What it covers | Status | Done | Left | Blocked by | Exit criterion (spec) |
 |---|---|---|---|---|---|---|
 | **1** Foundation and hospital onboarding | Stack, organization and facilities, sign-in, staff, departments, credentials, access, audit, CI, provisioning, infrastructure, observability | 🟡 application done, cloud ~20% (2026-11-12: 102 of 129 = 79%; free Development environment live on Render + Neon, HIMS-OPS-024 nearly done; supplier support access and demo hospitals added; later 2026-11-12: HIMS-OPS-024 done, 103 of 129 = 80%, application part finished, only the hosting stage at the end left) | 103 (PR #1–#52 and #30, ready for Northflank, 2 approvals) | The free Development environment on Northflank (HIMS-OPS-024); 4 optional items | Hosting: free Development without a card first (ADR-034); paid hosting before real data | Hospital configured, staff onboarded, isolation enforced |
-| **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end |
+| **2** Patients and outpatient care | Registration, MPI and duplicates, search, appointments and OPD, encounters, notes, diagnoses, allergies, vitals, reports | ⬜ design approved for now (2026-11-08) | P0 design (PR #28) and its sign-off | Slices 2A–2D (20 tickets) | Nothing; starts after the Phase 1 queue | Patients and outpatient visits end to end · **2026-11-12: 🟡 started**, HIMS-PAT-001 done (registration with MRN) |
 | **3** Inpatient and nursing | Admission/discharge, bed allocation, transfers, nursing assessments, care tasks, vital charts, handovers, diet, housekeeping | ⬜ | Bed and ward inventory already built in Phase 1 | P0 design, then build | Phase 2; CLIN | Stays, bed movements and daily care traceable |
 | **4** Medication, pharmacy, diagnostics | Drug catalog, prescriptions, pharmacy stock, eMAR, lab orders and results, imaging, safety checks | ⬜ | — | P0 design, then build | Phase 3; CLIN; VENDOR (drug database, LIS, PACS) | Orders, dispensing, administration and results distinct and auditable |
 | **5** Insurance and revenue cycle | Payers, Stedi, eligibility, authorizations, charges, invoices, payments, claims, denials, Indian TPAs | ⬜ | Numbering for invoices and claims (Phase 1) | P0 design, then build | Phases 2–4; PAYER; LEGAL (tax) | Services, payer obligations and balances reconcile |
@@ -190,7 +192,7 @@ fit, so nothing is forgotten.
 | Step | Phase | Spec § | Tickets | Task | Status | Blocked by |
 |---|---|---|---|---|---|---|
 | 19 | 2 | 26 | HIMS-PAT-000 | Sign off the Phase 2 P0 design (26 decisions) | ✅ approved for now 2026-11-08 | — (may be revisited) |
-| 20 | 2 | 4.5, 13 | HIMS-PAT-001, 002, 005, 006; HIMS-IAM-010; HIMS-DATA-003 | Slice 2A: registration with MRN, search, chart header, restricted records, patient scope | ⬜ **next** (2026-11-12; first HIMS-PAT-001, which also registers the demo hospitals' invented patients) | Step 19 (done) |
+| 20 | 2 | 4.5, 13 | HIMS-PAT-001, 002, 005, 006; HIMS-IAM-010; HIMS-DATA-003 | Slice 2A: registration with MRN, search, chart header, restricted records, patient scope | ⬜ **next** (2026-11-12; first HIMS-PAT-001, which also registers the demo hospitals' invented patients) | Step 19 (done) → 🟡 **2026-11-12: HIMS-PAT-001 ✅ done** (registration with MRN, contacts, people, ID numbers, consents; demo patients registered); **next HIMS-PAT-002** (search), then PAT-005, PAT-006, HIMS-IAM-010, HIMS-DATA-003 |
 | 21 | 2 | 4.6, 4.23 | HIMS-OPD-001…004 | Slice 2B: schedules (uses step 1 rotas), appointments without double booking, walk-ins, queue, reminders | ⬜ | Step 20 |
 | 22 | 2 | 4.7, 4.8 | HIMS-CLIN-001…007; HIMS-IAM-011, 020 | Slice 2C: visits, vitals, allergies, diagnoses (ICD), notes with sign/amend, emergency access, confirm-it's-you for clinical actions | ⬜ | Step 21; CLIN (terminology) |
 | 23 | 2 | 4.5, 4.24 | HIMS-PAT-003, 004; HIMS-RPT-001, 002 | Slice 2D: duplicates and merge, visit summary, OPD lists; Phase 2 exit check | ⬜ | Step 22 |
@@ -226,7 +228,7 @@ ADR-009 to ADR-027 (accepted for now on 2026-11-08), and work through the 45-ite
 | 4.2 | Departments | 1 | 🟡 85% | 🔒 pricing, slots, escalation (CLIN) |
 | 4.3 | Staff and credentials | 1 | ✅ 100% | ✅ shifts, leave, on-call, clinical privileges, leave balances, minimum staffing · optional: shift swaps · enforcing privileges with clinical actions (Phase 2) |
 | 4.4 | Identity and access | 1 | 🟡 99% (department-level staff view done; supplier support access done 2026-11-12, HIMS-IAM-021) | 🔒 SSO (PO), break-glass (Phase 2) |
-| 4.5 | Patient registration and MPI | 2 | ⬜ designed | 🔒 sign-off |
+| 4.5 | Patient registration and MPI | 2 | ⬜ designed | 🔒 sign-off · **2026-11-12: 🟡 registration with MRN done (HIMS-PAT-001)**; next search (PAT-002) |
 | 4.6 | Appointments and OPD | 2 | ⬜ designed | 🔒 sign-off |
 | 4.7 | Encounters and admissions | 2, 3 | ⬜ outpatient part designed | 🔒 sign-off; Phase 3 P0 |
 | 4.8 | EHR/EMR | 2 | ⬜ | 🔒 CLIN |
@@ -263,3 +265,5 @@ tracker's [PR history](spec-status.md#pr-history-traceability-spec-253) and
 New tickets named here for the first time (HIMS-SEC-019, HIMS-FAC-008, HIMS-FAC-009,
 HIMS-ORG-006, HIMS-DOC-001, HIMS-OPS-017, and HIMS-SEC-020, HIMS-OPS-018, HIMS-OPS-019, HIMS-OPS-020 and HIMS-STAFF-016 added
 on 2026-11-08) are also in the Phase 1 backlog.
+
+**2026-11-12, Phase 2:** HIMS-PAT-001 done: patient registration with MRN, contacts, people, ID numbers (encrypted, masked) and consents, with screens, the admin console section, the Receptionist and Medical records roles and the demo hospitals' invented patients. Phase 1 stays at 103 of 129. Next: HIMS-PAT-002.

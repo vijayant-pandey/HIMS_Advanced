@@ -53,6 +53,10 @@ class P:
     ADMIN_CONSOLE = "platform.admin_console"
     SUPPORT_ACCESS_REQUEST = "support.access.request"
     SUPPORT_ACCESS_MANAGE = "support.access.manage"
+    # Patients (HIMS-PAT-001; P0 part 04). Clinical permissions come with clinical tickets.
+    PATIENTS_SEARCH = "patients.search"
+    PATIENTS_VIEW = "patients.view"
+    PATIENTS_REGISTER = "patients.register"
 
 
 PERMISSIONS: dict[str, str] = {
@@ -121,11 +125,34 @@ PERMISSIONS: dict[str, str] = {
     P.SUPPORT_ACCESS_MANAGE: (
         "See the software supplier's support access, approve or refuse its requests, end it early"
     ),
+    P.PATIENTS_SEARCH: (
+        "Look up patients: the short list (name, MRN, age and sex, the phone's last digits)"
+    ),
+    P.PATIENTS_VIEW: (
+        "Open a patient's record: details, contacts, guardians and next of kin, ID numbers "
+        "(masked) and consents. Every opening is in the audit log"
+    ),
+    P.PATIENTS_REGISTER: (
+        "Register patients (MRN issued) and correct their details, contacts, guardians, ID "
+        "numbers and consents"
+    ),
 }
 
 # Never part of the hospital administrator role: only the software supplier's support account
-# asks for support access (HIMS-IAM-021), and auditors stay separate (ADR-013).
-NOT_FOR_ADMINISTRATORS: frozenset[str] = frozenset({P.AUDIT_VIEW, P.SUPPORT_ACCESS_REQUEST})
+# asks for support access (HIMS-IAM-021), and auditors stay separate (ADR-013). Administrators
+# run the hospital; the front desk and medical records register patients (P0 part 04, approved
+# for now 2026-11-08: administrators may look patients up and open them, not register them).
+NOT_FOR_ADMINISTRATORS: frozenset[str] = frozenset(
+    {P.AUDIT_VIEW, P.SUPPORT_ACCESS_REQUEST, P.PATIENTS_REGISTER}
+)
+
+# Patient data. The software supplier's support account never holds these, whatever role
+# the hospital lends it (spec 7.2: support "should not silently gain access to patient
+# records"; HIMS-PAT-001). Clinical permissions are added here with their tickets.
+PATIENT_DATA_PERMISSIONS: frozenset[str] = frozenset(
+    {P.PATIENTS_SEARCH, P.PATIENTS_VIEW, P.PATIENTS_REGISTER}
+)
+SUPPLIER_SUPPORT_ROLE = "supplier-support"
 
 # Holding any of these makes two-factor sign-in mandatory (spec 13.1: "MFA for privileged
 # users"; HIMS-IAM-005). Add clinical permissions here when clinical governance decides which
@@ -237,6 +264,8 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.ROTA_VIEW,
             P.ROTA_MANAGE,
             P.LEAVE_APPROVE,
+            P.PATIENTS_SEARCH,
+            P.PATIENTS_VIEW,
         ],
     },
     "basic-staff": {
@@ -260,6 +289,34 @@ SYSTEM_ROLES: dict[str, dict] = {
         "approves, or opens it at once in an emergency. Every request it makes while the access "
         "lasts is recorded in the audit log.",
         "permissions": [P.SUPPORT_ACCESS_REQUEST],
+    },
+    # Patient administration (HIMS-PAT-001; P0 part 04). Appointments, merging and clinical
+    # permissions are added with their tickets (HIMS-OPD-*, HIMS-PAT-004, HIMS-CLIN-*).
+    "receptionist": {
+        "name": "Receptionist / front desk",
+        "description": "Registers patients (the MRN is issued at once), corrects their details, "
+        "contacts, guardians, ID numbers and consents, and looks patients up. Assign at facility "
+        "scope: patients are registered at that branch and found in every branch.",
+        "permissions": [
+            P.FACILITIES_VIEW,
+            P.DEPARTMENTS_VIEW,
+            P.PATIENTS_SEARCH,
+            P.PATIENTS_VIEW,
+            P.PATIENTS_REGISTER,
+        ],
+    },
+    "medical-records-officer": {
+        "name": "Medical records officer",
+        "description": "Keeps patient records right: registers and corrects patients in any "
+        "branch. Merging duplicates and reviewing emergency access are added in later Phase 2 "
+        "tickets. Assign hospital-wide or at facility scope.",
+        "permissions": [
+            P.FACILITIES_VIEW,
+            P.DEPARTMENTS_VIEW,
+            P.PATIENTS_SEARCH,
+            P.PATIENTS_VIEW,
+            P.PATIENTS_REGISTER,
+        ],
     },
     "equipment-officer": {
         "name": "Equipment / biomedical officer",

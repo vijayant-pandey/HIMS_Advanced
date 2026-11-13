@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from common.exceptions import ScopeViolation
 
+from .catalog import PATIENT_DATA_PERMISSIONS, SUPPLIER_SUPPORT_ROLE
 from .models import RoleAssignment
 
 _CACHE_ATTR = "_hims_permission_index"
@@ -57,10 +58,19 @@ def _permission_index(user) -> dict[str, list[tuple[UUID | None, UUID | None]]]:
     if cached is not None:
         return cached
     index: dict[str, list] = defaultdict(list)
-    rows = _active_assignments(user).values_list(
-        "role__role_permissions__permission__codename", "facility_id", "department_id"
+    rows = list(
+        _active_assignments(user).values_list(
+            "role__role_permissions__permission__codename",
+            "facility_id",
+            "department_id",
+            "role__code",
+        )
     )
-    for codename, facility_id, department_id in rows:
+    # The supplier's support account sees no patient data, even with a lent administrator role.
+    supplier = any(role == SUPPLIER_SUPPORT_ROLE for *_, role in rows)
+    for codename, facility_id, department_id, _role in rows:
+        if supplier and codename in PATIENT_DATA_PERMISSIONS:
+            continue
         index[codename].append((facility_id, department_id))
     setattr(user, _CACHE_ATTR, index)
     return index
