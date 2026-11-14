@@ -3,11 +3,13 @@
 // MRN and the number masked; the same number on a second patient is refused; the administrator can
 // look but not register; then she finds the patient again by another spelling, phone and ID number
 // (HIMS-PAT-002); the chart keeps its header on every tab and shows medical records who opened it
-// (HIMS-PAT-005). Every person and number is invented.
+// (HIMS-PAT-005); as medical records (two-factor required) she restricts the record, which the
+// administrator then cannot find by name or open, and lifts it again (HIMS-PAT-006). Every person
+// and number is invented.
 import { type Browser, type Page, expect, test } from "@playwright/test";
 
 import { NEW_STAFF_PASSWORD } from "../config.mjs";
-import { expectAccessible, openMenu, recall, signIn, storageFor } from "../helpers";
+import { expectAccessible, freshCode, openMenu, recall, remember, signIn, storageFor } from "../helpers";
 
 const NURSE_EMAIL = "asha.nurse@synthetic.test";
 const AADHAAR = "2999 9000 0337"; // invented; its check digit is right
@@ -22,6 +24,14 @@ async function asAdmin(browser: Browser): Promise<Page> {
 async function asDesk(browser: Browser): Promise<Page> {
   const page = await (await browser.newContext()).newPage();
   await signIn(page, NURSE_EMAIL, NEW_STAFF_PASSWORD);
+  await expect(page.getByRole("navigation")).toBeVisible();
+  return page;
+}
+
+/** After she becomes medical records (HIMS-PAT-006: restricted records need two-factor). */
+async function asRecords(browser: Browser): Promise<Page> {
+  const page = await (await browser.newContext()).newPage();
+  await signIn(page, NURSE_EMAIL, NEW_STAFF_PASSWORD, recall("nurse-secret"));
   await expect(page.getByRole("navigation")).toBeVisible();
   return page;
 }
@@ -146,7 +156,19 @@ test("the chart: header on every tab, and medical records see who opened it", as
   await dialog.getByRole("button", { name: "Give access" }).click();
   await expect(dialog).toBeHidden();
 
-  const records = await asDesk(browser); // signs in again, now with the new role
+  // Signs in again, now with the new role. It holds restricted records and the review of emergency
+  // access, so two-factor is required (P0 part 04, HIMS-PAT-006): she sets it up as anyone would.
+  const records = await (await browser.newContext()).newPage();
+  await signIn(records, NURSE_EMAIL, NEW_STAFF_PASSWORD);
+  await expect(records.getByText(/two-factor sign-in is required before you can continue/i)).toBeVisible();
+  await records.getByRole("button", { name: "Set up two-factor sign-in" }).click();
+  const secret = (await records.getByTestId("manual-key").innerText()).replace(/\s/g, "");
+  remember("nurse-secret", secret);
+  await records.getByLabel("6-digit code").fill(await freshCode(secret));
+  await records.getByRole("button", { name: "Turn on" }).click();
+  await records.getByRole("button", { name: "I've saved them" }).click();
+  await expect(records.getByRole("navigation")).toBeVisible();
+  remember("leela-chart", chart);
   await records.goto(chart);
   await records.getByRole("tab", { name: "History" }).click();
   const history = records.getByRole("table", { name: "Record history" });
@@ -155,4 +177,56 @@ test("the chart: header on every tab, and medical records see who opened it", as
   await expect(history.getByText("Asha Nurse").first()).toBeVisible();
   await expect(records.getByRole("region", { name: "Patient header" })).toBeVisible();
   await expectAccessible(records, "Patient chart history");
+});
+
+// HIMS-PAT-006: medical records restrict her record (VIP or staff). The administrator, who may
+// open patients but not restricted ones, no longer finds her by name; her exact MRN shows only
+// "Restricted record", and opening it says to ask medical records (administrators have no
+// emergency access). Medical records see the opening listed and lift the restriction.
+test("restricted record: hidden from search and opened only by medical records", async ({ browser }) => {
+  const records = await asRecords(browser);
+  await records.goto(recall("leela-chart"));
+  const header = records.getByRole("region", { name: "Patient header" });
+  await header.getByRole("button", { name: "Restrict record" }).click();
+  const dialog = records.getByRole("dialog");
+  await dialog.getByRole("combobox", { name: "Why" }).click();
+  await records.getByRole("option", { name: "Member of staff (or their family)" }).click();
+  await expect(records.locator(".MuiMenu-root")).toHaveCount(0);
+  await dialog.getByRole("textbox", { name: "Reason" }).fill("She works in this hospital");
+  await expectAccessible(records, "Restrict record dialog");
+  await dialog.getByRole("button", { name: "Restrict record" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(header.getByText("Restricted record")).toBeVisible();
+  const mrn = (await header.getByText(/^MRN-\d{8}$/).innerText()).trim();
+
+  const admin = await asAdmin(browser);
+  await admin.goto("/patients");
+  const table = admin.getByRole("table", { name: "Patients" });
+  await admin.getByRole("textbox", { name: "Search" }).fill("Leela Kumari");
+  await admin.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(admin.getByText(/No patient found/)).toBeVisible();
+  await admin.getByRole("textbox", { name: "Search" }).fill(mrn);
+  await admin.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(table.getByText("Restricted record")).toBeVisible();
+  await expect(table.getByText("Leela Kumari")).toHaveCount(0);
+  await table.getByRole("link", { name: mrn }).click();
+  const gate = admin.getByRole("region", { name: "Restricted record" });
+  await expect(gate.getByText(/ask medical records/)).toBeVisible();
+  await expect(admin.getByText("Leela Kumari")).toHaveCount(0);
+  await expectAccessible(admin, "Restricted record gate");
+
+  await openMenu(records, "Emergency access");
+  await expect(records.getByRole("heading", { name: "Emergency access" })).toBeVisible();
+  await expectAccessible(records, "Emergency access");
+  await records.getByRole("tab", { name: "Restricted record openings" }).click();
+  const openings = records.getByRole("table", { name: "Restricted record openings" });
+  await expect(openings.getByRole("link", { name: mrn }).first()).toBeVisible();
+  await expect(openings.getByText("Medical records").first()).toBeVisible();
+
+  await records.goto(recall("leela-chart"));
+  await header.getByRole("button", { name: "Lift restriction" }).click();
+  await dialog.getByRole("textbox", { name: "Reason" }).fill("Asked to lift it for the demo");
+  await dialog.getByRole("button", { name: "Lift restriction" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(header.getByText("Restricted record")).toHaveCount(0);
 });

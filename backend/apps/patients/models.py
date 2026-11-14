@@ -7,8 +7,12 @@ relationships and ID numbers are ended, consents get a new row, names keep their
 as an alias (spec 28.2).
 
 Clinical tables (visits, allergies, diagnoses, notes) come in later Phase 2 tickets; duplicate
-detection, merging and restricted records too (HIMS-PAT-003, -004, -006). Patient search
-(HIMS-PAT-002) uses ``search_name`` and ``search_sounds`` and their indexes (ADR-037).
+detection and merging too (HIMS-PAT-003, -004). Patient search (HIMS-PAT-002) uses
+``search_name`` and ``search_sounds`` and their indexes (ADR-037).
+
+Restricted records (HIMS-PAT-006; D23): ``is_restricted`` hides a VIP's or a staff member's record
+from search and opening, except for medical records (``patients.restricted``) and for someone
+with emergency access (D14), a 4-hour grant with a reason, reviewed afterwards.
 """
 
 from django.conf import settings
@@ -41,6 +45,11 @@ class Patient(OrganizationOwnedModel, VersionedModel):
         SEPARATED = "separated", "Separated"
         WIDOWED = "widowed", "Widowed"
         OTHER = "other", "Other"
+
+    class Restriction(models.TextChoices):
+        VIP = "vip", "VIP or public figure"
+        STAFF = "staff", "Member of staff (or their family)"
+        OTHER = "other", "Other (e.g. at the patient's request)"
 
     class BloodGroup(models.TextChoices):
         A_POS = "A+", "A+"
@@ -99,6 +108,15 @@ class Patient(OrganizationOwnedModel, VersionedModel):
         blank=True,
         help_text="For an unknown patient: how they arrived, e.g. 'Brought by ambulance, MG Road'",
     )
+    is_restricted = models.BooleanField(
+        default=False,
+        editable=False,
+        help_text="Restricted record (VIP, staff): hidden from search; opened by medical records "
+        "or with emergency access, every opening reviewed",
+    )
+    restriction = models.CharField(
+        max_length=10, choices=Restriction.choices, blank=True, editable=False
+    )
     registered_facility = models.ForeignKey(
         "facilities.Facility", on_delete=models.PROTECT, related_name="+"
     )
@@ -130,6 +148,11 @@ class Patient(OrganizationOwnedModel, VersionedModel):
             models.CheckConstraint(
                 condition=Q(merged_into__isnull=True) | ~Q(merged_into=F("id")),
                 name="patients_not_merged_into_self",
+            ),
+            models.CheckConstraint(
+                condition=Q(is_restricted=False, restriction="")
+                | (Q(is_restricted=True) & ~Q(restriction="")),
+                name="patients_restriction_has_kind",
             ),
         ]
         indexes = [
@@ -396,6 +419,67 @@ class PatientConsent(OrganizationOwnedModel):
 
     def __str__(self) -> str:
         return f"{self.get_kind_display()}: {self.get_status_display()}"
+
+
+class EmergencyAccess(OrganizationOwnedModel, VersionedModel):
+    """Emergency ("break-glass") access to one patient's record (HIMS-PAT-006; D14, P0 part 03).
+
+    Opened by the person who needs it, with a reason; it lasts 4 hours (or until they end it) and
+    medical records are told at once. Afterwards someone else from medical records reviews it:
+    appropriate or not. Never deleted.
+    """
+
+    class Outcome(models.TextChoices):
+        APPROPRIATE = "appropriate", "Appropriate"
+        NOT_APPROPRIATE = "not_appropriate", "Not appropriate (follow up)"
+
+    patient = models.ForeignKey(
+        Patient, on_delete=models.PROTECT, related_name="emergency_accesses"
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
+    reason = models.CharField(max_length=500)
+    expires_at = models.DateTimeField(help_text="4 hours after it was opened")
+    ended_at = models.DateTimeField(
+        null=True, blank=True, help_text="Ended early by the person who opened it"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    outcome = models.CharField(max_length=20, choices=Outcome.choices, blank=True)
+    review_note = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        db_table = "patient_emergency_access"
+        ordering = ["-created_at"]
+        verbose_name = "emergency access"
+        verbose_name_plural = "emergency access"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(reviewed_by__isnull=True) | ~Q(reviewed_by=F("user")),
+                name="patient_emergency_access_reviewer_not_user",
+            ),
+            models.CheckConstraint(
+                condition=Q(reviewed_at__isnull=True, outcome="")
+                | (Q(reviewed_at__isnull=False) & ~Q(outcome="")),
+                name="patient_emergency_access_review_complete",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["user", "patient", "-expires_at"], name="patient_emergency_user_idx"
+            ),
+            models.Index(
+                fields=["reviewed_at", "-created_at"], name="patient_emergency_review_idx"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Emergency access to {self.patient.mrn}"
+
+    @property
+    def ends_at(self):
+        return self.ended_at or self.expires_at
 
 
 class IdentifierHashKey(UUIDPrimaryKeyModel):

@@ -18,6 +18,8 @@ const ROW: PatientListItem = {
   birth_date_estimated: true,
   phone_last4: "…3210",
   is_unknown: false,
+  is_restricted: false,
+  hidden: false,
   status: "active",
   registered_facility: "f1",
   registered_facility_name: "Facility A",
@@ -50,6 +52,10 @@ const DETAIL: PatientDetail = {
   has_no_phone: false,
   is_unknown: false,
   identification_note: "",
+  is_restricted: false,
+  restriction: "" as PatientDetail["restriction"], // not restricted (blank)
+  restriction_label: "",
+  emergency_access: null,
   registered_facility: "f1",
   registered_facility_name: "Facility A",
   registered_by_name: "Front Desk",
@@ -166,6 +172,13 @@ const grant = (permission: string, facility_id: string | null = null): Grant => 
 const DESK = [grant("patients.search"), grant("patients.view"), grant("patients.register", "f1"), grant("facilities.view")];
 const ADMIN = [grant("patients.search"), grant("patients.view"), grant("facilities.view")];
 const RECORDS = [...DESK, grant("patients.history")];
+const DOCTOR = [grant("patients.search"), grant("patients.view"), grant("clinical.emergency_access")];
+const RESTRICTED_RECORD = {
+  title: "Restricted record",
+  status: 403,
+  code: "RESTRICTED_RECORD",
+  detail: "This is a restricted record.",
+};
 
 function user(grants: Grant[]): CurrentUser {
   return {
@@ -400,5 +413,83 @@ describe("Patients (HIMS-PAT-001)", { timeout: 20_000 }, () => {
     await openTab("Demographics");
     expect(screen.queryByRole("button", { name: "Correct details" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "End" })).not.toBeInTheDocument();
+  });
+});
+
+// HIMS-PAT-006: restricted (VIP, staff) records and emergency access.
+describe("Restricted records (HIMS-PAT-006)", { timeout: 20_000 }, () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("shows an exact-MRN restricted row with nothing about the patient", async () => {
+    const hiddenRow = { ...ROW, name: "", age: "", phone_last4: "", sex: "unknown" as const, is_restricted: true, hidden: true };
+    renderAt("/patients", DESK, (url) =>
+      url.includes("search=") ? json({ count: 1, next: null, previous: null, results: [{ ...hiddenRow, matched_on: "mrn" }] }) : undefined,
+    );
+    await screen.findByRole("link", { name: "MRN-00000001" });
+    fireEvent.change(screen.getByRole("textbox", { name: "Search" }), { target: { value: "MRN-00000001" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    await screen.findByRole("heading", { name: "Search results" });
+    const row = (await screen.findByText("Restricted record")).closest("tr")!;
+    expect(row).toHaveTextContent("MRN-00000001");
+    expect(row).not.toHaveTextContent("Asha");
+  });
+
+  it("offers emergency access with a reason, then shows the record with a banner", async () => {
+    let opened = false;
+    const fetchMock = renderAt("/patients/p1", DOCTOR, (url, init) => {
+      if (init?.method === "POST" && url.endsWith("/patients/p1/emergency-access/")) {
+        opened = true;
+        return json({ id: "a1", reason: "Unconscious in the emergency room", created_at: "2026-11-14T05:00:00Z", expires_at: "2026-11-14T09:00:00Z" }, 201);
+      }
+      if (url.match(/\/patients\/p1\/$/)) {
+        return opened
+          ? json({ ...DETAIL, is_restricted: true, restriction: "vip", emergency_access: { id: "a1", reason: "x", created_at: "2026-11-14T05:00:00Z", expires_at: "2026-11-14T09:00:00Z" } })
+          : json(RESTRICTED_RECORD, 403);
+      }
+      return undefined;
+    });
+    const gate = await screen.findByRole("region", { name: "Restricted record" });
+    const submit = within(gate).getByRole("button", { name: "Open with emergency access" });
+    fireEvent.change(within(gate).getByLabelText(/Reason for emergency access/), { target: { value: "too short" } });
+    expect(submit).toBeDisabled(); // at least 10 characters
+    fireEvent.change(within(gate).getByLabelText(/Reason for emergency access/), {
+      target: { value: "Unconscious in the emergency room" },
+    });
+    fireEvent.click(submit);
+    expect(await screen.findByText(/with emergency access until/)).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Patient header" })).toHaveTextContent("Restricted record");
+    expect(sentTo(fetchMock, "/emergency-access/")).toEqual({ reason: "Unconscious in the emergency room" });
+    expect(screen.getByRole("button", { name: "End emergency access" })).toBeInTheDocument();
+  });
+
+  it("tells the front desk to ask medical records (no emergency access for them)", async () => {
+    renderAt("/patients/p1", DESK, (url) => (url.match(/\/patients\/p1\/$/) ? json(RESTRICTED_RECORD, 403) : undefined));
+    const gate = await screen.findByRole("region", { name: "Restricted record" });
+    expect(gate).toHaveTextContent(/ask medical records/);
+    expect(within(gate).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("lets medical records restrict a record with a reason", async () => {
+    const fetchMock = renderAt("/patients/p1", [...RECORDS, grant("patients.restricted")]);
+    await screen.findByRole("heading", { name: "Asha Verma" });
+    fireEvent.click(screen.getByRole("button", { name: "Restrict record" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Restrict record" })).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText(/^Reason/), { target: { value: "A nurse of this hospital" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Restrict record" }));
+    await waitFor(() =>
+      expect(sentTo(fetchMock, "/restriction/")).toEqual({
+        restricted: true,
+        restriction: "staff",
+        reason: "A nurse of this hospital",
+        version: 1,
+      }),
+    );
+  });
+
+  it("does not offer restricting without the permission", async () => {
+    renderAt("/patients/p1", RECORDS);
+    await screen.findByRole("heading", { name: "Asha Verma" });
+    expect(screen.queryByRole("button", { name: "Restrict record" })).not.toBeInTheDocument();
   });
 });

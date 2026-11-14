@@ -58,6 +58,9 @@ class P:
     PATIENTS_VIEW = "patients.view"
     PATIENTS_REGISTER = "patients.register"
     PATIENTS_HISTORY = "patients.history"
+    PATIENTS_RESTRICTED = "patients.restricted"
+    PATIENTS_RECORDS_CORRECT = "patients.records_correct"
+    EMERGENCY_ACCESS = "clinical.emergency_access"
 
 
 PERMISSIONS: dict[str, str] = {
@@ -141,6 +144,18 @@ PERMISSIONS: dict[str, str] = {
         "See a patient record's history: who opened it and who changed what, and when (the "
         "values stay in the audit log)"
     ),
+    P.PATIENTS_RESTRICTED: (
+        "Find and open restricted (VIP and staff) patient records, and restrict a record or lift "
+        "the restriction. Every opening is in the audit log"
+    ),
+    P.PATIENTS_RECORDS_CORRECT: (
+        "Review emergency access to patient records (who opened which record, why) and see who "
+        "opened restricted records"
+    ),
+    P.EMERGENCY_ACCESS: (
+        "Emergency access: open a restricted patient record for 4 hours, with a reason. Medical "
+        "records are told at once and review it"
+    ),
 }
 
 # Never part of the hospital administrator role: only the software supplier's support account
@@ -148,15 +163,33 @@ PERMISSIONS: dict[str, str] = {
 # run the hospital; the front desk and medical records register patients (P0 part 04, approved
 # for now 2026-11-08: administrators may look patients up and open them, not register them).
 # Who opened a patient's record is for medical records and auditors only (HIMS-PAT-005).
+# Restricted records, reviewing emergency access and emergency access itself belong to medical
+# records and to clinicians (HIMS-PAT-006; P0 part 04 matrix: administrators have none of them).
 NOT_FOR_ADMINISTRATORS: frozenset[str] = frozenset(
-    {P.AUDIT_VIEW, P.SUPPORT_ACCESS_REQUEST, P.PATIENTS_REGISTER, P.PATIENTS_HISTORY}
+    {
+        P.AUDIT_VIEW,
+        P.SUPPORT_ACCESS_REQUEST,
+        P.PATIENTS_REGISTER,
+        P.PATIENTS_HISTORY,
+        P.PATIENTS_RESTRICTED,
+        P.PATIENTS_RECORDS_CORRECT,
+        P.EMERGENCY_ACCESS,
+    }
 )
 
 # Patient data. The software supplier's support account never holds these, whatever role
 # the hospital lends it (spec 7.2: support "should not silently gain access to patient
 # records"; HIMS-PAT-001). Clinical permissions are added here with their tickets.
 PATIENT_DATA_PERMISSIONS: frozenset[str] = frozenset(
-    {P.PATIENTS_SEARCH, P.PATIENTS_VIEW, P.PATIENTS_REGISTER, P.PATIENTS_HISTORY}
+    {
+        P.PATIENTS_SEARCH,
+        P.PATIENTS_VIEW,
+        P.PATIENTS_REGISTER,
+        P.PATIENTS_HISTORY,
+        P.PATIENTS_RESTRICTED,
+        P.PATIENTS_RECORDS_CORRECT,
+        P.EMERGENCY_ACCESS,
+    }
 )
 SUPPLIER_SUPPORT_ROLE = "supplier-support"
 
@@ -189,6 +222,10 @@ MFA_REQUIRED_PERMISSIONS: frozenset[str] = frozenset(
         P.JOBS_MANAGE,
         P.SUPPORT_ACCESS_REQUEST,
         P.SUPPORT_ACCESS_MANAGE,
+        # P0 part 04 (★): restricted records, reviewing and using emergency access (HIMS-PAT-006).
+        P.PATIENTS_RESTRICTED,
+        P.PATIENTS_RECORDS_CORRECT,
+        P.EMERGENCY_ACCESS,
     }
 )
 
@@ -260,7 +297,9 @@ SYSTEM_ROLES: dict[str, dict] = {
     "department-head": {
         "name": "Head of department (HOD)",
         "description": "Sees their department and its staff, plans its rota and decides its leave. "
-        "Clinical approvals are added with clinical domains. Assign at department scope.",
+        "In an emergency, may open a restricted patient record (emergency access, reviewed by "
+        "medical records). Clinical approvals are added with clinical domains. Assign at "
+        "department scope.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
@@ -272,6 +311,8 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.LEAVE_APPROVE,
             P.PATIENTS_SEARCH,
             P.PATIENTS_VIEW,
+            # Doctors and nurses (D14). The Doctor and OPD nurse roles get it with HIMS-CLIN-*.
+            P.EMERGENCY_ACCESS,
         ],
     },
     "basic-staff": {
@@ -314,9 +355,9 @@ SYSTEM_ROLES: dict[str, dict] = {
     "medical-records-officer": {
         "name": "Medical records officer",
         "description": "Keeps patient records right: registers and corrects patients in any "
-        "branch and sees each record's history (who opened it, who changed what). Merging "
-        "duplicates and reviewing emergency access are added in later Phase 2 tickets. Assign "
-        "hospital-wide or at facility scope.",
+        "branch, sees each record's history (who opened it, who changed what), keeps restricted "
+        "(VIP and staff) records and reviews emergency access. Merging duplicates is added in a "
+        "later Phase 2 ticket. Assign hospital-wide or at facility scope.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
@@ -324,6 +365,8 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.PATIENTS_VIEW,
             P.PATIENTS_REGISTER,
             P.PATIENTS_HISTORY,
+            P.PATIENTS_RESTRICTED,
+            P.PATIENTS_RECORDS_CORRECT,
         ],
     },
     "equipment-officer": {

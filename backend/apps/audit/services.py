@@ -171,6 +171,12 @@ class AuditAction:
     PATIENT_IDENTIFIER_ADDED = "patient.identifier.added"
     PATIENT_IDENTIFIER_ENDED = "patient.identifier.ended"
     PATIENT_CONSENT_RECORDED = "patient.consent.recorded"
+    PATIENT_RESTRICTED = "patient.restricted"
+    PATIENT_RESTRICTION_LIFTED = "patient.restriction.lifted"
+    EMERGENCY_ACCESS_OPENED = "patient.emergency_access.opened"
+    EMERGENCY_ACCESS_ENDED = "patient.emergency_access.ended"
+    EMERGENCY_ACCESS_REVIEWED = "patient.emergency_access.reviewed"
+    RESTRICTED_OPENINGS_VIEWED = "patient.restricted_openings.viewed"
 
 
 def _jsonable(value):

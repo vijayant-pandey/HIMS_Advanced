@@ -240,6 +240,17 @@ export type PatientConsentStatusEnum = Schemas["PatientConsentStatusEnum"];
 export type PatientChartAlert = Schemas["ChartAlert"];
 export type PatientHistoryEvent = Schemas["PatientHistoryEvent"];
 export type PaginatedPatientHistory = Schemas["PaginatedPatientHistoryEventList"];
+// Restricted records and emergency access (HIMS-PAT-006).
+export type PatientRestrictionEnum = Schemas["PatientRestrictionEnum"];
+export type PatientRestrictionRequest = Schemas["RestrictionRequest"];
+export type OwnEmergencyAccess = Schemas["OwnEmergencyAccess"];
+export type EmergencyAccess = Schemas["EmergencyAccess"];
+export type PaginatedEmergencyAccess = Schemas["PaginatedEmergencyAccessList"];
+export type EmergencyAccessStateEnum = Schemas["EmergencyAccessStateEnum"];
+export type EmergencyAccessOutcomeEnum = Schemas["EmergencyAccessOutcomeEnum"];
+export type EmergencyAccessReviewRequest = Schemas["EmergencyAccessReviewRequest"];
+export type RestrictedOpening = Schemas["RestrictedOpening"];
+export type PaginatedRestrictedOpenings = Schemas["PaginatedRestrictedOpeningList"];
 export type ConsentMethodEnum = Schemas["ConsentMethodEnum"];
 export type MaritalStatusEnum = Schemas["MaritalStatusEnum"];
 export type BloodGroupEnum = Schemas["BloodGroupEnum"];

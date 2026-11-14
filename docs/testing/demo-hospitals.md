@@ -93,6 +93,7 @@ quickly. Real hospitals always require it.
 | Patients (2026-11-12, HIMS-PAT-001) | 40 invented patients per branch with MRNs, address, a parent for every child, next of kin for some, an invented previous clinic MRN for some, privacy notice and SMS consent; one unknown (unconscious) patient per branch. All registered by that branch's front desk, so the audit log shows who |
 | Patient search (2026-11-13, HIMS-PAT-002) | One woman per branch with an earlier family name (still found by it); example searches printed by the rebuild |
 | Patient chart (2026-11-14, HIMS-PAT-005) | Per branch: the first child came without a guardian (a teacher brought her; the reason is recorded) and one adult has not had the privacy notice yet, so their charts show alerts; their MRNs are printed as "chart alert" examples; the records officer (`records@...`) sees every chart's History |
+| Restricted records (2026-11-14, HIMS-PAT-006) | Per branch one adult's record restricted by medical records (the first branch: a VIP; the others: a member of staff); two emergency accesses to the VIP by the first branch's head of department, one reviewed by medical records and one waiting for review; the VIP's MRN printed as "restricted record" |
 | Audit log | Everything above, recorded as it was made |
 
 ## Patients and later phases
@@ -141,3 +142,14 @@ given". The rebuild prints both MRNs under "Try these on Patients -> Search" as 
 Sign in as `records@<hospital>.demo.test` (medical records officer) to see the **History** tab.
 Build the demo hospitals again with `--reset` after this merge. How to use the chart:
 [patient chart](../workflows/patient-chart.md).
+
+**Update 2026-11-14 (HIMS-PAT-006, restricted records):** in each branch one adult's record is
+restricted (the first branch: a VIP, "a well-known local politician who asked for privacy"; the
+others: "a nurse of this hospital"). The first branch's head of department (`hod.<branch>@`) used
+emergency access twice on the VIP: one is already reviewed by `records@` (appropriate), one waits
+under **Emergency access → To review**. The rebuild prints the VIP's MRN as **restricted record**.
+The front desk does not find the VIP by name; the MRN shows only "Restricted record". A hospital
+filled before this change (such as the hosted Development hospital) gets the same records with
+`python manage.py add_demo_restricted_records` (on Render + Neon: `--hosted-development`;
+[Render + Neon section 8](../workflows/render-neon-hosting.md)). How it works:
+[restricted records](../workflows/restricted-records.md).

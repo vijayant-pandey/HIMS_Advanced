@@ -4247,6 +4247,104 @@ paths:
               schema:
                 $ref: '#/components/schemas/Organization'
           description: ''
+  /api/v1/patient-emergency-access/:
+    get:
+      operationId: patient_emergency_access_list
+      description: Emergency access, newest first.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: patient_id
+        schema:
+          type: string
+        description: This patient only
+      - in: query
+        name: state
+        schema:
+          type: string
+          enum:
+          - active
+          - reviewed
+          - to_review
+      tags:
+      - patient-emergency-access
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEmergencyAccessList'
+          description: ''
+  /api/v1/patient-emergency-access/{id}/:
+    get:
+      operationId: patient_emergency_access_retrieve
+      description: |-
+        Emergency access to patient records, for medical records to review (HIMS-PAT-006; D14).
+
+        ``state``: ``active`` (open now), ``to_review`` (ended, waiting) or ``reviewed``. Reviewing
+        needs someone other than the person who used it.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this emergency access.
+        required: true
+      tags:
+      - patient-emergency-access
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyAccess'
+          description: ''
+  /api/v1/patient-emergency-access/{id}/review/:
+    post:
+      operationId: patient_emergency_access_review_create
+      description: 'Review an ended emergency access: appropriate, or not appropriate
+        with a note.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this emergency access.
+        required: true
+      tags:
+      - patient-emergency-access
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyAccessReviewRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyAccess'
+          description: ''
   /api/v1/patients/:
     get:
       operationId: patients_list
@@ -4329,7 +4427,8 @@ paths:
       operationId: patients_retrieve
       description: |-
         One patient's record: details, contacts, people, ID numbers (masked) and consents.
-        Every opening is audited.
+        Every opening is audited. A restricted record needs ``patients.restricted`` or
+        emergency access (otherwise 403 ``RESTRICTED_RECORD``).
       parameters:
       - in: path
         name: id
@@ -4469,6 +4568,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Contact'
+          description: ''
+  /api/v1/patients/{id}/emergency-access/:
+    post:
+      operationId: patients_emergency_access_create
+      description: |-
+        Emergency access to a restricted record (D14): 4 hours, with a reason; medical
+        records are told at once and review it afterwards.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyAccessOpenRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnEmergencyAccess'
+          description: ''
+  /api/v1/patients/{id}/emergency-access/end/:
+    post:
+      operationId: patients_emergency_access_end_create
+      description: End your emergency access to this record early (done with it).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnEmergencyAccess'
           description: ''
   /api/v1/patients/{id}/history/:
     get:
@@ -4637,6 +4790,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/Relationship'
           description: ''
+  /api/v1/patients/{id}/restriction/:
+    post:
+      operationId: patients_restriction_create
+      description: |-
+        Restrict the record (VIP, member of staff, other) or lift the restriction, with a
+        reason (HIMS-PAT-006). Medical records only (``patients.restricted``).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      tags:
+      - patients
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestrictionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientDetail'
+          description: ''
   /api/v1/patients/registration-options/:
     get:
       operationId: patients_registration_options_retrieve
@@ -4652,6 +4836,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegistrationOptions'
+          description: ''
+  /api/v1/patients/restricted-openings/:
+    get:
+      operationId: patients_restricted_openings_list
+      description: |-
+        Who opened restricted records, newest first (D23: reviewed by medical records).
+        Viewing the list is audited.
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: The last so many days (1 to 90; 7)
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - patients
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRestrictedOpeningList'
           description: ''
   /api/v1/performance-checks/:
     get:
@@ -9578,6 +9797,145 @@ components:
       required:
       - facilities
       - hospital
+    EmergencyAccess:
+      type: object
+      description: Emergency access for medical records to review (HIMS-PAT-006).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient:
+          type: string
+          format: uuid
+          readOnly: true
+        patient_mrn:
+          type: string
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        user_email:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 4 hours after it was opened
+        ended_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Ended early by the person who opened it
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+        state:
+          allOf:
+          - $ref: '#/components/schemas/EmergencyAccessStateEnum'
+          readOnly: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        reviewed_by_name:
+          type: string
+          nullable: true
+          readOnly: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/EmergencyAccessOutcomeEnum'
+          readOnly: true
+        outcome_label:
+          type: string
+          readOnly: true
+        review_note:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - ended_at
+      - ends_at
+      - expires_at
+      - id
+      - outcome
+      - outcome_label
+      - patient
+      - patient_mrn
+      - patient_name
+      - reason
+      - review_note
+      - reviewed_at
+      - reviewed_by_name
+      - state
+      - user
+      - user_email
+      - user_name
+      - version
+    EmergencyAccessOpenRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          description: Why (at least 10 characters)
+          maxLength: 500
+      required:
+      - reason
+    EmergencyAccessOutcomeEnum:
+      enum:
+      - appropriate
+      - not_appropriate
+      type: string
+      description: |-
+        * `appropriate` - Appropriate
+        * `not_appropriate` - Not appropriate (follow up)
+    EmergencyAccessReviewRequest:
+      type: object
+      properties:
+        outcome:
+          $ref: '#/components/schemas/EmergencyAccessOutcomeEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 500
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - outcome
+      - version
+    EmergencyAccessStateEnum:
+      enum:
+      - active
+      - to_review
+      - reviewed
+      type: string
+      description: |-
+        * `active` - Open now
+        * `to_review` - Ended, to review
+        * `reviewed` - Reviewed
     EmploymentStatusEnum:
       enum:
       - active
@@ -12423,6 +12781,31 @@ components:
         * `success` - Success
         * `denied` - Denied
         * `failure` - Failure
+    OwnEmergencyAccess:
+      type: object
+      description: The reader's own emergency access to this record (HIMS-PAT-006).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 4 hours after it was opened
+      required:
+      - created_at
+      - expires_at
+      - id
+      - reason
     PaginatedAccountList:
       type: object
       required:
@@ -12543,6 +12926,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Department'
+    PaginatedEmergencyAccessList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmergencyAccess'
     PaginatedEquipmentList:
       type: object
       required:
@@ -12704,6 +13110,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PatientList'
+    PaginatedRestrictedOpeningList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RestrictedOpening'
     PaginatedRoleAssignmentList:
       type: object
       required:
@@ -13770,6 +14199,24 @@ components:
           readOnly: true
           description: 'For an unknown patient: how they arrived, e.g. ''Brought by
             ambulance, MG Road'''
+        is_restricted:
+          type: boolean
+          readOnly: true
+          description: 'Restricted record (VIP, staff): hidden from search; opened
+            by medical records or with emergency access, every opening reviewed'
+        restriction:
+          allOf:
+          - $ref: '#/components/schemas/PatientRestrictionEnum'
+          readOnly: true
+        restriction_label:
+          type: string
+          readOnly: true
+        emergency_access:
+          allOf:
+          - $ref: '#/components/schemas/OwnEmergencyAccess'
+          nullable: true
+          readOnly: true
+          description: 'Opened with your emergency access: until when (HIMS-PAT-006)'
         registered_facility:
           type: string
           format: uuid
@@ -13845,6 +14292,7 @@ components:
       - contacts
       - created_at
       - date_of_birth
+      - emergency_access
       - family_name
       - gender_identity
       - given_name
@@ -13852,6 +14300,7 @@ components:
       - id
       - identification_note
       - identifiers
+      - is_restricted
       - is_unknown
       - marital_status
       - merged_into
@@ -13868,6 +14317,8 @@ components:
       - registered_facility
       - registered_facility_name
       - relationships
+      - restriction
+      - restriction_label
       - sex
       - status
       - title
@@ -13971,6 +14422,17 @@ components:
           type: boolean
           readOnly: true
           description: Registered as unknown or unconscious; details completed later
+        is_restricted:
+          type: boolean
+          readOnly: true
+          description: 'Restricted record (VIP, staff): hidden from search; opened
+            by medical records or with emergency access, every opening reviewed'
+        hidden:
+          type: boolean
+          readOnly: true
+          description: 'A restricted record you may not open (HIMS-PAT-006): found
+            by its exact MRN only, with nothing about the patient; open it with emergency
+            access'
         status:
           allOf:
           - $ref: '#/components/schemas/PatientStatusEnum'
@@ -13996,7 +14458,9 @@ components:
       - age
       - birth_date_estimated
       - created_at
+      - hidden
       - id
+      - is_restricted
       - is_unknown
       - matched_on
       - mrn
@@ -14192,6 +14656,16 @@ components:
         * `caregiver` - Caregiver
         * `emergency_contact` - Emergency contact
         * `other` - Other
+    PatientRestrictionEnum:
+      enum:
+      - vip
+      - staff
+      - other
+      type: string
+      description: |-
+        * `vip` - VIP or public figure
+        * `staff` - Member of staff (or their family)
+        * `other` - Other (e.g. at the patient's request)
     PatientSexEnum:
       enum:
       - male
@@ -14475,6 +14949,7 @@ components:
       - audit.view
       - beds.status.manage
       - catalogs.manage
+      - clinical.emergency_access
       - compliance.manage
       - compliance.view
       - departments.manage
@@ -14497,7 +14972,9 @@ components:
       - organization.manage
       - organization.view
       - patients.history
+      - patients.records_correct
       - patients.register
+      - patients.restricted
       - patients.search
       - patients.view
       - platform.admin_console
@@ -14527,6 +15004,7 @@ components:
         * `audit.view` - audit.view
         * `beds.status.manage` - beds.status.manage
         * `catalogs.manage` - catalogs.manage
+        * `clinical.emergency_access` - clinical.emergency_access
         * `compliance.manage` - compliance.manage
         * `compliance.view` - compliance.view
         * `departments.manage` - departments.manage
@@ -14549,7 +15027,9 @@ components:
         * `organization.manage` - organization.manage
         * `organization.view` - organization.view
         * `patients.history` - patients.history
+        * `patients.records_correct` - patients.records_correct
         * `patients.register` - patients.register
+        * `patients.restricted` - patients.restricted
         * `patients.search` - patients.search
         * `patients.view` - patients.view
         * `platform.admin_console` - platform.admin_console
@@ -15085,6 +15565,62 @@ components:
       description: |-
         * `on_demand` - Started by a person
         * `command` - Started from the server command line
+    RestrictedOpening:
+      type: object
+      description: 'One opening of a restricted record: who, when, where and how (HIMS-PAT-006).'
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurred_at:
+          type: string
+          format: date-time
+        patient:
+          type: string
+          format: uuid
+        patient_mrn:
+          type: string
+          readOnly: true
+        actor_name:
+          type: string
+          nullable: true
+        facility_name:
+          type: string
+          nullable: true
+        via:
+          type: string
+          readOnly: true
+          description: restricted_permission (medical records) or emergency_access
+      required:
+      - actor_name
+      - facility_name
+      - id
+      - occurred_at
+      - patient
+      - patient_mrn
+      - via
+    RestrictionRequest:
+      type: object
+      description: Restrict a record or lift the restriction (HIMS-PAT-006).
+      properties:
+        restricted:
+          type: boolean
+        restriction:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/PatientRestrictionEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - reason
+      - restricted
+      - version
     RetentionCategory:
       type: object
       properties:

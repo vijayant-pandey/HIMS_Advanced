@@ -192,3 +192,26 @@ accounts are the same names as on the PC (`frontdesk.dwk@in-sunrise.demo.test`, 
 the branch administrator, HR and similar managing accounts must set up two-factor at their first
 sign-in (as on any real hospital); the front desk, medical records and nurse accounts do not. A quicker, smaller version: add `--small` (one branch,
 six patients, a few minutes).
+
+**Update 2026-11-14 (HIMS-PAT-006, restricted records):** a hospital filled before this change gets
+the restricted record examples (one per branch, two emergency accesses, one to review) with one more
+command, after the merge has deployed and `migrate` has run on Neon. From the HIMS folder (CMD
+window 2):
+
+```
+cd backend
+.venv\Scripts\activate.bat
+set HIMS_ENV_FILE=.env.hosted-dev
+set DJANGO_SETTINGS_MODULE=config.settings.production
+python manage.py add_demo_restricted_records --hosted-development
+set DJANGO_SETTINGS_MODULE=
+set HIMS_ENV_FILE=
+deactivate
+cd ..
+```
+
+It takes a minute or two and ends with "Added restricted records and emergency access" and the VIP's
+MRN. It refuses a hospital that already has a restricted record, so running it twice is harmless.
+Since this change the **medical records** (`records@`) and **head of department** (`hod.<branch>@`)
+accounts hold permissions that need two-factor: on Render they set it up at their next sign-in, like
+the managing accounts. How it works: [restricted records](restricted-records.md).

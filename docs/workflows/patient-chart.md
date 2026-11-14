@@ -25,12 +25,16 @@ The band at the top stays just below the menu bar while you scroll, on every tab
 | Prefers “…” | The preferred name, when given |
 
 Restricted (VIP / staff) and deceased flags come with HIMS-PAT-006 and HIMS-PAT-007.
+**Since 2026-11-14 (HIMS-PAT-006):** a restricted record shows a red **Restricted record**
+chip, and medical records see **Restrict record** / **Lift restriction** in the header
+([restricted records](restricted-records.md)).
 
 Under the header, **alerts** that the server works out (the admin console shows the same ones):
 
 | Alert | When |
 |---|---|
 | This record was merged into … | Merged record |
+| Restricted record (…): hidden from patient search. Every opening is recorded and reviewed by medical records | Restricted record (HIMS-PAT-006) |
 | Unknown patient: correct the name, date of birth and contacts when known | Unknown patient |
 | Under 18 with no parent or guardian recorded | A child without a current parent or guardian |
 | The privacy notice is not recorded as given | No privacy notice, or it was refused or withdrawn |
@@ -79,3 +83,10 @@ privacy notice is still to be given). Every branch's unknown patient shows three
 No new tables. Run `python manage.py migrate` anyway (local India, local US and Neon): it gives
 the medical records officer role its new permission (roles are brought up to date after every
 `migrate`).
+
+## Update 2026-11-14: restricted records (HIMS-PAT-006)
+
+Opening a restricted record without `patients.restricted` shows **Restricted record** instead of the
+chart; doctors and nurses can open it with **emergency access** (4 hours, with a reason), and the
+chart then shows a yellow banner with **End emergency access**. The History tab lists restriction,
+emergency access and review events too. How it works: [restricted records](restricted-records.md).

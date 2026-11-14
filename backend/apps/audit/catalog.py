@@ -177,6 +177,12 @@ LABELS: dict[str, str] = {
     A.PATIENT_IDENTIFIER_ADDED: "Patient ID number added (stored encrypted)",
     A.PATIENT_IDENTIFIER_ENDED: "Patient ID number ended",
     A.PATIENT_CONSENT_RECORDED: "Patient consent recorded",
+    A.PATIENT_RESTRICTED: "Patient record restricted (VIP or staff)",
+    A.PATIENT_RESTRICTION_LIFTED: "Patient record's restriction lifted",
+    A.EMERGENCY_ACCESS_OPENED: "Emergency access to a patient record opened (4 hours)",
+    A.EMERGENCY_ACCESS_ENDED: "Emergency access to a patient record ended early",
+    A.EMERGENCY_ACCESS_REVIEWED: "Emergency access to a patient record reviewed",
+    A.RESTRICTED_OPENINGS_VIEWED: "List of restricted record openings viewed",
 }
 
 

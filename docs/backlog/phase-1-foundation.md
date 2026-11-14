@@ -74,7 +74,7 @@ through PR review and the QA gates before it counts as released (spec 35.1).
 | HIMS-IAM-008 | Enterprise SSO (OIDC/SAML) — decision in spec 36 | Deferred (PO 2026-11-08: not now) |
 | HIMS-IAM-009 | Scoped RBAC: catalog, roles, facility/department assignments, default deny, escalation guard (ADR-015) | Done |
 | HIMS-IAM-010 | Patient-relationship scope (treating team / encounter) | To do (Phase 2) |
-| HIMS-IAM-011 | Break-glass emergency access with reason, audit and review | To do (Phase 2) |
+| HIMS-IAM-011 | Break-glass emergency access with reason, audit and review | To do (Phase 2) · **2026-11-14: mostly built in HIMS-PAT-006** for restricted records (`clinical.emergency_access`, 4 hours, reason, email to medical records, review by someone else, all audited; [how-to](../workflows/restricted-records.md)); left: the same access to the clinical part of out-of-scope charts (D13) and the Doctor and OPD nurse roles, with HIMS-CLIN-001 |
 | HIMS-IAM-012 | Periodic access-review report | Done (Access reviews page; reminders every 90 days; CSV evidence; admin console) |
 | HIMS-IAM-013 | Role and access-management UI | Done |
 | HIMS-IAM-015 | Accounts screen incl. people who are not staff; last-administrator protection | Done |

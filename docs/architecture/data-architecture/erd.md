@@ -25,6 +25,7 @@ erDiagram
     patient_relationships
     patient_identifiers
     patient_consents
+    patient_emergency_access
     patient_identifier_keys
     equipment
     equipment_service_records
@@ -135,6 +136,10 @@ erDiagram
     organizations ||--o{ patient_consents : "organization_id"
     patients ||--o{ patient_consents : "patient_id"
     users |o--o{ patient_consents : "recorded_by_id"
+    organizations ||--o{ patient_emergency_access : "organization_id"
+    patients ||--o{ patient_emergency_access : "patient_id"
+    users ||--o{ patient_emergency_access : "user_id"
+    users |o--o{ patient_emergency_access : "reviewed_by_id"
     organizations ||--o{ equipment : "organization_id"
     facilities ||--o{ equipment : "facility_id"
     departments |o--o{ equipment : "department_id"
@@ -499,6 +504,8 @@ erDiagram
         boolean has_no_phone
         boolean is_unknown
         varchar identification_note
+        boolean is_restricted
+        varchar restriction
         uuid registered_facility_id FK
         uuid registered_by_id FK
         varchar search_name
@@ -586,6 +593,22 @@ erDiagram
         varchar note
         uuid recorded_by_id FK
     }
+    patient_emergency_access {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid patient_id FK
+        uuid user_id FK
+        varchar reason
+        timestamptz expires_at
+        timestamptz ended_at
+        timestamptz reviewed_at
+        uuid reviewed_by_id FK
+        varchar outcome
+        varchar review_note
+    }
     patient_identifier_keys {
         uuid id PK
         text key_encrypted
@@ -615,6 +638,10 @@ erDiagram
     organizations ||--o{ patient_consents : "organization_id"
     patients ||--o{ patient_consents : "patient_id"
     users |o--o{ patient_consents : "recorded_by_id"
+    organizations ||--o{ patient_emergency_access : "organization_id"
+    patients ||--o{ patient_emergency_access : "patient_id"
+    users ||--o{ patient_emergency_access : "user_id"
+    users |o--o{ patient_emergency_access : "reviewed_by_id"
 ```
 
 Tables from other domains are shown without columns: `facilities`, `organizations`, `users`.

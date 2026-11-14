@@ -34,6 +34,8 @@ const NO_SEARCH = { search: "", sex: "", age: "" };
  * ID number or a name (similar spelling, any order, earlier names too), with sex and age to
  * narrow it. Without a search: newest registrations first. Results show only the minimum (name,
  * MRN, age and sex, the phone's last digits); every search and every record opened is audited.
+ * Restricted records (HIMS-PAT-006) are left out, except that their exact MRN shows a row with
+ * nothing about the patient (`hidden`), for medical records and emergency access.
  */
 export function PatientsPage() {
   const { data: user } = useCurrentUser();
@@ -182,13 +184,28 @@ export function PatientsPage() {
                   </Button>
                 </TableCell>
                 <TableCell>
-                  {patient.name}
+                  {patient.hidden ? (
+                    <Chip size="small" color="error" label="Restricted record" />
+                  ) : (
+                    <>
+                      {patient.name}
+                      {patient.is_restricted && (
+                        <Chip size="small" color="error" variant="outlined" label="Restricted" sx={{ ml: 1 }} />
+                      )}
+                    </>
+                  )}
                   {patient.is_unknown && <Chip size="small" color="warning" label="Unknown patient" sx={{ ml: 1 }} />}
                   {patient.status === "merged" && <Chip size="small" label="Merged" sx={{ ml: 1 }} />}
                 </TableCell>
                 <TableCell sx={{ whiteSpace: "nowrap" }}>
-                  {patient.birth_date_estimated ? "~" : ""}
-                  {patient.age} {SEX_SHORT[patient.sex]}
+                  {patient.hidden ? (
+                    "—"
+                  ) : (
+                    <>
+                      {patient.birth_date_estimated ? "~" : ""}
+                      {patient.age} {SEX_SHORT[patient.sex]}
+                    </>
+                  )}
                 </TableCell>
                 <TableCell>{patient.phone_last4 || "—"}</TableCell>
                 <TableCell>{patient.registered_facility_name}</TableCell>

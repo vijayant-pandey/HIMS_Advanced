@@ -4,6 +4,90 @@
 
 Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, versions, versioning): [API contracts guide](../README.md). Index: [all endpoints](README.md).
 
+### GET /api/v1/patient-emergency-access/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `patient_emergency_access_list` |
+| Method and path | `GET /api/v1/patient-emergency-access/` |
+| Business purpose | List (patient emergency access). Emergency access, newest first. |
+| Requirements | [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
+| Actor / permission required | `patients.records_correct` (Review emergency access to patient records (who opened which record, why) and see who opened restricted records). System roles holding it: Medical records officer. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
+| Request schema | No body; query: `page`, `page_size`, `patient_id`, `state` |
+| Response schema | 200 `PaginatedEmergencyAccessList` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`); pages of 25 (`page_size` up to 100) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/patients/tests/test_restricted_records.py::test_someone_else_from_medical_records_reviews_it_after_it_ends` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### GET /api/v1/patient-emergency-access/{pk}/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `patient_emergency_access_retrieve` |
+| Method and path | `GET /api/v1/patient-emergency-access/{pk}/` |
+| Business purpose | Open one (patient emergency access). Emergency access to patient records, for medical records to review (HIMS-PAT-006; D14). |
+| Requirements | [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
+| Actor / permission required | `patients.records_correct` (Review emergency access to patient records (who opened which record, why) and see who opened restricted records). System roles holding it: Medical records officer. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
+| Request schema | No body |
+| Response schema | 200 `EmergencyAccess` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/patient-emergency-access/{pk}/review/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `patient_emergency_access_review_create` |
+| Method and path | `POST /api/v1/patient-emergency-access/{pk}/review/` |
+| Business purpose | Review an ended emergency access: appropriate, or not appropriate with a note. |
+| Requirements | [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
+| Actor / permission required | `patients.records_correct` (Review emergency access to patient records (who opened which record, why) and see who opened restricted records). System roles holding it: Medical records officer. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
+| Request schema | `EmergencyAccessReviewRequest`: `outcome` (required, one of the listed values), `note` (≤ 500 characters), `version` (required) |
+| Response schema | 200 `EmergencyAccess` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Refused in the wrong state with `ALREADY_REVIEWED` |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved; the row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `patient.emergency_access.reviewed` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `ALREADY_REVIEWED`, 409 `CONFLICT`, 409 `SAME_PERSON`, 409 `STALE_RESOURCE`, 409 `STILL_OPEN`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/patients/tests/test_restricted_records.py::test_someone_else_from_medical_records_reviews_it_after_it_ends` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### GET /api/v1/patients/
 
 | Field | Contract |
@@ -11,7 +95,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_list` |
 | Method and path | `GET /api/v1/patients/` |
 | Business purpose | List (patients). Patients, newest registration first, or a patient search (``search``): the short list only (minimum necessary). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.search` (Look up patients: the short list (name, MRN, age and sex, the phone's last digits)). System roles holding it: Organization administrator, Head of department (HOD), Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | No body; query: `age`, `facility`, `mrn`, `page`, `page_size`, `search`, `sex` |
@@ -29,7 +113,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`); pages of 25 (`page_size` up to 100) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
-| Automated test cases | `apps/patients/tests/test_patient_registration.py::test_administrator_looks_up_and_opens_but_does_not_register`, `apps/patients/tests/test_patient_registration.py::test_branch_desk_registers_only_at_its_branch_but_finds_every_patient`, `apps/patients/tests/test_patient_registration.py::test_people_without_patient_access_get_nothing`, `apps/patients/tests/test_patient_registration.py::test_supplier_support_never_sees_patients_even_with_a_lent_admin_role`, `apps/patients/tests/test_patient_registration.py::test_opening_a_record_and_looking_up_an_mrn_are_audited`, `apps/patients/tests/test_patient_registration.py::test_the_list_shows_only_the_minimum`, `apps/patients/tests/test_patient_search.py::test_too_short_or_too_many_asks_for_more_detail`, `apps/patients/tests/test_patient_search.py::test_results_show_only_the_minimum` and 2 more |
+| Automated test cases | `apps/patients/tests/test_patient_registration.py::test_administrator_looks_up_and_opens_but_does_not_register`, `apps/patients/tests/test_patient_registration.py::test_branch_desk_registers_only_at_its_branch_but_finds_every_patient`, `apps/patients/tests/test_patient_registration.py::test_people_without_patient_access_get_nothing`, `apps/patients/tests/test_patient_registration.py::test_supplier_support_never_sees_patients_even_with_a_lent_admin_role`, `apps/patients/tests/test_patient_registration.py::test_opening_a_record_and_looking_up_an_mrn_are_audited`, `apps/patients/tests/test_patient_registration.py::test_the_list_shows_only_the_minimum`, `apps/patients/tests/test_patient_search.py::test_too_short_or_too_many_asks_for_more_detail`, `apps/patients/tests/test_patient_search.py::test_results_show_only_the_minimum` and 3 more |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
 ### POST /api/v1/patients/
@@ -39,7 +123,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_create` |
 | Method and path | `POST /api/v1/patients/` |
 | Business purpose | Add (patients). Register a patient; the MRN is issued in the same step. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `PatientRegisterRequest`: `address_line1` (≤ 255 characters), `address_line2` (≤ 255 characters), `city` (≤ 100 characters), `district` (≤ 100 characters), `state` (≤ 100 characters), `postal_code` (≤ 10 characters), `country` (≤ 2 characters), `facility` (required, uuid), `title` (≤ 20 characters), `given_name` (≤ 150 characters), `middle_name` (≤ 150 characters), `family_name` (≤ 150 characters), `preferred_name` (≤ 150 characters), `date_of_birth` (date), `age_years`, `age_months`, `age_days`, `sex` (required, one of the listed values), `gender_identity` (≤ 60 characters), `pronouns` (≤ 60 characters), `preferred_language` (≤ 35 characters), `marital_status` (one of the listed values), `occupation` (≤ 100 characters), `blood_group_reported` (one of the listed values), `is_unknown`, `identification_note` (≤ 255 characters), `mobile` (≤ 30 characters), `has_no_phone`, `alternate_phone` (≤ 30 characters), `email` (one of the listed values), `relationships`, `identifiers`, `privacy_notice` (one of the listed values), `sms_consent`, `email_consent`, `consent_method` (one of the listed values), `no_guardian_reason` (≤ 255 characters) |
@@ -54,7 +138,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | `patient.registered` |
 | External calls | None |
 | Timeout and retry policy | background events: the outbox dispatcher retries with back-off up to 12 times, then marks the event dead for the Background jobs page; the client may retry a lost answer with the same Idempotency-Key |
-| Expected error codes | 400 `FACILITY_REQUIRED`, 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 409 `CONFLICT`, 409 `DUPLICATE_IDENTIFIER`, 409 `FEATURE_DISABLED`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `NUMBERING_NOT_CONFIGURED`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
+| Expected error codes | 400 `FACILITY_REQUIRED`, 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 409 `CONFLICT`, 409 `DUPLICATE_IDENTIFIER`, 409 `FEATURE_DISABLED`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `NUMBERING_NOT_CONFIGURED`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `apps/patients/tests/test_patient_registration.py::test_missing_name_sex_and_age_are_field_errors` |
@@ -67,7 +151,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_registration_options_retrieve` |
 | Method and path | `GET /api/v1/patients/registration-options/` |
 | Business purpose | What the registration form offers in this hospital's country (ID number kinds). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | No body |
@@ -88,14 +172,42 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Automated test cases | `apps/patients/tests/test_patient_registration.py::test_registration_options_follow_the_country` |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
+### GET /api/v1/patients/restricted-openings/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `patients_restricted_openings_list` |
+| Method and path | `GET /api/v1/patients/restricted-openings/` |
+| Business purpose | Who opened restricted records, newest first (D23: reviewed by medical records). Viewing the list is audited. |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
+| Actor / permission required | `patients.records_correct` (Review emergency access to patient records (who opened which record, why) and see who opened restricted records). System roles holding it: Medical records officer. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
+| Request schema | No body; query: `days`, `page`, `page_size` |
+| Response schema | 200 `PaginatedRestrictedOpeningList` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only; the audit event of the read is saved in its own transaction |
+| Audit event | `patient.record.viewed`, `patient.restricted_openings.viewed` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | `apps/patients/tests/test_restricted_records.py::test_medical_records_restrict_and_lift_with_a_reason_and_see_every_opening` |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### GET /api/v1/patients/{pk}/
 
 | Field | Contract |
 |---|---|
 | Endpoint ID | `patients_retrieve` |
 | Method and path | `GET /api/v1/patients/{pk}/` |
-| Business purpose | Open one (patients). One patient's record: details, contacts, people, ID numbers (masked) and consents. Every opening is audited. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Business purpose | Open one (patients). One patient's record: details, contacts, people, ID numbers (masked) and consents. Every opening is audited. A restricted record needs ``patients.restricted`` or emergency access (otherwise 403 ``RESTRICTED_RECORD``). |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.view` (Open a patient's record: details, contacts, guardians and next of kin, ID numbers (masked) and consents. Every opening is in the audit log). System roles holding it: Organization administrator, Head of department (HOD), Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | No body |
@@ -110,10 +222,10 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request |
-| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
-| Automated test cases | `apps/patients/tests/test_patient_registration.py::test_registration_options_follow_the_country`, `apps/patients/tests/test_patient_registration.py::test_administrator_looks_up_and_opens_but_does_not_register`, `apps/patients/tests/test_patient_registration.py::test_branch_desk_registers_only_at_its_branch_but_finds_every_patient`, `apps/patients/tests/test_patient_registration.py::test_people_without_patient_access_get_nothing`, `apps/patients/tests/test_patient_registration.py::test_supplier_support_never_sees_patients_even_with_a_lent_admin_role`, `apps/patients/tests/test_patient_registration.py::test_opening_a_record_and_looking_up_an_mrn_are_audited`, `apps/patients/tests/test_patient_registration.py::test_name_change_keeps_the_old_name_and_stale_edits_are_refused`, `apps/patients/tests/test_patient_registration.py::test_contacts_are_added_made_main_and_ended_not_deleted` and 1 more |
+| Automated test cases | `apps/patients/tests/test_patient_registration.py::test_registration_options_follow_the_country`, `apps/patients/tests/test_patient_registration.py::test_administrator_looks_up_and_opens_but_does_not_register`, `apps/patients/tests/test_patient_registration.py::test_branch_desk_registers_only_at_its_branch_but_finds_every_patient`, `apps/patients/tests/test_patient_registration.py::test_people_without_patient_access_get_nothing`, `apps/patients/tests/test_patient_registration.py::test_supplier_support_never_sees_patients_even_with_a_lent_admin_role`, `apps/patients/tests/test_patient_registration.py::test_opening_a_record_and_looking_up_an_mrn_are_audited`, `apps/patients/tests/test_patient_registration.py::test_name_change_keeps_the_old_name_and_stale_edits_are_refused`, `apps/patients/tests/test_patient_registration.py::test_contacts_are_added_made_main_and_ended_not_deleted` and 2 more |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
 ### PATCH /api/v1/patients/{pk}/
@@ -123,7 +235,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_partial_update` |
 | Method and path | `PATCH /api/v1/patients/{pk}/` |
 | Business purpose | Change (patients). Correct the patient's details; an old name stays findable as an alias. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `PatchedPatientUpdateRequest`: `version`, `title` (≤ 20 characters), `given_name` (≤ 150 characters), `middle_name` (≤ 150 characters), `family_name` (≤ 150 characters), `preferred_name` (≤ 150 characters), `date_of_birth` (date), `birth_date_estimated`, `sex` (one of the listed values), `gender_identity` (≤ 60 characters), `pronouns` (≤ 60 characters), `preferred_language` (≤ 35 characters), `marital_status` (one of the listed values), `occupation` (≤ 100 characters), `blood_group_reported` (one of the listed values), `has_no_phone`, `is_unknown`, `identification_note` (≤ 255 characters) |
@@ -138,7 +250,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
-| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `PATIENT_MERGED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `PATIENT_MERGED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `apps/patients/tests/test_patient_registration.py::test_name_change_keeps_the_old_name_and_stale_edits_are_refused`, `apps/patients/tests/test_patient_registration.py::test_contacts_are_added_made_main_and_ended_not_deleted`, `apps/patients/tests/test_patient_registration.py::test_aliases_cannot_be_changed_or_deleted` |
@@ -151,7 +263,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_consents_create` |
 | Method and path | `POST /api/v1/patients/{pk}/consents/` |
 | Business purpose | Record a consent decision (privacy notice, SMS, email); earlier ones stay as history. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `ConsentCreateRequest`: `kind` (required, one of the listed values), `status` (required, one of the listed values), `method` (required, one of the listed values), `note` (≤ 255 characters) |
@@ -166,7 +278,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request; the client may retry a lost answer with the same Idempotency-Key |
-| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `NOTHING_TO_WITHDRAW`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `PATIENT_MERGED`, 429 `RATE_LIMITED` |
+| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `NOTHING_TO_WITHDRAW`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `PATIENT_MERGED`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `apps/patients/tests/test_patient_registration.py::test_consent_history_is_kept_and_cannot_be_changed` |
@@ -179,7 +291,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_contacts_create` |
 | Method and path | `POST /api/v1/patients/{pk}/contacts/` |
 | Business purpose | Add a phone, email or address. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `ContactCreateRequest`: `address_line1` (≤ 255 characters), `address_line2` (≤ 255 characters), `city` (≤ 100 characters), `district` (≤ 100 characters), `state` (≤ 100 characters), `postal_code` (≤ 10 characters), `country` (≤ 2 characters), `kind` (required, one of the listed values), `phone` (≤ 30 characters), `email` (one of the listed values), `is_primary` |
@@ -194,7 +306,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request; the client may retry a lost answer with the same Idempotency-Key |
-| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `PATIENT_MERGED`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
+| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `PATIENT_MERGED`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `apps/patients/tests/test_patient_registration.py::test_contacts_are_added_made_main_and_ended_not_deleted` |
@@ -207,7 +319,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_contacts_partial_update` |
 | Method and path | `PATCH /api/v1/patients/{pk}/contacts/{contact_id}/` |
 | Business purpose | Correct a contact, make it the main one, or end it (kept on record). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `PatchedContactUpdateRequest`: `version`, `phone` (≤ 30 characters), `email` (one of the listed values), `address_line1` (≤ 255 characters), `address_line2` (≤ 255 characters), `city` (≤ 100 characters), `district` (≤ 100 characters), `state` (≤ 100 characters), `postal_code` (≤ 10 characters), `country` (≤ 2 characters), `is_primary`, `is_active` |
@@ -222,7 +334,63 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
-| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `PATIENT_MERGED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `PATIENT_MERGED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/patients/{pk}/emergency-access/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `patients_emergency_access_create` |
+| Method and path | `POST /api/v1/patients/{pk}/emergency-access/` |
+| Business purpose | Emergency access to a restricted record (D14): 4 hours, with a reason; medical records are told at once and review it afterwards. |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
+| Actor / permission required | `clinical.emergency_access` (Emergency access: open a restricted patient record for 4 hours, with a reason. Medical records are told at once and review it). System roles holding it: Head of department (HOD). Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
+| Request schema | `EmergencyAccessOpenRequest`: `reason` (required, ≤ 500 characters) |
+| Response schema | 201 `OwnEmergencyAccess` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Refused in the wrong state with `EMERGENCY_ACCESS_NOT_NEEDED` |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | The row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `patient.emergency_access.opened` |
+| Outbox / domain event | None |
+| External calls | Messages (email; SMS printed on the console until a gateway is chosen): tried at once and logged; a failure never undoes the action |
+| Timeout and retry policy | messages: email timeout 20 s; a failed message is retried every few minutes with a growing pause, up to 5 tries, then shows as failed with Send again; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `EMERGENCY_ACCESS_NOT_NEEDED`, 409 `EMERGENCY_ACCESS_OPEN`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/patients/{pk}/emergency-access/end/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `patients_emergency_access_end_create` |
+| Method and path | `POST /api/v1/patients/{pk}/emergency-access/end/` |
+| Business purpose | End your emergency access to this record early (done with it). |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
+| Actor / permission required | `clinical.emergency_access` (Emergency access: open a restricted patient record for 4 hours, with a reason. Medical records are told at once and review it). System roles holding it: Head of department (HOD). Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
+| Request schema | No body |
+| Response schema | 200 `OwnEmergencyAccess` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Refused in the wrong state with `NOT_OPEN` |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | The row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `patient.emergency_access.ended` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `NOT_OPEN`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
@@ -235,7 +403,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_history_list` |
 | Method and path | `GET /api/v1/patients/{pk}/history/` |
 | Business purpose | The record's history (HIMS-PAT-005): who opened it and who changed what, and when, newest first. Field names only, never their values. Viewing it is audited too. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.history` (See a patient record's history: who opened it and who changed what, and when (the values stay in the audit log)). System roles holding it: Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | No body; query: `page`, `page_size` |
@@ -250,7 +418,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request |
-| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
@@ -263,7 +431,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_identifiers_create` |
 | Method and path | `POST /api/v1/patients/{pk}/identifiers/` |
 | Business purpose | Add an ID number: checked, stored encrypted, shown masked; one-per-person kinds are refused when another patient has the number. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `IdentifierInputRequest`: `kind` (required, one of the listed values), `value` (required, ≤ 64 characters), `issuer` (≤ 100 characters), `valid_until` (date) |
@@ -278,7 +446,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request; the client may retry a lost answer with the same Idempotency-Key |
-| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `DUPLICATE_IDENTIFIER`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `PATIENT_MERGED`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
+| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `DUPLICATE_IDENTIFIER`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `PATIENT_MERGED`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `apps/patients/tests/test_patient_registration.py::test_an_ended_number_can_be_recorded_on_the_right_patient` |
@@ -291,7 +459,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_identifiers_end_create` |
 | Method and path | `POST /api/v1/patients/{pk}/identifiers/{identifier_id}/end/` |
 | Business purpose | End a wrong or replaced ID number, with a reason (kept on record, never deleted). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `IdentifierEndRequest`: `version` (required), `reason` (required, ≤ 255 characters) |
@@ -306,7 +474,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
-| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `ALREADY_ENDED`, 409 `CONFLICT`, 409 `PATIENT_MERGED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `ALREADY_ENDED`, 409 `CONFLICT`, 409 `PATIENT_MERGED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `apps/patients/tests/test_patient_registration.py::test_an_ended_number_can_be_recorded_on_the_right_patient` |
@@ -319,7 +487,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_relationships_create` |
 | Method and path | `POST /api/v1/patients/{pk}/relationships/` |
 | Business purpose | Add a parent, guardian, next of kin, emergency contact or caregiver. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `RelationshipCreateRequest`: `relation` (required, one of the listed values), `name` (required, ≤ 200 characters), `phone` (≤ 30 characters), `is_legal_guardian`, `is_emergency_contact`, `note` (≤ 255 characters), `related_patient` (uuid) |
@@ -334,7 +502,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request; the client may retry a lost answer with the same Idempotency-Key |
-| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `PATIENT_MERGED`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
+| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `IDEMPOTENCY_KEY_REUSED`, 409 `PATIENT_MERGED`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | `apps/patients/tests/test_patient_registration.py::test_relationships_are_added_and_ended` |
@@ -347,7 +515,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_relationships_partial_update` |
 | Method and path | `PATCH /api/v1/patients/{pk}/relationships/{relationship_id}/` |
 | Business purpose | Correct a relationship or end it (kept on record). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `PatchedRelationshipUpdateRequest`: `version`, `relation` (one of the listed values), `name` (≤ 200 characters), `phone` (≤ 30 characters), `is_legal_guardian`, `is_emergency_contact`, `related_patient` (uuid), `note` (≤ 255 characters), `is_active` |
@@ -362,7 +530,35 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Outbox / domain event | None |
 | External calls | None |
 | Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
-| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 409 `PATIENT_MERGED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `PATIENT_MERGED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED`, 503 `DEPLOYMENT_NOT_PROVISIONED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/patients/{pk}/restriction/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `patients_restriction_create` |
+| Method and path | `POST /api/v1/patients/{pk}/restriction/` |
+| Business purpose | Restrict the record (VIP, member of staff, other) or lift the restriction, with a reason (HIMS-PAT-006). Medical records only (``patients.restricted``). |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
+| Actor / permission required | `patients.restricted` (Find and open restricted (VIP and staff) patient records, and restrict a record or lift the restriction. Every opening is in the audit log). System roles holding it: Medical records officer. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
+| Request schema | `RestrictionRequest`: `restricted` (required), `restriction` (one of the listed values), `reason` (required, ≤ 255 characters), `version` (required) |
+| Response schema | 200 `PatientDetail` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Any (no state rule) |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved; the row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `patient.restricted`, `patient.restriction.lifted` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
 | Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
 | Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
 | Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |

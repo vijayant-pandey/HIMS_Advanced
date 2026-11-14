@@ -1,10 +1,13 @@
 import type {
   BloodGroupEnum,
   ConsentMethodEnum,
+  EmergencyAccessOutcomeEnum,
+  EmergencyAccessStateEnum,
   MaritalStatusEnum,
   PatientConsentKindEnum,
   PatientConsentStatusEnum,
   PatientRelationEnum,
+  PatientRestrictionEnum,
   PatientSexEnum,
 } from "../../api/types";
 
@@ -26,6 +29,30 @@ export const MATCHED_ON: Record<string, string> = {
 /** The chart header's allergy line (HIMS-PAT-005; D19). HIMS-CLIN-003 adds recorded allergies. */
 export const ALLERGY_STATUS: Record<string, string> = {
   not_asked: "Allergies not asked yet",
+};
+
+/** Why a record is restricted (HIMS-PAT-006; D23). */
+export const RESTRICTION: Record<PatientRestrictionEnum, string> = {
+  vip: "VIP or public figure",
+  staff: "Member of staff (or their family)",
+  other: "Other (e.g. at the patient's request)",
+};
+
+export const EMERGENCY_STATE: Record<EmergencyAccessStateEnum, { label: string; color: "warning" | "info" | "success" }> = {
+  active: { label: "Open now", color: "warning" },
+  to_review: { label: "Ended, to review", color: "info" },
+  reviewed: { label: "Reviewed", color: "success" },
+};
+
+export const EMERGENCY_OUTCOME: Record<EmergencyAccessOutcomeEnum, string> = {
+  appropriate: "Appropriate",
+  not_appropriate: "Not appropriate (follow up)",
+};
+
+/** How a restricted record was opened. */
+export const OPENED_VIA: Record<string, string> = {
+  restricted_permission: "Medical records",
+  emergency_access: "Emergency access",
 };
 
 /** Short form for lists: "34 y F". */

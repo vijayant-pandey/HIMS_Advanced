@@ -1,12 +1,15 @@
 """HIMS-QA-004: demo hospitals with synthetic data. All data is invented."""
 
 import os
+from io import StringIO
 
 import pytest
 from django.core.management import call_command
+from django.core.management.base import CommandError
 
 from apps.access_control.models import AccessDelegation, SupportAccess
 from apps.beds.models import Bed
+from apps.demo import seed as seed_module
 from apps.demo import setup
 from apps.demo.hospitals import all_hospitals, by_key
 from apps.demo.patients import patients_for
@@ -16,7 +19,7 @@ from apps.facilities.location_models import Building, Ward
 from apps.facilities.models import Department, Facility
 from apps.identity.models import User
 from apps.patients import search
-from apps.patients.models import Patient, PatientAlias
+from apps.patients.models import EmergencyAccess, Patient, PatientAlias
 from apps.rosters.models import Shift
 from apps.staff.models import StaffCredential, StaffMember
 
@@ -87,8 +90,30 @@ def test_a_small_demo_hospital_gets_records_for_every_screen(provisioned):
     if PatientAlias.objects.exists():  # a woman of 25 or more changed her family name
         alias = PatientAlias.objects.get()
         assert search.find(alias.family_name).patients.filter(pk=alias.patient_id).exists()
+    # Restricted records and emergency access (HIMS-PAT-006): one VIP, two emergency accesses by
+    # the head of department, one reviewed by medical records and one waiting.
+    vip = Patient.objects.get(is_restricted=True)
+    assert vip.restriction == Patient.Restriction.VIP
+    assert any(typed == vip.mrn for typed, _ in ctx.examples)
+    accesses = EmergencyAccess.objects.all()
+    assert {a.user.email for a in accesses} == {"hod.dwk@in-sunrise.demo.test"}
+    assert sorted(bool(a.reviewed_at) for a in accesses) == [False, True]
+    with pytest.raises(CommandError, match="already has restricted records"):
+        call_command("add_demo_restricted_records")
     with pytest.raises(DemoError, match="already"):
         seed_hospital(by_key("in-sunrise"), password=None, small=True)
+
+
+def test_a_hospital_filled_before_restricted_records_gets_them_added(provisioned, monkeypatch):
+    with monkeypatch.context() as patch:  # as filled before HIMS-PAT-006
+        patch.setattr(seed_module, "add_restricted_examples", lambda **_: [])
+        seed_hospital(by_key("in-sunrise"), password=None, small=True)
+    assert not Patient.objects.filter(is_restricted=True).exists()
+    out = StringIO()
+    call_command("add_demo_restricted_records", stdout=out)
+    assert Patient.objects.filter(is_restricted=True).count() == 1
+    assert EmergencyAccess.objects.count() == 2
+    assert "records@in-sunrise.demo.test" in out.getvalue()
 
 
 def test_demo_records_fit_only_a_hospital_of_the_same_country(provisioned):

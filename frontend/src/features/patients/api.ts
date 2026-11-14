@@ -2,7 +2,13 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { ApiError, api } from "../../api/client";
 import type {
+  EmergencyAccess,
+  EmergencyAccessReviewRequest,
+  EmergencyAccessStateEnum,
+  OwnEmergencyAccess,
+  PaginatedEmergencyAccess,
   PaginatedPatientHistory,
+  PaginatedRestrictedOpenings,
   PaginatedPatientList,
   PatientConsent,
   PatientConsentRequest,
@@ -18,6 +24,7 @@ import type {
   PatientRelationship,
   PatientRelationshipCreateRequest,
   PatientRelationshipUpdateRequest,
+  PatientRestrictionRequest,
   PatientUpdateRequest,
 } from "../../api/types";
 
@@ -138,4 +145,62 @@ export function useRecordConsent(id: string, idempotencyKey: string) {
   return usePatientMutation<PatientConsentRequest, PatientConsent>((body) =>
     api.post<PatientConsent>(`/patients/${id}/consents/`, body, { idempotencyKey }),
   );
+}
+
+// --- Restricted records and emergency access (HIMS-PAT-006) ----------------------------------
+
+/** Medical records restrict a record (VIP, staff, other) or lift it, with a reason. */
+export function useSetRestriction(id: string) {
+  return usePatientMutation<PatientRestrictionRequest, PatientDetail>((body) =>
+    api.post<PatientDetail>(`/patients/${id}/restriction/`, body),
+  );
+}
+
+/** Emergency access (D14): 4 hours, with a reason; medical records are told and review it. */
+export function useOpenEmergencyAccess(id: string) {
+  return usePatientMutation<{ reason: string }, OwnEmergencyAccess>((body) =>
+    api.post<OwnEmergencyAccess>(`/patients/${id}/emergency-access/`, body),
+  );
+}
+
+export function useEndEmergencyAccess(id: string) {
+  return usePatientMutation<void, OwnEmergencyAccess>(() =>
+    api.post<OwnEmergencyAccess>(`/patients/${id}/emergency-access/end/`, {}),
+  );
+}
+
+export const emergencyAccessKey = ["patient-emergency-access"] as const;
+
+export function useEmergencyAccessList(state: EmergencyAccessStateEnum, page: number) {
+  return useQuery<PaginatedEmergencyAccess, ApiError>({
+    queryKey: [...emergencyAccessKey, state, page],
+    queryFn: ({ signal }) =>
+      api.get<PaginatedEmergencyAccess>("/patient-emergency-access/", {
+        query: { state, page, page_size: PAGE_SIZE },
+        signal,
+      }),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useReviewEmergencyAccess(accessId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<EmergencyAccess, ApiError, EmergencyAccessReviewRequest>({
+    mutationFn: (body) => api.post<EmergencyAccess>(`/patient-emergency-access/${accessId}/review/`, body),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: emergencyAccessKey }),
+  });
+}
+
+/** Who opened restricted records (D23). Viewing the list is audited. */
+export function useRestrictedOpenings(days: number, page: number) {
+  return useQuery<PaginatedRestrictedOpenings, ApiError>({
+    queryKey: [...emergencyAccessKey, "openings", days, page],
+    queryFn: ({ signal }) =>
+      api.get<PaginatedRestrictedOpenings>("/patients/restricted-openings/", {
+        query: { days, page, page_size: PAGE_SIZE },
+        signal,
+      }),
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false, // each load is an audited event
+  });
 }

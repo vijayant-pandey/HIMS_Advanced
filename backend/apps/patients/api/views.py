@@ -8,6 +8,12 @@ only the minimum (P0 part 01 section 2).
 The chart (HIMS-PAT-005): the record carries its header (allergy status, alerts) and the
 ``history`` action lists who opened and changed it, for medical records (``patients.history``).
 
+Restricted records (HIMS-PAT-006; D23, D14): hidden from the list and from search for people
+without ``patients.restricted`` (an exact MRN shows a row with nothing about the patient), and
+every action on one is refused (``RESTRICTED_RECORD``) unless the person holds that permission or
+has emergency access to it (``emergency-access``, 4 hours, reviewed by medical records under
+``/patient-emergency-access/``).
+
 Patient search (HIMS-PAT-002; spec endpoint ``GET /api/v1/patients/?search=``): one box for the
 MRN, a phone number, an ID number or a name (similar spelling, any order, earlier names too),
 with optional sex and age (a date of birth would travel in the address, so it is not a filter).
@@ -16,9 +22,12 @@ how many matched, so the screen can ask for more detail when it is more than 50.
 audited with its kind and the number of results, never what was typed.
 """
 
+from datetime import timedelta
+
 from django.db.models import Prefetch
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -34,9 +43,10 @@ from common.idempotency.decorators import idempotent
 from common.pagination import StandardPagination
 from common.permissions import ANY_GRANT
 
-from .. import chart, identifiers, search, services
+from .. import chart, identifiers, restricted, search, services
 from ..models import (
     UNIQUE_IDENTIFIER_KINDS,
+    EmergencyAccess,
     Patient,
     PatientConsent,
     PatientContact,
@@ -49,9 +59,13 @@ from .serializers import (
     ContactCreateSerializer,
     ContactSerializer,
     ContactUpdateSerializer,
+    EmergencyAccessOpenSerializer,
+    EmergencyAccessReviewSerializer,
+    EmergencyAccessSerializer,
     IdentifierEndSerializer,
     IdentifierInputSerializer,
     IdentifierSerializer,
+    OwnEmergencyAccessSerializer,
     PatientDetailSerializer,
     PatientHistoryEventSerializer,
     PatientListSerializer,
@@ -62,6 +76,8 @@ from .serializers import (
     RelationshipCreateSerializer,
     RelationshipSerializer,
     RelationshipUpdateSerializer,
+    RestrictedOpeningSerializer,
+    RestrictionSerializer,
 )
 
 ADDRESS_FIELDS = (
@@ -117,8 +133,16 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         "end_identifier": P.PATIENTS_REGISTER,
         "record_consent": P.PATIENTS_REGISTER,
         "history": P.PATIENTS_HISTORY,
+        "restriction": P.PATIENTS_RESTRICTED,
+        "emergency_access": P.EMERGENCY_ACCESS,
+        "end_emergency_access": P.EMERGENCY_ACCESS,
+        "restricted_openings": P.PATIENTS_RECORDS_CORRECT,
     }
     http_method_names = ["get", "post", "patch", "head"]
+    opening = None
+
+    def _hide_restricted(self) -> bool:
+        return not restricted.may_see_restricted(self.request.user)
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -132,10 +156,18 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             mrn = (self.request.query_params.get("mrn") or "").strip().upper()
             if mrn:
                 queryset = queryset.filter(mrn=mrn)
+            elif self._hide_restricted():
+                queryset = queryset.filter(is_restricted=False)
         return queryset.order_by("-created_at")
 
     def get_serializer_class(self):
         return PatientListSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if getattr(self, "swagger_fake_view", False):
+            return context
+        return {**context, "hide_restricted": self._hide_restricted()}
 
     def _patient(self, pk) -> Patient:
         queryset = Patient.objects.select_related(
@@ -157,10 +189,14 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         )
         patient = get_object_or_404(queryset, pk=pk)
         self.check_object_permissions(self.request, patient)
+        self.opening = restricted.opening(self.request.user, patient)
         return patient
 
+    def _detail_data(self, patient) -> dict:
+        return PatientDetailSerializer(patient, context={"opening": self.opening}).data
+
     def _detail(self, pk) -> Response:
-        return Response(PatientDetailSerializer(self._patient(pk)).data)
+        return Response(self._detail_data(self._patient(pk)))
 
     @extend_schema(
         parameters=[
@@ -206,10 +242,14 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if data.get("facility"):
             queryset = queryset.filter(registered_facility_id=data["facility"])
         found = search.find(data["search"], filters, queryset=queryset)
-        patients = list(found.patients[: search.MAX_RESULTS])
+        hide = self._hide_restricted()
+        matches = found.patients
+        if hide and found.matched_on != search.MatchedOn.MRN:
+            matches = matches.filter(is_restricted=False)  # D23: only an exact MRN shows one
+        patients = list(matches[: search.MAX_RESULTS])
         count = len(patients)
         if count == search.MAX_RESULTS:
-            count = found.patients.count()
+            count = matches.count()
         record_audit_event(
             action=AuditAction.PATIENT_LIST_SEARCHED,
             resource_type="patient",
@@ -217,7 +257,9 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             metadata={"by": found.matched_on, "results": count, "filters": filters.used},
         )
         serializer = PatientListSerializer(
-            patients, many=True, context={"request": request, "matched_on": found.matched_on}
+            patients,
+            many=True,
+            context={"request": request, "matched_on": found.matched_on, "hide_restricted": hide},
         )
         return Response(
             {"count": count, "next": None, "previous": None, "results": serializer.data}
@@ -226,18 +268,24 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     @extend_schema(responses=PatientDetailSerializer)
     def retrieve(self, request, pk=None):
         """One patient's record: details, contacts, people, ID numbers (masked) and consents.
-        Every opening is audited."""
+        Every opening is audited. A restricted record needs ``patients.restricted`` or
+        emergency access (otherwise 403 ``RESTRICTED_RECORD``)."""
         patient = self._patient(pk)
-        services.record_viewed(patient, actor=request.user, request=request)
-        return Response(PatientDetailSerializer(patient).data)
+        services.record_viewed(
+            patient, actor=request.user, request=request, metadata=self.opening.metadata
+        )
+        return Response(self._detail_data(patient))
 
     @extend_schema(responses=PatientHistoryEventSerializer(many=True))
     @action(detail=True, methods=["get"])
     def history(self, request, pk=None):
         """The record's history (HIMS-PAT-005): who opened it and who changed what, and when,
         newest first. Field names only, never their values. Viewing it is audited too."""
-        patient = get_object_or_404(Patient.objects.only("pk", "registered_facility_id"), pk=pk)
+        patient = get_object_or_404(
+            Patient.objects.only("pk", "registered_facility_id", "is_restricted"), pk=pk
+        )
         self.check_object_permissions(request, patient)
+        restricted.opening(request.user, patient)
         page = self.paginate_queryset(chart.history(patient))
         record_audit_event(
             action=AuditAction.PATIENT_HISTORY_VIEWED,
@@ -277,8 +325,7 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             request=request,
         )
         return Response(
-            PatientDetailSerializer(self._patient(patient.pk)).data,
-            status=status.HTTP_201_CREATED,
+            self._detail_data(self._patient(patient.pk)), status=status.HTTP_201_CREATED
         )
 
     @extend_schema(request=PatientUpdateSerializer, responses=PatientDetailSerializer)
@@ -296,6 +343,79 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             **data,
         )
         return self._detail(patient.pk)
+
+    @extend_schema(request=RestrictionSerializer, responses=PatientDetailSerializer)
+    @action(detail=True, methods=["post"])
+    def restriction(self, request, pk=None):
+        """Restrict the record (VIP, member of staff, other) or lift the restriction, with a
+        reason (HIMS-PAT-006). Medical records only (``patients.restricted``)."""
+        patient = self._patient(pk)
+        serializer = RestrictionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        restricted.set_restriction(
+            actor=request.user,
+            patient_id=patient.pk,
+            version=data.pop("version"),
+            request=request,
+            **data,
+        )
+        return self._detail(patient.pk)
+
+    @extend_schema(
+        request=EmergencyAccessOpenSerializer, responses={201: OwnEmergencyAccessSerializer}
+    )
+    @action(detail=True, methods=["post"], url_path="emergency-access")
+    def emergency_access(self, request, pk=None):
+        """Emergency access to a restricted record (D14): 4 hours, with a reason; medical
+        records are told at once and review it afterwards."""
+        patient = get_object_or_404(Patient.objects.only("pk"), pk=pk)
+        serializer = EmergencyAccessOpenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        access = restricted.open_emergency_access(
+            actor=request.user, patient_id=patient.pk, request=request, **serializer.validated_data
+        )
+        return Response(OwnEmergencyAccessSerializer(access).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=None, responses=OwnEmergencyAccessSerializer)
+    @action(detail=True, methods=["post"], url_path="emergency-access/end")
+    def end_emergency_access(self, request, pk=None):
+        """End your emergency access to this record early (done with it)."""
+        patient = get_object_or_404(Patient.objects.only("pk"), pk=pk)
+        access = restricted.end_emergency_access(
+            actor=request.user, patient_id=patient.pk, request=request
+        )
+        return Response(OwnEmergencyAccessSerializer(access).data)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("days", int, description="The last so many days (1 to 90; 7)")
+        ],
+        responses=RestrictedOpeningSerializer(many=True),
+    )
+    @action(detail=False, methods=["get"], url_path="restricted-openings")
+    def restricted_openings(self, request):
+        """Who opened restricted records, newest first (D23: reviewed by medical records).
+        Viewing the list is audited."""
+        try:
+            days = min(max(int(request.query_params.get("days", 7)), 1), 90)
+        except ValueError:
+            days = 7
+        page = self.paginate_queryset(
+            restricted.restricted_openings(timezone.now() - timedelta(days=days))
+        )
+        ids = {event.resource_id for event in page}
+        mrns = {
+            str(pk): mrn for pk, mrn in Patient.objects.filter(pk__in=ids).values_list("pk", "mrn")
+        }
+        record_audit_event(
+            action=AuditAction.RESTRICTED_OPENINGS_VIEWED,
+            resource_type="patient",
+            request=request,
+            metadata={"days": days},
+        )
+        serializer = RestrictedOpeningSerializer(page, many=True, context={"mrns": mrns})
+        return self.get_paginated_response(serializer.data)
 
     @extend_schema(responses=RegistrationOptionsSerializer)
     @action(detail=False, methods=["get"], url_path="registration-options", pagination_class=None)
@@ -429,3 +549,60 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             actor=request.user, patient_id=patient.pk, request=request, **serializer.validated_data
         )
         return Response(ConsentSerializer(consent).data, status=status.HTTP_201_CREATED)
+
+
+class EmergencyAccessViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    """Emergency access to patient records, for medical records to review (HIMS-PAT-006; D14).
+
+    ``state``: ``active`` (open now), ``to_review`` (ended, waiting) or ``reviewed``. Reviewing
+    needs someone other than the person who used it.
+    """
+
+    permission_scope = ANY_GRANT
+    serializer_class = EmergencyAccessSerializer
+    required_permissions = {
+        "list": P.PATIENTS_RECORDS_CORRECT,
+        "retrieve": P.PATIENTS_RECORDS_CORRECT,
+        "review": P.PATIENTS_RECORDS_CORRECT,
+    }
+    http_method_names = ["get", "post", "head"]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return EmergencyAccess.objects.none()
+        queryset = EmergencyAccess.objects.select_related("patient", "user", "reviewed_by")
+        if self.action == "list":
+            queryset = restricted.in_state(queryset, self.request.query_params.get("state", ""))
+            patient = self.request.query_params.get("patient_id")
+            if patient:
+                queryset = queryset.filter(patient_id=patient)
+        return queryset.order_by("-created_at")
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("state", str, enum=[code for code, _ in restricted.State.CHOICES]),
+            OpenApiParameter("patient_id", str, description="This patient only"),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """Emergency access, newest first."""
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(request=EmergencyAccessReviewSerializer, responses=EmergencyAccessSerializer)
+    @action(detail=True, methods=["post"])
+    def review(self, request, pk=None):
+        """Review an ended emergency access: appropriate, or not appropriate with a note."""
+        access = self.get_object()
+        serializer = EmergencyAccessReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        access = restricted.review_emergency_access(
+            actor=request.user,
+            access_id=access.pk,
+            version=data.pop("version"),
+            request=request,
+            **data,
+        )
+        return Response(EmergencyAccessSerializer(access).data)

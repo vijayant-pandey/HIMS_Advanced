@@ -431,6 +431,8 @@ def test_the_list_shows_only_the_minimum(desk, facility_a):
         "registered_facility_name",
         "created_at",
         "matched_on",  # HIMS-PAT-002: what found the patient in a search (none here)
+        "is_restricted",  # HIMS-PAT-006: a restricted (VIP, staff) record
+        "hidden",  # HIMS-PAT-006: restricted and not yours to open (exact MRN only)
     }
     assert row["phone_last4"] == "…3210"
     assert row["matched_on"] is None
