@@ -9,12 +9,14 @@ from django.contrib import admin
 from django.core.cache import cache
 from django.test import Client
 
+from apps.access_control.services import assign_role
 from apps.audit.models import AuditChainEntry, AuditEvent, AuditIntegrityCheck
 from apps.beds.models import Bed
 from apps.facilities.models import Building, Floor, Room, Ward
 from apps.identity.models import PasswordReset
 from apps.numbering.models import NumberCounter, NumberingScheme
 from apps.numbering.services import ensure_default_schemes
+from apps.patients.models import EmergencyAccess
 
 # Models deliberately not shown, with the reason.
 NOT_IN_CONSOLE = {
@@ -58,9 +60,13 @@ def test_every_hims_model_is_in_the_admin_console():
 
 
 @pytest.mark.django_db
-def test_every_console_page_opens(admin_user, auditor_user, organization):
+def test_every_console_page_opens(admin_user, auditor_user, organization, make_user, system_roles):
     ensure_default_schemes(organization)
     administrator, auditor = console(admin_user), console(auditor_user)
+    # Reviewing emergency access is for medical records only (HIMS-PAT-006).
+    officer = make_user(role=system_roles["organization-administrator"])
+    assign_role(actor=None, user=officer, role=system_roles["medical-records-officer"])
+    records = console(officer)
     for model, model_admin in admin.site._registry.items():
         if not model.__module__.startswith(("apps.", "common.")):
             continue
@@ -68,6 +74,8 @@ def test_every_console_page_opens(admin_user, auditor_user, organization):
         # Audit pages are for auditors only (separation of duties).
         auditor_only = model in (AuditEvent, AuditChainEntry, AuditIntegrityCheck)
         client = auditor if auditor_only else administrator
+        if model is EmergencyAccess:
+            client = records
         url = f"/admin/{meta.app_label}/{meta.model_name}/"
         assert client.get(url).status_code == 200, url
         if model_admin.has_add_permission(type("R", (), {"user": admin_user})()):

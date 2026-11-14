@@ -42,6 +42,18 @@ Design: [Phase 2 P0 part 02](../../p0/phase-2-patients/02-database-design.md) (a
   worked out from the record (`apps/patients/chart.py`); the record's history reads the audit
   log rows for the patient's id through the existing index `audit_resource_idx` (resource type,
   id, time) and shows field names only. Viewing it adds `patient.history.viewed`.
+* **Restricted records and emergency access (2026-11-14, HIMS-PAT-006).** Migration
+  `patients.0003`: `patients.is_restricted` and `patients.restriction` (vip, staff, other;
+  check `patients_restriction_has_kind`: both set or both empty), and the table
+  `patient_emergency_access` (patient, user, reason, `expires_at` = opened + 4 hours,
+  `ended_at` when ended early, `reviewed_at`, `reviewed_by`, `outcome`, `review_note`,
+  `version`). Checks: the reviewer is never the user
+  (`patient_emergency_access_reviewer_not_user`); a review has its time and outcome together
+  (`patient_emergency_access_review_complete`). Indexes: `patient_emergency_user_idx` (user,
+  patient, newest expiry: "is my emergency access open?" on every opening) and
+  `patient_emergency_review_idx` (review state, newest first). Never deleted. The reason is
+  classified **Clinical** (it may describe the patient's state). Restricted openings are
+  found in the audit log (`patient.record.viewed` with `restricted: true`).
 * **ID numbers**: [ADR-036](../../decisions/ADR-036-patient-id-numbers.md).
 * **History tables**: `patient_consents` and `patient_aliases` refuse updates and deletes in the
   database (`patient_history_guard()`), except a change of `patient_id`, which only a merge
@@ -53,5 +65,6 @@ Design: [Phase 2 P0 part 02](../../p0/phase-2-patients/02-database-design.md) (a
 ## Not yet (later tickets)
 
 Duplicate warning at registration (HIMS-PAT-003), merge and undo (HIMS-PAT-004), chart header
-with allergies (HIMS-PAT-005), restricted VIP/staff records and emergency access (HIMS-PAT-006),
+with allergies (HIMS-PAT-005), restricted VIP/staff records and emergency access (HIMS-PAT-006,
+done 2026-11-14, above),
 recording a death (HIMS-PAT-007), clinical tables (HIMS-CLIN-*).

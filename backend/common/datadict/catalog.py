@@ -138,6 +138,9 @@ LIFECYCLE: dict[str, str] = {
     "number is encrypted; screens, the console and the audit log only see it masked.",
     "patient_consents": "Append-only history (database trigger): every decision is a new row; "
     "the latest per kind is current. Only a merge may move a row.",
+    "patient_emergency_access": "Never deleted. Opened with a reason for 4 hours (or ended "
+    "early); reviewed once by someone else from medical records (outcome and note). Every step "
+    "is in the audit log (HIMS-PAT-006).",
     "patient_identifier_keys": "One row: the hospital's random key for ID-number fingerprints, "
     "encrypted with the field keys (re-encrypted on key rotation). Never changes or deleted.",
     "message_templates": "One row per message in the catalog; blank wording means the standard. "
@@ -346,6 +349,7 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "patient_identifiers.value_hash": (INTERNAL, "Keyed fingerprint (no number recoverable)"),
     "patient_identifiers.value_display": (RESTRICTED, "Patient ID number (masked)"),
     "patient_identifier_keys.key_encrypted": (SECRET, "Key (encrypted)"),
+    "patient_emergency_access.reason": (CLINICAL, "Why the record was opened (may be clinical)"),
 }
 # Column names, checked next: name -> (level, category).
 NAME_RULES: dict[str, tuple[str, str]] = {
@@ -370,6 +374,7 @@ PATIENT_TABLES = {
     "patient_relationships",
     "patient_identifiers",
     "patient_consents",
+    "patient_emergency_access",
 }
 # Whole tables whose remaining columns are security records.
 RESTRICTED_TABLES = {

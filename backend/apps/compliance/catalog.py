@@ -138,7 +138,10 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "audited since HIMS-PAT-001 (2026-11-12), every patient search since HIMS-PAT-002 "
         "(2026-11-13: its kind and result count, never what was typed); medical records see "
         "each record's history, who opened and changed it, and seeing it is audited too "
-        "(HIMS-PAT-005, 2026-11-14); clinical chart reads come with Phase 2.",
+        "(HIMS-PAT-005, 2026-11-14); restricted (VIP, staff) records are hidden from search "
+        "and every opening is audited and listed for medical records, emergency access has a "
+        "reason, lasts 4 hours and is reviewed (HIMS-PAT-006, 2026-11-14); clinical chart reads "
+        "come with Phase 2.",
         DONE,
     ),
     (
@@ -503,8 +506,10 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         5,
         "Audit log; opening a patient's record audited (HIMS-PAT-001), every search too, "
         "with at most 50 minimal results (HIMS-PAT-002); medical records see who opened "
-        "each record on its History tab (HIMS-PAT-005). Planned in Phase 2: "
-        "patient-level rules, restricted records, emergency access review.",
+        "each record on its History tab (HIMS-PAT-005); restricted records hidden from "
+        "search, emergency access with a reason, reviewed by someone else, and every opening of "
+        "a restricted record listed for medical records (HIMS-PAT-006). Planned in Phase 2: "
+        "patient-level rules for the clinical record (HIMS-CLIN-001).",
     ),
     (
         "R-004",

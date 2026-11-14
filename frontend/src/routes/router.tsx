@@ -90,6 +90,10 @@ export const routes = [
                 lazy: screen(() => import("../features/patients/RegisterPatientPage"), (m) => m.RegisterPatientPage),
               },
               {
+                path: "emergency-access",
+                lazy: screen(() => import("../features/patients/EmergencyAccessPage"), (m) => m.EmergencyAccessPage),
+              },
+              {
                 path: "patients/:id",
                 lazy: screen(() => import("../features/patients/PatientDetailPage"), (m) => m.PatientDetailPage),
               },

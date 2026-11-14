@@ -22,7 +22,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Hospital (organization)**: [`organizations`](#organizations)
 - **Facilities, departments and locations**: [`facilities`](#facilities), [`departments`](#departments), [`department_services`](#department_services), [`department_hours`](#department_hours), [`buildings`](#buildings), [`floors`](#floors), [`wards`](#wards), [`rooms`](#rooms)
 - **Beds**: [`beds`](#beds), [`bed_status_changes`](#bed_status_changes)
-- **Patients (master patient record)**: [`patients`](#patients), [`patient_aliases`](#patient_aliases), [`patient_contacts`](#patient_contacts), [`patient_relationships`](#patient_relationships), [`patient_identifiers`](#patient_identifiers), [`patient_consents`](#patient_consents), [`patient_identifier_keys`](#patient_identifier_keys)
+- **Patients (master patient record)**: [`patients`](#patients), [`patient_aliases`](#patient_aliases), [`patient_contacts`](#patient_contacts), [`patient_relationships`](#patient_relationships), [`patient_identifiers`](#patient_identifiers), [`patient_consents`](#patient_consents), [`patient_emergency_access`](#patient_emergency_access), [`patient_identifier_keys`](#patient_identifier_keys)
 - **Equipment register**: [`equipment`](#equipment), [`equipment_service_records`](#equipment_service_records)
 - **Numbering (MRN, visit, invoice, claim numbers)**: [`numbering_schemes`](#numbering_schemes), [`numbering_counters`](#numbering_counters), [`issued_numbers`](#issued_numbers)
 - **Feature settings**: [`feature_flags`](#feature_flags)
@@ -320,7 +320,7 @@ One person who is, or was, a patient of the hospital: one MRN in every facility.
 
 - **Model:** `patients.Patient`
 - **Lifecycle:** Never deleted (D24; retention set by legal before go-live). Corrections are versioned and audited before/after; an old name is kept as an alias. A merged record stays, read-only (HIMS-PAT-004).
-- **Rules:** `patients_mrn_unique`: Unique: organization, mrn; `patients_merged_has_target`: Check: (NOT status = 'merged' OR merged_into is set); `patients_not_merged_into_self`: Check: (merged_into is empty OR NOT merged_into = id)
+- **Rules:** `patients_mrn_unique`: Unique: organization, mrn; `patients_merged_has_target`: Check: (NOT status = 'merged' OR merged_into is set); `patients_not_merged_into_self`: Check: (merged_into is empty OR NOT merged_into = id); `patients_restriction_has_kind`: Check: ((is_restricted = False AND restriction = '') OR (is_restricted = True AND NOT restriction = ''))
 - **Extra indexes:** `patients_dob_idx`: date_of_birth; `patients_facility_idx`: registered_facility, -created_at; `patients_search_name_trgm`: search_name; `patients_search_sounds_idx`: search_sounds
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
@@ -350,6 +350,8 @@ One person who is, or was, a patient of the hospital: one MRN in every facility.
 | `has_no_phone` | boolean | no | `False` | — | Person | Restricted: Patient personal data | The patient has no phone (ticked instead of a mobile number) |
 | `is_unknown` | boolean | no | `False` | — | Person | Restricted: Patient personal data | Registered as unknown or unconscious; details completed later |
 | `identification_note` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Patient personal data (how they arrived) | For an unknown patient: how they arrived, e.g. 'Brought by ambulance, MG Road' |
+| `is_restricted` | boolean | no | `False` | — | System | Restricted: Patient personal data | Restricted record (VIP, staff): hidden from search; opened by medical records or with emergency access, every opening reviewed |
+| `restriction` | varchar(10) | no | — | `vip` (VIP or public figure), `staff` (Member of staff (or their family)), `other` (Other (e.g. at the patient's request)) | System | Restricted: Patient personal data | Restriction |
 | `registered_facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Registered facility |
 | `registered_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Registered by |
 | `search_name` | varchar(500) | no | — | up to 500 characters | System | Restricted: Patient names, for search | All names (and earlier names) in lower case, for patient search |
@@ -487,6 +489,33 @@ A consent decision: a new row for every change, so the history stays (D9).
 | `method` | varchar(16) | no | `PatientConsent.Method.VERBAL` | `verbal` (Told the front desk), `signed_form` (Signed a form) | Person | Restricted: Patient personal data | Method |
 | `note` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Patient personal data | Note |
 | `recorded_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Recorded by |
+
+<a id="patient_emergency_access"></a>
+### `patient_emergency_access`
+
+Emergency ("break-glass") access to one patient's record (HIMS-PAT-006; D14, P0 part 03).
+
+- **Model:** `patients.EmergencyAccess`
+- **Lifecycle:** Never deleted. Opened with a reason for 4 hours (or ended early); reviewed once by someone else from medical records (outcome and note). Every step is in the audit log (HIMS-PAT-006).
+- **Rules:** `patient_emergency_access_reviewer_not_user`: Check: (reviewed_by is empty OR NOT reviewed_by = user); `patient_emergency_access_review_complete`: Check: ((outcome = '' AND reviewed_at is empty) OR (reviewed_at is set AND NOT outcome = ''))
+- **Extra indexes:** `patient_emergency_user_idx`: user, patient, -expires_at; `patient_emergency_review_idx`: reviewed_at, -created_at
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `patient_id` | uuid → patients.id | no | — | on delete PROTECT | Person | Internal: Reference | Patient |
+| `user_id` | uuid → users.id | no | — | on delete PROTECT | Person | Internal: Person reference (id only) | User |
+| `reason` | varchar(500) | no | — | up to 500 characters | Person | Clinical: Why the record was opened (may be clinical) | Reason |
+| `expires_at` | timestamp with time zone | no | — | — | Person | Restricted: Patient personal data | 4 hours after it was opened |
+| `ended_at` | timestamp with time zone | yes | — | — | System | Restricted: Patient personal data | Ended early by the person who opened it |
+| `reviewed_at` | timestamp with time zone | yes | — | — | System | Restricted: Patient personal data | Reviewed at |
+| `reviewed_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Reviewed by |
+| `outcome` | varchar(20) | no | — | `appropriate` (Appropriate), `not_appropriate` (Not appropriate (follow up)) | Person | Restricted: Patient personal data | Outcome |
+| `review_note` | varchar(500) | no | — | up to 500 characters | Person | Restricted: Patient personal data | Review note |
 
 <a id="patient_identifier_keys"></a>
 ### `patient_identifier_keys`

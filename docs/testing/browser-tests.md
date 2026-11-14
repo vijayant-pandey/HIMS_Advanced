@@ -55,6 +55,12 @@ It finishes with `43 passed` (about 6 to 7 minutes). Then the US hospital:
 
 **Update 2026-11-14:** with the chart test (HIMS-PAT-005) the India run finishes with `49 passed`.
 
+**Update 2026-11-14, later:** with the restricted record test (HIMS-PAT-006) the India run finishes
+with `50 passed`. When the nurse becomes medical records in the chart test she now sets up
+two-factor (the role holds ★ permissions), and later tests sign her in with her code. The
+emergency access of a doctor and its review by a second medical records officer are covered by
+the API and screen tests; the browser test follows when the Doctor role exists (HIMS-CLIN-001).
+
 ```
 npm run e2e:us
 ```

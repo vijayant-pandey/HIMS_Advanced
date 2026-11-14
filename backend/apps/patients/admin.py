@@ -12,6 +12,11 @@ is audited like in the app.
 
 Searching Patients uses the app's patient search (HIMS-PAT-002): MRN, phone, ID number or a
 similar name, at most 50 results, audited. Patient identifiers can be searched by the number.
+
+Restricted records (HIMS-PAT-006): people without ``patients.restricted`` do not see restricted
+patients, nor their contacts, people, ID numbers, consents or names, anywhere in the console
+(emergency access is used in the app). Medical records restrict a record or lift it on the
+patient's page, with a reason, and review emergency access under **Emergency access**.
 """
 
 from django import forms
@@ -30,8 +35,9 @@ from common.admin.options import HimsModelAdmin, ReadOnlyModelAdmin
 from common.admin.site import can_use_console
 from common.exceptions import DomainError
 
-from . import chart, demographics, identifiers, search, services
+from . import chart, demographics, identifiers, restricted, search, services
 from .models import (
+    EmergencyAccess,
     Patient,
     PatientAlias,
     PatientConsent,
@@ -53,7 +59,20 @@ def _may_change(request) -> bool:
     return can_use_console(request.user) and has_permission(request.user, P.PATIENTS_REGISTER)
 
 
+def _may_see_restricted(request) -> bool:
+    return restricted.may_see_restricted(request.user)
+
+
 class PatientConsoleAccess:
+    def get_queryset(self, request):
+        """Restricted patients and their rows only for medical records (D23)."""
+        queryset = super().get_queryset(request)
+        if _may_see_restricted(request):
+            return queryset
+        if queryset.model is Patient:
+            return queryset.filter(is_restricted=False)
+        return queryset.filter(patient__is_restricted=False)
+
     def has_module_permission(self, request):
         return _may_view(request)
 
@@ -147,6 +166,18 @@ class PatientForm(forms.ModelForm):
         required=False, min_value=1, help_text="Instead of the date of birth (estimated)"
     )
     mobile = forms.CharField(required=False, help_text="Or tick 'Has no phone'")
+    restricted_as = forms.ChoiceField(
+        required=False,
+        label="Restricted record",
+        choices=[("", "Not restricted"), *Patient.Restriction.choices],
+        help_text="Hidden from patient search; opened by medical records or with emergency "
+        "access, every opening reviewed (HIMS-PAT-006).",
+    )
+    restriction_reason = forms.CharField(
+        required=False,
+        max_length=255,
+        help_text="Needed when you restrict the record or lift the restriction.",
+    )
 
     class Meta:
         model = Patient
@@ -158,6 +189,8 @@ class PatientForm(forms.ModelForm):
             self.fields["date_of_birth"].required = False
         if "given_name" in self.fields:
             self.fields["given_name"].required = False
+        if "restricted_as" in self.fields:
+            self.fields["restricted_as"].initial = self.instance.restriction
 
     def clean(self):
         cleaned = super().clean()
@@ -176,6 +209,14 @@ class PatientForm(forms.ModelForm):
                 self.add_error("mobile", str(exc))
             if not cleaned.get("mobile") and not cleaned.get("has_no_phone") and not unknown:
                 self.add_error("mobile", "Enter a mobile number, or tick 'Has no phone'.")
+        elif "restricted_as" in self.fields:
+            changed = cleaned.get("restricted_as", "") != self.instance.restriction
+            reason = " ".join(cleaned.get("restriction_reason", "").split())
+            if changed and len(reason) < restricted.MIN_REASON:
+                self.add_error(
+                    "restriction_reason",
+                    f"Give the reason (at least {restricted.MIN_REASON} characters).",
+                )
         return cleaned
 
 
@@ -191,10 +232,11 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
         "date_of_birth",
         "registered_facility",
         "is_unknown",
+        "is_restricted",
         "status",
         "created_at",
     )
-    list_filter = ("sex", "is_unknown", "status", "registered_facility")
+    list_filter = ("sex", "is_unknown", "is_restricted", "status", "registered_facility")
     search_fields = ("=mrn", "given_name", "family_name")  # replaced by patient search, below
     search_help_text = (
         "MRN, phone number, ID number or name (similar spelling, any order; add an age: "
@@ -252,6 +294,10 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
             ),
             ("Record", {"fields": ("registered_by", "version", "created_at", "updated_at")}),
         ]
+        if obj is not None and _may_see_restricted(request) and _may_change(request):
+            sets.insert(
+                2, ("Restricted record", {"fields": ("restricted_as", "restriction_reason")})
+            )
         if obj is not None and _may_see_history(request):
             sets.append(("Record history (latest 20)", {"fields": ("record_history",)}))
         return sets
@@ -299,9 +345,12 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         if object_id and request.method == "GET" and _may_view(request):
-            patient = Patient.objects.filter(pk=object_id).first()
+            patient = self.get_queryset(request).filter(pk=object_id).first()
             if patient is not None:
-                services.record_viewed(patient, actor=request.user, request=request)
+                opening = restricted.opening(request.user, patient)
+                services.record_viewed(
+                    patient, actor=request.user, request=request, metadata=opening.metadata
+                )
                 if _may_see_history(request):
                     record_audit_event(
                         action=AuditAction.PATIENT_HISTORY_VIEWED,
@@ -327,6 +376,17 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
                     request=request,
                     **changed,
                 )
+                wanted = form.cleaned_data.get("restricted_as")
+                if "restricted_as" in form.fields and wanted != current.restriction:
+                    restricted.set_restriction(
+                        actor=request.user,
+                        patient_id=obj.pk,
+                        version=Patient.objects.get(pk=obj.pk).version,
+                        restricted=bool(wanted),
+                        restriction=wanted,
+                        reason=form.cleaned_data.get("restriction_reason", ""),
+                        request=request,
+                    )
                 return
             age = form.cleaned_data.get("age_years")
             if age and not data.get("date_of_birth"):
@@ -639,3 +699,86 @@ class PatientAliasAdmin(PatientConsoleAccess, ReadOnlyModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+class EmergencyAccessForm(forms.ModelForm):
+    class Meta:
+        model = EmergencyAccess
+        fields = ("outcome", "review_note")
+
+
+@admin.register(EmergencyAccess)
+class EmergencyAccessAdmin(HimsModelAdmin):
+    """Emergency access to restricted records (HIMS-PAT-006; D14), for medical records. Opened in
+    the app; here it is reviewed (outcome and note) once it has ended, by someone else."""
+
+    form = EmergencyAccessForm
+    list_display = ("created_at", "patient", "user", "ends", "state", "outcome", "reviewed_by")
+    list_filter = ("outcome",)
+    search_fields = ("=patient__mrn", "user__email")
+    fields = (
+        "patient",
+        "user",
+        "reason",
+        "created_at",
+        "expires_at",
+        "ended_at",
+        "state",
+        "outcome",
+        "review_note",
+        "reviewed_at",
+        "reviewed_by",
+        "version",
+    )
+
+    def _may_review(self, request) -> bool:
+        return can_use_console(request.user) and restricted.may_review_emergency_access(
+            request.user
+        )
+
+    def has_module_permission(self, request):
+        return self._may_review(request)
+
+    def has_view_permission(self, request, obj=None):
+        return self._may_review(request)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return self._may_review(request) and (
+            obj is None or restricted.state_of(obj) == restricted.State.TO_REVIEW
+        )
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("patient", "user", "reviewed_by")
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = [f for f in self.fields if f not in ("outcome", "review_note")]
+        if obj is None or restricted.state_of(obj) != restricted.State.TO_REVIEW:
+            readonly += ["outcome", "review_note"]
+        return readonly
+
+    @admin.display(description="Ends")
+    def ends(self, obj):
+        return hospital_time(obj.ends_at).strftime("%d %b %Y %H:%M")
+
+    @admin.display(description="State")
+    def state(self, obj):
+        return dict(restricted.State.CHOICES)[restricted.state_of(obj)]
+
+    def save_model(self, request, obj, form, change):
+        try:
+            restricted.review_emergency_access(
+                actor=request.user,
+                access_id=obj.pk,
+                version=EmergencyAccess.objects.get(pk=obj.pk).version,
+                outcome=form.cleaned_data.get("outcome", ""),
+                note=form.cleaned_data.get("review_note", ""),
+                request=request,
+            )
+        except (ValidationError, DomainError) as exc:
+            _service_error(self, request, exc)

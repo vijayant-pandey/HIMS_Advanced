@@ -716,6 +716,13 @@ def current_consents(patient: Patient) -> dict[str, PatientConsent]:
     return latest
 
 
-def record_viewed(patient: Patient, *, actor, request) -> None:
-    """Opening a patient's record is audited (spec 13.4: 'viewing a patient record')."""
-    _audit(AuditAction.PATIENT_RECORD_VIEWED, patient, actor=actor, request=request)
+def record_viewed(patient: Patient, *, actor, request, metadata=None) -> None:
+    """Opening a patient's record is audited (spec 13.4: 'viewing a patient record'). Opening a
+    restricted one says so, and how (HIMS-PAT-006: ``restricted.opening``)."""
+    _audit(
+        AuditAction.PATIENT_RECORD_VIEWED,
+        patient,
+        actor=actor,
+        request=request,
+        metadata=metadata,
+    )

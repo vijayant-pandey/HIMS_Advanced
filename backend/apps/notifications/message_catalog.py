@@ -237,6 +237,28 @@ MESSAGES: tuple[MessageSpec, ...] = (
         required=frozenset({"supplier", "role"}),
     ),
     MessageSpec(
+        code="patients.emergency_access_opened",
+        name="Emergency access to a patient record",
+        when="Someone opens a restricted patient record with emergency access (sent to medical "
+        "records, who review it; HIMS-PAT-006). No patient details and no reason are included.",
+        category="access",
+        subject="{{hospital}}: emergency access to a patient record",
+        body=(
+            "{{name}} opened a restricted patient record with emergency access at {{opened}}. "
+            "It lasts until {{until}}.\n\n"
+            "Review it in HIMS under Patients → Emergency access once it has ended.\n\n"
+            + _OPEN_HIMS
+        ),
+        variables=(
+            Variable("name", "Who opened it", "Asha Verma"),
+            Variable("opened", "When", "12 Nov 2026 10:00 IST"),
+            Variable("until", "When it ends by itself", "12 Nov 2026 14:00 IST"),
+            HOSPITAL,
+            LINK,
+        ),
+        required=frozenset({"name", "link"}),
+    ),
+    MessageSpec(
         code="access.review_overdue",
         name="Access review overdue",
         when="The access review in progress is past its finish date.",

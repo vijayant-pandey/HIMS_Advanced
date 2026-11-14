@@ -16,6 +16,8 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   // Patients first: the front desk's main screen (HIMS-PAT-001).
   { to: "/patients", label: "Patients", permission: "patients.search" },
+  // Medical records review emergency access to restricted records (HIMS-PAT-006).
+  { to: "/emergency-access", label: "Emergency access", permission: "patients.records_correct" },
   { to: "/settings", label: "Hospital settings", permission: "organization.view" },
   { to: "/facilities", label: "Facilities", permission: "facilities.view" },
   { to: "/departments", label: "Departments", permission: "departments.view" },

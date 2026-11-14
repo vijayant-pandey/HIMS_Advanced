@@ -5,8 +5,9 @@ from apps.audit import catalog as audit_catalog
 from apps.facilities.models import Facility
 from apps.organizations.dates import hospital_today
 
-from .. import chart, demographics
+from .. import chart, demographics, restricted
 from ..models import (
+    EmergencyAccess,
     Patient,
     PatientAlias,
     PatientConsent,
@@ -36,6 +37,10 @@ class PatientListSerializer(serializers.ModelSerializer):
     matched_on = serializers.SerializerMethodField(
         help_text="In a search: what found the patient (mrn, phone, id_number or name)"
     )
+    hidden = serializers.SerializerMethodField(
+        help_text="A restricted record you may not open (HIMS-PAT-006): found by its exact MRN "
+        "only, with nothing about the patient; open it with emergency access"
+    )
 
     class Meta:
         model = Patient
@@ -48,6 +53,8 @@ class PatientListSerializer(serializers.ModelSerializer):
             "birth_date_estimated",
             "phone_last4",
             "is_unknown",
+            "is_restricted",
+            "hidden",
             "status",
             "registered_facility",
             "registered_facility_name",
@@ -55,6 +62,17 @@ class PatientListSerializer(serializers.ModelSerializer):
             "matched_on",
         ]
         read_only_fields = fields
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data["hidden"]:
+            # Only that a restricted record has this MRN: no name, age, sex or phone.
+            data.update(name="", sex=Sex.UNKNOWN, age="", birth_date_estimated=False)
+            data.update(phone_last4="", is_unknown=False)
+        return data
+
+    def get_hidden(self, obj) -> bool:
+        return obj.is_restricted and self.context.get("hide_restricted", False)
 
     def get_age(self, obj) -> str:
         return demographics.age_text(obj.date_of_birth, hospital_today())
@@ -203,6 +221,15 @@ class ChartAlertSerializer(serializers.Serializer):
     message = serializers.CharField()
 
 
+class OwnEmergencyAccessSerializer(serializers.ModelSerializer):
+    """The reader's own emergency access to this record (HIMS-PAT-006)."""
+
+    class Meta:
+        model = EmergencyAccess
+        fields = ["id", "reason", "created_at", "expires_at"]
+        read_only_fields = fields
+
+
 class PatientDetailSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="full_name", read_only=True)
     age = serializers.SerializerMethodField()
@@ -228,6 +255,10 @@ class PatientDetailSerializer(serializers.ModelSerializer):
     )
     alerts = serializers.SerializerMethodField(
         help_text="What staff must notice on opening the record, most important first"
+    )
+    restriction_label = serializers.CharField(source="get_restriction_display", read_only=True)
+    emergency_access = serializers.SerializerMethodField(
+        help_text="Opened with your emergency access: until when (HIMS-PAT-006)"
     )
 
     class Meta:
@@ -257,6 +288,10 @@ class PatientDetailSerializer(serializers.ModelSerializer):
             "has_no_phone",
             "is_unknown",
             "identification_note",
+            "is_restricted",
+            "restriction",
+            "restriction_label",
+            "emergency_access",
             "registered_facility",
             "registered_facility_name",
             "registered_by_name",
@@ -291,6 +326,13 @@ class PatientDetailSerializer(serializers.ModelSerializer):
     def get_alerts(self, obj) -> list[dict]:
         return ChartAlertSerializer(chart.alerts(obj), many=True).data
 
+    @extend_schema_field(OwnEmergencyAccessSerializer(allow_null=True))
+    def get_emergency_access(self, obj) -> dict | None:
+        opening = self.context.get("opening")
+        if opening is None or opening.access is None:
+            return None
+        return OwnEmergencyAccessSerializer(opening.access).data
+
 
 class PatientHistoryEventSerializer(serializers.Serializer):
     """One event in the record's history (HIMS-PAT-005): what, who, where and when; for a
@@ -311,6 +353,71 @@ class PatientHistoryEventSerializer(serializers.Serializer):
 
     def get_changed(self, event) -> list[str]:
         return chart.changed_fields(event)
+
+
+class EmergencyAccessSerializer(serializers.ModelSerializer):
+    """Emergency access for medical records to review (HIMS-PAT-006)."""
+
+    patient_mrn = serializers.CharField(source="patient.mrn", read_only=True)
+    patient_name = serializers.CharField(source="patient.full_name", read_only=True)
+    user_name = serializers.CharField(source="user.display_name", read_only=True)
+    user_email = serializers.CharField(source="user.email", read_only=True)
+    ends_at = serializers.DateTimeField(read_only=True)
+    state = serializers.SerializerMethodField()
+    reviewed_by_name = serializers.SerializerMethodField()
+    outcome_label = serializers.CharField(source="get_outcome_display", read_only=True)
+
+    class Meta:
+        model = EmergencyAccess
+        fields = [
+            "id",
+            "patient",
+            "patient_mrn",
+            "patient_name",
+            "user",
+            "user_name",
+            "user_email",
+            "reason",
+            "created_at",
+            "expires_at",
+            "ended_at",
+            "ends_at",
+            "state",
+            "reviewed_at",
+            "reviewed_by_name",
+            "outcome",
+            "outcome_label",
+            "review_note",
+            "version",
+        ]
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.ChoiceField(choices=restricted.State.CHOICES))
+    def get_state(self, obj) -> str:
+        return restricted.state_of(obj)
+
+    def get_reviewed_by_name(self, obj) -> str | None:
+        return _name(obj.reviewed_by)
+
+
+class RestrictedOpeningSerializer(serializers.Serializer):
+    """One opening of a restricted record: who, when, where and how (HIMS-PAT-006)."""
+
+    id = serializers.UUIDField()
+    occurred_at = serializers.DateTimeField()
+    patient = serializers.UUIDField(source="resource_id")
+    patient_mrn = serializers.SerializerMethodField()
+    actor_name = serializers.CharField(allow_null=True)
+    facility_name = serializers.CharField(allow_null=True)
+    via = serializers.SerializerMethodField(
+        help_text="restricted_permission (medical records) or emergency_access"
+    )
+
+    def get_patient_mrn(self, event) -> str:
+        return self.context.get("mrns", {}).get(event.resource_id, "")
+
+    def get_via(self, event) -> str:
+        return (event.metadata or {}).get("via", "")
 
 
 # --- Writing ------------------------------------------------------------------------------------
@@ -488,6 +595,29 @@ class ConsentCreateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(PatientConsent.Status.choices)
     method = serializers.ChoiceField(PatientConsent.Method.choices)
     note = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+
+
+class RestrictionSerializer(serializers.Serializer):
+    """Restrict a record or lift the restriction (HIMS-PAT-006)."""
+
+    restricted = serializers.BooleanField()
+    restriction = serializers.ChoiceField(
+        Patient.Restriction.choices, required=False, allow_blank=True, default=""
+    )
+    reason = serializers.CharField(max_length=255)
+    version = serializers.IntegerField(min_value=1)
+
+
+class EmergencyAccessOpenSerializer(serializers.Serializer):
+    reason = serializers.CharField(
+        max_length=500, help_text=f"Why (at least {restricted.MIN_REASON} characters)"
+    )
+
+
+class EmergencyAccessReviewSerializer(serializers.Serializer):
+    outcome = serializers.ChoiceField(EmergencyAccess.Outcome.choices)
+    note = serializers.CharField(max_length=500, required=False, allow_blank=True, default="")
+    version = serializers.IntegerField(min_value=1)
 
 
 class IdentifierKindSerializer(serializers.Serializer):

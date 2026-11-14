@@ -63,8 +63,10 @@ from apps.numbering.services import ensure_default_schemes
 from apps.organizations.dates import hospital_today
 from apps.organizations.models import Organization
 from apps.organizations.services import update_organization
+from apps.patients import restricted
 from apps.patients.demographics import years_between
-from apps.patients.services import register_patient, update_patient
+from apps.patients.models import EmergencyAccess, Patient, PatientConsent
+from apps.patients.services import record_viewed, register_patient, update_patient
 from apps.rosters import balances, staffing
 from apps.rosters.models import LeaveRequest, ShiftType
 from apps.rosters.services import add_shifts, approve_leave, reject_leave, request_leave
@@ -430,6 +432,8 @@ class Context:
     counts: dict = field(default_factory=dict)
     logins: list = field(default_factory=list)
     desks: dict = field(default_factory=dict)  # facility id -> front desk account
+    hods: dict = field(default_factory=dict)  # facility id -> head of department account
+    records: User | None = None  # the medical records officer (whole hospital)
     examples: list = field(default_factory=list)  # (type this, what it finds): patient search
 
     @property
@@ -846,6 +850,7 @@ def _staff(ctx: Context, facility: Facility, departments: dict, branch: dict) ->
         department=cardiology,
         reason="Demo: head of department",
     )
+    ctx.hods[facility.pk] = user
     nurse = team.get("ICU", team["EMR"])[-1]
     user = _account(ctx, nurse, f"nurse.{code}", f"{facility.name}: nurse (basic access)")
     assign_role(
@@ -1195,6 +1200,83 @@ def _patients(ctx: Context, facility: Facility, branch: dict, invented: list[Dem
     ctx.add("patients")
 
 
+RESTRICTED_REASONS = {
+    Patient.Restriction.VIP: "Demo: a well-known local politician who asked for privacy",
+    Patient.Restriction.STAFF: "Demo: a nurse of this hospital, registered as a patient",
+}
+
+
+def add_restricted_examples(*, records, hod) -> list[tuple[str, str]]:
+    """Restricted records and emergency access (HIMS-PAT-006), as medical records and a head of
+    department would make them: per branch one adult's record restricted (the first branch: a
+    VIP; the others: a member of staff), then on the first one two emergency accesses by the head
+    of department, one already reviewed and one waiting for review. Used by the seed and, for a
+    hospital filled before HIMS-PAT-006, by ``add_demo_restricted_records``. Returns the MRNs to
+    try."""
+    if records is None:
+        return []
+    examples = []
+    adult = hospital_today() - timedelta(days=19 * 366)  # surely over 18
+    first = None
+    for n, facility in enumerate(Facility.objects.order_by("created_at")):
+        # Not a printed search example: skip the branch's first patients, renamed women and
+        # anyone still waiting for the privacy notice (those are other examples).
+        candidates = list(
+            Patient.objects.filter(
+                registered_facility=facility,
+                is_unknown=False,
+                is_restricted=False,
+                date_of_birth__lte=adult,
+                aliases__isnull=True,
+                consents__kind=PatientConsent.Kind.PRIVACY_NOTICE,
+            )
+            .distinct()
+            .order_by("created_at")[:4]
+        )
+        if len(candidates) < 2:
+            continue
+        patient = candidates[-1]
+        kind = Patient.Restriction.VIP if n == 0 else Patient.Restriction.STAFF
+        restricted.set_restriction(
+            actor=records,
+            patient_id=patient.pk,
+            version=patient.version,
+            restricted=True,
+            restriction=kind,
+            reason=RESTRICTED_REASONS[kind],
+        )
+        if first is None:
+            first = Patient.objects.get(pk=patient.pk)
+            examples.append(
+                (
+                    first.mrn,
+                    "restricted record (VIP): its name does not find it and this MRN shows only "
+                    "'Restricted record'; medical records open it, the head of department with "
+                    "emergency access",
+                )
+            )
+    if first is None or hod is None:
+        return examples
+    for reason, outcome in (
+        ("Demo: brought to the emergency room with chest pain; earlier records needed", True),
+        ("Demo: the patient phoned the department; checked the phone number on record", False),
+    ):
+        access = restricted.open_emergency_access(actor=hod, patient_id=first.pk, reason=reason)
+        record_viewed(
+            first, actor=hod, request=None, metadata=restricted.opening(hod, first).metadata
+        )
+        restricted.end_emergency_access(actor=hod, patient_id=first.pk)
+        if outcome:
+            restricted.review_emergency_access(
+                actor=records,
+                access_id=access.pk,
+                version=EmergencyAccess.objects.get(pk=access.pk).version,
+                outcome=EmergencyAccess.Outcome.APPROPRIATE,
+                note="Demo: emergency care, as the reason says",
+            )
+    return examples
+
+
 def _access_examples(ctx: Context, teams: list[dict]) -> None:
     from apps.access_control.models import RoleAssignment
 
@@ -1303,6 +1385,7 @@ def seed_hospital(
                 role=Role.objects.get(code="medical-records-officer"),
                 reason="Demo: medical records officer",
             )
+            ctx.records = user
             hr_done = True
         _privileges(ctx, team, departments)
         _rota(ctx, team, departments)
@@ -1310,5 +1393,10 @@ def seed_hospital(
         _equipment(ctx, facility, departments, wards)
         mine = [p for p in invented if p.branch == branch["code"]]
         _patients(ctx, facility, branch, mine)
+    first = Facility.objects.order_by("created_at").first()
+    found = add_restricted_examples(records=ctx.records, hod=ctx.hods.get(first.pk))
+    ctx.add("restricted patient records", Patient.objects.filter(is_restricted=True).count())
+    ctx.add("emergency access examples", EmergencyAccess.objects.count())
+    ctx.examples += found
     _access_examples(ctx, teams)
     return ctx

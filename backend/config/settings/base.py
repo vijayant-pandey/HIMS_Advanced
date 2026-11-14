@@ -381,6 +381,10 @@ SPECTACULAR_SETTINGS = {
         "PatientConsentStatusEnum": "apps.patients.models.PatientConsent.Status",
         "ConsentMethodEnum": "apps.patients.models.PatientConsent.Method",
         "PatientAliasKindEnum": "apps.patients.models.PatientAlias.Kind",
+        # Restricted records and emergency access (HIMS-PAT-006).
+        "PatientRestrictionEnum": "apps.patients.models.Patient.Restriction",
+        "EmergencyAccessOutcomeEnum": "apps.patients.models.EmergencyAccess.Outcome",
+        "EmergencyAccessStateEnum": "apps.patients.restricted.State.CHOICES",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)

@@ -547,3 +547,17 @@ sign-in.
 | `patients.history` | **Medical records officer** only | The chart's **History** tab: who opened the patient's record and who changed what, and when (field names only). Viewing it is audited |
 
 Not held by the **Organization administrator** (like `audit.view`, it is about reviewing access, not running the hospital), the front desk or heads of department. **Auditors** see the same events in the **Audit log**. It is patient data, so the **software supplier's support account never holds it**; an administrator may still give the Medical records officer role (decisions log rows 21 and 26). No two-factor requirement today.
+
+## Update 2026-11-14: restricted records and emergency access (HIMS-PAT-006)
+
+| Permission | Who holds it | What it allows | Two-factor |
+|---|---|---|---|
+| `patients.restricted` | **Medical records officer** | Find and open restricted (VIP, staff) records; restrict a record or lift it, with a reason | Yes |
+| `patients.records_correct` | **Medical records officer** | Review emergency access (Emergency access page and console); see who opened restricted records. Later tickets add "entered in error" and the possible-duplicates list | Yes |
+| `clinical.emergency_access` | **Head of department (HOD)** today; the Doctor and OPD nurse roles with HIMS-CLIN-* | Open a restricted record for 4 hours with a reason; medical records are emailed and review it | Yes |
+
+None of the three is held by the **Organization administrator** or the **front desk** (P0 part 04
+matrix), and the **software supplier's support account never holds them** (patient data). An
+administrator may still give the Medical records officer and Head of department roles (decisions
+log rows 21, 29–32). The medical records officer does not need emergency access: they open
+restricted records anyway.

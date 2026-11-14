@@ -6,8 +6,8 @@ merged record, a child without a guardian). The same alerts show in the app and 
 console, so they are worked out here once.
 
 Allergies are recorded with HIMS-CLIN-003. Until then every patient's allergies are "not asked
-yet", which is the truth and what the header must say when nothing is recorded (D19); restricted
-and deceased flags come with HIMS-PAT-006 and HIMS-PAT-007.
+yet", which is the truth and what the header must say when nothing is recorded (D19). A
+restricted record (HIMS-PAT-006) says so first; the deceased flag comes with HIMS-PAT-007.
 
 The record's history lists who opened the record and who changed what, and when, from the audit
 log (P0 part 04: medical records see who opened a chart; auditors search the whole audit log).
@@ -76,6 +76,15 @@ def alerts(patient: Patient) -> list[Alert]:
                 "merged",
                 Severity.WARNING,
                 f"This record was merged into {target}. Open that record for care.",
+            )
+        )
+    if patient.is_restricted:
+        found.append(
+            Alert(
+                "restricted",
+                Severity.WARNING,
+                f"Restricted record ({patient.get_restriction_display().lower()}): hidden from "
+                "patient search. Every opening is recorded and reviewed by medical records.",
             )
         )
     if patient.is_unknown:

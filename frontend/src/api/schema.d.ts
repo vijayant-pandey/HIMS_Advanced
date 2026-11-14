@@ -2484,6 +2484,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patient-emergency-access/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Emergency access, newest first. */
+        get: operations["patient_emergency_access_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patient-emergency-access/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Emergency access to patient records, for medical records to review (HIMS-PAT-006; D14).
+         *
+         *     ``state``: ``active`` (open now), ``to_review`` (ended, waiting) or ``reviewed``. Reviewing
+         *     needs someone other than the person who used it.
+         */
+        get: operations["patient_emergency_access_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patient-emergency-access/{id}/review/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Review an ended emergency access: appropriate, or not appropriate with a note. */
+        post: operations["patient_emergency_access_review_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/patients/": {
         parameters: {
             query?: never;
@@ -2514,7 +2570,8 @@ export interface paths {
         };
         /**
          * @description One patient's record: details, contacts, people, ID numbers (masked) and consents.
-         *     Every opening is audited.
+         *     Every opening is audited. A restricted record needs ``patients.restricted`` or
+         *     emergency access (otherwise 403 ``RESTRICTED_RECORD``).
          */
         get: operations["patients_retrieve"];
         put?: never;
@@ -2575,6 +2632,43 @@ export interface paths {
         head?: never;
         /** @description Correct a contact, make it the main one, or end it (kept on record). */
         patch: operations["patients_contacts_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/emergency-access/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Emergency access to a restricted record (D14): 4 hours, with a reason; medical
+         *     records are told at once and review it afterwards.
+         */
+        post: operations["patients_emergency_access_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/{id}/emergency-access/end/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End your emergency access to this record early (done with it). */
+        post: operations["patients_emergency_access_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/patients/{id}/history/": {
@@ -2668,6 +2762,26 @@ export interface paths {
         patch: operations["patients_relationships_partial_update"];
         trace?: never;
     };
+    "/api/v1/patients/{id}/restriction/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Restrict the record (VIP, member of staff, other) or lift the restriction, with a
+         *     reason (HIMS-PAT-006). Medical records only (``patients.restricted``).
+         */
+        post: operations["patients_restriction_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/patients/registration-options/": {
         parameters: {
             query?: never;
@@ -2677,6 +2791,26 @@ export interface paths {
         };
         /** @description What the registration form offers in this hospital's country (ID number kinds). */
         get: operations["patients_registration_options_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patients/restricted-openings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Who opened restricted records, newest first (D23: reviewed by medical records).
+         *     Viewing the list is audited.
+         */
+        get: operations["patients_restricted_openings_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5010,6 +5144,65 @@ export interface components {
                 };
             };
         };
+        /** @description Emergency access for medical records to review (HIMS-PAT-006). */
+        EmergencyAccess: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly patient: string;
+            readonly patient_mrn: string;
+            readonly patient_name: string;
+            /** Format: uuid */
+            readonly user: string;
+            readonly user_name: string;
+            readonly user_email: string;
+            readonly reason: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /**
+             * Format: date-time
+             * @description 4 hours after it was opened
+             */
+            readonly expires_at: string;
+            /**
+             * Format: date-time
+             * @description Ended early by the person who opened it
+             */
+            readonly ended_at: string | null;
+            /** Format: date-time */
+            readonly ends_at: string;
+            readonly state: components["schemas"]["EmergencyAccessStateEnum"];
+            /** Format: date-time */
+            readonly reviewed_at: string | null;
+            readonly reviewed_by_name: string | null;
+            readonly outcome: components["schemas"]["EmergencyAccessOutcomeEnum"];
+            readonly outcome_label: string;
+            readonly review_note: string;
+            readonly version: number;
+        };
+        EmergencyAccessOpenRequest: {
+            /** @description Why (at least 10 characters) */
+            reason: string;
+        };
+        /**
+         * @description * `appropriate` - Appropriate
+         *     * `not_appropriate` - Not appropriate (follow up)
+         * @enum {string}
+         */
+        EmergencyAccessOutcomeEnum: "appropriate" | "not_appropriate";
+        EmergencyAccessReviewRequest: {
+            outcome: components["schemas"]["EmergencyAccessOutcomeEnum"];
+            /** @default  */
+            note: string;
+            version: number;
+        };
+        /**
+         * @description * `active` - Open now
+         *     * `to_review` - Ended, to review
+         *     * `reviewed` - Reviewed
+         * @enum {string}
+         */
+        EmergencyAccessStateEnum: "active" | "to_review" | "reviewed";
         /**
          * @description * `active` - Active
          *     * `on_leave` - On leave
@@ -6142,6 +6335,19 @@ export interface components {
          * @enum {string}
          */
         OutcomeEnum: "success" | "denied" | "failure";
+        /** @description The reader's own emergency access to this record (HIMS-PAT-006). */
+        OwnEmergencyAccess: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly reason: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /**
+             * Format: date-time
+             * @description 4 hours after it was opened
+             */
+            readonly expires_at: string;
+        };
         PaginatedAccountList: {
             /** @example 123 */
             count: number;
@@ -6218,6 +6424,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Department"][];
+        };
+        PaginatedEmergencyAccessList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["EmergencyAccess"][];
         };
         PaginatedEquipmentList: {
             /** @example 123 */
@@ -6323,6 +6544,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["PatientList"][];
+        };
+        PaginatedRestrictedOpeningList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RestrictedOpening"][];
         };
         PaginatedRoleAssignmentList: {
             /** @example 123 */
@@ -6810,6 +7046,12 @@ export interface components {
             readonly is_unknown: boolean;
             /** @description For an unknown patient: how they arrived, e.g. 'Brought by ambulance, MG Road' */
             readonly identification_note: string;
+            /** @description Restricted record (VIP, staff): hidden from search; opened by medical records or with emergency access, every opening reviewed */
+            readonly is_restricted: boolean;
+            readonly restriction: components["schemas"]["PatientRestrictionEnum"];
+            readonly restriction_label: string;
+            /** @description Opened with your emergency access: until when (HIMS-PAT-006) */
+            readonly emergency_access: components["schemas"]["OwnEmergencyAccess"] | null;
             /** Format: uuid */
             readonly registered_facility: string;
             readonly registered_facility_name: string;
@@ -6877,6 +7119,10 @@ export interface components {
             readonly phone_last4: string;
             /** @description Registered as unknown or unconscious; details completed later */
             readonly is_unknown: boolean;
+            /** @description Restricted record (VIP, staff): hidden from search; opened by medical records or with emergency access, every opening reviewed */
+            readonly is_restricted: boolean;
+            /** @description A restricted record you may not open (HIMS-PAT-006): found by its exact MRN only, with nothing about the patient; open it with emergency access */
+            readonly hidden: boolean;
             readonly status: components["schemas"]["PatientStatusEnum"];
             /** Format: uuid */
             readonly registered_facility: string;
@@ -6980,6 +7226,13 @@ export interface components {
          * @enum {string}
          */
         PatientRelationEnum: "mother" | "father" | "guardian" | "spouse" | "child" | "sibling" | "next_of_kin" | "caregiver" | "emergency_contact" | "other";
+        /**
+         * @description * `vip` - VIP or public figure
+         *     * `staff` - Member of staff (or their family)
+         *     * `other` - Other (e.g. at the patient's request)
+         * @enum {string}
+         */
+        PatientRestrictionEnum: "vip" | "staff" | "other";
         /**
          * @description * `male` - Male
          *     * `female` - Female
@@ -7095,6 +7348,7 @@ export interface components {
          *     * `audit.view` - audit.view
          *     * `beds.status.manage` - beds.status.manage
          *     * `catalogs.manage` - catalogs.manage
+         *     * `clinical.emergency_access` - clinical.emergency_access
          *     * `compliance.manage` - compliance.manage
          *     * `compliance.view` - compliance.view
          *     * `departments.manage` - departments.manage
@@ -7117,7 +7371,9 @@ export interface components {
          *     * `organization.manage` - organization.manage
          *     * `organization.view` - organization.view
          *     * `patients.history` - patients.history
+         *     * `patients.records_correct` - patients.records_correct
          *     * `patients.register` - patients.register
+         *     * `patients.restricted` - patients.restricted
          *     * `patients.search` - patients.search
          *     * `patients.view` - patients.view
          *     * `platform.admin_console` - platform.admin_console
@@ -7138,7 +7394,7 @@ export interface components {
          *     * `support.access.request` - support.access.request
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "patients.history" | "patients.register" | "patients.search" | "patients.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "clinical.emergency_access" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "patients.history" | "patients.records_correct" | "patients.register" | "patients.restricted" | "patients.search" | "patients.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
         Person: {
             /** Format: uuid */
             id: string;
@@ -7344,6 +7600,28 @@ export interface components {
          * @enum {string}
          */
         RestoreDrillTriggerEnum: "on_demand" | "command";
+        /** @description One opening of a restricted record: who, when, where and how (HIMS-PAT-006). */
+        RestrictedOpening: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            /** Format: uuid */
+            patient: string;
+            readonly patient_mrn: string;
+            actor_name: string | null;
+            facility_name: string | null;
+            /** @description restricted_permission (medical records) or emergency_access */
+            readonly via: string;
+        };
+        /** @description Restrict a record or lift the restriction (HIMS-PAT-006). */
+        RestrictionRequest: {
+            restricted: boolean;
+            /** @default  */
+            restriction: components["schemas"]["PatientRestrictionEnum"] | components["schemas"]["BlankEnum"];
+            reason: string;
+            version: number;
+        };
         RetentionCategory: {
             category: string;
             label: string;
@@ -12533,6 +12811,81 @@ export interface operations {
             };
         };
     };
+    patient_emergency_access_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description This patient only */
+                patient_id?: string;
+                state?: "active" | "reviewed" | "to_review";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedEmergencyAccessList"];
+                };
+            };
+        };
+    };
+    patient_emergency_access_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this emergency access. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmergencyAccess"];
+                };
+            };
+        };
+    };
+    patient_emergency_access_review_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this emergency access. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmergencyAccessReviewRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmergencyAccess"];
+                };
+            };
+        };
+    };
     patients_list: {
         parameters: {
             query?: {
@@ -12717,6 +13070,54 @@ export interface operations {
             };
         };
     };
+    patients_emergency_access_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmergencyAccessOpenRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnEmergencyAccess"];
+                };
+            };
+        };
+    };
+    patients_emergency_access_end_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnEmergencyAccess"];
+                };
+            };
+        };
+    };
     patients_history_list: {
         parameters: {
             query?: {
@@ -12850,6 +13251,32 @@ export interface operations {
             };
         };
     };
+    patients_restriction_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestrictionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientDetail"];
+                };
+            };
+        };
+    };
     patients_registration_options_retrieve: {
         parameters: {
             query?: never;
@@ -12865,6 +13292,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RegistrationOptions"];
+                };
+            };
+        };
+    };
+    patients_restricted_openings_list: {
+        parameters: {
+            query?: {
+                /** @description The last so many days (1 to 90; 7) */
+                days?: number;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRestrictedOpeningList"];
                 };
             };
         };
