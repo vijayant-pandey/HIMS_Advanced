@@ -1105,9 +1105,17 @@ def _patients(ctx: Context, facility: Facility, branch: dict, invented: list[Dem
     pick = random.Random(f"{ctx.hospital.key}-{branch['code']}-patients")  # noqa: S311 - demo data
     street = "Demo Colony" if ctx.country == "IN" else "Demo Street"
     renamed = ""  # one woman per branch changes her family name (HIMS-PAT-002: earlier names)
+    # Chart alerts (HIMS-PAT-005): per branch, the first child came without a guardian and one
+    # adult has not had the privacy notice yet, so the chart header has something to show.
+    unaccompanied = ""
     for n, person in enumerate(invented):
         relationships = []
-        if years_between(person.date_of_birth, ctx.today) < 18:
+        child = years_between(person.date_of_birth, ctx.today) < 18
+        alone = child and not unaccompanied
+        no_notice = n == 2 and not child
+        if alone:
+            unaccompanied = "Demo: brought in by a school teacher; the mother is on her way"
+        elif child:
             given, _family, sex = relatives.person()
             relationships.append(
                 {
@@ -1153,13 +1161,17 @@ def _patients(ctx: Context, facility: Facility, branch: dict, invented: list[Dem
             },
             relationships=relationships,
             identifier_items=[old_mrn] if n % 5 == 0 else [],
-            privacy_notice="given",
-            sms_consent=n % 3 != 0,
+            privacy_notice="" if no_notice else "given",
+            sms_consent=None if no_notice else n % 3 != 0,
             email_consent=None,
+            no_guardian_reason=unaccompanied if alone else "",
         )
         ctx.add("patients")
         if n == 0:
             ctx.search_examples(branch, patient, person, old_mrn["value"])
+        if (alone or no_notice) and branch is ctx.hospital.branches[0]:
+            what = "under 18, no guardian recorded" if alone else "privacy notice not given yet"
+            ctx.examples.append((patient.mrn, f"chart alert: {what}"))
         if (
             not renamed
             and person.sex == "female"

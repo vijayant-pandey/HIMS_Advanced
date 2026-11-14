@@ -162,6 +162,7 @@ class AuditAction:
     PATIENT_REGISTERED = "patient.registered"
     PATIENT_UPDATED = "patient.updated"
     PATIENT_RECORD_VIEWED = "patient.record.viewed"
+    PATIENT_HISTORY_VIEWED = "patient.history.viewed"
     PATIENT_LIST_SEARCHED = "patient.searched"
     PATIENT_CONTACT_ADDED = "patient.contact.added"
     PATIENT_CONTACT_UPDATED = "patient.contact.updated"

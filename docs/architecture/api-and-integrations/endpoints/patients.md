@@ -11,7 +11,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_list` |
 | Method and path | `GET /api/v1/patients/` |
 | Business purpose | List (patients). Patients, newest registration first, or a patient search (``search``): the short list only (minimum necessary). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.search` (Look up patients: the short list (name, MRN, age and sex, the phone's last digits)). System roles holding it: Organization administrator, Head of department (HOD), Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | No body; query: `age`, `facility`, `mrn`, `page`, `page_size`, `search`, `sex` |
@@ -39,7 +39,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_create` |
 | Method and path | `POST /api/v1/patients/` |
 | Business purpose | Add (patients). Register a patient; the MRN is issued in the same step. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `PatientRegisterRequest`: `address_line1` (≤ 255 characters), `address_line2` (≤ 255 characters), `city` (≤ 100 characters), `district` (≤ 100 characters), `state` (≤ 100 characters), `postal_code` (≤ 10 characters), `country` (≤ 2 characters), `facility` (required, uuid), `title` (≤ 20 characters), `given_name` (≤ 150 characters), `middle_name` (≤ 150 characters), `family_name` (≤ 150 characters), `preferred_name` (≤ 150 characters), `date_of_birth` (date), `age_years`, `age_months`, `age_days`, `sex` (required, one of the listed values), `gender_identity` (≤ 60 characters), `pronouns` (≤ 60 characters), `preferred_language` (≤ 35 characters), `marital_status` (one of the listed values), `occupation` (≤ 100 characters), `blood_group_reported` (one of the listed values), `is_unknown`, `identification_note` (≤ 255 characters), `mobile` (≤ 30 characters), `has_no_phone`, `alternate_phone` (≤ 30 characters), `email` (one of the listed values), `relationships`, `identifiers`, `privacy_notice` (one of the listed values), `sms_consent`, `email_consent`, `consent_method` (one of the listed values), `no_guardian_reason` (≤ 255 characters) |
@@ -67,7 +67,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_registration_options_retrieve` |
 | Method and path | `GET /api/v1/patients/registration-options/` |
 | Business purpose | What the registration form offers in this hospital's country (ID number kinds). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | No body |
@@ -95,7 +95,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_retrieve` |
 | Method and path | `GET /api/v1/patients/{pk}/` |
 | Business purpose | Open one (patients). One patient's record: details, contacts, people, ID numbers (masked) and consents. Every opening is audited. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.view` (Open a patient's record: details, contacts, guardians and next of kin, ID numbers (masked) and consents. Every opening is in the audit log). System roles holding it: Organization administrator, Head of department (HOD), Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | No body |
@@ -123,7 +123,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_partial_update` |
 | Method and path | `PATCH /api/v1/patients/{pk}/` |
 | Business purpose | Change (patients). Correct the patient's details; an old name stays findable as an alias. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `PatchedPatientUpdateRequest`: `version`, `title` (≤ 20 characters), `given_name` (≤ 150 characters), `middle_name` (≤ 150 characters), `family_name` (≤ 150 characters), `preferred_name` (≤ 150 characters), `date_of_birth` (date), `birth_date_estimated`, `sex` (one of the listed values), `gender_identity` (≤ 60 characters), `pronouns` (≤ 60 characters), `preferred_language` (≤ 35 characters), `marital_status` (one of the listed values), `occupation` (≤ 100 characters), `blood_group_reported` (one of the listed values), `has_no_phone`, `is_unknown`, `identification_note` (≤ 255 characters) |
@@ -151,7 +151,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_consents_create` |
 | Method and path | `POST /api/v1/patients/{pk}/consents/` |
 | Business purpose | Record a consent decision (privacy notice, SMS, email); earlier ones stay as history. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `ConsentCreateRequest`: `kind` (required, one of the listed values), `status` (required, one of the listed values), `method` (required, one of the listed values), `note` (≤ 255 characters) |
@@ -179,7 +179,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_contacts_create` |
 | Method and path | `POST /api/v1/patients/{pk}/contacts/` |
 | Business purpose | Add a phone, email or address. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `ContactCreateRequest`: `address_line1` (≤ 255 characters), `address_line2` (≤ 255 characters), `city` (≤ 100 characters), `district` (≤ 100 characters), `state` (≤ 100 characters), `postal_code` (≤ 10 characters), `country` (≤ 2 characters), `kind` (required, one of the listed values), `phone` (≤ 30 characters), `email` (one of the listed values), `is_primary` |
@@ -207,7 +207,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_contacts_partial_update` |
 | Method and path | `PATCH /api/v1/patients/{pk}/contacts/{contact_id}/` |
 | Business purpose | Correct a contact, make it the main one, or end it (kept on record). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `PatchedContactUpdateRequest`: `version`, `phone` (≤ 30 characters), `email` (one of the listed values), `address_line1` (≤ 255 characters), `address_line2` (≤ 255 characters), `city` (≤ 100 characters), `district` (≤ 100 characters), `state` (≤ 100 characters), `postal_code` (≤ 10 characters), `country` (≤ 2 characters), `is_primary`, `is_active` |
@@ -228,6 +228,34 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
+### GET /api/v1/patients/{pk}/history/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `patients_history_list` |
+| Method and path | `GET /api/v1/patients/{pk}/history/` |
+| Business purpose | The record's history (HIMS-PAT-005): who opened it and who changed what, and when, newest first. Field names only, never their values. Viewing it is audited too. |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
+| Actor / permission required | `patients.history` (See a patient record's history: who opened it and who changed what, and when (the values stay in the audit log)). System roles holding it: Medical records officer. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
+| Request schema | No body; query: `page`, `page_size` |
+| Response schema | 200 `PaginatedPatientHistoryEventList` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only; the audit event of the read is saved in its own transaction |
+| Audit event | `patient.history.viewed` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### POST /api/v1/patients/{pk}/identifiers/
 
 | Field | Contract |
@@ -235,7 +263,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_identifiers_create` |
 | Method and path | `POST /api/v1/patients/{pk}/identifiers/` |
 | Business purpose | Add an ID number: checked, stored encrypted, shown masked; one-per-person kinds are refused when another patient has the number. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `IdentifierInputRequest`: `kind` (required, one of the listed values), `value` (required, ≤ 64 characters), `issuer` (≤ 100 characters), `valid_until` (date) |
@@ -263,7 +291,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_identifiers_end_create` |
 | Method and path | `POST /api/v1/patients/{pk}/identifiers/{identifier_id}/end/` |
 | Business purpose | End a wrong or replaced ID number, with a reason (kept on record, never deleted). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `IdentifierEndRequest`: `version` (required), `reason` (required, ≤ 255 characters) |
@@ -291,7 +319,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_relationships_create` |
 | Method and path | `POST /api/v1/patients/{pk}/relationships/` |
 | Business purpose | Add a parent, guardian, next of kin, emergency contact or caregiver. |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `RelationshipCreateRequest`: `relation` (required, one of the listed values), `name` (required, ≤ 200 characters), `phone` (≤ 30 characters), `is_legal_guardian`, `is_emergency_contact`, `note` (≤ 255 characters), `related_patient` (uuid) |
@@ -319,7 +347,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `patients_relationships_partial_update` |
 | Method and path | `PATCH /api/v1/patients/{pk}/relationships/{relationship_id}/` |
 | Business purpose | Correct a relationship or end it (kept on record). |
-| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002) |
+| Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005) |
 | Actor / permission required | `patients.register` (Register patients (MRN issued) and correct their details, contacts, guardians, ID numbers and consents). System roles holding it: Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | `PatchedRelationshipUpdateRequest`: `version`, `relation` (one of the listed values), `name` (≤ 200 characters), `phone` (≤ 30 characters), `is_legal_guardian`, `is_emergency_contact`, `related_patient` (uuid), `note` (≤ 255 characters), `is_active` |

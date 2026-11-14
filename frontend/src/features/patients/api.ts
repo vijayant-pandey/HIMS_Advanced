@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { ApiError, api } from "../../api/client";
 import type {
+  PaginatedPatientHistory,
   PaginatedPatientList,
   PatientConsent,
   PatientConsentRequest,
@@ -55,6 +56,17 @@ export function usePatient(id: string | undefined) {
     queryFn: ({ signal }) => api.get<PatientDetail>(`/patients/${id}/`, { signal }),
     enabled: !!id,
     refetchOnWindowFocus: false, // each load is an audited opening; refresh after changes only
+  });
+}
+
+/** The record's history (HIMS-PAT-005): who opened and changed it. Viewing it is audited. */
+export function usePatientHistory(id: string, page: number) {
+  return useQuery<PaginatedPatientHistory, ApiError>({
+    queryKey: [...patientsKey, "history", id, page],
+    queryFn: ({ signal }) =>
+      api.get<PaginatedPatientHistory>(`/patients/${id}/history/`, { query: { page, page_size: PAGE_SIZE }, signal }),
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false, // each load is an audited event
   });
 }
 

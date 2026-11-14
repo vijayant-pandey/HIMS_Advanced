@@ -5,6 +5,9 @@ person look patients up and open them; registering checks the facility of regist
 opening of a record and every MRN look-up is in the audit log (spec 13.4); the list itself shows
 only the minimum (P0 part 01 section 2).
 
+The chart (HIMS-PAT-005): the record carries its header (allergy status, alerts) and the
+``history`` action lists who opened and changed it, for medical records (``patients.history``).
+
 Patient search (HIMS-PAT-002; spec endpoint ``GET /api/v1/patients/?search=``): one box for the
 MRN, a phone number, an ID number or a name (similar spelling, any order, earlier names too),
 with optional sex and age (a date of birth would travel in the address, so it is not a filter).
@@ -31,7 +34,7 @@ from common.idempotency.decorators import idempotent
 from common.pagination import StandardPagination
 from common.permissions import ANY_GRANT
 
-from .. import identifiers, search, services
+from .. import chart, identifiers, search, services
 from ..models import (
     UNIQUE_IDENTIFIER_KINDS,
     Patient,
@@ -50,6 +53,7 @@ from .serializers import (
     IdentifierInputSerializer,
     IdentifierSerializer,
     PatientDetailSerializer,
+    PatientHistoryEventSerializer,
     PatientListSerializer,
     PatientRegisterSerializer,
     PatientSearchQuerySerializer,
@@ -112,6 +116,7 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         "add_identifier": P.PATIENTS_REGISTER,
         "end_identifier": P.PATIENTS_REGISTER,
         "record_consent": P.PATIENTS_REGISTER,
+        "history": P.PATIENTS_HISTORY,
     }
     http_method_names = ["get", "post", "patch", "head"]
 
@@ -225,6 +230,23 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         patient = self._patient(pk)
         services.record_viewed(patient, actor=request.user, request=request)
         return Response(PatientDetailSerializer(patient).data)
+
+    @extend_schema(responses=PatientHistoryEventSerializer(many=True))
+    @action(detail=True, methods=["get"])
+    def history(self, request, pk=None):
+        """The record's history (HIMS-PAT-005): who opened it and who changed what, and when,
+        newest first. Field names only, never their values. Viewing it is audited too."""
+        patient = get_object_or_404(Patient.objects.only("pk", "registered_facility_id"), pk=pk)
+        self.check_object_permissions(request, patient)
+        page = self.paginate_queryset(chart.history(patient))
+        record_audit_event(
+            action=AuditAction.PATIENT_HISTORY_VIEWED,
+            resource_type="patient",
+            resource_id=patient.pk,
+            facility_id=patient.registered_facility_id,
+            request=request,
+        )
+        return self.get_paginated_response(PatientHistoryEventSerializer(page, many=True).data)
 
     @extend_schema(request=PatientRegisterSerializer, responses={201: PatientDetailSerializer})
     @idempotent("patients.register")

@@ -4470,6 +4470,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/Contact'
           description: ''
+  /api/v1/patients/{id}/history/:
+    get:
+      operationId: patients_history_list
+      description: |-
+        The record's history (HIMS-PAT-005): who opened it and who changed what, and when,
+        newest first. Field names only, never their values. Viewing it is audited too.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this patient.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - patients
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPatientHistoryEventList'
+          description: ''
   /api/v1/patients/{id}/identifiers/:
     post:
       operationId: patients_identifiers_create
@@ -7379,6 +7416,10 @@ components:
       - kind_label
       - mrn
       - name
+    AllergyStatusEnum:
+      enum:
+      - not_asked
+      type: string
     ApiEndpoint:
       type: object
       properties:
@@ -8365,6 +8406,27 @@ components:
       description: |-
         * `email` - Email
         * `sms` - SMS
+    ChartAlert:
+      type: object
+      properties:
+        code:
+          type: string
+        severity:
+          $ref: '#/components/schemas/ChartAlertSeverityEnum'
+        message:
+          type: string
+      required:
+      - code
+      - message
+      - severity
+    ChartAlertSeverityEnum:
+      enum:
+      - warning
+      - info
+      type: string
+      description: |-
+        * `warning` - Warning
+        * `info` - Information
     ClinicalPrivilege:
       type: object
       properties:
@@ -12596,6 +12658,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Notification'
+    PaginatedPatientHistoryEventList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatientHistoryEvent'
     PaginatedPatientListList:
       type: object
       required:
@@ -13700,6 +13785,18 @@ components:
           type: boolean
           readOnly: true
           description: Under 18 with no current parent or guardian recorded
+        allergy_status:
+          allOf:
+          - $ref: '#/components/schemas/AllergyStatusEnum'
+          description: For the chart header; HIMS-CLIN-003 adds recorded allergies
+          readOnly: true
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChartAlert'
+          readOnly: true
+          description: What staff must notice on opening the record, most important
+            first
         contacts:
           type: array
           items:
@@ -13739,7 +13836,9 @@ components:
           readOnly: true
       required:
       - age
+      - alerts
       - aliases
+      - allergy_status
       - birth_date_estimated
       - blood_group_reported
       - consents
@@ -13774,6 +13873,49 @@ components:
       - title
       - updated_at
       - version
+    PatientHistoryEvent:
+      type: object
+      description: |-
+        One event in the record's history (HIMS-PAT-005): what, who, where and when; for a
+        correction the names of the fields that changed, never their values.
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurred_at:
+          type: string
+          format: date-time
+        action:
+          type: string
+        action_label:
+          type: string
+          readOnly: true
+        actor_name:
+          type: string
+          nullable: true
+        facility_name:
+          type: string
+          nullable: true
+        outcome:
+          type: string
+        changed:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: Fields corrected (names only)
+        reason:
+          type: string
+      required:
+      - action
+      - action_label
+      - actor_name
+      - changed
+      - facility_name
+      - id
+      - occurred_at
+      - outcome
+      - reason
     PatientIdentifierKindEnum:
       enum:
       - abha_number
@@ -14354,6 +14496,7 @@ components:
       - numbering.view
       - organization.manage
       - organization.view
+      - patients.history
       - patients.register
       - patients.search
       - patients.view
@@ -14405,6 +14548,7 @@ components:
         * `numbering.view` - numbering.view
         * `organization.manage` - organization.manage
         * `organization.view` - organization.view
+        * `patients.history` - patients.history
         * `patients.register` - patients.register
         * `patients.search` - patients.search
         * `patients.view` - patients.view

@@ -2,7 +2,7 @@
 
 # API endpoints (contracts index)
 
-266 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
+267 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
 
 ## [Hospital settings, logo and letterhead](organizations.md)
 
@@ -78,18 +78,19 @@
 
 | Method and path | Access | Requirements |
 |---|---|---|
-| [`GET /api/v1/patients/`](patients.md#get-api-v1-patients) | `patients.search` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`POST /api/v1/patients/`](patients.md#post-api-v1-patients) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`GET /api/v1/patients/registration-options/`](patients.md#get-api-v1-patients-registration-options) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`GET /api/v1/patients/{pk}/`](patients.md#get-api-v1-patients-pk) | `patients.view` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`PATCH /api/v1/patients/{pk}/`](patients.md#patch-api-v1-patients-pk) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`POST /api/v1/patients/{pk}/consents/`](patients.md#post-api-v1-patients-pk-consents) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`POST /api/v1/patients/{pk}/contacts/`](patients.md#post-api-v1-patients-pk-contacts) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`PATCH /api/v1/patients/{pk}/contacts/{contact_id}/`](patients.md#patch-api-v1-patients-pk-contacts-contact-id) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`POST /api/v1/patients/{pk}/identifiers/`](patients.md#post-api-v1-patients-pk-identifiers) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`POST /api/v1/patients/{pk}/identifiers/{identifier_id}/end/`](patients.md#post-api-v1-patients-pk-identifiers-identifier-id-end) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`POST /api/v1/patients/{pk}/relationships/`](patients.md#post-api-v1-patients-pk-relationships) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
-| [`PATCH /api/v1/patients/{pk}/relationships/{relationship_id}/`](patients.md#patch-api-v1-patients-pk-relationships-relationship-id) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002 |
+| [`GET /api/v1/patients/`](patients.md#get-api-v1-patients) | `patients.search` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`POST /api/v1/patients/`](patients.md#post-api-v1-patients) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`GET /api/v1/patients/registration-options/`](patients.md#get-api-v1-patients-registration-options) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`GET /api/v1/patients/{pk}/`](patients.md#get-api-v1-patients-pk) | `patients.view` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`PATCH /api/v1/patients/{pk}/`](patients.md#patch-api-v1-patients-pk) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`POST /api/v1/patients/{pk}/consents/`](patients.md#post-api-v1-patients-pk-consents) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`POST /api/v1/patients/{pk}/contacts/`](patients.md#post-api-v1-patients-pk-contacts) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`PATCH /api/v1/patients/{pk}/contacts/{contact_id}/`](patients.md#patch-api-v1-patients-pk-contacts-contact-id) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`GET /api/v1/patients/{pk}/history/`](patients.md#get-api-v1-patients-pk-history) | `patients.history` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`POST /api/v1/patients/{pk}/identifiers/`](patients.md#post-api-v1-patients-pk-identifiers) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`POST /api/v1/patients/{pk}/identifiers/{identifier_id}/end/`](patients.md#post-api-v1-patients-pk-identifiers-identifier-id-end) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`POST /api/v1/patients/{pk}/relationships/`](patients.md#post-api-v1-patients-pk-relationships) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
+| [`PATCH /api/v1/patients/{pk}/relationships/{relationship_id}/`](patients.md#patch-api-v1-patients-pk-relationships-relationship-id) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005 |
 
 ## [Numbering schemes](numbering.md)
 

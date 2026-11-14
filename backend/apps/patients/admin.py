@@ -6,6 +6,10 @@ desk and medical records change (P0 part 04). Every change goes through the same
 app (MRN issued, phone and ID checks, audit); opening a patient's page is audited like opening the
 record in the app. ID numbers are shown masked; the full number cannot be read here either.
 
+A patient's page starts with the chart header (HIMS-PAT-005): its alerts and the allergy status,
+and, for medical records (``patients.history``), the record's latest history; seeing that history
+is audited like in the app.
+
 Searching Patients uses the app's patient search (HIMS-PAT-002): MRN, phone, ID number or a
 similar name, at most 50 results, audited. Patient identifiers can be searched by the number.
 """
@@ -14,16 +18,19 @@ from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.utils.html import format_html, format_html_join
 
 from apps.access_control.catalog import P
 from apps.access_control.selectors import has_permission
+from apps.audit.catalog import label as action_label
 from apps.audit.services import AuditAction, record_audit_event
+from apps.organizations.dates import hospital_time
 from apps.organizations.selectors import get_deployment_organization
 from common.admin.options import HimsModelAdmin, ReadOnlyModelAdmin
 from common.admin.site import can_use_console
 from common.exceptions import DomainError
 
-from . import demographics, identifiers, search, services
+from . import chart, demographics, identifiers, search, services
 from .models import (
     Patient,
     PatientAlias,
@@ -36,6 +43,10 @@ from .models import (
 
 def _may_view(request) -> bool:
     return can_use_console(request.user) and has_permission(request.user, P.PATIENTS_VIEW)
+
+
+def _may_see_history(request) -> bool:
+    return _may_view(request) and has_permission(request.user, P.PATIENTS_HISTORY)
 
 
 def _may_change(request) -> bool:
@@ -222,6 +233,7 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
             person.insert(6, "age_years")
         sets = [
             (None, {"fields": ("mrn", "status", "registered_facility")}),
+            *([("Chart", {"fields": ("chart_alerts", "allergies")})] if obj is not None else []),
             ("Person", {"fields": person}),
             (
                 "More",
@@ -240,12 +252,49 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
             ),
             ("Record", {"fields": ("registered_by", "version", "created_at", "updated_at")}),
         ]
+        if obj is not None and _may_see_history(request):
+            sets.append(("Record history (latest 20)", {"fields": ("record_history",)}))
         return sets
+
+    @admin.display(description="Alerts")
+    def chart_alerts(self, obj):
+        found = chart.alerts(obj)
+        if not found:
+            return "None"
+        return format_html(
+            "<ul>{}</ul>", format_html_join("", "<li>{}</li>", ((a.message,) for a in found))
+        )
+
+    @admin.display(description="Allergies")
+    def allergies(self, obj):
+        return chart.AllergyStatus.NOT_ASKED.label
+
+    @admin.display(description="Who opened and changed it")
+    def record_history(self, obj):
+        rows = [
+            (
+                hospital_time(e.occurred_at).strftime("%d %b %Y %H:%M"),
+                e.actor_name or "HIMS",
+                e.facility_name or "",
+                action_label(e.action),
+                ", ".join(chart.changed_fields(e)),
+            )
+            for e in chart.history(obj)[:20]
+        ]
+        if not rows:
+            return "Nothing recorded yet."
+        return format_html(
+            "<table><tr><th>When</th><th>Who</th><th>Where</th><th>What</th><th>Fields</th></tr>"
+            "{}</table>",
+            format_html_join(
+                "", "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>", rows
+            ),
+        )
 
     def get_readonly_fields(self, request, obj=None):
         readonly = [*super().get_readonly_fields(request, obj), "mrn", "status", "registered_by"]
         if obj is not None:
-            readonly.append("registered_facility")
+            readonly += ["registered_facility", "chart_alerts", "allergies", "record_history"]
         return readonly
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
@@ -253,6 +302,16 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
             patient = Patient.objects.filter(pk=object_id).first()
             if patient is not None:
                 services.record_viewed(patient, actor=request.user, request=request)
+                if _may_see_history(request):
+                    record_audit_event(
+                        action=AuditAction.PATIENT_HISTORY_VIEWED,
+                        resource_type="patient",
+                        resource_id=patient.pk,
+                        facility_id=patient.registered_facility_id,
+                        actor=request.user,
+                        request=request,
+                        metadata={"in": "console"},
+                    )
         return super().changeform_view(request, object_id, form_url, extra_context)
 
     def save_model(self, request, obj, form, change):

@@ -54,6 +54,11 @@ const DETAIL: PatientDetail = {
   registered_facility_name: "Facility A",
   registered_by_name: "Front Desk",
   needs_guardian: true,
+  allergy_status: "not_asked",
+  alerts: [
+    { code: "needs_guardian", severity: "warning", message: "Under 18 with no parent or guardian recorded. Add one under People." },
+    { code: "no_privacy_notice", severity: "info", message: "The privacy notice is not recorded as given. Record it under Consent." },
+  ],
   contacts: [
     {
       id: "c1",
@@ -125,6 +130,33 @@ const DETAIL: PatientDetail = {
   updated_at: "2026-11-12T05:00:00Z",
 };
 
+const HISTORY = [
+  {
+    id: "e2",
+    occurred_at: "2026-11-13T06:00:00Z",
+    action: "patient.updated",
+    action_label: "Patient details corrected",
+    actor_name: "Records Officer",
+    facility_name: "Facility A",
+    outcome: "success",
+    changed: ["family name"],
+    reason: "",
+  },
+  {
+    id: "e1",
+    occurred_at: "2026-11-12T05:00:00Z",
+    action: "patient.registered",
+    action_label: "Patient registered (MRN issued)",
+    actor_name: "Front Desk",
+    facility_name: "Facility A",
+    outcome: "success",
+    changed: [],
+    reason: "",
+  },
+];
+
+const openTab = async (name: string) => fireEvent.click(await screen.findByRole("tab", { name }));
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
@@ -133,6 +165,7 @@ type Grant = CurrentUser["grants"][number];
 const grant = (permission: string, facility_id: string | null = null): Grant => ({ permission, facility_id, department_id: null });
 const DESK = [grant("patients.search"), grant("patients.view"), grant("patients.register", "f1"), grant("facilities.view")];
 const ADMIN = [grant("patients.search"), grant("patients.view"), grant("facilities.view")];
+const RECORDS = [...DESK, grant("patients.history")];
 
 function user(grants: Grant[]): CurrentUser {
   return {
@@ -164,6 +197,7 @@ function renderAt(path: string, grants: Grant[], answer?: (url: string, init?: R
       return json({ count: 1, next: null, previous: null, results: [{ id: "f1", name: "Facility A" }] });
     }
     if (url.match(/\/patients\/p1\/$/)) return json(DETAIL);
+    if (url.includes("/patients/p1/history/")) return json({ count: 2, next: null, previous: null, results: HISTORY });
     if (init?.method === "POST" && url.endsWith("/patients/")) return json(DETAIL, 201);
     if (init?.method === "POST") return json({}, 201);
     return json({ count: 1, next: null, previous: null, results: [ROW] });
@@ -296,6 +330,7 @@ describe("Patients (HIMS-PAT-001)", { timeout: 20_000 }, () => {
   it("shows the record: masked number, consent history, guardian warning", async () => {
     renderAt("/patients/p1", DESK);
     await screen.findByRole("heading", { name: "Asha Verma" });
+    await openTab("Demographics");
     expect(screen.getByText("XXXX XXXX 1234")).toBeInTheDocument();
     expect(screen.getByText(/no parent or guardian recorded/)).toBeInTheDocument();
     const consent = screen.getByRole("table", { name: "Consent" });
@@ -305,9 +340,51 @@ describe("Patients (HIMS-PAT-001)", { timeout: 20_000 }, () => {
     expect(screen.getByText(/privacy notice is not recorded/)).toBeInTheDocument();
   });
 
+  // HIMS-PAT-005: the chart header on every tab, the overview, and the history for medical records.
+  it("opens on the overview under the chart header, with the alerts", async () => {
+    renderAt("/patients/p1", DESK);
+    const header = await screen.findByRole("region", { name: "Patient header" });
+    expect(within(header).getByRole("heading", { name: "Asha Verma" })).toBeInTheDocument();
+    expect(header).toHaveTextContent("MRN-00000001");
+    expect(header).toHaveTextContent("~11 y · Female");
+    expect(header).toHaveTextContent("Allergies not asked yet");
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText(/no parent or guardian recorded/)).toBeInTheDocument();
+    const summary = screen.getByRole("region", { name: "Clinical summary" });
+    expect(summary).toHaveTextContent("Allergies not asked yet");
+    expect(summary).toHaveTextContent("Last vitals");
+    expect(screen.getByRole("region", { name: "Contact" })).toHaveTextContent("+919876543210");
+    expect(screen.getByRole("region", { name: "ID numbers" })).toHaveTextContent("XXXX XXXX 1234");
+    expect(screen.getByRole("region", { name: "Consent in force" })).toHaveTextContent("Withdrawn");
+    expect(screen.getByRole("region", { name: "Record" })).toHaveTextContent("by Front Desk");
+    await openTab("Demographics");
+    expect(screen.getByRole("region", { name: "Patient header" })).toBeInTheDocument(); // on every tab
+    // Without patients.history: no History tab, and the history is never asked for.
+    expect(screen.queryByRole("tab", { name: "History" })).not.toBeInTheDocument();
+  });
+
+  it("shows medical records who opened and changed the record, field names only", async () => {
+    const fetchMock = renderAt("/patients/p1?tab=history", RECORDS);
+    const table = await screen.findByRole("table", { name: "Record history" });
+    await within(table).findByText("Records Officer");
+    const rows = within(table).getAllByRole("row");
+    expect(rows[1]).toHaveTextContent("Records Officer");
+    expect(rows[1]).toHaveTextContent("Patient details corrected");
+    expect(rows[1]).toHaveTextContent("family name");
+    expect(rows[2]).toHaveTextContent("Patient registered (MRN issued)");
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/patients/p1/history/"))).toBe(true);
+  });
+
+  it("falls back to the overview when history is asked for without the permission", async () => {
+    const fetchMock = renderAt("/patients/p1?tab=history", DESK);
+    expect(await screen.findByRole("region", { name: "Clinical summary" })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/history/"))).toBe(false);
+  });
+
   it("ends an ID number with a reason", async () => {
     const fetchMock = renderAt("/patients/p1", DESK);
     await screen.findByRole("heading", { name: "Asha Verma" });
+    await openTab("Demographics");
     const ids = screen.getByRole("table", { name: "ID numbers" });
     fireEvent.click(within(ids).getByRole("button", { name: "End" }));
     const dialog = await screen.findByRole("dialog");
@@ -320,6 +397,7 @@ describe("Patients (HIMS-PAT-001)", { timeout: 20_000 }, () => {
   it("looks, without change buttons, for people who may not register", async () => {
     renderAt("/patients/p1", ADMIN);
     await screen.findByRole("heading", { name: "Asha Verma" });
+    await openTab("Demographics");
     expect(screen.queryByRole("button", { name: "Correct details" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "End" })).not.toBeInTheDocument();
   });
