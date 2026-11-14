@@ -4,6 +4,10 @@ The detailed data architecture of HIMS, versioned with the code (spec 28). It co
 built so far (Phase 1: hospital set-up, staff, access, audit and platform). Patient, clinical and
 financial domains are added here as they are built.
 
+**2026-11-14 (HIMS-DATA-003):** the patient / MPI domain (slice 2A) is reviewed and accepted:
+[Artifact A review: patients and the MPI](patients-mpi-review.md). Its queries are part of the
+volume check (section 4) and its database rules have their own tests.
+
 **Start here:**
 
 | Document | What it holds | Kept up to date by |
@@ -11,7 +15,7 @@ financial domains are added here as they are built.
 | [data-dictionary.md](data-dictionary.md) | Every table and column: type, empty allowed, default, allowed values, who sets it, sensitivity, meaning; keys, constraints, indexes, lifecycle and owner per table | **Generated** from the models (`python manage.py data_dictionary`); CI fails when it is stale |
 | [erd.md](erd.md) | ERDs: all tables with relationships, and one diagram per domain with columns | **Generated** (same command) |
 | This page | The rules behind the tables: ownership, classification and access, lifecycle, transactions, history, migrations, catalogs, data flows, test data | By hand, with each change |
-| Domain designs | [Facilities and departments](facilities-and-departments.md) · [Locations and beds](locations-and-beds.md) · [Numbering](numbering-schemes.md) · [Access reviews](access-reviews.md) · [Cover arrangements](cover-arrangements.md) · [Rotas and leave](rotas-and-leave.md) · [Audit integrity](audit-integrity.md) | By hand, per feature · [Patients](patients.md) (Phase 2, HIMS-PAT-001) |
+| Domain designs | [Facilities and departments](facilities-and-departments.md) · [Locations and beds](locations-and-beds.md) · [Numbering](numbering-schemes.md) · [Access reviews](access-reviews.md) · [Cover arrangements](cover-arrangements.md) · [Rotas and leave](rotas-and-leave.md) · [Audit integrity](audit-integrity.md) | By hand, per feature · [Patients](patients.md) (Phase 2, HIMS-PAT-001) · [Patients/MPI review](patients-mpi-review.md) (HIMS-DATA-003) |
 
 ## Spec 28.1 deliverables
 
@@ -20,18 +24,22 @@ financial domains are added here as they are built.
 | 1 | Domain-by-domain logical ERD | [erd.md](erd.md), one diagram per domain | ✅ built domains |
 | 2 | Physical ERD, all tables and cardinalities | [erd.md](erd.md), "All tables" | ✅ |
 | 3 | Data dictionary (type, nullability, default, allowed values, source, sensitivity) | [data-dictionary.md](data-dictionary.md) | ✅ |
-| 4 | Index and uniqueness specification tied to query patterns | Per table in the dictionary; patterns in [section 4](#4-indexes-and-the-queries-they-serve) | ✅ checked at production-like volume ([volume check](volume-check.md), HIMS-DATA-002) |
+| 4 | Index and uniqueness specification tied to query patterns | Per table in the dictionary; patterns in [section 4](#4-indexes-and-the-queries-they-serve) | ✅ checked at production-like volume ([volume check](volume-check.md), HIMS-DATA-002; patients and the MPI: HIMS-DATA-003) |
 | 5 | Lifecycle, retention, archive and correction rules | "Lifecycle" per table in the dictionary; [section 3](#3-lifecycle-and-correction) | ✅ (purge of housekeeping tables by periods the hospital sets, with legal hold: HIMS-COMP-006) |
 | 6 | Transaction boundaries and concurrency rules | [section 5](#5-transactions-and-concurrency) | ✅ |
 | 7 | Data classification and access matrix | "Sensitivity" per column; [section 2](#2-classification-and-access) | ✅ |
-| 8 | Historical/version model for clinical and financial facts | [section 6](#6-history-and-versions) | 🟡 rules set; clinical/financial tables come with Phases 2–5 |
+| 8 | Historical/version model for clinical and financial facts | [section 6](#6-history-and-versions) | 🟡 rules set; clinical/financial tables come with Phases 2–5 (patient identity: [review section 7](patients-mpi-review.md#7-history-and-versions)) |
 | 9 | Migration and backfill playbook | [section 7](#7-migrations-and-backfills) and [database-migrations.md](../../workflows/database-migrations.md) | ✅ (release job HIMS-OPS-006: 🔒 AWS) |
 | 10 | Terminology/catalog ownership and update process | [section 8](#8-catalogs-and-terminology) | ✅ for staff catalogs; clinical code systems 🔒 CLIN |
-| 11 | Data-flow lineage to external providers and analytics | [section 9](#9-data-flows) | ✅ (no external providers yet) |
+| 11 | Data-flow lineage to external providers and analytics | [section 9](#9-data-flows) | ✅ (no external providers yet; the patient domain's only message is the emergency access notice, without patient details) |
 | 12 | Seed and synthetic data strategy | [section 10](#10-seed-and-synthetic-data) | ✅ |
 
 Acceptance (spec 28.8) is reached for the built Phase 1 domains. It must be repeated for each
 **P0 domain** (patients/MPI first) before that domain is released: HIMS-DATA-003.
+**Patients/MPI: accepted 2026-11-14** for the tables built in slice 2A
+([review](patients-mpi-review.md)); repeated when HIMS-PAT-003, 004, 007 or the clinical tables
+change them. The next P0 domains (visits, orders, results, billing) get the same review as they
+are built.
 
 ## 1. Ownership (spec 28.3)
 
@@ -49,6 +57,10 @@ Each domain section of the [dictionary](data-dictionary.md) names its owner. The
 - Bed **status** is maintained by the bed domain now; bed **occupancy** will be derived from
   admission/bed-assignment events (Phase 3) and never edited by hand.
 - No foreign keys cross hospital deployments: each hospital has its own database (ADR-003).
+- Patient identity belongs to the patient/MPI domain (`apps/patients/services.py`,
+  `restricted.py`); the MRN is issued by the numbering domain inside the registration
+  transaction. Later domains refer to `patients.id` and never write patient tables
+  ([review section 2](patients-mpi-review.md#2-ownership-and-sources-of-truth-spec-283)).
 
 ## 2. Classification and access
 
@@ -61,7 +73,7 @@ data is **Restricted**.
 | **Secret** | password hash, two-factor secret (encrypted), backup-code hashes, session keys | Never shown, exported, logged or traced. Encrypted or hashed at rest. |
 | **Restricted** | names, emails, employee and registration numbers, documents, IP addresses, audit content | Shown only to people whose permission covers that record and place. Kept out of logs, traces, URLs and emails (except the person's own). |
 | **Internal** | hospital configuration, catalogs, references, system metadata | Shown to staff with the matching view permission. |
-| **Clinical (PHI)** | none yet: patient data from Phase 2 | Stricter rules (minimum necessary, read auditing, break-glass) decided with the P0 documents. |
+| **Clinical (PHI)** | none yet: patient data from Phase 2 · **since HIMS-PAT-001:** sex, gender identity, pronouns, reported blood group; the emergency access reason (HIMS-PAT-006) | Stricter rules (minimum necessary, read auditing, break-glass) decided with the P0 documents · **built:** minimum-necessary lists, every opening and search audited, restricted records with emergency access ([review section 3](patients-mpi-review.md#3-classification-and-access)) |
 
 **Who can read what (system roles; custom roles combine these permissions).** Staff are "in" a
 facility or department through a current posting ([staff visibility](../../workflows/staff-visibility.md)):
@@ -84,6 +96,11 @@ facility or department through a current posting ([staff visibility](../../workf
 | Access reviews | ✅ decide | — | — | — | — | — | read and download |
 | Audit log and integrity (Restricted) | **no** (separation of duties) | — | — | — | — | — | ✅ read |
 | Backups and restore drill evidence (counts and fingerprints, no record contents) | ✅ make backups, run drills | — | — | — | — | — | ✅ read |
+| Patients: search, list, open (Restricted and Clinical; every opening audited; HIMS-PAT-001–006) | search and open | — | — | search and open; restricted ones only with emergency access | — | — | audit log of every read |
+
+Patients are also searched, opened and registered by the **front desk** (receptionist) and
+managed by **medical records** (history, restricted records, emergency access review): the full
+patient matrix is in [the patients/MPI review, section 3](patients-mpi-review.md#3-classification-and-access).
 
 **Below the app, in the database itself** ([separate database users](../../workflows/database-users.md),
 HIMS-OPS-007): the app's own database user can read and write rows but only *add* to the audit log and
@@ -109,6 +126,9 @@ Every person also sees their own account, sign-ins and cover arrangements.
 - **Corrections:** a wrong value is changed through the normal screen with a version check, and
   the before/after values are kept in the audit log. Signed clinical and financial facts will use
   amendments and reversals instead (section 6).
+- **Patients (HIMS-DATA-003):** never deleted (foreign keys refuse it); contacts and people
+  ended, ID numbers ended with a reason, consents and earlier names append-only (only a merge
+  moves them), a merged record kept with a pointer ([review section 5](patients-mpi-review.md#5-lifecycle-retention-and-correction)).
 - **Retention periods** for audit and personal data are a legal decision (🔒 LEGAL, ADR-013).
   Until then nothing is purged except the technical records listed above.
 - **Retention purge (HIMS-COMP-006, 2026-11-10):** the hospital sets periods for six housekeeping tables (`user_sessions`, `notifications`, `user_invitations`, `user_password_resets`, `browser_security_reports`, `console_access_blocks`); nothing goes until a period is set, shorter periods wait 7 days, legal holds win, and each run is kept in `retention_purge_runs` (append-only). Each table's "Lifecycle" in the dictionary says what goes. The audit log is not purged (HIMS-COMP-007). [How-to](../../workflows/retention-purge.md).
@@ -145,9 +165,25 @@ always indexed.
 | Integrity check history | `audit_check_finished_idx` |
 | Audit sealing: the next events to seal (every minute); events waiting (integrity status) | `audit_occurred_idx` with `audit_chain_entries_event_id_key`, written as NOT EXISTS (HIMS-DATA-002 found the join form reading the whole chain on every batch: 2.9 s at 1.3 million links, now 0.09 s) |
 | Codes unique within their scope (facility, department, ward, room, bed, role, catalog) | unique constraints listed per table in the dictionary |
+| Patients: newest registrations first (the list), restricted ones hidden | `patients_created_idx` (added by HIMS-DATA-003) |
+| Patients registered at one facility, newest first | `patients_facility_idx` |
+| Patient search: exact MRN, within the hospital | `patients_mrn_unique` (organization, MRN): the look-up names the hospital, as the index starts with it (HIMS-DATA-003) |
+| Patient search: an earlier MRN kept after a merge | `patient_aliases_merged_mrn_idx` (partial: earlier MRNs only; added by HIMS-DATA-003) |
+| Patient search: the number part of the MRN ("123" finds MRN-00000123) | `patients_mrn_number_idx` (on the MRN's last digits without leading zeros; added by HIMS-DATA-003, replacing a pattern match over every MRN) |
+| Patient search: phone number | `patient_contacts_phone_idx` |
+| Patient search: ID number, by its keyed fingerprint | `patient_identifiers_hash_idx` (or `patient_identifiers_unique_number`) |
+| Patient search: the hospitals with previous MRNs on record (a number found nowhere else) | `patient_ids_prev_mrn_idx` (partial: previous MRNs only; added by HIMS-DATA-003, which found the look-up reading every ID number) |
+| Numbering: every number issued, newest first (console list) | `issued_numbers_created_idx` (added by HIMS-DATA-003: 513 ms at 300,000 numbers before) |
+| Patient search: names by similar spelling or sound, any order | `patients_search_name_trgm` (trigram) and `patients_search_sounds_idx` (sound keys), combined (ADR-037) |
+| Patient record: consent decisions, newest first | `patient_consents_idx` |
+| Patient record history | `audit_resource_idx` |
+| Restricted record: is my emergency access open? (every opening) | `patient_emergency_user_idx` |
+| Emergency access waiting for review | `patient_emergency_review_idx` |
+| Restricted record openings in the last days | `audit_action_idx` |
 
 Patient search, encounter, medication, lab and claim indexes (spec 28.6) are designed with
-their domains.
+their domains. **Patient search and the patient screens: done and measured at hospital size
+(HIMS-DATA-003, [results](volume-check.md#patients-and-the-mpi-hims-data-003)).**
 
 ## 5. Transactions and concurrency
 
@@ -166,6 +202,9 @@ their domains.
   (`numbering_counters`); tested with parallel requests.
 - **One at a time where it matters:** audit sealing and checks use PostgreSQL advisory locks;
   one open access review at a time (partial unique index).
+- **Patients (HIMS-DATA-003):** registration is one transaction with the MRN; an ID number
+  entered twice at once is decided by the unique index; opening emergency access locks the
+  patient row ([review section 6](patients-mpi-review.md#6-transactions-and-concurrency)).
 
 ## 6. History and versions
 
@@ -173,6 +212,9 @@ their domains.
   is tamper-evident (hash chain, `audit_integrity.md`).
 - **Access:** never overwritten; every grant, revocation, review decision and cover arrangement
   stays as its own row with who/when/why.
+- **Patient identity (HIMS-DATA-003):** the current row plus the audit log; consents and
+  earlier names as append-only rows; ended ID numbers kept with the reason; every opening and
+  search of a record is an audit event.
 - **Clinical facts (Phase 2+, spec 28.5):** notes and reports keep author, signer, timestamps,
   state and version; a correction creates a new version or linked amendment with a reason, never
   an overwrite. Observations keep effective time, recorded time, source, unit, status and
@@ -214,7 +256,7 @@ Follow spec 28.7 and [database-migrations.md](../../workflows/database-migration
 
 | Flow | Data | Where it goes | Safeguards |
 |---|---|---|---|
-| Emails (invitations, password reset, two-factor notices, expiry alerts, review reminders, cover notices, integrity alerts) | Names, dates, links; never clinical data or passwords | Email service (console on developer PCs) | Links are single-use and expire; only the person concerned or the responsible role receives them |
+| Emails (invitations, password reset, two-factor notices, expiry alerts, review reminders, cover notices, integrity alerts; emergency access notices to medical records, HIMS-PAT-006: who opened a record and when, no patient name, MRN or reason) | Names, dates, links; never clinical data or passwords | Email service (console on developer PCs) | Links are single-use and expire; only the person concerned or the responsible role receives them |
 | Staff documents | Uploaded files (Restricted) | Hospital's own storage folder; S3 later (HIMS-OPS-015) | No public links; permission-checked, audited downloads |
 | Traces and logs | Technical timings, ids, reference numbers | Console or OTLP collector when switched on (ADR-021) | No query strings, SQL values, bodies or secrets |
 | CSV downloads (audit log, access reviews) | Restricted | The auditor's or reviewer's computer | Permission-checked, audited, spreadsheet-formula safe |
@@ -234,6 +276,9 @@ Follow spec 28.7 and [database-migrations.md](../../workflows/database-migration
 - End-to-end checks run against throw-away databases created for the run.
 - The manual test guide ([flow-part1.md](../../testing/flow-part1.md)) uses invented people
   (Ravi Doctor, Asha Nurse) and `@test.local` addresses.
+- Patients (Phase 2): the demo hospitals' patients are invented (`apps/demo/patients.py`), as
+  are the tests' patients; the volume check adds 500,000 patients whose names are made of
+  syllables that belong to nobody (HIMS-DATA-003).
 - Volume testing (HIMS-DATA-002) generates synthetic rows at production-like scale with the
   same rules, only into the throw-away database `hims_volume` (`seed_volume_data` refuses any
   other): "Synthetic Staff 000123", `@synthetic.test`, passwords that cannot be used. See

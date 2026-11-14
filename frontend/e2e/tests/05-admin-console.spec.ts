@@ -94,4 +94,13 @@ test("performance: the index check run in the console shows on the app's Perform
   await app.getByRole("link", { name: "See each query" }).click();
   await expect(app.getByRole("table", { name: "Queries" }).getByText("Audit log: one person's actions")).toBeVisible();
   await expectAccessible(app, "Performance check detail");
+
+  // Grouped by area (HIMS-DATA-003): the patient search and record queries on their own.
+  await app
+    .getByRole("group", { name: "Show one area" })
+    .getByRole("button", { name: /^Patients: \d+ of \d+ OK$/ })
+    .click();
+  const queries = app.getByRole("table", { name: "Queries" });
+  await expect(queries.getByText("Patient search: exact MRN")).toBeVisible();
+  await expect(queries.getByText("Audit log: one person's actions")).toHaveCount(0);
 });

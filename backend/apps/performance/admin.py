@@ -88,12 +88,13 @@ class PerformanceCheckAdmin(admin.ModelAdmin):
     def result_table(self, obj):
         if obj.kind == PerformanceCheck.Kind.INDEXES:
             head = (
-                "<tr><th>Result</th><th>Query</th><th>Time</th><th>Indexes used</th>"
+                "<tr><th>Result</th><th>Area</th><th>Query</th><th>Time</th><th>Indexes used</th>"
                 "<th>Note</th></tr>"
             )
             rows = (
                 (
                     "Passed" if item.get("passed") else "FAILED",
+                    item.get("area") or "Other",
                     item.get("label", ""),
                     f"{item.get('ms', 0):.1f} ms (budget {item.get('budget_ms', 0):.0f})",
                     ", ".join(item.get("indexes_used") or []) or "none",
@@ -103,12 +104,13 @@ class PerformanceCheckAdmin(admin.ModelAdmin):
             )
         else:
             head = (
-                "<tr><th>Result</th><th>Screen</th><th>p50 / p95</th><th>Queries</th>"
+                "<tr><th>Result</th><th>Area</th><th>Screen</th><th>p50 / p95</th><th>Queries</th>"
                 "<th>Note</th></tr>"
             )
             rows = (
                 (
                     "Passed" if item.get("passed") else "FAILED",
+                    item.get("area") or "Other",
                     item.get("label", ""),
                     f"{item.get('p50_ms', 0):.0f} / {item.get('p95_ms', 0):.0f} ms "
                     f"(target {item.get('target_ms', 0):.0f})",
@@ -120,9 +122,7 @@ class PerformanceCheckAdmin(admin.ModelAdmin):
         return format_html(
             "<table>{}{}</table>",
             format_html(head),
-            format_html_join(
-                "", "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>", rows
-            ),
+            format_html_join("", "<tr>" + "<td>{}</td>" * 6 + "</tr>", rows),
         )
 
     def get_urls(self):

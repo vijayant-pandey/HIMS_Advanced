@@ -20,16 +20,38 @@ import statistics
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from urllib.parse import quote
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import connection, transaction
 from django.test import Client
+
+from .queries import ACCESS, AUDIT, CONSOLE, HOSPITAL, PATIENTS, PLATFORM, STAFF
 
 PAGE_MS = 300.0
 SEARCH_MS = 500.0
 DEFAULT_SAMPLES = 20
 WARM_UP = 2
 MAX_SAMPLES = 25  # stays under the per-person request limit (HIMS_THROTTLE_USER, 1200/min)
+# Which area of the Performance screen a screen belongs to, by the start of its address.
+_PATH_AREAS = (
+    ("/admin/", CONSOLE),
+    ("/api/v1/patient", PATIENTS),
+    ("/api/v1/audit", AUDIT),
+    ("/api/v1/staff", STAFF),
+    ("/api/v1/rota", STAFF),
+    ("/api/v1/organization", HOSPITAL),
+    ("/api/v1/facilities", HOSPITAL),
+    ("/api/v1/departments", HOSPITAL),
+    ("/api/v1/bed-board", HOSPITAL),
+    ("/api/v1/auth", ACCESS),
+    ("/api/v1/role", ACCESS),
+)
+
+
+def area_of_path(path: str) -> str:
+    return next((area for start, area in _PATH_AREAS if path.startswith(start)), PLATFORM)
 
 
 @dataclass(frozen=True)
@@ -42,6 +64,17 @@ class Endpoint:
 
 def _fixed(path: str) -> Callable[[dict], str]:
     return lambda samples: path
+
+
+def _patient_search(key: str) -> Callable[[dict], str]:
+    """Patient search for a sample value (words are joined: a name)."""
+
+    def path(samples: dict) -> str:
+        value = samples[key]
+        text = " ".join(value) if isinstance(value, list) else str(value)
+        return f"/api/v1/patients/?search={quote(text)}"
+
+    return path
 
 
 ENDPOINTS: tuple[Endpoint, ...] = (
@@ -119,6 +152,53 @@ ENDPOINTS: tuple[Endpoint, ...] = (
     Endpoint(
         "integrity", "Audit integrity status", _fixed("/api/v1/audit-integrity-checks/status/")
     ),
+    # Patients and the MPI (HIMS-DATA-003).
+    Endpoint("patients", "Patients (newest first)", _fixed("/api/v1/patients/"), SEARCH_MS),
+    Endpoint("patient_search_mrn", "Patient search: exact MRN", _patient_search("mrn"), SEARCH_MS),
+    Endpoint(
+        "patient_search_mrn_number",
+        "Patient search: the number part of the MRN",
+        _patient_search("mrn_number"),
+        SEARCH_MS,
+    ),
+    Endpoint(
+        "patient_search_phone", "Patient search: phone number", _patient_search("phone"), SEARCH_MS
+    ),
+    Endpoint(
+        "patient_search_name",
+        "Patient search: given and family name",
+        _patient_search("name_words"),
+        SEARCH_MS,
+    ),
+    Endpoint(
+        "patient_search_family_name",
+        "Patient search: one (common) family name",
+        _patient_search("family_word"),
+        SEARCH_MS,
+    ),
+    Endpoint(
+        "patient_record",
+        "Patient record (chart header and overview)",
+        lambda s: f"/api/v1/patients/{s['patient_id']}/",
+    ),
+    Endpoint(
+        "patient_history",
+        "Patient record history",
+        lambda s: f"/api/v1/patients/{s['patient_id']}/history/",
+        SEARCH_MS,
+    ),
+    Endpoint(
+        "emergency_access_to_review",
+        "Emergency access waiting for review",
+        _fixed("/api/v1/patient-emergency-access/?state=to_review"),
+        SEARCH_MS,
+    ),
+    Endpoint(
+        "restricted_openings",
+        "Restricted record openings",
+        _fixed("/api/v1/patients/restricted-openings/"),
+        SEARCH_MS,
+    ),
 )
 
 # The admin console's lists of the largest tables (ADR-016): the same targets as the app.
@@ -131,6 +211,8 @@ CONSOLE_ENDPOINTS: tuple[Endpoint, ...] = tuple(
         ("outbox", "background events", "outbox/outboxevent"),
         ("numbers", "issued numbers", "numbering/issuednumber"),
         ("shifts", "shifts", "rosters/shift"),
+        ("patients", "patients", "patients/patient"),
+        ("emergency_access", "emergency access", "patients/emergencyaccess"),
     )
 )
 
@@ -164,7 +246,8 @@ def _measuring_user():
         display_name="Performance measurement (temporary)",
         password=None,
     )
-    for code in ("organization-administrator", "auditor"):
+    # Medical records for the patient screens (HIMS-DATA-003): search, records, restricted ones.
+    for code in ("organization-administrator", "auditor", "medical-records-officer"):
         role = Role.objects.filter(code=code).first()
         if role is not None:
             assign_role(actor=None, user=user, role=role, reason="Response-time measurement")
@@ -181,6 +264,12 @@ def _client(user) -> Client:
     session[SESSION_VERIFIED_KEY] = True  # as after two-factor sign-in
     session.save()
     return client
+
+
+def _forget_requests(user) -> None:
+    """Start each screen with a clean request count, so that the 40-odd screens measured in a
+    row never reach the per-person limit (``HIMS_THROTTLE_USER``) the app sets for people."""
+    cache.delete(f"throttle_user_{user.pk}")
 
 
 def _measure_one(client: Client, endpoint: Endpoint, path: str, samples: int) -> dict:
@@ -209,6 +298,7 @@ def _measure_one(client: Client, endpoint: Endpoint, path: str, samples: int) ->
     result = {
         "key": endpoint.key,
         "label": endpoint.label,
+        "area": area_of_path(path),
         "path": path.split("?")[0],
         "status": response.status_code,
         "samples": samples,
@@ -237,9 +327,11 @@ def measure(*, samples: int = DEFAULT_SAMPLES, endpoints=None) -> list[dict]:
     results = []
     with transaction.atomic():
         found = _samples()
-        client = _client(_measuring_user())
+        user = _measuring_user()
+        client = _client(user)
         for endpoint in endpoints:
             path = endpoint.path(found)
+            _forget_requests(user)
             try:
                 results.append(_measure_one(client, endpoint, path, samples))
             except Exception as exc:  # one broken screen must not hide the others
@@ -247,6 +339,7 @@ def measure(*, samples: int = DEFAULT_SAMPLES, endpoints=None) -> list[dict]:
                     {
                         "key": endpoint.key,
                         "label": endpoint.label,
+                        "area": area_of_path(path),
                         "path": path.split("?")[0],
                         "status": 0,
                         "samples": 0,

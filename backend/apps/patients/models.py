@@ -19,9 +19,16 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
-from django.db.models import F, Q
+from django.db.models import F, Func, Q, Value
 
 from common.models import OrganizationOwnedModel, UUIDPrimaryKeyModel, VersionedModel
+
+
+def mrn_number():
+    """The MRN's number part: its last digits without leading zeros (MRN-00000123 -> "123").
+    Patient search finds "123" by it, through ``patients_mrn_number_idx`` (HIMS-DATA-003)."""
+    last_digits = Func(F("mrn"), Value("[0-9]+$"), function="substring")
+    return Func(last_digits, Value("0"), function="ltrim", output_field=models.CharField())
 
 
 class Sex(models.TextChoices):
@@ -160,6 +167,10 @@ class Patient(OrganizationOwnedModel, VersionedModel):
             models.Index(
                 fields=["registered_facility", "-created_at"], name="patients_facility_idx"
             ),
+            # Found by the volume check (HIMS-DATA-003): the list's newest registrations, and
+            # the MRN's number part ("123"), which was a pattern match over every MRN.
+            models.Index(fields=["-created_at"], name="patients_created_idx"),
+            models.Index(mrn_number(), name="patients_mrn_number_idx"),
             # Patient search (HIMS-PAT-002, spec 28.6): similar spelling and sound-alike names.
             GinIndex(
                 fields=["search_name"], name="patients_search_name_trgm", opclasses=["gin_trgm_ops"]
@@ -205,6 +216,14 @@ class PatientAlias(UUIDPrimaryKeyModel):
         db_table = "patient_aliases"
         ordering = ["-created_at"]
         verbose_name_plural = "patient aliases"
+        indexes = [
+            # Patient search by an earlier MRN kept after a merge (HIMS-DATA-003).
+            models.Index(
+                fields=["mrn"],
+                condition=Q(kind="merged_mrn"),
+                name="patient_aliases_merged_mrn_idx",
+            )
+        ]
 
     def __str__(self) -> str:
         name = " ".join(p for p in (self.given_name, self.middle_name, self.family_name) if p)
@@ -375,7 +394,16 @@ class PatientIdentifier(OrganizationOwnedModel, VersionedModel):
                 violation_error_message="This number is already recorded for another patient.",
             )
         ]
-        indexes = [models.Index(fields=["value_hash"], name="patient_identifiers_hash_idx")]
+        indexes = [
+            models.Index(fields=["value_hash"], name="patient_identifiers_hash_idx"),
+            # The hospitals whose MRNs are on record as previous MRNs, for searching one: read
+            # from this small index instead of every ID number (HIMS-DATA-003).
+            models.Index(
+                fields=["issuer"],
+                condition=Q(kind="previous_mrn"),
+                name="patient_ids_prev_mrn_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.get_kind_display()} {self.value_display}"

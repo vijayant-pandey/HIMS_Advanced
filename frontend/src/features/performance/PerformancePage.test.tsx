@@ -6,7 +6,7 @@ import type { CurrentUser } from "../../api/types";
 import { currentUserKey } from "../auth/api";
 import { PerformanceCheckPage, PerformancePage } from "./PerformancePage";
 
-/** Performance screen (HIMS-DATA-002, HIMS-OPS-017). Synthetic data. */
+/** Performance screen (HIMS-DATA-002, HIMS-OPS-017; areas: HIMS-DATA-003). Synthetic data. */
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -73,12 +73,44 @@ const DETAIL = {
   ],
 };
 
+const query = (key: string, label: string, area: string, passed: boolean) => ({
+  key,
+  label,
+  area,
+  table: area === "Patients" ? "patients" : "audit_events",
+  table_rows: 500_000,
+  expected_indexes: [`${key}_idx`],
+  indexes_used: passed ? [`${key}_idx`] : [],
+  full_reads: passed ? [] : ["patients"],
+  ms: passed ? 0.4 : 180,
+  budget_ms: 100,
+  rows: 25,
+  passed,
+  detail: passed ? "" : "Reads patients without the expected index (500,000 rows).",
+});
+
+const INDEX_DETAIL = {
+  ...INDEX_CHECK,
+  id: "c4",
+  outcome: "failed",
+  problem_count: 1,
+  summary: "2 of 3 queries use their index in time",
+  dataset: { patients: 500_000 },
+  query_results: [
+    query("audit_newest", "Audit log: newest events first", "Audit log", true),
+    query("patient_by_mrn", "Patient search: exact MRN", "Patients", true),
+    query("patient_list", "Patients: newest registrations first", "Patients", false),
+  ],
+  screen_results: [],
+};
+
 function renderPage(grants: string[], path = "/performance") {
   const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
     if (init?.method === "POST") return json({ ...INDEX_CHECK, id: "c3", dataset: {}, query_results: [], screen_results: [] }, 201);
     if (url.includes("/performance-checks/status/")) return json(STATUS);
     if (url.includes("/performance-checks/c2/")) return json(DETAIL);
+    if (url.includes("/performance-checks/c4/")) return json(INDEX_DETAIL);
     return json([INDEX_CHECK, TIMES]);
   });
   const user: CurrentUser = {
@@ -141,5 +173,21 @@ describe("Performance", () => {
     expect(within(row).getByText("Failed")).toBeInTheDocument();
     expect(within(row).getByText(/over the 500 ms target/)).toBeInTheDocument();
     expect(screen.getByText(/audit_events 2,000,000/)).toBeInTheDocument();
+  });
+
+  it("groups the queries by area and shows one area at a time", async () => {
+    renderPage(["platform.performance.view"], "/performance/c4");
+    const table = await screen.findByRole("table", { name: "Queries" });
+    expect(within(table).getAllByRole("row")).toHaveLength(4); // header + 3
+    const areas = screen.getByRole("group", { name: "Show one area" });
+    const patients = within(areas).getByRole("button", { name: "Patients: 1 of 2 OK" });
+    expect(within(areas).getByRole("button", { name: "Audit log: 1 of 1 OK" })).toBeInTheDocument();
+    fireEvent.click(patients);
+    expect(patients).toHaveAttribute("aria-pressed", "true");
+    expect(within(table).queryByText("Audit log: newest events first")).toBeNull();
+    expect(within(table).getByText("Patients: newest registrations first")).toBeInTheDocument();
+    expect(within(table).getByText(/without the expected index/)).toBeInTheDocument();
+    fireEvent.click(within(areas).getByRole("button", { name: "All areas" }));
+    expect(within(table).getAllByRole("row")).toHaveLength(4);
   });
 });

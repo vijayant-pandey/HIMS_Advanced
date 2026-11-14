@@ -21,9 +21,15 @@ from ..services import performance_status, run_index_check
 HISTORY_LIMIT = 100
 
 
+# Where the Performance screen groups a result (Patients, Audit log...; HIMS-DATA-003). Results
+# recorded before areas existed have none.
+_AREA = {"default": "", "help_text": "Area of the app, e.g. Patients (empty on older results)."}
+
+
 class QueryResultSerializer(serializers.Serializer):
     key = serializers.CharField()
     label = serializers.CharField()
+    area = serializers.CharField(**_AREA)
     table = serializers.CharField()
     table_rows = serializers.IntegerField()
     expected_indexes = serializers.ListField(child=serializers.CharField())
@@ -39,6 +45,7 @@ class QueryResultSerializer(serializers.Serializer):
 class ScreenResultSerializer(serializers.Serializer):
     key = serializers.CharField()
     label = serializers.CharField()
+    area = serializers.CharField(**_AREA)
     path = serializers.CharField()
     status = serializers.IntegerField(help_text="HTTP status of the calls (200 expected).")
     samples = serializers.IntegerField()

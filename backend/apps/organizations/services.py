@@ -6,6 +6,7 @@ from apps.audit.services import AuditAction, model_changes, record_audit_event, 
 from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
+from .dates import forget_hospital_timezone
 from .logo import LOGO_MAX_BYTES, logo_type, validate_logo
 from .models import Organization
 
@@ -66,6 +67,8 @@ def update_organization(*, actor, organization_id, version: int, request=None, *
     organization.full_clean()
     bump_version(organization)
     organization.save()
+    if "default_timezone" in changes:
+        forget_hospital_timezone()
     record_audit_event(
         action=AuditAction.ORGANIZATION_UPDATED,
         resource_type="organization",

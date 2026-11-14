@@ -248,7 +248,10 @@ class IssuedNumber(OrganizationOwnedModel):
             models.UniqueConstraint(fields=["document_type", "value"], name="issued_number_unique")
         ]
         indexes = [
-            models.Index(fields=["document_type", "-created_at"], name="issued_numbers_type_idx")
+            models.Index(fields=["document_type", "-created_at"], name="issued_numbers_type_idx"),
+            # Every number, newest first: the console's list (HIMS-DATA-003 measured 513 ms at
+            # 300,000 numbers, each page sorting them all).
+            models.Index(fields=["-created_at"], name="issued_numbers_created_idx"),
         ]
 
     def __str__(self) -> str:

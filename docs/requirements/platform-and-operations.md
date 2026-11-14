@@ -663,6 +663,25 @@ their "actors" are every caller and their evidence is the shared tests in `backe
 | Test evidence | `apps/performance/tests/test_performance.py`; [volume check](../architecture/data-architecture/volume-check.md) |
 | Release risk | None |
 
+### HIMS-DATA-003
+
+| Field | Record |
+|---|---|
+| ID and title | HIMS-DATA-003 Artifact A for the patient / MPI domain (spec 28.8; Phase 2 → Spec §28, §4.5 → Slice 2A) |
+| Business/clinical reason | The patient register is the first P0 domain: before real patients, its schema, rules, classification, indexes, retention and migrations are reviewed and its critical rules tested (spec 28.8). Owner: PO |
+| Actors | Developers and reviewers (the review); `platform.performance.view` / `.manage` (Performance screen, console); medical records (console page "Restricted record openings") |
+| Preconditions | Slice 2A built (HIMS-PAT-001, 002, 005, 006); developer PC for the volume copy |
+| Main success path | The [review](../architecture/data-architecture/patients-mpi-review.md) covers every 28.8 criterion; 15 patient queries and 12 patient screens are measured at hospital size (500,000 invented patients) and pass after the fixes; every database rule on the patient tables is broken on purpose by a test |
+| Alternate/failure paths | A patient query without its index, over its time budget, or a screen making one more query per row fails CI (`apps/performance/tests`); a new rule on a patient table without a test fails `test_every_database_rule_on_the_patient_tables_has_a_test` |
+| Data effects | Migrations `patients.0004` (four indexes) and `numbering.0002` (one), built `CONCURRENTLY`; `performance_checks` (results now carry an area) |
+| Security classification | Internal (synthetic records only); the console page shows Restricted data to medical records only |
+| Audit requirement | `performance.check_run`; `patient.restricted_openings.viewed` for the console page, as in the app |
+| Idempotency/concurrency | Index builds do not lock the patient register; one performance check at a time |
+| Integration dependencies | None |
+| Acceptance criteria | All patient queries use their index within 100 ms (the commonest family name's one-word search: 400 ms, decisions log row 36) and all patient screens within 300 ms (one record) or 500 ms (searches, lists) at hospital size; no patient screen's query count grows with the records; the review's checklist all ✅ |
+| Test evidence | `apps/patients/tests/test_data_invariants.py`; `apps/performance/tests/test_performance.py`; `apps/patients/tests/test_restricted_records.py` (console page); `apps/demo/tests/test_demo_hospitals.py`; `PerformancePage.test.tsx`; browser test `05-admin-console.spec.ts`; [volume check](../architecture/data-architecture/volume-check.md) |
+| Release risk | Low: indexes and look-ups only; the patient search results are the same |
+
 ### HIMS-QA-001
 
 | Field | Record |

@@ -1,4 +1,5 @@
-"""The high-volume queries HIMS runs, and the index each one must use (spec 28.6; HIMS-DATA-002).
+"""The high-volume queries HIMS runs, and the index each one must use (spec 28.6; HIMS-DATA-002;
+patients and the MPI: HIMS-DATA-003).
 
 Each entry builds the same query the app builds (often by calling the app's own code), so the
 check follows the code when it changes. ``indexes`` lists the index names that serve it; a name
@@ -8,6 +9,7 @@ Adding a high-volume query to the app? Add it here with its index, and to the ta
 docs/architecture/data-architecture/README.md section 4 (a test keeps the two in step).
 """
 
+import re
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -34,6 +36,82 @@ class QueryCheck:
     # fills a batch at once, which is right; the index must still be chosen once full reads are
     # ruled out, for the steady state where only a day's rows are past it.
     batch: bool = False
+    # Where the Performance screen groups it; by default from the table.
+    area: str = ""
+
+    @property
+    def area_label(self) -> str:
+        return self.area or area_of_table(self.table)
+
+
+# The Performance screen groups queries and screens by these areas.
+PATIENTS = "Patients"
+AUDIT = "Audit log"
+STAFF = "Staff and rota"
+HOSPITAL = "Hospital set-up and beds"
+ACCESS = "Sign-in and access"
+PLATFORM = "Platform and compliance"
+CONSOLE = "Admin console"
+
+_TABLE_AREAS = {
+    "audit_events": AUDIT,
+    "role_assignments": ACCESS,
+    "user_sessions": ACCESS,
+    "user_password_resets": ACCESS,
+    "staff_credentials": STAFF,
+    "shifts": STAFF,
+    "beds": HOSPITAL,
+}
+
+
+def area_of_table(table: str) -> str:
+    if table.startswith("patient"):
+        return PATIENTS
+    return _TABLE_AREAS.get(table, PLATFORM)
+
+
+def _patient_samples(first) -> dict:
+    """A real patient, phone, ID number and emergency access to look for (HIMS-DATA-003)."""
+    from django.db.models import Count
+
+    from apps.patients.models import EmergencyAccess, Patient, PatientContact, PatientIdentifier
+
+    patient_id, mrn, names = first(
+        Patient.objects.order_by().filter(is_restricted=False), "pk", "mrn", "search_name"
+    )
+    # The commonest family name: the slowest one-word search (as Kumar or Devi would be).
+    common = (
+        Patient.objects.exclude(family_name="")
+        .values("family_name")
+        .annotate(people=Count("pk"))
+        .order_by("-people")
+        .values_list("family_name", flat=True)
+        .first()
+    )
+    (phone,) = first(PatientContact.objects.order_by().exclude(phone=""), "phone")
+    # A personal ID number (Aadhaar, ABHA, passport...): previous MRNs are searched per hospital.
+    id_kind, id_hash = first(
+        PatientIdentifier.objects.order_by().exclude(kind=PatientIdentifier.Kind.PREVIOUS_MRN),
+        "kind",
+        "value_hash",
+    )
+    access_user_id, access_patient_id = first(
+        EmergencyAccess.objects.order_by(), "user_id", "patient_id"
+    )
+    words = (names or "synthetic patient").split()
+    number = re.search(r"(\d+)$", mrn or "")
+    return {
+        "patient_id": patient_id or uuid.uuid4(),
+        "mrn": mrn or "MRN-00000000",
+        "mrn_number": str(int(number.group(1))) if number else "1",
+        "phone": phone or "+910000000000",
+        "id_kind": id_kind or "passport",
+        "id_hash": id_hash or "0" * 64,
+        "name_words": words[:2],
+        "family_word": [common.casefold()] if common else words[-1:],
+        "access_user_id": access_user_id or uuid.uuid4(),
+        "access_patient_id": access_patient_id or uuid.uuid4(),
+    }
 
 
 def pick_samples() -> dict:
@@ -73,6 +151,7 @@ def pick_samples() -> dict:
         "department_id": department_id or uuid.uuid4(),
         "staff_id": staff_id or uuid.uuid4(),
         "facility_id": facility_id or uuid.uuid4(),
+        **_patient_samples(first),
     }
 
 
@@ -228,6 +307,114 @@ def _bed_board(samples):
     return Bed.objects.filter(facility_id=samples["facility_id"], is_active=True)
 
 
+# --- Patients and the MPI (HIMS-DATA-003) ------------------------------------------------------
+
+
+def _patient_list(samples):
+    """The patient list as most people see it: newest registrations, restricted ones hidden."""
+    from apps.patients.models import Patient
+
+    return Patient.objects.filter(is_restricted=False).order_by("-created_at")[:25]
+
+
+def _patient_list_facility(samples):
+    from apps.patients.models import Patient
+
+    return Patient.objects.filter(
+        registered_facility_id=samples["facility_id"], is_restricted=False
+    ).order_by("-created_at")[:25]
+
+
+def _patient_by_mrn(samples):
+    from apps.patients import search
+
+    return search.mrn_matches(samples["mrn"])
+
+
+def _patient_by_merged_mrn(samples):
+    from apps.patients import search
+
+    return search.merged_mrn_matches(samples["mrn"])
+
+
+def _patient_by_mrn_number(samples):
+    from apps.patients import search
+
+    return search.mrn_number_matches(samples["mrn_number"])
+
+
+def _patient_by_phone(samples):
+    from apps.patients import search
+
+    return search.phone_matches(samples["phone"])
+
+
+def _patient_by_id_number(samples):
+    from apps.patients.models import PatientIdentifier
+
+    # The filter search.identifier_query builds for a valid number: kind and fingerprint.
+    return PatientIdentifier.objects.filter(
+        kind=samples["id_kind"], value_hash__in=[samples["id_hash"]], is_active=True
+    )
+
+
+def _patient_previous_mrn_issuers(samples):
+    from apps.patients import search
+
+    return search.previous_mrn_issuers()
+
+
+def _issued_numbers_newest(samples):
+    """The console's list of every number issued, newest first (Django adds the id)."""
+    from apps.numbering.models import IssuedNumber
+
+    return IssuedNumber.objects.order_by("-created_at", "-pk")[:100]
+
+
+def _patient_by_name(key):
+    def build(samples):
+        from apps.patients import search
+        from apps.patients.models import Patient
+
+        found = search.by_name(Patient.objects.filter(is_restricted=False), samples[key])
+        return found[: search.MAX_RESULTS]
+
+    return build
+
+
+def _patient_consents(samples):
+    from apps.patients.models import PatientConsent
+
+    return PatientConsent.objects.filter(patient_id=samples["patient_id"]).order_by("-created_at")
+
+
+def _patient_history(samples):
+    from apps.patients import chart
+    from apps.patients.models import Patient
+
+    return chart.history(Patient(pk=samples["patient_id"]))[:25]
+
+
+def _emergency_open(samples):
+    from apps.patients import restricted
+
+    return restricted.open_accesses(samples["access_user_id"], samples["access_patient_id"])[:1]
+
+
+def _emergency_to_review(samples):
+    from apps.patients import restricted
+    from apps.patients.models import EmergencyAccess
+
+    waiting = restricted.in_state(EmergencyAccess.objects.all(), restricted.State.TO_REVIEW)
+    return waiting.order_by("-created_at")[:25]
+
+
+def _restricted_openings(samples):
+    from apps.patients import restricted
+
+    return restricted.restricted_openings(samples["now"] - timedelta(days=7))[:25]
+
+
 def _retention(key):
     def build(samples):
         from apps.compliance.retention import CATEGORIES, batch_ids
@@ -369,6 +556,16 @@ QUERIES: tuple[QueryCheck, ...] = (
         "issued_numbers",
         ("issued_numbers_type_idx",),
         _issued_numbers,
+        # MRNs are most numbers issued: walking every number newest first and skipping the
+        # others is as quick (HIMS-DATA-003 added that index); the budget catches a slow plan.
+        also=("issued_numbers_created_idx",),
+    ),
+    QueryCheck(
+        "issued_numbers_newest",
+        "Numbering: every number issued, newest first (console list)",
+        "issued_numbers",
+        ("issued_numbers_created_idx",),
+        _issued_numbers_newest,
     ),
     QueryCheck(
         "licences_expiring",
@@ -415,5 +612,128 @@ QUERIES: tuple[QueryCheck, ...] = (
         # Nearly every message is finished, so the status-first index serves it as well.
         also=("notification_retry_idx",),
         batch=True,
+    ),
+    # Patients and the MPI (HIMS-DATA-003; spec 28.6: "patient exact match by
+    # organization-scoped identifier", "patient search by approved demographic/search index").
+    QueryCheck(
+        "patient_list",
+        "Patients: newest registrations first (the list's first page)",
+        "patients",
+        ("patients_created_idx",),
+        _patient_list,
+    ),
+    QueryCheck(
+        "patient_list_facility",
+        "Patients registered at one facility, newest first",
+        "patients",
+        ("patients_facility_idx",),
+        _patient_list_facility,
+        # Most patients are registered at the main branch: walking the newest patients and
+        # skipping other branches is as quick there; the budget catches a slow plan.
+        also=("patients_created_idx",),
+    ),
+    QueryCheck(
+        "patient_by_mrn",
+        "Patient search: exact MRN",
+        "patients",
+        ("patients_mrn_unique",),
+        _patient_by_mrn,
+        # A new hospital's few patients, before PostgreSQL has statistics, may be read through
+        # the hospital's own index (one hospital: every row); at volume that reads every patient
+        # and fails the time budget.
+        also=("patients_organization_id_",),
+    ),
+    QueryCheck(
+        "patient_by_merged_mrn",
+        "Patient search: an earlier MRN kept after a merge",
+        "patient_aliases",
+        ("patient_aliases_merged_mrn_idx",),
+        _patient_by_merged_mrn,
+    ),
+    QueryCheck(
+        "patient_by_mrn_number",
+        "Patient search: the number part of the MRN (“123” finds MRN-00000123)",
+        "patients",
+        ("patients_mrn_number_idx",),
+        _patient_by_mrn_number,
+    ),
+    QueryCheck(
+        "patient_by_phone",
+        "Patient search: phone number",
+        "patient_contacts",
+        ("patient_contacts_phone_idx",),
+        _patient_by_phone,
+    ),
+    QueryCheck(
+        "patient_by_id_number",
+        "Patient search: ID number (by its fingerprint)",
+        "patient_identifiers",
+        ("patient_identifiers_hash_idx", "patient_identifiers_unique_number"),
+        _patient_by_id_number,
+    ),
+    QueryCheck(
+        "patient_previous_mrn_issuers",
+        "Patient search: hospitals with previous MRNs on record (a number not found otherwise)",
+        "patient_identifiers",
+        ("patient_ids_prev_mrn_idx",),
+        _patient_previous_mrn_issuers,
+    ),
+    QueryCheck(
+        "patient_by_name",
+        "Patient search: given and family name (similar spelling or sound)",
+        "patients",
+        ("patients_search_name_trgm", "patients_search_sounds_idx"),
+        _patient_by_name("name_words"),
+    ),
+    QueryCheck(
+        "patient_by_family_name",
+        "Patient search: one name only (a common family name)",
+        "patients",
+        ("patients_search_name_trgm", "patients_search_sounds_idx"),
+        _patient_by_name("family_word"),
+        # The worst case: the commonest family name (1 patient in 17, 30,000 at hospital size),
+        # every match ranked by closeness. Both indexes are used; the ranking grows with the
+        # matches: 220 to 360 ms measured at 500,000 patients before the sound key was checked
+        # first, its screen within 500 ms (HIMS-DATA-003; a nearest-first index for larger
+        # registers: HIMS-PAT-009).
+        budget_ms=400.0,
+    ),
+    QueryCheck(
+        "patient_consents",
+        "Patient record: consent decisions, newest first",
+        "patient_consents",
+        ("patient_consents_idx", "patient_consents_patient_id_"),
+        _patient_consents,
+    ),
+    QueryCheck(
+        "patient_history",
+        "Patient record history: who opened and changed it",
+        "audit_events",
+        ("audit_resource_idx",),
+        _patient_history,
+        area=PATIENTS,
+    ),
+    QueryCheck(
+        "patient_emergency_open",
+        "Restricted record: is my emergency access open? (every opening)",
+        "patient_emergency_access",
+        ("patient_emergency_user_idx",),
+        _emergency_open,
+    ),
+    QueryCheck(
+        "patient_emergency_to_review",
+        "Emergency access waiting for review, newest first",
+        "patient_emergency_access",
+        ("patient_emergency_review_idx",),
+        _emergency_to_review,
+    ),
+    QueryCheck(
+        "patient_restricted_openings",
+        "Restricted record openings in the last 7 days (medical records)",
+        "audit_events",
+        ("audit_action_idx",),
+        _restricted_openings,
+        also=("audit_occurred_idx",),
+        area=PATIENTS,
     ),
 )

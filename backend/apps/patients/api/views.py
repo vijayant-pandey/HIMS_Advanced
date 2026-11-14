@@ -18,7 +18,8 @@ Patient search (HIMS-PAT-002; spec endpoint ``GET /api/v1/patients/?search=``): 
 MRN, a phone number, an ID number or a name (similar spelling, any order, earlier names too),
 with optional sex and age (a date of birth would travel in the address, so it is not a filter).
 At most 50 results, best match first; ``count`` says
-how many matched, so the screen can ask for more detail when it is more than 50. Every search is
+how many matched, so the screen can ask for more detail when it is more than 50 (counted up to
+1,000: 1,001 means "more than 1,000"; HIMS-DATA-003). Every search is
 audited with its kind and the number of results, never what was typed.
 """
 
@@ -155,7 +156,8 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                 queryset = queryset.filter(registered_facility_id=facility)
             mrn = (self.request.query_params.get("mrn") or "").strip().upper()
             if mrn:
-                queryset = queryset.filter(mrn=mrn)
+                # Within the hospital, so the MRN index serves it (HIMS-DATA-003).
+                queryset = queryset.filter(organization=get_deployment_organization(), mrn=mrn)
             elif self._hide_restricted():
                 queryset = queryset.filter(is_restricted=False)
         return queryset.order_by("-created_at")
@@ -204,8 +206,8 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                 "search",
                 str,
                 description="MRN, phone number, ID number or name (similar spelling, any order; "
-                "a number among the words is an age). At most 50 results, best match first. "
-                "Audited.",
+                "a number among the words is an age). At most 50 results, best match first; "
+                "count is exact up to 1,000 (1,001 means more than 1,000). Audited.",
             ),
             OpenApiParameter("sex", str, description="With search: this sex only"),
             OpenApiParameter("age", int, description="With search: age in years, give or take 1"),
@@ -247,9 +249,8 @@ class PatientViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         if hide and found.matched_on != search.MatchedOn.MRN:
             matches = matches.filter(is_restricted=False)  # D23: only an exact MRN shows one
         patients = list(matches[: search.MAX_RESULTS])
-        count = len(patients)
-        if count == search.MAX_RESULTS:
-            count = matches.count()
+        # Always counted (up to 1,001), so a search makes the same queries however many match.
+        count = search.count_up_to_limit(matches)
         record_audit_event(
             action=AuditAction.PATIENT_LIST_SEARCHED,
             resource_type="patient",

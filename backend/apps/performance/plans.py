@@ -88,6 +88,7 @@ def check_query(check: QueryCheck, samples: dict, rows_in_table: int) -> dict:
     result = {
         "key": check.key,
         "label": check.label,
+        "area": check.area_label,
         "table": check.table,
         "table_rows": rows_in_table,
         "expected_indexes": list(check.indexes),
@@ -162,6 +163,7 @@ def run_index_check(queries=QUERIES) -> tuple[list[dict], dict[str, int]]:
                 {
                     "key": check.key,
                     "label": check.label,
+                    "area": check.area_label,
                     "table": check.table,
                     "table_rows": rows.get(check.table, 0),
                     "expected_indexes": list(check.indexes),

@@ -16,6 +16,9 @@ _VALID_REQUEST_ID = re.compile(r"^[A-Za-z0-9\-]{8,64}$")
 _request_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "hims_request_id", default=None
 )
+_request_memo: contextvars.ContextVar[dict | None] = contextvars.ContextVar(
+    "hims_request_memo", default=None
+)
 
 
 def new_request_id() -> str:
@@ -30,6 +33,13 @@ def set_request_id(value: str | None) -> contextvars.Token:
     return _request_id.set(value)
 
 
+def request_memo() -> dict | None:
+    """A dict that lives for one request, for a value read many times while answering it (the
+    hospital's time zone: once per request, not once per row; HIMS-DATA-003). ``None`` outside a
+    request (commands, background jobs), where nothing is remembered."""
+    return _request_memo.get()
+
+
 class RequestContextMiddleware:
     """Accepts a well-formed inbound X-Request-ID (e.g. from the ALB/SPA) or generates one."""
 
@@ -41,9 +51,11 @@ class RequestContextMiddleware:
         request_id = inbound if _VALID_REQUEST_ID.match(inbound) else new_request_id()
         request.request_id = request_id
         token = set_request_id(request_id)
+        memo = _request_memo.set({})
         try:
             response = self.get_response(request)
         finally:
+            _request_memo.reset(memo)
             _request_id.reset(token)
         response[REQUEST_ID_HEADER] = request_id
         return response

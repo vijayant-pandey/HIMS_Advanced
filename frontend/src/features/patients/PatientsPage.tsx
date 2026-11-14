@@ -28,6 +28,8 @@ import { PAGE_SIZE, usePatients } from "./api";
 import { MATCHED_ON, SEX, SEX_SHORT, dayTime } from "./labels";
 
 const NO_SEARCH = { search: "", sex: "", age: "" };
+// The server counts search matches up to this many; one more means "more than" (HIMS-DATA-003).
+const MAX_COUNTED = 1000;
 
 /**
  * Patients (HIMS-PAT-001, HIMS-PAT-002; spec 4.5): one search box for the MRN, a phone number, an
@@ -150,7 +152,8 @@ export function PatientsPage() {
       {error && <ErrorAlert error={error} />}
       {tooMany && (
         <Alert severity="info">
-          {data.count} patients match; the best {shown} are shown. Add the age, the sex or more of the name.
+          {data.count > MAX_COUNTED ? `More than ${MAX_COUNTED.toLocaleString()}` : data.count} patients match; the best{" "}
+          {shown} are shown. Add the age, the sex or more of the name.
         </Alert>
       )}
       <Typography variant="subtitle2" component="h2">

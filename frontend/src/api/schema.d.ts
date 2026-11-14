@@ -7450,6 +7450,11 @@ export interface components {
         QueryResult: {
             key: string;
             label: string;
+            /**
+             * @description Area of the app, e.g. Patients (empty on older results).
+             * @default
+             */
+            area: string;
             table: string;
             table_rows: number;
             expected_indexes: string[];
@@ -7997,6 +8002,11 @@ export interface components {
         ScreenResult: {
             key: string;
             label: string;
+            /**
+             * @description Area of the app, e.g. Patients (empty on older results).
+             * @default
+             */
+            area: string;
             path: string;
             /** @description HTTP status of the calls (200 expected). */
             status: number;
@@ -12899,7 +12909,7 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
-                /** @description MRN, phone number, ID number or name (similar spelling, any order; a number among the words is an age). At most 50 results, best match first. Audited. */
+                /** @description MRN, phone number, ID number or name (similar spelling, any order; a number among the words is an age). At most 50 results, best match first; count is exact up to 1,000 (1,001 means more than 1,000). Audited. */
                 search?: string;
                 /** @description With search: this sex only */
                 sex?: string;

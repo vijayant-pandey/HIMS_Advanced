@@ -20,6 +20,7 @@ from apps.facilities.models import Department, Facility
 from apps.identity.models import User
 from apps.patients import search
 from apps.patients.models import EmergencyAccess, Patient, PatientAlias
+from apps.performance.models import PerformanceCheck
 from apps.rosters.models import Shift
 from apps.staff.models import StaffCredential, StaffMember
 
@@ -100,6 +101,12 @@ def test_a_small_demo_hospital_gets_records_for_every_screen(provisioned):
     assert sorted(bool(a.reviewed_at) for a in accesses) == [False, True]
     with pytest.raises(CommandError, match="already has restricted records"):
         call_command("add_demo_restricted_records")
+    # Performance screen (HIMS-DATA-003): an index check on the hospital's own records, with
+    # the patient queries grouped under Patients.
+    check = PerformanceCheck.objects.get()
+    patient_queries = [r for r in check.results if r["area"] == "Patients"]
+    assert len(patient_queries) >= 10
+    assert {r["key"]: r["detail"] for r in patient_queries if not r["passed"]} == {}
     with pytest.raises(DemoError, match="already"):
         seed_hospital(by_key("in-sunrise"), password=None, small=True)
 
