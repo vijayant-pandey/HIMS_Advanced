@@ -1,13 +1,15 @@
 """Fill a throw-away database with production-like synthetic records (spec 28.6, 31.1;
-HIMS-DATA-002).
+HIMS-DATA-002, HIMS-DATA-003).
 
-Sized on a 500-bed hospital: about 2,000 staff, a year of Phase 1 use, and the audit traffic
-Phase 2 will add (docs/architecture/data-architecture/volume-check.md shows the arithmetic).
-``scale`` multiplies every count (0.1 for a quick look, 10 for several years).
+Sized on a 500-bed hospital: about 2,000 staff, a year of Phase 1 use, the audit traffic
+Phase 2 adds, and the patient register of several years with its contacts, ID numbers,
+consents, people, earlier names, restricted records and emergency access
+(docs/architecture/data-architecture/volume-check.md shows the arithmetic). ``scale``
+multiplies every count (0.1 for a quick look, 10 for several years).
 
-Every person and record is invented ("Synthetic Staff 000123", ``@synthetic.test``). The
-command refuses any database except ``hims_volume`` (and test databases), so it can never add
-rows to a real hospital.
+Every person and record is invented ("Synthetic Staff 000123", ``@synthetic.test``, patient
+names made of syllables that belong to nobody). The command refuses any database except
+``hims_volume`` (and test databases), so it can never add rows to a real hospital.
 
 The big tables are filled with ``INSERT ... SELECT generate_series`` (seconds instead of
 minutes). Columns a test does not name get their model default, so a new column with a default
@@ -33,14 +35,31 @@ PROFILE = {
     "staff": 2_000,
     "wards": 50,  # 10 rooms of 3 beds each: 1,500 beds
     "departments": 30,
-    "audit_events": 2_000_000,
+    # 2 million audit events in all: 1.5 million of the Phase 1 kinds and 500,000 patient
+    # events (records opened, searches, histories), about six weeks of Phase 2 use.
+    "audit_events": 1_500_000,
+    "patient_audit_events": 500_000,
     "user_sessions": 300_000,
     "notifications": 300_000,
     "outbox_events": 500_000,
     "idempotency_records": 50_000,
     "issued_numbers": 300_000,
     "password_resets": 10_000,
+    # About 150,000 new patients a year: a little over three years of registrations. Contacts,
+    # ID numbers, consents, people and earlier names follow as shares of the patients.
+    "patients": 500_000,
+    "patient_emergency_access": 2_000,
 }
+# Shares of the patients (a mobile each, a family in five sharing one; addresses, ID numbers,
+# SMS decisions, relatives and earlier names for some).
+PATIENT_SHARES = {
+    "addresses": 0.6,
+    "identifiers": 0.6,
+    "sms_consents": 0.3,
+    "relationships": 0.2,
+    "aliases": 0.02,
+}
+RESTRICTED_EVERY = 1_000  # one patient in a thousand has a restricted record
 ROTA_DAYS = 60
 # One in ten synthetic staff gets one of these administrative roles.
 ADMIN_ROLES = (
@@ -67,7 +86,7 @@ def check_safe(database_name: str | None = None) -> None:
 
 
 # Even a small run needs enough people and places for searches to be selective, as in a hospital.
-MINIMUM = {"staff": 50, "wards": 5, "departments": 5}
+MINIMUM = {"staff": 50, "wards": 5, "departments": 5, "patients": 200}
 
 
 def counts_for(scale: float) -> dict[str, int]:
@@ -470,7 +489,278 @@ def _bulk(organization, built: dict, n: dict, tag: str) -> dict[str, int]:
     return done
 
 
+# --- Patients (HIMS-DATA-003) ----------------------------------------------------------------
+
+# Invented names: two or three of these syllables. Nobody is called this, yet the names spell
+# and sound like names, so similar-spelling and sound-alike search work as they do on real ones.
+SYLLABLES = (
+    "ka", "ri", "an", "de", "vi", "mo", "la", "su", "ne", "ta", "ja", "ro", "mi", "sha", "pa",
+    "ku", "na", "lee", "ha", "ve", "di", "ya", "ma", "ni", "go", "ra", "sa", "bi", "te", "lo",
+)  # fmt: skip
+GIVEN_NAMES = 400
+FAMILY_NAMES = 300
+
+
+def invented_names(count: int, offset: int) -> list[str]:
+    """``count`` different invented names, the same ones on every run."""
+    names, seen, i = [], set(), 0
+    while len(names) < count:
+        k = i * 7919 + offset
+        parts = []
+        for _ in range(3 if i % 3 == 0 else 2):
+            parts.append(SYLLABLES[k % len(SYLLABLES)])
+            k //= len(SYLLABLES)
+        word = "".join(parts)
+        if word not in seen:
+            seen.add(word)
+            names.append(word)
+        i += 1
+    return names
+
+
+def _patient_id(index: str) -> str:
+    """The SQL id of synthetic patient number ``index`` (1..n): the same id from every table."""
+    return f"md5(%(tag)s || 'p' || ({index})::text)::uuid"
+
+
+def _patients(organization, built: dict, n: dict, tag: str) -> dict[str, int]:
+    from apps.audit.models import AuditEvent
+    from apps.audit.services import AuditAction
+    from apps.patients import demographics
+    from apps.patients.identifiers import kinds_for
+    from apps.patients.models import (
+        EmergencyAccess,
+        Patient,
+        PatientAlias,
+        PatientConsent,
+        PatientContact,
+        PatientIdentifier,
+        PatientRelationship,
+    )
+
+    given = invented_names(GIVEN_NAMES, 11)
+    family = invented_names(FAMILY_NAMES, 977)
+    total = n["patients"]
+    india = organization.country == "IN"
+    users = [str(u.pk) for u in built["users"]]
+    params = {
+        "tag": tag,
+        "org": str(organization.pk),
+        "facility": str(built["facility"].pk),
+        "users": users,
+        "n_users": len(users),
+        "given": given,
+        "family": family,
+        "given_sounds": [demographics.sound_key(name) for name in given],
+        "family_sounds": [demographics.sound_key(name) for name in family],
+        "n_patients": total,
+        "every": RESTRICTED_EVERY,
+        "n_restricted": (total - 1) // RESTRICTED_EVERY + 1,
+        # E.164 numbers in a range the generator alone uses (+91 90000 or +1 200 numbers).
+        "phone_base": 919000000000 if india else 12000000000,
+    }
+    user = "(%(users)s::uuid[])[1 + (g %% %(n_users)s)]"
+    owned = {"organization_id": "%(org)s::uuid"}
+    years = "now() - (((g::bigint * 7919) %% 100000000) * interval '1 second')"  # ~3 years
+    year_ago = "now() - (((g::bigint * 7919) %% 31536000) * interval '1 second')"
+    # A few family names are very common (as Kumar, Singh or Devi are): the square of an even
+    # spread puts about one patient in 17 under the commonest.
+    spread = "(((g::bigint * 2654435761) %% 1000003) / 1000003.0)"
+    family_at = f"1 + floor(%(n_family)s * {spread} * {spread})::int"
+    given_at = "1 + ((g::bigint * 104729) %% %(n_given)s)::int"
+    params.update(n_given=len(given), n_family=len(family))
+    done = {}
+    done["patients"] = insert_series(
+        Patient,
+        total,
+        {
+            **owned,
+            "id": _patient_id("g"),
+            "created_at": years,
+            "updated_at": years,
+            "mrn": "'MRN-' || upper(%(tag)s) || '-' || lpad(g::text, 8, '0')",
+            "status": "'active'",
+            "given_name": f"initcap((%(given)s::text[])[{given_at}])",
+            "family_name": f"initcap((%(family)s::text[])[{family_at}])",
+            "date_of_birth": "current_date - ((g::bigint * 7919) %% 32000)::int",
+            "sex": "CASE WHEN g %% 2 = 0 THEN 'female' ELSE 'male' END",
+            "is_restricted": "g %% %(every)s = 1",
+            "restriction": "CASE WHEN g %% %(every)s = 1 THEN 'vip' ELSE '' END",
+            "registered_facility_id": "%(facility)s::uuid",
+            "registered_by_id": user,
+            "search_name": f"(%(given)s::text[])[{given_at}] || ' ' || "
+            f"(%(family)s::text[])[{family_at}]",
+            "search_sounds": f"ARRAY[(%(given_sounds)s::text[])[{given_at}], "
+            f"(%(family_sounds)s::text[])[{family_at}]]::varchar[]",
+        },
+        params,
+    )
+    # One mobile each; in one family in five, the next patient gives the same number.
+    done["patient_contacts"] = insert_series(
+        PatientContact,
+        total,
+        {
+            **owned,
+            "patient_id": _patient_id("g"),
+            "created_at": years,
+            "updated_at": years,
+            "kind": "'mobile'",
+            "phone": "'+' || (%(phone_base)s + CASE WHEN g %% 5 = 0 THEN g - 1 ELSE g END)",
+            "is_primary": "true",
+            "created_by_id": user,
+        },
+        params,
+    )
+    done["patient_contacts"] += insert_series(
+        PatientContact,
+        int(total * PATIENT_SHARES["addresses"]),
+        {
+            **owned,
+            "patient_id": _patient_id("g"),
+            "created_at": years,
+            "updated_at": years,
+            "kind": "'address'",
+            "address_line1": "g || ' Synthetic Road'",
+            "city": "'Synthetic City'",
+            "state": "'Synthetic State'",
+            "country": f"'{organization.country}'",
+            "is_primary": "true",
+        },
+        params,
+    )
+    kind = "aadhaar" if "aadhaar" in kinds_for(organization.country) else "ssn"
+    done["patient_identifiers"] = insert_series(
+        PatientIdentifier,
+        int(total * PATIENT_SHARES["identifiers"]),
+        {
+            **owned,
+            "patient_id": _patient_id("g"),
+            "created_at": years,
+            "updated_at": years,
+            "kind": f"'{kind}'",
+            # Not a real ciphertext: the volume check never opens a number.
+            "value_encrypted": "'synthetic-' || g",
+            "value_hash": "encode(sha256((%(tag)s || 'id' || g)::bytea), 'hex')",
+            "value_display": "'XXXX XXXX ' || lpad((g %% 10000)::text, 4, '0')",
+        },
+        params,
+    )
+    done["patient_consents"] = insert_series(
+        PatientConsent,
+        total,
+        {
+            **owned,
+            "patient_id": _patient_id("g"),
+            "created_at": years,
+            "updated_at": years,
+            "kind": "'privacy_notice'",
+            "status": "'given'",
+        },
+        params,
+    )
+    done["patient_consents"] += insert_series(
+        PatientConsent,
+        int(total * PATIENT_SHARES["sms_consents"]),
+        {
+            **owned,
+            "patient_id": _patient_id("g * 3"),
+            "created_at": years,
+            "updated_at": years,
+            "kind": "'sms'",
+            "status": "CASE WHEN g %% 4 = 0 THEN 'refused' ELSE 'given' END",
+        },
+        params,
+    )
+    done["patient_relationships"] = insert_series(
+        PatientRelationship,
+        int(total * PATIENT_SHARES["relationships"]),
+        {
+            **owned,
+            "patient_id": _patient_id("g * 5"),
+            "created_at": years,
+            "updated_at": years,
+            "relation": "(ARRAY['mother','spouse','emergency_contact','father'])[1 + g %% 4]",
+            "name": "'Synthetic Relative ' || g",
+            "is_emergency_contact": "g %% 4 = 2",
+        },
+        params,
+    )
+    done["patient_aliases"] = insert_series(
+        PatientAlias,
+        max(1, int(total * PATIENT_SHARES["aliases"])),
+        {
+            **owned,
+            "patient_id": _patient_id("g * 50"),
+            "created_at": years,
+            "kind": "CASE WHEN g %% 5 = 0 THEN 'merged_mrn' ELSE 'previous_name' END",
+            "given_name": "CASE WHEN g %% 5 = 0 THEN '' ELSE 'Synthetic' END",
+            "family_name": "CASE WHEN g %% 5 = 0 THEN '' ELSE 'Earlier ' || g END",
+            "mrn": "CASE WHEN g %% 5 = 0 THEN 'MRN-' || upper(%(tag)s) || '-OLD-' || g ELSE '' END",
+        },
+        params,
+    )
+    # Emergency access to the restricted records: nearly all reviewed, a few waiting.
+    reviewed = "g %% 20 <> 0"
+    done["patient_emergency_access"] = insert_series(
+        EmergencyAccess,
+        n["patient_emergency_access"],
+        {
+            **owned,
+            "patient_id": _patient_id("1 + %(every)s * (g %% %(n_restricted)s)"),
+            "created_at": year_ago,
+            "updated_at": year_ago,
+            "user_id": user,
+            "reason": "'Synthetic emergency'",
+            "expires_at": f"{year_ago} + interval '4 hours'",
+            "reviewed_at": f"CASE WHEN {reviewed} THEN {year_ago} + interval '1 day' END",
+            "reviewed_by_id": f"CASE WHEN {reviewed} THEN "
+            "(%(users)s::uuid[])[1 + ((g + 1) %% %(n_users)s)] END",
+            "outcome": f"CASE WHEN {reviewed} THEN 'appropriate' ELSE '' END",
+        },
+        params,
+    )
+    # What the patient screens add to the audit log: records opened (restricted ones marked, as
+    # the app marks them), searches (no record) and histories.
+    patient = "1 + ((g::bigint * 7919) %% %(n_patients)s)"
+    viewed, searched, history = (
+        AuditAction.PATIENT_RECORD_VIEWED,
+        AuditAction.PATIENT_LIST_SEARCHED,
+        AuditAction.PATIENT_HISTORY_VIEWED,
+    )
+    done["audit_events"] = insert_series(
+        AuditEvent,
+        n["patient_audit_events"],
+        {
+            "occurred_at": year_ago,
+            "organization_id": "%(org)s::uuid",
+            "facility_id": "%(facility)s::uuid",
+            "actor_type": "'user'",
+            "actor_id": user,
+            "action": f"CASE WHEN g %% 10 < 7 THEN '{viewed}' WHEN g %% 10 < 9 "
+            f"THEN '{searched}' ELSE '{history}' END",
+            "resource_type": "'patient'",
+            "resource_id": f"CASE WHEN g %% 10 IN (7, 8) THEN '' "
+            f"ELSE ({_patient_id(patient)})::text END",
+            "metadata": f"CASE WHEN g %% 10 < 7 AND ({patient}) %% %(every)s = 1 "
+            'THEN \'{"restricted": true, "via": "restricted_permission"}\'::jsonb '
+            "ELSE '{}'::jsonb END",
+            "outcome": "'success'",
+            "request_id": "md5('patient' || g::text)",
+            "ip_address": "('10.2.' || (g %% 250) || '.' || (g %% 200 + 1))::inet",
+        },
+        params,
+    )
+    return done
+
+
 MAIN_TABLES = (
+    "patients",
+    "patient_contacts",
+    "patient_identifiers",
+    "patient_consents",
+    "patient_relationships",
+    "patient_aliases",
+    "patient_emergency_access",
     "audit_events",
     "user_sessions",
     "notifications",
@@ -506,6 +796,9 @@ def seed(*, scale: float = 1.0, progress=None) -> dict[str, int]:
         added = {"shifts": _shifts(organization, built)}
     say("Audit log, sign-ins, messages, background events, numbers...")
     added.update(_bulk(organization, built, n, tag))
+    say(f"Patients: {n['patients']:,} with contacts, ID numbers, consents and people...")
+    for table, rows in _patients(organization, built, n, tag).items():
+        added[table] = added.get(table, 0) + rows
     added.update({"staff_members": n["staff"], "users": n["staff"], "beds": n["wards"] * 30})
     say("Updating PostgreSQL's statistics (ANALYZE)...")
     with connection.cursor() as cursor:

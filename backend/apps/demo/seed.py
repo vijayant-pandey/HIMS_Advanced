@@ -67,6 +67,8 @@ from apps.patients import restricted
 from apps.patients.demographics import years_between
 from apps.patients.models import EmergencyAccess, Patient, PatientConsent
 from apps.patients.services import record_viewed, register_patient, update_patient
+from apps.performance.models import PerformanceCheck
+from apps.performance.services import run_index_check
 from apps.rosters import balances, staffing
 from apps.rosters.models import LeaveRequest, ShiftType
 from apps.rosters.services import add_shifts, approve_leave, reject_leave, request_leave
@@ -1399,4 +1401,8 @@ def seed_hospital(
     ctx.add("emergency access examples", EmergencyAccess.objects.count())
     ctx.examples += found
     _access_examples(ctx, teams)
+    # The Performance screen: an index check of the busy queries on this hospital's own
+    # records, the patient search among them (HIMS-DATA-003). Reads only.
+    run_index_check(trigger=PerformanceCheck.Trigger.COMMAND)
+    ctx.add("performance checks", PerformanceCheck.objects.count())
     return ctx

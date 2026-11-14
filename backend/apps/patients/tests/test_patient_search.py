@@ -309,3 +309,18 @@ def test_different_names_do_not_sound_alike_and_other_scripts_stay_as_written():
 def test_registration_stores_the_sound_keys(add):
     patient = Patient.objects.get(pk=add("Lakshmi", "Iyer").pk)
     assert patient.search_sounds == ["lxm", "ar"]
+
+
+@pytest.mark.django_db
+def test_many_matches_are_counted_only_up_to_the_limit(desk, add, monkeypatch):
+    """Above the limit the exact number does not help; counting it all doubled the time of a
+    common family name's search at hospital size (HIMS-DATA-003)."""
+    for given in ("Asha", "Bina", "Chitra", "Deepa"):
+        add(given, "Kumari")
+    monkeypatch.setattr(search, "MAX_RESULTS", 2)
+    monkeypatch.setattr(search, "MAX_COUNTED", 2)
+    body = _find(desk, "kumari")
+    assert len(body["results"]) == 2
+    assert body["count"] == 3  # MAX_COUNTED + 1: "more than 2"
+    monkeypatch.setattr(search, "MAX_COUNTED", 10)
+    assert _find(desk, "kumari")["count"] == 4

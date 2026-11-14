@@ -31,6 +31,8 @@ once HIMS is hosted.
   administrator has it). Shows the targets, the latest volume-check results, and every check;
   open one to see each query or screen. **Run the index check now** needs
   `platform.performance.manage`; it only reads, takes a few seconds, and is recorded.
+  **Since HIMS-DATA-003** a check's page groups its queries and screens by area (Patients,
+  Audit log, Staff and rota, …), each with how many passed; pick an area to see only it.
 - **Admin console:** Performance → **Performance checks**: the same results (read-only) and
   **Run the index check now**.
 - **Server (CMD, from `backend` with the virtual environment on):**
@@ -52,7 +54,10 @@ once HIMS is hosted.
 2. Migrates it and sets it up like this hospital (same country, time zone and currency).
 3. Fills it with synthetic records: 2,000 staff, 1,500 beds, 2 million audit events, 300,000
    sign-ins and messages, 500,000 background events and more (`seed_volume_data`; it refuses any
-   database except `hims_volume`).
+   database except `hims_volume`). **Since HIMS-DATA-003** also 500,000 invented patients with
+   800,000 contacts, 300,000 ID numbers, 650,000 consent decisions, 100,000 relatives, 10,000
+   earlier names, 500 restricted records with 2,000 emergency accesses, and 500,000 patient
+   audit events (records opened, searches, histories) within the 2 million.
 4. Seals the copy's audit log, as the every-minute job does in a hospital.
 5. Runs the index check and the response times on the copy.
 6. Records both results in **this** hospital's database (Performance screen, audit log:
@@ -65,7 +70,12 @@ The hospital's own records are never changed: they are only read to copy the cou
 
 A temporary account with administrator and auditor access is created inside a database transaction,
 each screen's API (24 app screens and 6 admin-console lists of the largest tables) is called 2 times to warm up and then 20 times, and the transaction is rolled back:
-no account, sign-in or audit event is left behind. The calls go through all of Django (sign-in
+no account, sign-in or audit event is left behind. **Since HIMS-DATA-003** the account also has
+the medical records role, and 10 patient screens (list, search by MRN, MRN number, phone, name
+and a common family name, record, history, emergency access to review, restricted openings) and
+2 more console lists (patients, emergency access) are measured: 34 app screens and 8 console
+lists. Its request count is reset between screens, so the measurement never reaches the
+per-person request limit. The calls go through all of Django (sign-in
 check, permissions, database) but not the network or the web server, so hosted times will be a
 little higher; the load test with many people at once (HIMS-OPS-021) covers that before go-live.
 Measuring is refused in hosted environments.
@@ -88,4 +98,7 @@ Add the query to `backend/apps/performance/queries.py` (built with the app's own
 index that must serve it) and to section 4 of the
 [data architecture README](../architecture/data-architecture/README.md); add a main screen to
 `ENDPOINTS` in `backend/apps/performance/timings.py`. CI runs the index check and the query-count
-check on every pull request.
+check on every pull request. A query's area on the Performance screen comes from its table
+(`area_of_table` in `queries.py`; pass `area=` when a query belongs elsewhere, as the patient
+history does on `audit_events`); a screen's area comes from its address (`area_of_path` in
+`timings.py`).

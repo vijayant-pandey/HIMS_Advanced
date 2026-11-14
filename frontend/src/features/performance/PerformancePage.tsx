@@ -15,6 +15,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import { useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import type { PerformanceCheck } from "../../api/types";
@@ -23,7 +24,7 @@ import { useCurrentUser } from "../auth/api";
 import { hasOrganizationWidePermission } from "../auth/grants";
 import { usePerformanceCheck, usePerformanceChecks, usePerformanceStatus, useRunIndexCheck } from "./api";
 
-/** Performance checks (spec 18, 28.6; HIMS-DATA-002, HIMS-OPS-017). */
+/** Performance checks (spec 18, 28.6; HIMS-DATA-002, HIMS-OPS-017; areas such as Patients: HIMS-DATA-003). */
 
 const when = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
 const formatWhen = (value?: string | null) => (value ? when.format(new Date(value)) : "—");
@@ -195,10 +196,62 @@ export function PerformancePage() {
   );
 }
 
+// Results recorded before areas existed (HIMS-DATA-003) have none.
+const OTHER_AREA = "Other";
+const areaOf = (item: { area?: string }) => item.area || OTHER_AREA;
+
+/** One chip per area (Patients, Audit log...) with how many passed; picking one shows only it. */
+function AreaFilter({
+  items,
+  area,
+  onChange,
+}: {
+  items: { area?: string; passed: boolean }[];
+  area: string;
+  onChange: (area: string) => void;
+}) {
+  const areas = new Map<string, { total: number; ok: number }>();
+  for (const item of items) {
+    const counts = areas.get(areaOf(item)) ?? { total: 0, ok: 0 };
+    counts.total += 1;
+    if (item.passed) counts.ok += 1;
+    areas.set(areaOf(item), counts);
+  }
+  if (areas.size < 2) return null;
+  return (
+    <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }} role="group" aria-label="Show one area">
+      <Chip
+        label="All areas"
+        color={area === "" ? "primary" : "default"}
+        variant={area === "" ? "filled" : "outlined"}
+        aria-pressed={area === ""}
+        onClick={() => onChange("")}
+      />
+      {[...areas].map(([name, counts]) => {
+        const failed = counts.ok < counts.total;
+        const picked = area === name;
+        return (
+          <Chip
+            key={name}
+            label={`${name}: ${counts.ok} of ${counts.total} OK`}
+            color={failed ? "error" : picked ? "primary" : "default"}
+            variant={picked ? "filled" : "outlined"}
+            aria-pressed={picked}
+            onClick={() => onChange(name)}
+          />
+        );
+      })}
+    </Stack>
+  );
+}
+
 export function PerformanceCheckPage() {
   const { id = "" } = useParams();
   const { data: check, error, isLoading } = usePerformanceCheck(id);
+  const [area, setArea] = useState("");
   const tables = Object.entries(check?.dataset ?? {}).sort(([, a], [, b]) => b - a);
+  const shown = <T extends { area?: string }>(items: T[]) =>
+    area === "" ? items : items.filter((item) => areaOf(item) === area);
 
   return (
     <Stack spacing={2}>
@@ -233,6 +286,8 @@ export function PerformanceCheckPage() {
             </Stack>
           </Paper>
 
+          <AreaFilter items={[...check.query_results, ...check.screen_results]} area={area} onChange={setArea} />
+
           {check.query_results.length > 0 && (
             <TableContainer component={Paper}>
               <Table size="small" aria-label="Queries">
@@ -246,7 +301,7 @@ export function PerformanceCheckPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {check.query_results.map((item) => (
+                  {shown(check.query_results).map((item) => (
                     <TableRow key={item.key}>
                       <TableCell>
                         <Chip
@@ -294,7 +349,7 @@ export function PerformanceCheckPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {check.screen_results.map((item) => (
+                  {shown(check.screen_results).map((item) => (
                     <TableRow key={item.key}>
                       <TableCell>
                         <Chip

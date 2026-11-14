@@ -273,6 +273,11 @@ describe("Patients (HIMS-PAT-001)", { timeout: 20_000 }, () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Search" }), { target: { value: "verma" } });
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
     expect(await screen.findByText(/75 patients match; the best 1 are shown/)).toBeInTheDocument();
+    // Counted up to 1,000 only (HIMS-DATA-003): 1,001 means more.
+    answer = { count: 1001, next: null, previous: null, results: [ROW] };
+    fireEvent.change(screen.getByRole("textbox", { name: "Search" }), { target: { value: "kumar" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(await screen.findByText(/More than 1,000 patients match; the best 1 are shown/)).toBeInTheDocument();
     answer = { count: 0, next: null, previous: null, results: [] };
     fireEvent.change(screen.getByRole("textbox", { name: "Search" }), { target: { value: "zebedee" } });
     fireEvent.click(screen.getByRole("button", { name: "Search" }));

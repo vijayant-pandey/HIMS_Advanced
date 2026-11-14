@@ -21,7 +21,7 @@ from apps.notifications.models import Notification
 from apps.numbering.services import ensure_default_schemes
 from apps.patients import restricted
 from apps.patients.models import EmergencyAccess, Patient
-from apps.patients.services import register_patient
+from apps.patients.services import record_viewed, register_patient
 from common.admin.tests.test_console_additions import console
 from common.exceptions import ConflictError
 
@@ -341,3 +341,25 @@ def test_console_lifts_and_restricts_with_a_reason(admin_user, system_roles, vip
     vip.refresh_from_db()
     assert (vip.is_restricted, vip.restriction) == (True, "staff")
     assert AuditEvent.objects.filter(action=AuditAction.PATIENT_RESTRICTED).count() == 2
+
+
+@pytest.mark.django_db
+def test_console_lists_restricted_openings_like_the_app(admin_user, system_roles, vip, doctor):
+    """Console parity (checked with HIMS-DATA-003): the app's "Restricted record openings" tab
+    has a console page too, for the same people, audited the same way."""
+    page = "/admin/patients/emergencyaccess/restricted-openings/"
+    assert console(admin_user, confirmed=True).get(page).status_code == 403
+    restricted.open_emergency_access(actor=doctor, patient_id=vip.pk, reason=REASON)
+    opening = restricted.opening(doctor, vip)
+    record_viewed(vip, actor=doctor, request=None, metadata=opening.metadata)
+    assign_role(actor=None, user=admin_user, role=system_roles["medical-records-officer"])
+    client = console(admin_user, confirmed=True)
+    listing = client.get("/admin/patients/emergencyaccess/").content.decode()
+    assert page in listing  # linked from Emergency access
+    html = client.get(page, {"days": 30}).content.decode()
+    assert vip.mrn in html and "Head Of Cardiology" in html and "Emergency access" in html
+    viewed = AuditEvent.objects.filter(action=AuditAction.RESTRICTED_OPENINGS_VIEWED).latest(
+        "occurred_at"
+    )
+    assert viewed.actor_id == admin_user.pk and viewed.metadata["days"] == 30
+    assert "selected" in client.get(page, {"days": "nonsense"}).content.decode()

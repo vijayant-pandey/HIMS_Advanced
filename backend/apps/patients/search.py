@@ -33,9 +33,13 @@ from apps.organizations.selectors import get_deployment_organization
 
 from . import demographics, identifiers
 from .demographics import InvalidValue
-from .models import Patient, PatientAlias, PatientContact, PatientIdentifier
+from .models import Patient, PatientAlias, PatientContact, PatientIdentifier, mrn_number
 
 MAX_RESULTS = 50
+# Beyond this many matches the exact number does not help the front desk (they add the age, the
+# sex or more of the name), and counting them all doubled the time of a search for a common
+# family name at hospital size (HIMS-DATA-003). A count of MAX_COUNTED + 1 means "more".
+MAX_COUNTED = 1000
 MIN_NAME_LETTERS = 3
 MAX_MRN_DIGITS = 9  # longer runs of digits are phone or ID numbers
 
@@ -89,18 +93,44 @@ def _filtered(queryset: QuerySet, filters: Filters, today: date) -> QuerySet:
 # --- Exact numbers ------------------------------------------------------------------------------
 
 
+# The look-ups below are the queries the volume check reads the plans of (HIMS-DATA-003,
+# apps/performance/queries.py), so they are kept as querysets.
+
+
+def mrn_matches(mrn: str) -> QuerySet:
+    """Patients with exactly this MRN in this hospital. The hospital is named because the MRN is
+    unique per hospital (``patients_mrn_unique`` starts with it); without it the index could not
+    be used and every patient was read (HIMS-DATA-003)."""
+    return Patient.objects.filter(organization=get_deployment_organization(), mrn=mrn)
+
+
+def merged_mrn_matches(mrn: str) -> QuerySet:
+    """Earlier MRNs kept after a merge (HIMS-PAT-004) that are exactly this one."""
+    return PatientAlias.objects.filter(kind=PatientAlias.Kind.MERGED_MRN, mrn=mrn)
+
+
+def mrn_number_matches(digits: str) -> QuerySet:
+    """Patients whose MRN ends in this number: MRN-00000123 from "123" (leading zeros optional).
+    Compared on the MRN's number part, which ``patients_mrn_number_idx`` holds (HIMS-DATA-003:
+    a pattern match read every MRN)."""
+    return Patient.objects.annotate(mrn_number=mrn_number()).filter(mrn_number=digits.lstrip("0"))
+
+
+def phone_matches(number: str) -> QuerySet:
+    """The patients' own active phones with this number (international format)."""
+    return PatientContact.objects.filter(
+        kind__in=(PatientContact.Kind.MOBILE, PatientContact.Kind.PHONE),
+        is_active=True,
+        phone=number,
+    )
+
+
 def _by_mrn(text: str) -> set:
     mrn = re.sub(r"\s", "", text).upper()
-    ids = set(Patient.objects.filter(mrn=mrn).values_list("pk", flat=True))
-    ids |= set(
-        PatientAlias.objects.filter(kind=PatientAlias.Kind.MERGED_MRN, mrn=mrn).values_list(
-            "patient_id", flat=True
-        )
-    )
+    ids = set(mrn_matches(mrn).values_list("pk", flat=True))
+    ids |= set(merged_mrn_matches(mrn).values_list("patient_id", flat=True))
     if not ids and mrn.isdigit() and len(mrn) <= MAX_MRN_DIGITS:
-        # Only the number: MRN-00000123 from "123" (the number part, leading zeros optional).
-        pattern = rf"(^|[^0-9])0*{int(mrn)}$"
-        ids = set(Patient.objects.filter(mrn__regex=pattern).values_list("pk", flat=True))
+        ids = set(mrn_number_matches(mrn).values_list("pk", flat=True))
     return ids
 
 
@@ -111,13 +141,7 @@ def _by_phone(text: str, country: str) -> set:
         number = demographics.normalise_phone(text, country=country)
     except InvalidValue:
         return set()
-    return set(
-        PatientContact.objects.filter(
-            kind__in=(PatientContact.Kind.MOBILE, PatientContact.Kind.PHONE),
-            is_active=True,
-            phone=number,
-        ).values_list("patient_id", flat=True)
-    )
+    return set(phone_matches(number).values_list("patient_id", flat=True))
 
 
 def _by_id_number(text: str, country: str) -> set:
@@ -125,6 +149,18 @@ def _by_id_number(text: str, country: str) -> set:
         PatientIdentifier.objects.filter(identifier_query(text, country)).values_list(
             "patient_id", flat=True
         )
+    )
+
+
+def previous_mrn_issuers() -> QuerySet:
+    """Each hospital whose MRN is on record as a previous MRN, once. The ordering is set here:
+    the model's default ordering would add its columns to DISTINCT and repeat each hospital
+    (``patient_ids_prev_mrn_idx``; HIMS-DATA-003)."""
+    return (
+        PatientIdentifier.objects.filter(kind=PatientIdentifier.Kind.PREVIOUS_MRN)
+        .order_by("issuer")
+        .values_list("issuer", flat=True)
+        .distinct()
     )
 
 
@@ -139,12 +175,9 @@ def identifier_query(text: str, country: str) -> Q:
             continue
         if kind == PatientIdentifier.Kind.PREVIOUS_MRN:
             # Its fingerprint includes the hospital it is from: try each one on record.
-            issuers = (
-                PatientIdentifier.objects.filter(kind=kind)
-                .values_list("issuer", flat=True)
-                .distinct()
-            )
-            hashes = [identifiers.fingerprint(kind, number, issuer=i) for i in issuers]
+            hashes = [
+                identifiers.fingerprint(kind, number, issuer=i) for i in previous_mrn_issuers()
+            ]
         else:
             hashes = [identifiers.fingerprint(kind, number)]
         wanted |= Q(kind=kind, value_hash__in=hashes)
@@ -154,13 +187,17 @@ def identifier_query(text: str, country: str) -> Q:
 # --- Names --------------------------------------------------------------------------------------
 
 
-def _by_name(queryset: QuerySet, words: list[str]) -> QuerySet:
+def by_name(queryset: QuerySet, words: list[str]) -> QuerySet:
+    """Patients each of whose words matches a name word by spelling or sound, closest first."""
     for word in words:
         if len(word) < 2:
             continue  # an initial ("R Kumar"): too short to match on its own
+        # The sound key first: it is cheap, and PostgreSQL checks the spelling (a similarity
+        # worked out per row) only for rows it did not already match: a quarter faster for a
+        # common family name (HIMS-DATA-003).
         queryset = queryset.filter(
-            Q(search_name__trigram_word_similar=word)
-            | Q(search_sounds__contains=[demographics.sound_key(word)])
+            Q(search_sounds__contains=[demographics.sound_key(word)])
+            | Q(search_name__trigram_word_similar=word)
         )
     return queryset.annotate(
         closeness=TrigramWordSimilarity(" ".join(words), "search_name")
@@ -188,6 +225,11 @@ def _number_kind(text: str, country: str) -> str:
     except InvalidValue:
         return MatchedOn.ID_NUMBER
     return MatchedOn.PHONE
+
+
+def count_up_to_limit(matches: QuerySet) -> int:
+    """How many match, counted up to MAX_COUNTED + 1 (which means "more than MAX_COUNTED")."""
+    return matches.order_by().values("pk")[: MAX_COUNTED + 1].count()
 
 
 def find(text: str, filters: Filters | None = None, *, queryset=None) -> Search:
@@ -224,5 +266,5 @@ def find(text: str, filters: Filters | None = None, *, queryset=None) -> Search:
         )
     if age is not None and filters.age is None:
         filters = Filters(sex=filters.sex, age=age)
-    patients = _by_name(_filtered(queryset, filters, today), words)
+    patients = by_name(_filtered(queryset, filters, today), words)
     return Search(patients, MatchedOn.NAME)

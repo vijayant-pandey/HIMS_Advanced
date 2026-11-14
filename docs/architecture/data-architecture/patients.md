@@ -54,6 +54,15 @@ Design: [Phase 2 P0 part 02](../../p0/phase-2-patients/02-database-design.md) (a
   `patient_emergency_review_idx` (review state, newest first). Never deleted. The reason is
   classified **Clinical** (it may describe the patient's state). Restricted openings are
   found in the audit log (`patient.record.viewed` with `restricted: true`).
+* **Artifact A review (2026-11-14, HIMS-DATA-003).** The patient / MPI domain is reviewed against
+  spec 28.8 and accepted: [patients/MPI review](patients-mpi-review.md). Migration
+  `patients.0004` adds four indexes the volume check showed were missing, built
+  `CONCURRENTLY`: `patients_created_idx` (the list, newest first), `patients_mrn_number_idx`
+  (the MRN's number part, so "123" no longer reads every MRN), `patient_aliases_merged_mrn_idx`
+  (earlier MRNs after a merge) and `patient_ids_prev_mrn_idx` (hospitals with previous MRNs on
+  record). The exact-MRN look-up now names
+  the hospital, so `patients_mrn_unique` (organization, MRN) serves it. Every database rule on
+  these tables is broken on purpose by `apps/patients/tests/test_data_invariants.py`.
 * **ID numbers**: [ADR-036](../../decisions/ADR-036-patient-id-numbers.md).
 * **History tables**: `patient_consents` and `patient_aliases` refuse updates and deletes in the
   database (`patient_history_guard()`), except a change of `patient_id`, which only a merge

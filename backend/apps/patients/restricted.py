@@ -99,14 +99,18 @@ def state_of(access: EmergencyAccess) -> str:
     return State.TO_REVIEW
 
 
+def open_accesses(user_id, patient_id):
+    """This person's open emergency access to this record, latest first (checked on every
+    opening of a restricted record; ``patient_emergency_user_idx``)."""
+    return EmergencyAccess.objects.filter(
+        _active_filter(), user_id=user_id, patient_id=patient_id
+    ).order_by("-expires_at")
+
+
 def active_access(user, patient_id) -> EmergencyAccess | None:
     if not getattr(user, "is_authenticated", False):
         return None
-    return (
-        EmergencyAccess.objects.filter(_active_filter(), user=user, patient_id=patient_id)
-        .order_by("-expires_at")
-        .first()
-    )
+    return open_accesses(user.pk, patient_id).first()
 
 
 @dataclass(frozen=True)
@@ -331,6 +335,10 @@ def review_emergency_access(
         metadata={"emergency_access": str(access.pk), "outcome": outcome},
     )
     return access
+
+
+# How a restricted record was opened, as the app labels it (the audit event's "via").
+VIA_LABELS = {"restricted_permission": "Medical records", "emergency_access": "Emergency access"}
 
 
 def restricted_openings(since):

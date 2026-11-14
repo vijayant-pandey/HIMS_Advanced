@@ -1,0 +1,31 @@
+{% extends "admin/base_site.html" %}
+{# Restricted record openings (HIMS-PAT-006; D23), for medical records: the same list as the app's Emergency access page, tab "Restricted record openings". Viewing it is audited. #}
+{% block breadcrumbs %}
+<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:patients_emergencyaccess_changelist' %}">Emergency access</a> &rsaquo; Restricted record openings</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>Restricted record openings</h1>
+  <p>Who opened a restricted (VIP or staff) record, newest first, and how: as medical records, or with emergency access. Viewing this list is recorded in the audit log.</p>
+  <form method="get">
+    <label for="days">Last</label>
+    <select id="days" name="days">
+      {% for choice in day_choices %}<option value="{{ choice }}"{% if choice == days %} selected{% endif %}>{{ choice }} days</option>{% endfor %}
+    </select>
+    <button type="submit" class="button">Show</button>
+  </form>
+  <div class="module">
+    <table>
+      <thead><tr><th scope="col">When</th><th scope="col">Patient</th><th scope="col">Opened by</th><th scope="col">How</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr><td>{{ row.when }}</td><td>{{ row.mrn|default:"—" }}</td><td>{{ row.person }}</td><td>{{ row.via }}</td></tr>
+      {% empty %}
+        <tr><td colspan="4">No restricted record was opened in the last {{ days }} days.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if more %}<p class="help">Showing the newest {{ rows|length }}. Choose fewer days to see the rest, or use the app's Emergency access page, which pages through all of them.</p>{% endif %}
+</div>
+{% endblock %}

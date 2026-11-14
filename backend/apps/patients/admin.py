@@ -16,12 +16,18 @@ similar name, at most 50 results, audited. Patient identifiers can be searched b
 Restricted records (HIMS-PAT-006): people without ``patients.restricted`` do not see restricted
 patients, nor their contacts, people, ID numbers, consents or names, anywhere in the console
 (emergency access is used in the app). Medical records restrict a record or lift it on the
-patient's page, with a reason, and review emergency access under **Emergency access**.
+patient's page, with a reason, and review emergency access under **Emergency access**, which
+also links to **Restricted record openings**: who opened a restricted record and how, as on the
+app's Emergency access page (console parity checked with HIMS-DATA-003; viewing it is audited).
 """
+
+from datetime import timedelta
 
 from django import forms
 from django.contrib import admin, messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.template.response import TemplateResponse
+from django.urls import path
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 
@@ -31,7 +37,7 @@ from apps.audit.catalog import label as action_label
 from apps.audit.services import AuditAction, record_audit_event
 from apps.organizations.dates import hospital_time
 from apps.organizations.selectors import get_deployment_organization
-from common.admin.options import HimsModelAdmin, ReadOnlyModelAdmin
+from common.admin.options import HimsModelAdmin, LargeTableAdminMixin, ReadOnlyModelAdmin
 from common.admin.site import can_use_console
 from common.exceptions import DomainError
 
@@ -63,7 +69,11 @@ def _may_see_restricted(request) -> bool:
     return restricted.may_see_restricted(request.user)
 
 
-class PatientConsoleAccess:
+class PatientConsoleAccess(LargeTableAdminMixin):
+    """Who sees patient rows in the console. The patient tables are among the largest (half a
+    million patients at a 500-bed hospital), so their lists count only up to 10,000 and skip the
+    second count of the whole table (HIMS-DATA-003 measured the patient list at 1.1 s before)."""
+
     def get_queryset(self, request):
         """Restricted patients and their rows only for medical records (D23)."""
         queryset = super().get_queryset(request)
@@ -707,6 +717,10 @@ class EmergencyAccessForm(forms.ModelForm):
         fields = ("outcome", "review_note")
 
 
+OPENING_DAYS = (7, 30, 90)  # as the app's Emergency access page offers
+OPENINGS_SHOWN = 200
+
+
 @admin.register(EmergencyAccess)
 class EmergencyAccessAdmin(HimsModelAdmin):
     """Emergency access to restricted records (HIMS-PAT-006; D14), for medical records. Opened in
@@ -765,6 +779,60 @@ class EmergencyAccessAdmin(HimsModelAdmin):
     @admin.display(description="Ends")
     def ends(self, obj):
         return hospital_time(obj.ends_at).strftime("%d %b %Y %H:%M")
+
+    def get_urls(self):
+        return [
+            path(
+                "restricted-openings/",
+                self.admin_site.admin_view(self.restricted_openings_view),
+                name="patients_restricted_openings",
+            ),
+            *super().get_urls(),
+        ]
+
+    def restricted_openings_view(self, request):
+        """Who opened restricted records, newest first: the app's list (same query), audited
+        like the app."""
+        if not self._may_review(request):
+            raise PermissionDenied
+        try:
+            days = int(request.GET.get("days", OPENING_DAYS[0]))
+        except ValueError:
+            days = OPENING_DAYS[0]
+        if days not in OPENING_DAYS:
+            days = OPENING_DAYS[0]
+        since = timezone.now() - timedelta(days=days)
+        events = list(restricted.restricted_openings(since)[: OPENINGS_SHOWN + 1])
+        mrns = {
+            str(pk): mrn
+            for pk, mrn in Patient.objects.filter(
+                pk__in={event.resource_id for event in events}
+            ).values_list("pk", "mrn")
+        }
+        rows = [
+            {
+                "when": hospital_time(event.occurred_at).strftime("%d %b %Y %H:%M"),
+                "mrn": mrns.get(event.resource_id, ""),
+                "person": event.actor_name or event.actor_email or "—",
+                "via": restricted.VIA_LABELS.get((event.metadata or {}).get("via", ""), "—"),
+            }
+            for event in events[:OPENINGS_SHOWN]
+        ]
+        record_audit_event(
+            action=AuditAction.RESTRICTED_OPENINGS_VIEWED,
+            resource_type="patient",
+            request=request,
+            metadata={"days": days, "where": "console"},
+        )
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Restricted record openings",
+            "rows": rows,
+            "days": days,
+            "day_choices": OPENING_DAYS,
+            "more": len(events) > OPENINGS_SHOWN,
+        }
+        return TemplateResponse(request, "admin/patients/restricted_openings.html", context)
 
     @admin.display(description="State")
     def state(self, obj):

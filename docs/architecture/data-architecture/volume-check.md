@@ -33,6 +33,22 @@ Phase 2 tables (patients, encounters, orders, results) are sized and checked the
 are built (HIMS-DATA-003). At `--scale 10` the audit log holds 20 million events, about a year of
 Phase 2 use.
 
+**Since HIMS-DATA-003 (2026-11-14)** the patient register is in the copy too (rows below), and the
+audit log's 2 million events are 1.5 million of the Phase 1 kinds plus 500,000 patient events
+(records opened, searches, histories). Total: about **5.9 million rows**.
+
+| Table | Rows | How the number was reached |
+|---|---|---|
+| Patients (`patients`) | 500,000 | About 150,000 new patients a year at a 500-bed hospital: a little over three years. Names are made of syllables that belong to nobody; a few family names are very common (the commonest: 1 patient in 17), as Kumar or Devi are |
+| Contacts (`patient_contacts`) | 800,000 | A mobile each (one family in five shares one), an address for 6 in 10 |
+| ID numbers (`patient_identifiers`) | 300,000 | 6 patients in 10 give one (Aadhaar in India, SSN in the US), stored as fingerprints |
+| Consent decisions (`patient_consents`) | 650,000 | The privacy notice for everyone, an SMS decision for 3 in 10 |
+| Relatives (`patient_relationships`) | 100,000 | 1 patient in 5 |
+| Earlier names and MRNs (`patient_aliases`) | 10,000 | 1 in 50; one in five of them an earlier MRN after a merge |
+| Restricted records | 500 | 1 in 1,000 (VIP) |
+| Emergency access (`patient_emergency_access`) | 2,000 | To the restricted records; 19 in 20 reviewed |
+| Patient audit events (in `audit_events`) | 500,000 | Records opened (7 in 10; restricted openings marked), searches, histories |
+
 ## Results on a developer PC (2026-11-10, scale 1, 20 calls per screen)
 
 PostgreSQL 17, Windows 11 developer laptop, the copy built, sealed and removed by `volume_check`.
@@ -75,3 +91,74 @@ query under 10 ms. Sealing the copy's 2 million events from scratch took about 1
 day's backlog after a scheduler outage (about 45,000 events) is sealed in well under a minute.
 
 Every run is also kept on the **Performance** screen of the hospital it was started from.
+
+## Patients and the MPI (HIMS-DATA-003)
+
+The patient part of Artifact A ([review](patients-mpi-review.md)). Run on 2026-11-14 at scale 1 on the same developer PC (PostgreSQL 18.4).
+
+### What the first run found, and the fixes
+
+The first full-size run (500,000 patients, 5.9 million rows in all) and the code review found
+seven problems. All are fixed; the numbers are from that run and from the copy after each fix.
+
+| # | Found | At hospital size, before | Fix | After |
+|---|---|---|---|---|
+| 1 | The patient list (newest registrations) had no index: every patient was read and sorted | 306 ms; screen p95 611 ms (over the 500 ms target) | `patients_created_idx` | 0.6 ms; screen p95 114 ms |
+| 2 | Searching the MRN's number part ("123") matched a pattern against every MRN | 400 ms; screen 459 ms | `patients_mrn_number_idx` on the MRN's last digits without leading zeros; same results | 0.2 ms; screen 23 ms |
+| 3 | An earlier MRN kept after a merge, and the hospitals with previous MRNs on record, were found by reading whole tables (the second also returned each hospital many times: the model's ordering leaked into DISTINCT) | `patient_aliases` read whole; 87 ms over 300,000 ID numbers on every number not found | `patient_aliases_merged_mrn_idx`, `patient_ids_prev_mrn_idx`; ordering set in `previous_mrn_issuers()` | 0.1 ms; 0.0 ms |
+| 4 | The exact-MRN look-up did not name the hospital, while the MRN index starts with it. PostgreSQL 18 on the developer PC hides this (skip scan); CI and hosting run PostgreSQL 17, which cannot use the index that way | 0.3 ms on the PC; a whole-index read on 17 | The look-ups name the hospital (`search.mrn_matches`, the list's `?mrn=`) | the index on both versions |
+| 5 | The hospital's time zone was read from the database once per row (each patient's age, each "Ends" time) | 61 queries for a name search, 32 for the list, 107 for the console's emergency access list | Read once per request (`common/request_context.request_memo`, `organizations/dates.py`); cleared when Hospital settings change it | 11, 8 and 8 queries |
+| 6 | The console's patient list counted every patient twice; its issued-numbers list sorted all 300,000 numbers on every page | 1,119 ms; 513 ms (both over 500 ms) | Patient tables use the console's capped counting (up to 10,000, as the audit log does); `issued_numbers_created_idx` | 162 ms; 130 ms |
+| 7 | A one-word search for the commonest family name (30,000 matches) counted all of them again after ranking them | 344 ms query; screen p95 529 ms | The total is counted up to 1,000 ("More than 1,000 patients match"); the cheap sound key is checked before the spelling (a quarter faster) | screen within 500 ms (final run below) |
+
+One limit remains and is accepted for now (decisions log row 36): ranking 30,000 matches by
+closeness takes a few hundred milliseconds, and it grows with the register. Its query may take up
+to 400 ms (the others 100 ms) while its screen stays within 500 ms. Before a hospital's register
+passes about 2 million patients, a nearest-first trigram index replaces the ranking
+(HIMS-PAT-009).
+
+Also found and recorded for later: the read-only reporting user can read patient names and
+contacts (HIMS-IAM-023, before real patient data); the later P0 domains need the same review
+(HIMS-DATA-004). The console had no page for "restricted record openings", which the app's
+Emergency access page has (HIMS-PAT-006): added, for medical records, audited the same way.
+
+### Final run
+
+**Final run (2026-11-14, `volume_check --scale 1`, PostgreSQL 18.4 on the developer PC, 5.9
+million rows): all 40 queries use their index in time and all 42 screens are within target.**
+Recorded on the Performance screen (group **Patients**). Details and the first run's problems:
+[volume check](volume-check.md#patients-and-the-mpi-hims-data-003).
+
+| Query (what the app does) | Index used | Time at 500,000 patients |
+|---|---|---|
+| Patients, newest registrations first | `patients_created_idx` | 0.7 ms |
+| Patients registered at one facility | `patients_facility_idx` | 0.1 ms |
+| Search: exact MRN (within the hospital) | `patients_mrn_unique` | 0.2 ms |
+| Search: an earlier MRN after a merge | `patient_aliases_merged_mrn_idx` | 0.1 ms |
+| Search: the MRN's number part ("123") | `patients_mrn_number_idx` | 0.2 ms |
+| Search: phone number | `patient_contacts_phone_idx` | 0.2 ms |
+| Search: ID number, by fingerprint | `patient_identifiers_hash_idx` | 0.1 ms |
+| Search: hospitals with previous MRNs (a number found nowhere else) | `patient_ids_prev_mrn_idx` | 0.0 ms |
+| Search: given and family name (spelling or sound) | `patients_search_sounds_idx` + `patients_search_name_trgm` | 12.6 ms |
+| Search: one name only, the commonest family name (30,000 matches ranked) | the same two | 294 ms (allowed 400 ms; decisions log row 36) |
+| Record: consent decisions, newest first | `patient_consents` patient index | 0.2 ms |
+| Record history | `audit_resource_idx` | 0.3 ms |
+| Restricted record: is my emergency access open? | `patient_emergency_user_idx` | 0.1 ms |
+| Emergency access waiting for review | `patient_emergency_review_idx` | 1.4 ms |
+| Restricted record openings, last 7 days | `audit_action_idx` | 7.3 ms |
+
+| Screen | p95 | Target | Database queries |
+|---|---|---|---|
+| Patients (newest first) | 104 ms | 500 ms | 8 |
+| Patient search: exact MRN / MRN number / phone | 23 / 25 / 23 ms | 500 ms | 14–15 |
+| Patient search: given and family name | 56 ms | 500 ms | 11 |
+| Patient search: one common family name | 301 ms | 500 ms | 11 |
+| Patient record (chart header and overview) | 36 ms | 300 ms | 13 |
+| Patient record history | 19 ms | 500 ms | 9 |
+| Emergency access waiting for review | 25 ms | 500 ms | 6 |
+| Restricted record openings | 32 ms | 500 ms | 9 |
+| Console: patients / emergency access | 100 / 94 ms | 500 ms | 7 / 8 |
+
+The number of database queries per screen does not grow with the records (CI test).
+
+The Phase 1 results above held: every Phase 1 query and screen passed again in the same run (bed board p95 375 ms, console sign-ins 260 ms, console shifts 269 ms the slowest). The console's issued-numbers list went from 513 ms to 89 ms with its new index.

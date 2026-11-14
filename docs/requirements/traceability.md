@@ -6,7 +6,7 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 
 ## Phase 1
 
-98 of 129 marked Done in the backlog; 107 requirement records in all phases (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
+99 of 129 marked Done in the backlog; 108 requirement records in all phases (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
@@ -105,7 +105,7 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 | HIMS-SEC-017 | Run the on-demand audit integrity check as a background job with progress once the audit log nears ~1 million records (gap found in HIMS-SEC-010) | To do | — | — | — | — |
 | HIMS-DATA-001 | Artifact A for built domains: generated data dictionary and ERDs (CI freshness check), classification, lifecycle, index ↔ query patterns, transactions, history, migrations, catalogs, data flows, synthetic data ([index](../architecture/data-architecture/README.md)) | Done | [record](platform-and-operations.md#hims-data-001) | — | 1 files | #25 |
 | HIMS-DATA-002 | Check indexes with production-like synthetic volume and query plans (spec 28.6) | Done | [record](platform-and-operations.md#hims-data-002) | 4 | 1 files | #49 |
-| HIMS-DATA-003 | Artifact A for each P0 domain before release (patients/MPI first; spec 28.8) | To do | — | — | — | — |
+| HIMS-DATA-003 | Artifact A for each P0 domain before release (patients/MPI first; spec 28.8) | Done 2026-11-14 for patients/MPI, slice 2A | [record](platform-and-operations.md#hims-data-003) | — | 5 files | this PR |
 | HIMS-QA-001 | Playwright browser tests for Phase 1 flows with axe accessibility checks; CI workflow ([how-to](../testing/browser-tests.md)) | Done | [record](platform-and-operations.md#hims-qa-001) | — | 1 files | #27 |
 | HIMS-QA-002 | Make `browser-tests` a required check once it has run green for two weeks | To do | — | — | — | — |
 | HIMS-QA-004 | Demo hospitals: 5 Indian and 5 US hospitals, 3 branches each, every one its own database, with synthetic records for everything built; the launcher lists them; invented patients ready for Phase 2 (PO request 2026-11-12) | Done | [record](platform-and-operations.md#hims-qa-004) | — | 1 files | #55 |
@@ -142,7 +142,7 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 
 ## Phase 2
 
-4 of 25 marked Done in the Phase 2 backlog ([phase-2-patients.md](../backlog/phase-2-patients.md)).
+4 of 28 marked Done in the Phase 2 backlog ([phase-2-patients.md](../backlog/phase-2-patients.md)).
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
@@ -150,10 +150,11 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 | HIMS-PAT-001 | Patient registration with MRN, contacts, relationships, identifiers (encrypted/masked), consents | Done 2026-11-12 | [record](patients.md#hims-pat-001) | 17 | 6 files | #57 |
 | HIMS-PAT-002 | Patient search (MRN, phone, ID, similar name) with minimal results; chart read auditing | Done 2026-11-13 | [record](patients.md#hims-pat-002) | 17 | 4 files | #58 |
 | HIMS-PAT-003 | Duplicate detection at registration and possible-duplicates list | To do | — | — | — | — |
-| HIMS-PAT-004 | Two-person merge with 30-day undo | To do | — | — | — | — |
+| HIMS-PAT-004 | Two-person merge with 30-day undo | To do | — | — | 1 files | — |
 | HIMS-PAT-005 | Patient chart header and overview | Done 2026-11-14 | [record](patients.md#hims-pat-005) | 17 | 5 files | #59 |
-| HIMS-PAT-006 | Restricted (VIP/staff) records and emergency access with review | Done 2026-11-14 | [record](patients.md#hims-pat-006) | 20 | 5 files | this PR |
+| HIMS-PAT-006 | Restricted (VIP/staff) records and emergency access with review | Done 2026-11-14 | [record](patients.md#hims-pat-006) | 20 | 5 files | #60 |
 | HIMS-PAT-008 | Weekly email to medical records: emergency access waiting for review and the week's restricted record openings (D14 "reviewed weekly"; gap found in HIMS-PAT-006, which emails each use at once and keeps the review list) | To do | — | — | — | — |
+| HIMS-PAT-009 | Patient name search for very large registers: a one-word search for the commonest family name ranks every match by closeness (HIMS-DATA-003 measured 30,000 matches in 220–360 ms at 500,000 patients, allowed up to 400 ms; it grows with the matches, so about ten times that at 5 million). Before a hospital passes about 2 million patients: rank with a nearest-first trigram index (GiST `<<->`) or, above a number of matches, ask for a second name or the age first; re-measure with `volume_check --scale 4` (gap found in HIMS-DATA-003) | To do | — | — | — | — |
 | HIMS-PAT-007 | Record a patient's death (date and time, by a doctor); the record becomes read-only except medical-records corrections (P0 part 01 §1; gap found in HIMS-PAT-001) | To do | — | — | — | — |
 | HIMS-OPD-001 | Doctor schedules and exceptions | To do | — | — | — | — |
 | HIMS-OPD-002 | Appointments without double booking (exclusion constraint), reschedule, cancel | To do | — | — | — | — |
@@ -170,4 +171,6 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 | HIMS-RPT-002 | OPD daily list; unsigned-notes report | To do | — | — | — | — |
 | HIMS-NOTIF-004 | Per-patient opt-out of messages, with consent (spec 4.23; split from HIMS-NOTIF-003 because it needs patients) | To do | — | — | — | — |
 | HIMS-STAFF-017 | Check clinical privileges in clinical actions with `holds_privilege`, and remind HR before a privilege's review date (spec 4.3; gap found in HIMS-STAFF-016, which keeps the record) | To do | — | — | — | — |
+| HIMS-IAM-023 | The read-only reporting database user and patient data: today it reads every column except Secret ones, so patient names, contacts and Clinical columns too. Decide with reporting (minimum necessary, spec 13.3) which patient columns a report may read, and limit the user's grants (or give reports a view without names) before real patient data (gap found in HIMS-DATA-003) | To do | — | — | — | — |
 | HIMS-IAM-022 | Supplier support and patient records: today the supplier's support account never holds patient permissions, even with a lent administrator role (spec 7.2). If the PO wants support to see patients in some cases, add a separate, hospital-approved "include patient records" choice that the hospital is always told about (gap found in HIMS-PAT-001; decisions log row 20) | To do | — | — | — | — |
+| HIMS-DATA-004 | Artifact A review (spec 28.8) for each later P0 domain before it is released, as HIMS-DATA-003 did for patients/MPI: visits and clinical recording with slice 2C (encounters, vitals, allergies, diagnoses, notes), appointments with slice 2B; each adds its tables to the volume check and its database rules to an invariants test (split from HIMS-DATA-003, which is done for patients/MPI) | To do | — | — | — | — |

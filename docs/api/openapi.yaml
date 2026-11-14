@@ -4384,8 +4384,8 @@ paths:
         schema:
           type: string
         description: MRN, phone number, ID number or name (similar spelling, any order;
-          a number among the words is an age). At most 50 results, best match first.
-          Audited.
+          a number among the words is an age). At most 50 results, best match first;
+          count is exact up to 1,000 (1,001 means more than 1,000). Audited.
       - in: query
         name: sex
         schema:
@@ -15175,6 +15175,10 @@ components:
           type: string
         label:
           type: string
+        area:
+          type: string
+          default: ''
+          description: Area of the app, e.g. Patients (empty on older results).
         table:
           type: string
         table_rows:
@@ -16585,6 +16589,10 @@ components:
           type: string
         label:
           type: string
+        area:
+          type: string
+          default: ''
+          description: Area of the app, e.g. Patients (empty on older results).
         path:
           type: string
         status:

@@ -321,7 +321,7 @@ One person who is, or was, a patient of the hospital: one MRN in every facility.
 - **Model:** `patients.Patient`
 - **Lifecycle:** Never deleted (D24; retention set by legal before go-live). Corrections are versioned and audited before/after; an old name is kept as an alias. A merged record stays, read-only (HIMS-PAT-004).
 - **Rules:** `patients_mrn_unique`: Unique: organization, mrn; `patients_merged_has_target`: Check: (NOT status = 'merged' OR merged_into is set); `patients_not_merged_into_self`: Check: (merged_into is empty OR NOT merged_into = id); `patients_restriction_has_kind`: Check: ((is_restricted = False AND restriction = '') OR (is_restricted = True AND NOT restriction = ''))
-- **Extra indexes:** `patients_dob_idx`: date_of_birth; `patients_facility_idx`: registered_facility, -created_at; `patients_search_name_trgm`: search_name; `patients_search_sounds_idx`: search_sounds
+- **Extra indexes:** `patients_dob_idx`: date_of_birth; `patients_facility_idx`: registered_facility, -created_at; `patients_created_idx`: -created_at; `patients_mrn_number_idx`: ; `patients_search_name_trgm`: search_name; `patients_search_sounds_idx`: search_sounds
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
 |---|---|---|---|---|---|---|---|
@@ -364,6 +364,7 @@ An earlier name (or, after a merge, an earlier MRN) that still finds the patient
 
 - **Model:** `patients.PatientAlias`
 - **Lifecycle:** Append-only history (database trigger); only a merge may move a row to the kept patient.
+- **Extra indexes:** `patient_aliases_merged_mrn_idx`: mrn where kind = 'merged_mrn'
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
 |---|---|---|---|---|---|---|---|
@@ -445,7 +446,7 @@ An identity document number: stored encrypted, shown masked, found by a keyed fi
 - **Model:** `patients.PatientIdentifier`
 - **Lifecycle:** Never deleted; a wrong or replaced number is ended with a reason. The number is encrypted; screens, the console and the audit log only see it masked.
 - **Rules:** `patient_identifiers_unique_number`: Unique: organization, kind, value_hash where (is_active = True AND kind in ('abha_number', 'abha_address', 'aadhaar', 'passport', 'ssn'))
-- **Extra indexes:** `patient_identifiers_hash_idx`: value_hash
+- **Extra indexes:** `patient_identifiers_hash_idx`: value_hash; `patient_ids_prev_mrn_idx`: issuer where kind = 'previous_mrn'
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
 |---|---|---|---|---|---|---|---|
@@ -651,7 +652,7 @@ Register of every number handed out. Append-only; the database refuses duplicate
 - **Model:** `numbering.IssuedNumber`
 - **Lifecycle:** Append-only register; a number is never reused.
 - **Rules:** `issued_number_unique`: Unique: document_type, value
-- **Extra indexes:** `issued_numbers_type_idx`: document_type, -created_at
+- **Extra indexes:** `issued_numbers_type_idx`: document_type, -created_at; `issued_numbers_created_idx`: -created_at
 
 | Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
 |---|---|---|---|---|---|---|---|
