@@ -168,6 +168,7 @@ LABELS: dict[str, str] = {
     A.PATIENT_REGISTERED: "Patient registered (MRN issued)",
     A.PATIENT_UPDATED: "Patient details corrected",
     A.PATIENT_RECORD_VIEWED: "Patient record opened",
+    A.PATIENT_HISTORY_VIEWED: "Patient record's history viewed (who opened and changed it)",
     A.PATIENT_LIST_SEARCHED: "Patients searched (MRN, phone, ID number or name)",
     A.PATIENT_CONTACT_ADDED: "Patient phone, email or address added",
     A.PATIENT_CONTACT_UPDATED: "Patient phone, email or address changed or ended",

@@ -136,8 +136,9 @@ REQUIREMENTS: list[tuple[str, str, str, str, str, str, str, str]] = [
         "Record and examine activity in systems holding patient data.",
         "Append-only audit log with a tamper-evident chain. Opening a patient's record is "
         "audited since HIMS-PAT-001 (2026-11-12), every patient search since HIMS-PAT-002 "
-        "(2026-11-13: its kind and result count, never what was typed); clinical chart reads "
-        "come with Phase 2.",
+        "(2026-11-13: its kind and result count, never what was typed); medical records see "
+        "each record's history, who opened and changed it, and seeing it is audited too "
+        "(HIMS-PAT-005, 2026-11-14); clinical chart reads come with Phase 2.",
         DONE,
     ),
     (
@@ -501,7 +502,8 @@ RISKS: list[tuple[str, str, str, str, int, int, str]] = [
         3,
         5,
         "Audit log; opening a patient's record audited (HIMS-PAT-001), every search too, "
-        "with at most 50 minimal results (HIMS-PAT-002). Planned in Phase 2: "
+        "with at most 50 minimal results (HIMS-PAT-002); medical records see who opened "
+        "each record on its History tab (HIMS-PAT-005). Planned in Phase 2: "
         "patient-level rules, restricted records, emergency access review.",
     ),
     (

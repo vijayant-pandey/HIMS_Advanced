@@ -1,9 +1,11 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from apps.audit import catalog as audit_catalog
 from apps.facilities.models import Facility
 from apps.organizations.dates import hospital_today
 
-from .. import demographics
+from .. import chart, demographics
 from ..models import (
     Patient,
     PatientAlias,
@@ -195,6 +197,12 @@ class AliasSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ChartAlertSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    severity = serializers.ChoiceField(choices=chart.Severity.choices)
+    message = serializers.CharField()
+
+
 class PatientDetailSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="full_name", read_only=True)
     age = serializers.SerializerMethodField()
@@ -214,6 +222,12 @@ class PatientDetailSerializer(serializers.ModelSerializer):
     aliases = AliasSerializer(many=True, read_only=True)
     needs_guardian = serializers.SerializerMethodField(
         help_text="Under 18 with no current parent or guardian recorded"
+    )
+    allergy_status = serializers.SerializerMethodField(
+        help_text="For the chart header; HIMS-CLIN-003 adds recorded allergies"
+    )
+    alerts = serializers.SerializerMethodField(
+        help_text="What staff must notice on opening the record, most important first"
     )
 
     class Meta:
@@ -247,6 +261,8 @@ class PatientDetailSerializer(serializers.ModelSerializer):
             "registered_facility_name",
             "registered_by_name",
             "needs_guardian",
+            "allergy_status",
+            "alerts",
             "contacts",
             "relationships",
             "identifiers",
@@ -265,17 +281,36 @@ class PatientDetailSerializer(serializers.ModelSerializer):
         return _name(obj.registered_by)
 
     def get_needs_guardian(self, obj) -> bool:
-        from ..services import ADULT_AGE, GUARDIAN_RELATIONS
+        return chart.needs_guardian(obj)
 
-        if (
-            obj.is_unknown
-            or demographics.years_between(obj.date_of_birth, hospital_today()) >= ADULT_AGE
-        ):
-            return False
-        return not any(
-            r.is_active and (r.is_legal_guardian or r.relation in GUARDIAN_RELATIONS)
-            for r in obj.relationships.all()
-        )
+    @extend_schema_field(serializers.ChoiceField(choices=chart.AllergyStatus.choices))
+    def get_allergy_status(self, obj) -> str:
+        return chart.AllergyStatus.NOT_ASKED  # recorded allergies come with HIMS-CLIN-003
+
+    @extend_schema_field(ChartAlertSerializer(many=True))
+    def get_alerts(self, obj) -> list[dict]:
+        return ChartAlertSerializer(chart.alerts(obj), many=True).data
+
+
+class PatientHistoryEventSerializer(serializers.Serializer):
+    """One event in the record's history (HIMS-PAT-005): what, who, where and when; for a
+    correction the names of the fields that changed, never their values."""
+
+    id = serializers.UUIDField()
+    occurred_at = serializers.DateTimeField()
+    action = serializers.CharField()
+    action_label = serializers.SerializerMethodField()
+    actor_name = serializers.CharField(allow_null=True)
+    facility_name = serializers.CharField(allow_null=True)
+    outcome = serializers.CharField()
+    changed = serializers.SerializerMethodField(help_text="Fields corrected (names only)")
+    reason = serializers.CharField()
+
+    def get_action_label(self, event) -> str:
+        return audit_catalog.label(event.action)
+
+    def get_changed(self, event) -> list[str]:
+        return chart.changed_fields(event)
 
 
 # --- Writing ------------------------------------------------------------------------------------

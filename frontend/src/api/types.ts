@@ -236,6 +236,10 @@ export type PatientContactKindEnum = Schemas["PatientContactKindEnum"];
 export type PatientIdentifierKindEnum = Schemas["PatientIdentifierKindEnum"];
 export type PatientConsentKindEnum = Schemas["PatientConsentKindEnum"];
 export type PatientConsentStatusEnum = Schemas["PatientConsentStatusEnum"];
+// Patient chart (HIMS-PAT-005).
+export type PatientChartAlert = Schemas["ChartAlert"];
+export type PatientHistoryEvent = Schemas["PatientHistoryEvent"];
+export type PaginatedPatientHistory = Schemas["PaginatedPatientHistoryEventList"];
 export type ConsentMethodEnum = Schemas["ConsentMethodEnum"];
 export type MaritalStatusEnum = Schemas["MaritalStatusEnum"];
 export type BloodGroupEnum = Schemas["BloodGroupEnum"];

@@ -57,6 +57,7 @@ class P:
     PATIENTS_SEARCH = "patients.search"
     PATIENTS_VIEW = "patients.view"
     PATIENTS_REGISTER = "patients.register"
+    PATIENTS_HISTORY = "patients.history"
 
 
 PERMISSIONS: dict[str, str] = {
@@ -136,21 +137,26 @@ PERMISSIONS: dict[str, str] = {
         "Register patients (MRN issued) and correct their details, contacts, guardians, ID "
         "numbers and consents"
     ),
+    P.PATIENTS_HISTORY: (
+        "See a patient record's history: who opened it and who changed what, and when (the "
+        "values stay in the audit log)"
+    ),
 }
 
 # Never part of the hospital administrator role: only the software supplier's support account
 # asks for support access (HIMS-IAM-021), and auditors stay separate (ADR-013). Administrators
 # run the hospital; the front desk and medical records register patients (P0 part 04, approved
 # for now 2026-11-08: administrators may look patients up and open them, not register them).
+# Who opened a patient's record is for medical records and auditors only (HIMS-PAT-005).
 NOT_FOR_ADMINISTRATORS: frozenset[str] = frozenset(
-    {P.AUDIT_VIEW, P.SUPPORT_ACCESS_REQUEST, P.PATIENTS_REGISTER}
+    {P.AUDIT_VIEW, P.SUPPORT_ACCESS_REQUEST, P.PATIENTS_REGISTER, P.PATIENTS_HISTORY}
 )
 
 # Patient data. The software supplier's support account never holds these, whatever role
 # the hospital lends it (spec 7.2: support "should not silently gain access to patient
 # records"; HIMS-PAT-001). Clinical permissions are added here with their tickets.
 PATIENT_DATA_PERMISSIONS: frozenset[str] = frozenset(
-    {P.PATIENTS_SEARCH, P.PATIENTS_VIEW, P.PATIENTS_REGISTER}
+    {P.PATIENTS_SEARCH, P.PATIENTS_VIEW, P.PATIENTS_REGISTER, P.PATIENTS_HISTORY}
 )
 SUPPLIER_SUPPORT_ROLE = "supplier-support"
 
@@ -308,14 +314,16 @@ SYSTEM_ROLES: dict[str, dict] = {
     "medical-records-officer": {
         "name": "Medical records officer",
         "description": "Keeps patient records right: registers and corrects patients in any "
-        "branch. Merging duplicates and reviewing emergency access are added in later Phase 2 "
-        "tickets. Assign hospital-wide or at facility scope.",
+        "branch and sees each record's history (who opened it, who changed what). Merging "
+        "duplicates and reviewing emergency access are added in later Phase 2 tickets. Assign "
+        "hospital-wide or at facility scope.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
             P.PATIENTS_SEARCH,
             P.PATIENTS_VIEW,
             P.PATIENTS_REGISTER,
+            P.PATIENTS_HISTORY,
         ],
     },
     "equipment-officer": {

@@ -23,6 +23,11 @@ export const MATCHED_ON: Record<string, string> = {
   name: "Name",
 };
 
+/** The chart header's allergy line (HIMS-PAT-005; D19). HIMS-CLIN-003 adds recorded allergies. */
+export const ALLERGY_STATUS: Record<string, string> = {
+  not_asked: "Allergies not asked yet",
+};
+
 /** Short form for lists: "34 y F". */
 export const SEX_SHORT: Record<PatientSexEnum, string> = { male: "M", female: "F", intersex: "I", unknown: "U" };
 

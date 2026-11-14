@@ -38,6 +38,10 @@ Design: [Phase 2 P0 part 02](../../p0/phase-2-patients/02-database-design.md) (a
   Exact look-ups use the existing indexes: `patients_mrn_unique`, `patient_contacts_phone_idx`,
   `patient_identifiers_hash_idx`. Every search is audited (`patient.searched`: kind, result count
   and filter names only).
+* **Patient chart (2026-11-14, HIMS-PAT-005).** No new tables. The chart header's alerts are
+  worked out from the record (`apps/patients/chart.py`); the record's history reads the audit
+  log rows for the patient's id through the existing index `audit_resource_idx` (resource type,
+  id, time) and shows field names only. Viewing it adds `patient.history.viewed`.
 * **ID numbers**: [ADR-036](../../decisions/ADR-036-patient-id-numbers.md).
 * **History tables**: `patient_consents` and `patient_aliases` refuse updates and deletes in the
   database (`patient_history_guard()`), except a change of `patient_id`, which only a merge

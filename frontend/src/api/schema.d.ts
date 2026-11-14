@@ -2577,6 +2577,26 @@ export interface paths {
         patch: operations["patients_contacts_partial_update"];
         trace?: never;
     };
+    "/api/v1/patients/{id}/history/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The record's history (HIMS-PAT-005): who opened it and who changed what, and when,
+         *     newest first. Field names only, never their values. Viewing it is audited too.
+         */
+        get: operations["patients_history_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/patients/{id}/identifiers/": {
         parameters: {
             query?: never;
@@ -4135,6 +4155,8 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /** @enum {string} */
+        AllergyStatusEnum: "not_asked";
         ApiEndpoint: {
             method: string;
             path: string;
@@ -4521,6 +4543,17 @@ export interface components {
          * @enum {string}
          */
         ChannelEnum: "email" | "sms";
+        ChartAlert: {
+            code: string;
+            severity: components["schemas"]["ChartAlertSeverityEnum"];
+            message: string;
+        };
+        /**
+         * @description * `warning` - Warning
+         *     * `info` - Information
+         * @enum {string}
+         */
+        ChartAlertSeverityEnum: "warning" | "info";
         ClinicalPrivilege: {
             /** Format: uuid */
             readonly id: string;
@@ -6261,6 +6294,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Notification"][];
         };
+        PaginatedPatientHistoryEventList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["PatientHistoryEvent"][];
+        };
         PaginatedPatientListList: {
             /** @example 123 */
             count: number;
@@ -6768,6 +6816,10 @@ export interface components {
             readonly registered_by_name: string | null;
             /** @description Under 18 with no current parent or guardian recorded */
             readonly needs_guardian: boolean;
+            /** @description For the chart header; HIMS-CLIN-003 adds recorded allergies */
+            readonly allergy_status: components["schemas"]["AllergyStatusEnum"];
+            /** @description What staff must notice on opening the record, most important first */
+            readonly alerts: components["schemas"]["ChartAlert"][];
             readonly contacts: components["schemas"]["Contact"][];
             readonly relationships: components["schemas"]["Relationship"][];
             readonly identifiers: components["schemas"]["Identifier"][];
@@ -6779,6 +6831,24 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+        };
+        /**
+         * @description One event in the record's history (HIMS-PAT-005): what, who, where and when; for a
+         *     correction the names of the fields that changed, never their values.
+         */
+        PatientHistoryEvent: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            occurred_at: string;
+            action: string;
+            readonly action_label: string;
+            actor_name: string | null;
+            facility_name: string | null;
+            outcome: string;
+            /** @description Fields corrected (names only) */
+            readonly changed: string[];
+            reason: string;
         };
         /**
          * @description * `abha_number` - ABHA number
@@ -7046,6 +7116,7 @@ export interface components {
          *     * `numbering.view` - numbering.view
          *     * `organization.manage` - organization.manage
          *     * `organization.view` - organization.view
+         *     * `patients.history` - patients.history
          *     * `patients.register` - patients.register
          *     * `patients.search` - patients.search
          *     * `patients.view` - patients.view
@@ -7067,7 +7138,7 @@ export interface components {
          *     * `support.access.request` - support.access.request
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "patients.register" | "patients.search" | "patients.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "patients.history" | "patients.register" | "patients.search" | "patients.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
         Person: {
             /** Format: uuid */
             id: string;
@@ -12642,6 +12713,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Contact"];
+                };
+            };
+        };
+    };
+    patients_history_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this patient. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPatientHistoryEventList"];
                 };
             };
         };

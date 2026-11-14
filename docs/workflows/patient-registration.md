@@ -28,6 +28,9 @@ at their branch.
 3. Optional: address (give the state), people (a child under 18 needs a mother, father or
    guardian, or a reason why not), ID numbers, consent (privacy notice, SMS, email).
 4. **Register.** The MRN is given at once (e.g. `MRN-00000123`) and the record opens.
+   **Since 2026-11-14 (HIMS-PAT-005)** it opens as the patient chart, on **Overview**; the details,
+   contacts, people, ID numbers and consent, with their buttons, are on the **Demographics** tab
+   ([patient chart](patient-chart.md)).
 
 Unknown or unconscious patient: tick it, give the sex, an approximate age and how they arrived.
 The name is "Unknown" until corrected.

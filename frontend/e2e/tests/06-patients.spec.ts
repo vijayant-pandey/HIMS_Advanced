@@ -2,7 +2,8 @@
 // desk; she registers a patient with an age, a mobile and an ID number; the record opens with its
 // MRN and the number masked; the same number on a second patient is refused; the administrator can
 // look but not register; then she finds the patient again by another spelling, phone and ID number
-// (HIMS-PAT-002). Every person and number is invented.
+// (HIMS-PAT-002); the chart keeps its header on every tab and shows medical records who opened it
+// (HIMS-PAT-005). Every person and number is invented.
 import { type Browser, type Page, expect, test } from "@playwright/test";
 
 import { NEW_STAFF_PASSWORD } from "../config.mjs";
@@ -110,4 +111,48 @@ test("the front desk finds the patient by spelling, phone and ID number", async 
   await expect(table.getByText(AADHAAR)).toHaveCount(0); // only the minimum is shown
   await searchFor("Zebedee Quartermaine");
   await expect(page.getByText(/No patient found/)).toBeVisible();
+});
+
+// HIMS-PAT-005: the chart header stays on every tab; the front desk sees no History tab; once the
+// administrator makes her a medical records officer too, History shows who opened the record.
+test("the chart: header on every tab, and medical records see who opened it", async ({ browser }) => {
+  const page = await asDesk(browser);
+  await page.goto("/patients");
+  await page.getByRole("textbox", { name: "Search" }).fill("Leela Kumari");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page.getByRole("table", { name: "Patients" }).getByRole("link", { name: /^MRN-/ }).click();
+  const header = page.getByRole("region", { name: "Patient header" });
+  await expect(header.getByRole("heading", { name: "Leela Kumari" })).toBeVisible();
+  await expect(header.getByText("Allergies not asked yet")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Clinical summary" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "ID numbers" }).getByText("XXXX XXXX 0337")).toBeVisible();
+  await expectAccessible(page, "Patient chart overview");
+  await page.getByRole("tab", { name: "Demographics" }).click();
+  await expect(header).toBeVisible();
+  await expect(page.getByRole("table", { name: "ID numbers" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "History" })).toHaveCount(0);
+  const chart = page.url();
+
+  const admin = await asAdmin(browser);
+  await admin.goto(new URL(recall("nurse-staff-url")).pathname);
+  await admin.getByRole("tab", { name: "Access" }).click();
+  await admin.getByRole("button", { name: "Give access" }).click();
+  const dialog = admin.getByRole("dialog");
+  await dialog.getByRole("combobox", { name: "Role" }).click();
+  await admin.getByRole("option", { name: "Medical records officer" }).click();
+  await expect(admin.locator(".MuiMenu-root")).toHaveCount(0);
+  await dialog.getByRole("radio", { name: "Whole hospital" }).check();
+  await dialog.getByRole("textbox", { name: "Reason" }).fill("Keeps the patient records");
+  await dialog.getByRole("button", { name: "Give access" }).click();
+  await expect(dialog).toBeHidden();
+
+  const records = await asDesk(browser); // signs in again, now with the new role
+  await records.goto(chart);
+  await records.getByRole("tab", { name: "History" }).click();
+  const history = records.getByRole("table", { name: "Record history" });
+  await expect(history.getByText("Patient registered (MRN issued)")).toBeVisible();
+  await expect(history.getByText("Patient record opened").first()).toBeVisible();
+  await expect(history.getByText("Asha Nurse").first()).toBeVisible();
+  await expect(records.getByRole("region", { name: "Patient header" })).toBeVisible();
+  await expectAccessible(records, "Patient chart history");
 });

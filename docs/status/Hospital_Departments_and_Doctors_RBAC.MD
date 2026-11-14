@@ -539,3 +539,11 @@ sign-in.
 **The software supplier's support account never holds patient permissions**, even when the hospital lends it the administrator role (spec 7.2; decisions log row 20).
 
 **Giving patient roles (2026-11-12):** the usual rule is that you can only give permissions you hold yourself. Patient permissions are the exception: anyone who may open patient records at that branch (`patients.view`, e.g. the hospital administrator) may give the Receptionist / front desk or Medical records role, without being able to register patients themselves. Decisions log row 21.
+
+## Update 2026-11-14: the patient chart's history (HIMS-PAT-005)
+
+| Permission | Who holds it | What it allows |
+|---|---|---|
+| `patients.history` | **Medical records officer** only | The chart's **History** tab: who opened the patient's record and who changed what, and when (field names only). Viewing it is audited |
+
+Not held by the **Organization administrator** (like `audit.view`, it is about reviewing access, not running the hospital), the front desk or heads of department. **Auditors** see the same events in the **Audit log**. It is patient data, so the **software supplier's support account never holds it**; an administrator may still give the Medical records officer role (decisions log rows 21 and 26). No two-factor requirement today.

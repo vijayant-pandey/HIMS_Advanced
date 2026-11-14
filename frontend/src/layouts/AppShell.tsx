@@ -1,4 +1,5 @@
 import { AppBar, Box, Button, Container, LinearProgress, Stack, Toolbar, Typography } from "@mui/material";
+import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useNavigate, useNavigation } from "react-router-dom";
 
 import { HIDE_WHEN_PRINTING } from "../components/Letterhead";
@@ -21,16 +22,37 @@ export const MENU_ITEM = {
   },
 } as const;
 
+/**
+ * The menu bar's height as `--hims-app-bar-height`: a long menu wraps onto two lines, and the
+ * patient chart header stays in view just below the bar (HIMS-PAT-005).
+ */
+function useAppBarHeight() {
+  const bar = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = bar.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => root.style.setProperty("--hims-app-bar-height", `${element.offsetHeight}px`));
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--hims-app-bar-height");
+    };
+  }, []);
+  return bar;
+}
+
 export function AppShell() {
   const navigate = useNavigate();
   const { data: user } = useCurrentUser();
   const logout = useLogout();
   const navigation = useNavigation();
+  const bar = useAppBarHeight();
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
       {/* Printouts carry the letterhead (HIMS-ORG-006), not the menu. */}
-      <AppBar position="sticky" sx={HIDE_WHEN_PRINTING}>
+      <AppBar ref={bar} position="sticky" sx={HIDE_WHEN_PRINTING}>
         <Toolbar sx={{ gap: 1.5, flexWrap: "wrap" }}>
           <Typography
             variant="subtitle1"

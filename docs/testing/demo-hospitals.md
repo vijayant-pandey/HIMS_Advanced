@@ -92,6 +92,7 @@ quickly. Real hospitals always require it.
 | Support access | One finished request and one waiting for the hospital |
 | Patients (2026-11-12, HIMS-PAT-001) | 40 invented patients per branch with MRNs, address, a parent for every child, next of kin for some, an invented previous clinic MRN for some, privacy notice and SMS consent; one unknown (unconscious) patient per branch. All registered by that branch's front desk, so the audit log shows who |
 | Patient search (2026-11-13, HIMS-PAT-002) | One woman per branch with an earlier family name (still found by it); example searches printed by the rebuild |
+| Patient chart (2026-11-14, HIMS-PAT-005) | Per branch: the first child came without a guardian (a teacher brought her; the reason is recorded) and one adult has not had the privacy notice yet, so their charts show alerts; their MRNs are printed as "chart alert" examples; the records officer (`records@...`) sees every chart's History |
 | Audit log | Everything above, recorded as it was made |
 
 ## Patients and later phases
@@ -131,3 +132,12 @@ column is filled by `migrate`, but the earlier-name patients come from the rebui
 
 The **hosted Development hospital** (Render + Neon) can get the same records as Sunrise Hospitals
 (Demo) with one command from the PC: [Render + Neon, section 8](../workflows/render-neon-hosting.md).
+
+**Update 2026-11-14 (HIMS-PAT-005, patient chart):** in each branch the first child registered
+without a guardian (with the reason "brought in by a school teacher; the mother is on her way")
+and the third patient, an adult, has no privacy notice recorded yet: their charts show the
+alerts "Under 18 with no parent or guardian recorded" and "The privacy notice is not recorded as
+given". The rebuild prints both MRNs under "Try these on Patients -> Search" as **chart alert**.
+Sign in as `records@<hospital>.demo.test` (medical records officer) to see the **History** tab.
+Build the demo hospitals again with `--reset` after this merge. How to use the chart:
+[patient chart](../workflows/patient-chart.md).
