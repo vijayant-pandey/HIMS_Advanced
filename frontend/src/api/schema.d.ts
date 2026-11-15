@@ -957,6 +957,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/availability/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One doctor's sessions on one day with each open slot, in the departments you may see. */
+        get: operations["availability_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/background-jobs/": {
         parameters: {
             query?: never;
@@ -1571,6 +1588,78 @@ export interface paths {
         patch: operations["designations_partial_update"];
         trace?: never;
     };
+    "/api/v1/doctor-schedules/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Doctors' weekly OPD sessions and one department's week. */
+        get: operations["doctor_schedules_list"];
+        put?: never;
+        /** @description Add a weekly session on one or more weekdays (all or none). */
+        post: operations["doctor_schedules_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/doctor-schedules/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Slot length, extra bookings or the note. Days and hours: end it and add a new one. */
+        patch: operations["doctor_schedules_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/doctor-schedules/{id}/end/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End a weekly session after a last day (a day before its first day withdraws it). */
+        post: operations["doctor_schedules_end_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/doctor-schedules/week/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One department's doctors over seven days: each day's sessions, what takes them off
+         *     (OPD leave, approved leave on the Leave page, holidays), and the exceptions.
+         */
+        get: operations["doctor_schedules_week_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/equipment/": {
         parameters: {
             query?: never;
@@ -2163,6 +2252,23 @@ export interface paths {
         put?: never;
         /** @description Withdraw your own leave before it starts. */
         post: operations["my_leave_requests_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/my-opd-sessions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Your own OPD sessions over a week, in every department. */
+        get: operations["my_opd_sessions_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3230,6 +3336,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/schedule-exceptions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A doctor away, a holiday or an extra session. */
+        get: operations["schedule_exceptions_list"];
+        put?: never;
+        /**
+         * @description Record a doctor away, a holiday (a department, or the whole facility) or an extra
+         *     session. The answer lists the sessions it takes off.
+         */
+        post: operations["schedule_exceptions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/schedule-exceptions/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Cancel a doctor away, a holiday or an extra session that is not over; the sessions
+         *     come back. It stays on record as cancelled.
+         */
+        post: operations["schedule_exceptions_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/scheduled-jobs/run/": {
         parameters: {
             query?: never;
@@ -4248,6 +4395,67 @@ export interface components {
          * @enum {string}
          */
         ActorTypeEnum: "user" | "system" | "anonymous";
+        AddExceptionRequest: {
+            kind: components["schemas"]["ScheduleExceptionKindEnum"];
+            /**
+             * Format: uuid
+             * @description Holiday: the facility (default: the department's)
+             */
+            facility?: string;
+            /**
+             * Format: uuid
+             * @description Leave and extra session: required. Holiday: empty = the whole facility
+             */
+            department?: string | null;
+            /**
+             * Format: uuid
+             * @description The doctor (leave, extra session)
+             */
+            staff?: string | null;
+            /** Format: date */
+            start_date: string;
+            /**
+             * Format: date
+             * @description Default: one day
+             */
+            end_date?: string | null;
+            /**
+             * Format: time
+             * @description Empty = all day
+             */
+            start_time?: string | null;
+            /** Format: time */
+            end_time?: string | null;
+            slot_minutes?: number | null;
+            extra_bookings_allowed?: number | null;
+            /** @description No medical details. */
+            reason: string;
+        };
+        AddSessionsRequest: {
+            /**
+             * Format: uuid
+             * @description The doctor
+             */
+            staff: string;
+            /** Format: uuid */
+            department: string;
+            /** @description 0 = Monday … 6 = Sunday; one session is added per weekday */
+            weekdays: number[];
+            /** Format: time */
+            start_time: string;
+            /** Format: time */
+            end_time: string;
+            /** @default 10 */
+            slot_minutes: number;
+            /** @default 0 */
+            extra_bookings_allowed: number;
+            /** Format: date */
+            valid_from: string;
+            /** Format: date */
+            valid_until?: string | null;
+            /** @default  */
+            note: string;
+        };
         AddShiftsRequest: {
             /** Format: uuid */
             staff: string;
@@ -4270,6 +4478,11 @@ export interface components {
         AddShiftsResult: {
             created: components["schemas"]["Shift"][];
             skipped: components["schemas"]["SkippedDay"][];
+        };
+        AddedException: {
+            exception: components["schemas"]["ScheduleException"];
+            /** @description Sessions it takes off (all or part); booked patients come later */
+            affected: components["schemas"]["Session"][];
         };
         /**
          * @description * `any` - Any age
@@ -4666,6 +4879,10 @@ export interface components {
             start: number;
             count: number;
             bed_type: components["schemas"]["BedTypeEnum"];
+        };
+        CancelExceptionRequest: {
+            version: number;
+            reason: string;
         };
         CancelRequest: {
             version: number;
@@ -5078,6 +5295,24 @@ export interface components {
          * @enum {string}
          */
         DepartmentTypeEnum: "clinical" | "diagnostic" | "pharmacy" | "support" | "administrative";
+        DepartmentWeek: {
+            /** Format: uuid */
+            department_id: string;
+            department_name: string;
+            /** Format: uuid */
+            facility_id: string;
+            facility_name: string;
+            /** Format: date */
+            start: string;
+            days: string[];
+            doctors: components["schemas"]["WeekDoctor"][];
+            exceptions: components["schemas"]["ScheduleException"][];
+            can_manage: boolean;
+            /** @description May record a holiday for the whole facility */
+            can_close_facility: boolean;
+            /** @description Doctors' away notes are shown */
+            details: boolean;
+        };
         Designation: {
             /** Format: uuid */
             readonly id: string;
@@ -5113,6 +5348,58 @@ export interface components {
             seniority: number;
             /** @default  */
             description: string;
+        };
+        DoctorDay: {
+            /** Format: uuid */
+            staff_id: string;
+            name: string;
+            /** Format: date */
+            day: string;
+            leave_asked: boolean;
+            sessions: components["schemas"]["Session"][];
+        };
+        DoctorSchedule: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly staff_id: string;
+            readonly staff_name: string;
+            /** Format: uuid */
+            readonly department_id: string;
+            readonly department_name: string;
+            /** Format: uuid */
+            readonly facility_id: string;
+            readonly weekday: components["schemas"]["WeekdayEnum"];
+            readonly weekday_label: string;
+            /**
+             * Format: time
+             * @description On the facility's clock
+             */
+            readonly start_time: string;
+            /**
+             * Format: time
+             * @description On the facility's clock, the same day
+             */
+            readonly end_time: string;
+            /** @description e.g. 09:00-13:00, on the facility's clock */
+            readonly hours: string;
+            /** @description Length of one appointment slot */
+            readonly slot_minutes: number;
+            /** @description Bookings allowed over the slots in one session (0 = none) */
+            readonly extra_bookings_allowed: number;
+            /** Format: date */
+            readonly valid_from: string;
+            /**
+             * Format: date
+             * @description Last day; empty = no end
+             */
+            readonly valid_until: string | null;
+            /** @description Off: withdrawn before its first day (it never ran) */
+            readonly is_active: boolean;
+            /** @description e.g. Room 4. No patient details. */
+            readonly note: string;
+            readonly end_reason: string;
+            readonly version: number;
         };
         DocumentCounts: {
             clean: number;
@@ -5229,6 +5516,15 @@ export interface components {
              * @description Last day of the posting (default: today).
              */
             valid_until?: string | null;
+            reason: string;
+        };
+        EndSessionRequest: {
+            version: number;
+            /**
+             * Format: date
+             * @description The last day it runs; before its first day withdraws it
+             */
+            last_day: string;
             reason: string;
         };
         /**
@@ -6089,6 +6385,12 @@ export interface components {
             /** @description Passkeys added as a second factor. */
             passkeys: number;
         };
+        MyOpdWeek: {
+            has_staff_record: boolean;
+            /** Format: date */
+            start: string;
+            days: components["schemas"]["SessionDay"][];
+        };
         MyPosting: {
             /** Format: uuid */
             department_id: string;
@@ -6249,6 +6551,37 @@ export interface components {
             /** @description First running number of each new series. */
             start_at?: number;
         };
+        OffPart: {
+            kind: components["schemas"]["OpdOffKindEnum"];
+            /** @description The part taken off, e.g. 11:00-13:00 */
+            hours: string;
+            reason: string;
+            /** Format: uuid */
+            exception_id: string | null;
+        };
+        /**
+         * @description * `leave` - Doctor away (OPD leave)
+         *     * `rota_leave` - On leave (approved on the Leave page)
+         *     * `holiday` - Holiday
+         *     * `not_working` - Not working (employment status)
+         *     * `not_posted` - Not posted in the department
+         *     * `department_closed` - Department closed
+         * @enum {string}
+         */
+        OpdOffKindEnum: "leave" | "rota_leave" | "holiday" | "not_working" | "not_posted" | "department_closed";
+        /**
+         * @description * `weekly` - Weekly session
+         *     * `extra` - Extra session
+         * @enum {string}
+         */
+        OpdSessionSourceEnum: "weekly" | "extra";
+        /**
+         * @description * `open` - Open
+         *     * `partly_off` - Partly off
+         *     * `off` - Off
+         * @enum {string}
+         */
+        OpdSessionStatusEnum: "open" | "partly_off" | "off";
         Organization: {
             /** Format: uuid */
             readonly id: string;
@@ -6704,6 +7037,12 @@ export interface components {
             version?: number;
             name?: string;
             is_active?: boolean;
+        };
+        PatchedChangeSessionRequest: {
+            version?: number;
+            slot_minutes?: number;
+            extra_bookings_allowed?: number;
+            note?: string;
         };
         PatchedClinicalPrivilegeUpdateRequest: {
             version?: number;
@@ -7345,6 +7684,7 @@ export interface components {
          *     * `access.roles.manage` - access.roles.manage
          *     * `access.roles.view` - access.roles.view
          *     * `accounts.manage` - accounts.manage
+         *     * `appointments.view` - appointments.view
          *     * `audit.view` - audit.view
          *     * `beds.status.manage` - beds.status.manage
          *     * `catalogs.manage` - catalogs.manage
@@ -7385,6 +7725,7 @@ export interface components {
          *     * `recovery.view` - recovery.view
          *     * `rota.manage` - rota.manage
          *     * `rota.view` - rota.view
+         *     * `schedules.manage` - schedules.manage
          *     * `staff.credentials.verify` - staff.credentials.verify
          *     * `staff.documents.view` - staff.documents.view
          *     * `staff.manage` - staff.manage
@@ -7394,7 +7735,7 @@ export interface components {
          *     * `support.access.request` - support.access.request
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "clinical.emergency_access" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "patients.history" | "patients.records_correct" | "patients.register" | "patients.restricted" | "patients.search" | "patients.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "appointments.view" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "clinical.emergency_access" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "patients.history" | "patients.records_correct" | "patients.register" | "patients.restricted" | "patients.search" | "patients.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "schedules.manage" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
         Person: {
             /** Format: uuid */
             id: string;
@@ -7972,6 +8313,57 @@ export interface components {
             blocked_last_30_days: number;
             traces: components["schemas"]["Traces"];
         };
+        ScheduleException: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["ScheduleExceptionKindEnum"];
+            readonly kind_label: string;
+            /** Format: uuid */
+            readonly staff_id: string | null;
+            readonly staff_name: string;
+            /** Format: uuid */
+            readonly facility_id: string;
+            readonly facility_name: string;
+            /** Format: uuid */
+            readonly department_id: string | null;
+            readonly department_name: string;
+            /** Format: date */
+            readonly start_date: string;
+            /**
+             * Format: date
+             * @description Last day (inclusive)
+             */
+            readonly end_date: string;
+            /**
+             * Format: time
+             * @description Empty = the whole day
+             */
+            readonly start_time: string | null;
+            /** Format: time */
+            readonly end_time: string | null;
+            /** @description Empty = the whole day */
+            readonly hours: string;
+            readonly slot_minutes: number | null;
+            readonly extra_bookings_allowed: number | null;
+            /** @description Why. A doctor's away note is shown only to people who keep the schedules */
+            readonly reason: string;
+            readonly status: components["schemas"]["ScheduleExceptionStatusEnum"];
+            readonly cancel_reason: string;
+            readonly version: number;
+        };
+        /**
+         * @description * `leave` - Doctor away (OPD leave)
+         *     * `holiday` - Holiday (OPD closed)
+         *     * `extra_session` - Extra session
+         * @enum {string}
+         */
+        ScheduleExceptionKindEnum: "leave" | "holiday" | "extra_session";
+        /**
+         * @description * `active` - Active
+         *     * `cancelled` - Cancelled
+         * @enum {string}
+         */
+        ScheduleExceptionStatusEnum: "active" | "cancelled";
         ScheduledJob: {
             name: string;
             label: string;
@@ -8125,6 +8517,42 @@ export interface components {
             /** Format: date */
             next_due?: string | null;
         };
+        Session: {
+            source: components["schemas"]["OpdSessionSourceEnum"];
+            /** Format: uuid */
+            schedule_id: string | null;
+            /** Format: uuid */
+            exception_id: string | null;
+            /** Format: uuid */
+            staff_id: string;
+            /** Format: uuid */
+            department_id: string;
+            department_name: string;
+            /** Format: uuid */
+            facility_id: string;
+            /** Format: date */
+            day: string;
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            hours: string;
+            slot_minutes: number;
+            extra_bookings_allowed: number;
+            note: string;
+            status: components["schemas"]["OpdSessionStatusEnum"];
+            open_slots: number;
+            off: components["schemas"]["OffPart"][];
+            /** @description Open slots (only for one doctor's day) */
+            slots: components["schemas"]["Slot"][];
+        };
+        SessionDay: {
+            /** Format: date */
+            day: string;
+            /** @description Leave is asked for on the Leave page and not decided yet */
+            leave_asked: boolean;
+            sessions: components["schemas"]["Session"][];
+        };
         SessionsEnded: {
             sessions_ended: number;
         };
@@ -8242,6 +8670,15 @@ export interface components {
             on_date: string;
             person: string;
             reason: string;
+        };
+        Slot: {
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
+            /** @description Start, on the facility's clock */
+            time: string;
+            is_past: boolean;
         };
         Specialty: {
             /** Format: uuid */
@@ -8829,6 +9266,14 @@ export interface components {
          * @enum {string}
          */
         WardTypeEnum: "general" | "private" | "icu" | "hdu" | "nicu" | "picu" | "emergency" | "maternity" | "isolation" | "day_care" | "operating_theatre" | "recovery";
+        WeekDoctor: {
+            /** Format: uuid */
+            staff_id: string;
+            name: string;
+            designation: string | null;
+            weekly: components["schemas"]["DoctorSchedule"][];
+            days: components["schemas"]["SessionDay"][];
+        };
         /**
          * @description * `0` - Monday
          *     * `1` - Tuesday
@@ -10194,6 +10639,30 @@ export interface operations {
             };
         };
     };
+    availability_retrieve: {
+        parameters: {
+            query: {
+                date: string;
+                department?: string;
+                /** @description Staff member id */
+                doctor: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorDay"];
+                };
+            };
+        };
+    };
     background_jobs_list: {
         parameters: {
             query?: {
@@ -11297,6 +11766,129 @@ export interface operations {
             };
         };
     };
+    doctor_schedules_list: {
+        parameters: {
+            query?: {
+                department?: string;
+                /** @description Also sessions that ended or were withdrawn */
+                ended?: boolean;
+                /** @description The doctor */
+                staff?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorSchedule"][];
+                };
+            };
+        };
+    };
+    doctor_schedules_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddSessionsRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorSchedule"][];
+                };
+            };
+        };
+    };
+    doctor_schedules_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this doctor schedule. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedChangeSessionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorSchedule"];
+                };
+            };
+        };
+    };
+    doctor_schedules_end_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this doctor schedule. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndSessionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoctorSchedule"];
+                };
+            };
+        };
+    };
+    doctor_schedules_week_retrieve: {
+        parameters: {
+            query: {
+                department: string;
+                /** @description First day (default: this Monday) */
+                start?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentWeek"];
+                };
+            };
+        };
+    };
     equipment_list: {
         parameters: {
             query?: {
@@ -12323,6 +12915,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LeaveRequest"];
+                };
+            };
+        };
+    };
+    my_opd_sessions_retrieve: {
+        parameters: {
+            query?: {
+                /** @description First day (default: this Monday) */
+                start?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyOpdWeek"];
                 };
             };
         };
@@ -13981,6 +14595,81 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RotaNow"];
+                };
+            };
+        };
+    };
+    schedule_exceptions_list: {
+        parameters: {
+            query?: {
+                department?: string;
+                kind?: "extra_session" | "holiday" | "leave";
+                /** @description The doctor */
+                staff?: string;
+                /** @description Only those not over (default true) */
+                upcoming?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleException"][];
+                };
+            };
+        };
+    };
+    schedule_exceptions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddExceptionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddedException"];
+                };
+            };
+        };
+    };
+    schedule_exceptions_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this schedule exception. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelExceptionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleException"];
                 };
             };
         };

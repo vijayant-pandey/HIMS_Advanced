@@ -60,3 +60,7 @@ class Command(BaseCommand):
             self.stdout.write("Try these on Patients -> Search (HIMS-PAT-002):")
             for typed, finds in ctx.examples:
                 self.stdout.write(f"  {typed}  ->  {finds}")
+        if ctx.notes:
+            self.stdout.write("Doctor schedules (HIMS-OPD-001), on Doctor schedules:")
+            for note in ctx.notes:
+                self.stdout.write(f"  {note}")

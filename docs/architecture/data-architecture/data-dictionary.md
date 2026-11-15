@@ -30,6 +30,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations), [`support_access`](#support_access)
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts), [`clinical_privileges`](#clinical_privileges), [`staff_privileges`](#staff_privileges)
 - **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests), [`staffing_requirements`](#staffing_requirements), [`staffing_gap_alerts`](#staffing_gap_alerts), [`leave_entitlements`](#leave_entitlements), [`leave_balance_adjustments`](#leave_balance_adjustments)
+- **Doctor OPD schedules**: [`doctor_schedules`](#doctor_schedules), [`schedule_exceptions`](#schedule_exceptions)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
 - **Compliance: requirements, risks, security incidents, retention and legal holds**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`console_access_blocks`](#console_access_blocks), [`security_incident_notifications`](#security_incident_notifications), [`retention_rules`](#retention_rules), [`legal_holds`](#legal_holds), [`retention_purge_runs`](#retention_purge_runs)
 - **Notifications: emails and SMS**: [`notifications`](#notifications), [`message_templates`](#message_templates)
@@ -1482,6 +1483,78 @@ Days added to or taken from one person's balance, e.g. a balance brought from be
 | `reason` | varchar(255) | no | — | up to 255 characters | Person | Restricted: HR note (no medical details) | No medical details. |
 | `created_by_id` | uuid → users.id | yes | — | on delete PROTECT | System | Internal: Person reference (id only) | Created by |
 | `created_at` | timestamp with time zone | no | now() | — | System | Internal: System metadata | When the row was created (UTC) |
+
+## Doctor OPD schedules
+
+**Owner (source of truth):** Outpatient domain (heads of department and OPD schedulers keep it; HIMS-OPD-001). **Design:** [scheduling](scheduling.md), [02-database-design](../../p0/phase-2-patients/02-database-design.md).
+
+<a id="doctor_schedules"></a>
+### `doctor_schedules`
+
+One weekly OPD session of one doctor in one department, valid from a day (until a day).
+
+- **Model:** `scheduling.DoctorSchedule`
+- **Lifecycle:** Never deleted; ended on a last day (`valid_until`) or withdrawn before its first day (`is_active` off), with who, when and why. Days and hours never change: a new session is added instead, so any past week's sessions can be shown (HIMS-OPD-001).
+- **Rules:** `doctor_schedule_ends_after_start`: Check: end_time > start_time; `doctor_schedule_weekday`: Check: (weekday ≥ 0 AND weekday ≤ 6); `doctor_schedule_slot_minutes`: Check: (slot_minutes ≥ 5 AND slot_minutes ≤ 120); `doctor_schedule_extra_bookings`: Check: extra_bookings_allowed ≤ 20; `doctor_schedule_valid_dates`: Check: (valid_until is empty OR valid_until ≥ valid_from); `doctor_schedule_no_overlap`: No overlap: This doctor already has an OPD session at that time. (only rows where is_active = True)
+- **Extra indexes:** `doctor_schedule_staff_idx`: staff, weekday
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `staff_id` | uuid → staff_members.id | no | — | on delete PROTECT | Person | Internal: Reference | Staff |
+| `facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Facility |
+| `department_id` | uuid → departments.id | no | — | on delete PROTECT | Person | Internal: Reference | Department |
+| `weekday` | smallint | no | — | `0` (Monday), `1` (Tuesday), `2` (Wednesday), `3` (Thursday), `4` (Friday), `5` (Saturday), `6` (Sunday) | Person | Internal: Business data | Weekday |
+| `start_time` | time | no | — | — | Person | Internal: Business data | On the facility's clock |
+| `end_time` | time | no | — | — | Person | Internal: Business data | On the facility's clock, the same day |
+| `slot_minutes` | smallint | no | `10` | — | Person | Internal: Business data | Length of one appointment slot |
+| `extra_bookings_allowed` | smallint | no | `0` | — | Person | Internal: Business data | Bookings allowed over the slots in one session (0 = none) |
+| `valid_from` | date | no | — | — | Person | Internal: Business data | Valid from |
+| `valid_until` | date | yes | — | — | Person | Internal: Business data | Last day; empty = no end |
+| `is_active` | boolean | no | `True` | — | Person | Internal: Business data | Off: withdrawn before its first day (it never ran) |
+| `note` | varchar(120) | no | — | up to 120 characters | Person | Internal: Where the session is held (no patient details) | e.g. Room 4. No patient details. |
+| `created_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Created by |
+| `ended_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Ended at |
+| `ended_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Ended by |
+| `end_reason` | varchar(255) | no | — | up to 255 characters | Person | Internal: Work note | End reason |
+
+<a id="schedule_exceptions"></a>
+### `schedule_exceptions`
+
+A change to the weekly sessions: a doctor away, a facility or department closed, or one extra session. Leave and holidays may cover several days, or part of one day.
+
+- **Model:** `scheduling.ScheduleException`
+- **Lifecycle:** Never deleted; cancelled with who, when and why. Past ones cannot be cancelled (HIMS-OPD-001).
+- **Rules:** `schedule_exception_dates`: Check: end_date ≥ start_date; `schedule_exception_times`: Check: ((end_time is empty AND start_time is empty) OR (end_time > start_time AND end_time is set AND start_time is set)); `schedule_exception_times_one_day`: Check: (start_time is empty OR end_date = start_date); `schedule_exception_whose`: Check: ((kind = 'holiday' AND staff is empty) OR (department is set AND kind in ['leave', 'extra_session'] AND staff is set)); `schedule_exception_extra_session`: Check: (NOT kind = 'extra_session' OR (end_date = start_date AND extra_bookings_allowed is set AND extra_bookings_allowed ≤ 20 AND slot_minutes ≥ 5 AND slot_minutes is set AND slot_minutes ≤ 120 AND start_time is set))
+- **Extra indexes:** `schedule_exception_staff_idx`: staff, start_date; `schedule_exception_fac_idx`: facility, start_date
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `kind` | varchar(16) | no | — | `leave` (Doctor away (OPD leave)), `holiday` (Holiday (OPD closed)), `extra_session` (Extra session) | Person | Internal: Business data | Kind |
+| `staff_id` | uuid → staff_members.id | yes | — | on delete PROTECT | Person | Internal: Reference | The doctor (leave, extra session); empty for a holiday |
+| `facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Facility |
+| `department_id` | uuid → departments.id | yes | — | on delete PROTECT | Person | Internal: Reference | Leave: the department that recorded it. Holiday: empty = the whole facility |
+| `start_date` | date | no | — | — | Person | Internal: Business data | Start date |
+| `end_date` | date | no | — | — | Person | Internal: Business data | Last day (inclusive) |
+| `start_time` | time | yes | — | — | Person | Internal: Business data | Empty = the whole day |
+| `end_time` | time | yes | — | — | Person | Internal: Business data | End time |
+| `slot_minutes` | smallint | yes | — | — | Person | Internal: Business data | Slot minutes |
+| `extra_bookings_allowed` | smallint | yes | — | — | Person | Internal: Business data | Extra bookings allowed |
+| `reason` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Why a doctor is away, or the holiday's name | No medical details. |
+| `status` | varchar(16) | no | `ScheduleException.Status.ACTIVE` | `active` (Active), `cancelled` (Cancelled) | Person | Internal: Business data | Status |
+| `created_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Created by |
+| `cancelled_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Cancelled at |
+| `cancelled_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Cancelled by |
+| `cancel_reason` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Work note | Cancel reason |
 
 ## Audit log and tamper evidence
 

@@ -215,3 +215,25 @@ MRN. It refuses a hospital that already has a restricted record, so running it t
 Since this change the **medical records** (`records@`) and **head of department** (`hod.<branch>@`)
 accounts hold permissions that need two-factor: on Render they set it up at their next sign-in, like
 the managing accounts. How it works: [restricted records](restricted-records.md).
+
+**Update 2026-11-15 (HIMS-OPD-001, doctor schedules):** a hospital filled before this change gets the
+doctors' OPD sessions and exceptions with one more command, after the merge has deployed and `migrate`
+has run on Neon. From the HIMS folder (CMD window 2):
+
+```
+cd backend
+.venv\Scripts\activate.bat
+set HIMS_ENV_FILE=.env.hosted-dev
+set DJANGO_SETTINGS_MODULE=config.settings.production
+python manage.py add_demo_doctor_schedules --hosted-development
+set DJANGO_SETTINGS_MODULE=
+set HIMS_ENV_FILE=
+deactivate
+cd ..
+```
+
+It takes under a minute and ends with "Added … weekly OPD sessions and … exceptions". It refuses a
+hospital that already has a doctor's session, so running it twice is harmless. The OPD scheduler
+account (`opd.<branch>@`) is made only by a full fill; on Render, look at **Doctor schedules** as the
+head of department, the branch administrator or the front desk. How it works:
+[doctor schedules](doctor-schedules.md).

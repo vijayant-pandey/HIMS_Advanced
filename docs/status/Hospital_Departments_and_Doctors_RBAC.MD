@@ -561,3 +561,17 @@ matrix), and the **software supplier's support account never holds them** (patie
 administrator may still give the Medical records officer and Head of department roles (decisions
 log rows 21, 29–32). The medical records officer does not need emergency access: they open
 restricted records anyway.
+
+## Update 2026-11-15: doctor OPD schedules (HIMS-OPD-001)
+
+| Permission | Who holds it | What it allows | Two-factor |
+|---|---|---|---|
+| `appointments.view` | **Head of department (HOD)**, **OPD scheduler** (new), **Facility (branch) administrator**, **Receptionist / front desk**, Organization administrator | See doctors' OPD sessions and free slots (Doctor schedules). Appointments and the OPD queue are added by HIMS-OPD-002 / 003 | No |
+| `schedules.manage` | **Head of department (HOD)** (their department), **OPD scheduler**, **Facility (branch) administrator**, Organization administrator | Add, change and end weekly sessions; record a doctor away, a holiday or an extra session. A holiday for a whole facility needs a facility-wide grant | No |
+
+New system role **OPD scheduler** (`scheduler`, P0 part 04 "Scheduler (optional)"): facilities and
+departments view, `appointments.view`, `schedules.manage`; assign at department or facility scope.
+Booking (`appointments.manage`) is added to the front desk and the scheduler with HIMS-OPD-002.
+Doctors see their own sessions on **My schedule** without any permission. The software supplier's
+support account never holds `appointments.view` (calendars will show booked patients). Decisions
+log rows 37–40.

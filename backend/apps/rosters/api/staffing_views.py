@@ -1,6 +1,5 @@
 """Minimum staffing and leave balances API (HIMS-STAFF-015, HIMS-STAFF-013; spec 4.3)."""
 
-from django.db.models import Q
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.response import Response
@@ -10,7 +9,6 @@ from apps.access_control.catalog import P
 from apps.access_control.selectors import check_permission
 from apps.features.catalog import F
 from apps.features.services import require_enabled
-from apps.organizations.dates import hospital_today
 from apps.staff.models import StaffMember
 from apps.staff.selectors import limit_to_visible
 from common.idempotency.decorators import idempotent
@@ -205,18 +203,7 @@ class LeaveBalancesView(APIView):
             year = serializers.IntegerField(min_value=2000, max_value=2100).run_validation(
                 request.query_params["year"]
             )
-        today = hospital_today(department.facility)
-        people = list(
-            StaffMember.objects.filter(
-                Q(department_assignments__valid_until__isnull=True)
-                | Q(department_assignments__valid_until__gte=today),
-                department_assignments__department=department,
-                department_assignments__valid_from__lte=today,
-                employment_status__in=WORKING,
-            )
-            .distinct()
-            .order_by("family_name", "given_name")
-        )
+        people = balances.department_people(department)
         found = balances.balances_for(people, year=year)
         return Response(
             DepartmentBalancesSerializer(

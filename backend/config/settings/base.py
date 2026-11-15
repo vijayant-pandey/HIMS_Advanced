@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "apps.beds",
     "apps.equipment",
     "apps.patients",  # Phase 2: patients and their master record (HIMS-PAT-001)
+    "apps.scheduling",  # Phase 2: doctor OPD schedules (HIMS-OPD-001)
     "apps.numbering",
     "apps.features",
     "apps.notifications",
@@ -385,6 +386,12 @@ SPECTACULAR_SETTINGS = {
         "PatientRestrictionEnum": "apps.patients.models.Patient.Restriction",
         "EmergencyAccessOutcomeEnum": "apps.patients.models.EmergencyAccess.Outcome",
         "EmergencyAccessStateEnum": "apps.patients.restricted.State.CHOICES",
+        # Doctor OPD schedules (HIMS-OPD-001).
+        "ScheduleExceptionKindEnum": "apps.scheduling.models.ScheduleException.Kind",
+        "ScheduleExceptionStatusEnum": "apps.scheduling.models.ScheduleException.Status",
+        "OpdSessionStatusEnum": "apps.scheduling.api.serializers.SESSION_STATUSES",
+        "OpdSessionSourceEnum": "apps.scheduling.api.serializers.SESSION_SOURCES",
+        "OpdOffKindEnum": "apps.scheduling.availability.OFF_KINDS",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)

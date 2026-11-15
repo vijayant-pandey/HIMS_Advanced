@@ -610,7 +610,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
 | Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved; the row is locked while it changes, so two requests never both win |
 | Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
-| Audit event | `department.updated`, `leave.cancelled`, `rota.shift.cancelled`, `staff.member.updated` |
+| Audit event | `department.updated`, `leave.cancelled`, `rota.shift.cancelled`, `schedule.exception.cancelled`, `schedule.session.ended`, `staff.member.updated` |
 | Outbox / domain event | `staff.member.employment_status_changed` |
 | External calls | None |
 | Timeout and retry policy | background events: the outbox dispatcher retries with back-off up to 12 times, then marks the event dead for the Background jobs page; the client should reload before retrying a lost answer |

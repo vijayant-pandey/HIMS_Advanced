@@ -532,3 +532,17 @@ def test_console_approves_over_the_balance_only_with_its_own_action(
     client.post(url, {"action": "approve_over_balance", **picked})
     leave.refresh_from_db()
     assert leave.status == "approved"
+
+
+@pytest.mark.django_db
+def test_console_shows_a_departments_leave_balances(admin_user, person, department_a):
+    """The console's Leave balances page, as on the Leave page (gap found in HIMS-OPD-001)."""
+    person(department_a, given="Meera")
+    client = console(admin_user)
+    listing = client.get("/admin/rosters/leavebalanceadjustment/")
+    assert "/admin/rosters/leavebalanceadjustment/balances/" in listing.content.decode()
+    page = client.get(
+        "/admin/rosters/leavebalanceadjustment/balances/", {"department": department_a.pk}
+    )
+    assert page.status_code == 200
+    assert "Meera" in page.content.decode()

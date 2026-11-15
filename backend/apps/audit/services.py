@@ -177,6 +177,12 @@ class AuditAction:
     EMERGENCY_ACCESS_ENDED = "patient.emergency_access.ended"
     EMERGENCY_ACCESS_REVIEWED = "patient.emergency_access.reviewed"
     RESTRICTED_OPENINGS_VIEWED = "patient.restricted_openings.viewed"
+    # Doctor OPD schedules (HIMS-OPD-001).
+    DOCTOR_SCHEDULE_ADDED = "schedule.session.added"
+    DOCTOR_SCHEDULE_CHANGED = "schedule.session.changed"
+    DOCTOR_SCHEDULE_ENDED = "schedule.session.ended"
+    SCHEDULE_EXCEPTION_ADDED = "schedule.exception.added"
+    SCHEDULE_EXCEPTION_CANCELLED = "schedule.exception.cancelled"
 
 
 def _jsonable(value):

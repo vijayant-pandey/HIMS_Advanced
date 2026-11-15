@@ -2,7 +2,7 @@
 
 # API endpoints (contracts index)
 
-274 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
+284 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
 
 ## [Hospital settings, logo and letterhead](organizations.md)
 
@@ -98,6 +98,21 @@
 | [`POST /api/v1/patients/{pk}/relationships/`](patients.md#post-api-v1-patients-pk-relationships) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005, HIMS-PAT-006 |
 | [`PATCH /api/v1/patients/{pk}/relationships/{relationship_id}/`](patients.md#patch-api-v1-patients-pk-relationships-relationship-id) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005, HIMS-PAT-006 |
 | [`POST /api/v1/patients/{pk}/restriction/`](patients.md#post-api-v1-patients-pk-restriction) | `patients.restricted` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005, HIMS-PAT-006 |
+
+## [Doctor schedules: OPD sessions, exceptions and free slots](scheduling.md)
+
+| Method and path | Access | Requirements |
+|---|---|---|
+| [`GET /api/v1/availability/`](scheduling.md#get-api-v1-availability) | `appointments.view` | HIMS-OPD-001 |
+| [`GET /api/v1/doctor-schedules/`](scheduling.md#get-api-v1-doctor-schedules) | `appointments.view` | HIMS-OPD-001 |
+| [`POST /api/v1/doctor-schedules/`](scheduling.md#post-api-v1-doctor-schedules) | `schedules.manage` | HIMS-OPD-001 |
+| [`GET /api/v1/doctor-schedules/week/`](scheduling.md#get-api-v1-doctor-schedules-week) | `appointments.view` | HIMS-OPD-001 |
+| [`PATCH /api/v1/doctor-schedules/{pk}/`](scheduling.md#patch-api-v1-doctor-schedules-pk) | `schedules.manage` | HIMS-OPD-001 |
+| [`POST /api/v1/doctor-schedules/{pk}/end/`](scheduling.md#post-api-v1-doctor-schedules-pk-end) | `schedules.manage` | HIMS-OPD-001 |
+| [`GET /api/v1/my-opd-sessions/`](scheduling.md#get-api-v1-my-opd-sessions) | signed in | HIMS-OPD-001 |
+| [`GET /api/v1/schedule-exceptions/`](scheduling.md#get-api-v1-schedule-exceptions) | `appointments.view` | HIMS-OPD-001 |
+| [`POST /api/v1/schedule-exceptions/`](scheduling.md#post-api-v1-schedule-exceptions) | `schedules.manage` | HIMS-OPD-001 |
+| [`POST /api/v1/schedule-exceptions/{pk}/cancel/`](scheduling.md#post-api-v1-schedule-exceptions-pk-cancel) | `schedules.manage` | HIMS-OPD-001 |
 
 ## [Numbering schemes](numbering.md)
 

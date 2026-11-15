@@ -49,6 +49,10 @@ PROFILE = {
     # ID numbers, consents, people and earlier names follow as shares of the patients.
     "patients": 500_000,
     "patient_emergency_access": 2_000,
+    # Doctors' OPD sessions (HIMS-OPD-001): three weekly sessions per doctor, and over a year
+    # two spells away each, one extra session each and a holiday a fortnight.
+    "opd_sessions_per_doctor": 3,
+    "holidays": 26,
 }
 # Shares of the patients (a mobile each, a family in five sharing one; addresses, ID numbers,
 # SMS decisions, relatives and earlier names for some).
@@ -319,6 +323,76 @@ def _shifts(organization, built: dict) -> int:
         )
         total += len(built["staff"])
     return total
+
+
+def _opd(organization, built: dict, n: dict) -> dict[str, int]:
+    """Weekly OPD sessions for every synthetic doctor, their time away, extra sessions and the
+    facility's holidays, spread over the year around today."""
+    from apps.scheduling.models import DoctorSchedule, ScheduleException
+
+    today = hospital_today()
+    facility, departments = built["facility"], built["departments"]
+    doctors = [member for member in built["staff"] if member.staff_type == "doctor"]
+    per_doctor = max(1, round(PROFILE["opd_sessions_per_doctor"]))
+    sessions = DoctorSchedule.objects.bulk_create(
+        DoctorSchedule(
+            organization=organization,
+            staff=member,
+            facility=facility,
+            department=departments[i % len(departments)],
+            weekday=(i + k * 2) % 6,
+            start_time=time(9) if k % 2 == 0 else time(14),
+            end_time=time(13) if k % 2 == 0 else time(17),
+            valid_from=today - timedelta(days=(i * 13) % 300),
+        )
+        for i, member in enumerate(doctors)
+        for k in range(per_doctor)
+    )
+    org = {"organization": organization, "facility": facility}
+    away = [
+        ScheduleException(
+            **org,
+            kind=ScheduleException.Kind.LEAVE,
+            staff=member,
+            department=departments[i % len(departments)],
+            start_date=today + timedelta(days=(i * 37 + k * 150) % 360 - 180),
+            end_date=today + timedelta(days=(i * 37 + k * 150) % 360 - 178),
+            reason="Synthetic conference",
+        )
+        for i, member in enumerate(doctors)
+        for k in range(2)
+    ]
+    extras = [
+        ScheduleException(
+            **org,
+            kind=ScheduleException.Kind.EXTRA_SESSION,
+            staff=member,
+            department=departments[i % len(departments)],
+            start_date=today + timedelta(days=(i * 11) % 360 - 180),
+            end_date=today + timedelta(days=(i * 11) % 360 - 180),
+            start_time=time(18),
+            end_time=time(20),
+            slot_minutes=10,
+            extra_bookings_allowed=0,
+            reason="Synthetic evening clinic",
+        )
+        for i, member in enumerate(doctors)
+    ]
+    holidays = [
+        ScheduleException(
+            **org,
+            kind=ScheduleException.Kind.HOLIDAY,
+            start_date=today + timedelta(days=k * 14 - 182),
+            end_date=today + timedelta(days=k * 14 - 182),
+            reason=f"Synthetic holiday {k + 1}",
+        )
+        for k in range(max(1, round(n["holidays"])))
+    ]
+    ScheduleException.objects.bulk_create(away + extras + holidays)
+    return {
+        "doctor_schedules": len(sessions),
+        "schedule_exceptions": len(away) + len(extras) + len(holidays),
+    }
 
 
 ACTIONS = [
@@ -761,6 +835,8 @@ MAIN_TABLES = (
     "patient_relationships",
     "patient_aliases",
     "patient_emergency_access",
+    "doctor_schedules",
+    "schedule_exceptions",
     "audit_events",
     "user_sessions",
     "notifications",
@@ -794,6 +870,9 @@ def seed(*, scale: float = 1.0, progress=None) -> dict[str, int]:
     say(f"Rota: {ROTA_DAYS} days of shifts...")
     with transaction.atomic():
         added = {"shifts": _shifts(organization, built)}
+    say("Doctors' OPD sessions, time away, extra sessions and holidays...")
+    with transaction.atomic():
+        added.update(_opd(organization, built, n))
     say("Audit log, sign-ins, messages, background events, numbers...")
     added.update(_bulk(organization, built, n, tag))
     say(f"Patients: {n['patients']:,} with contacts, ID numbers, consents and people...")

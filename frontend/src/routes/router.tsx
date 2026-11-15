@@ -108,6 +108,13 @@ export const routes = [
                 lazy: screen(() => import("../features/staff/CatalogsPage"), (m) => m.CatalogsPage),
               },
               { path: "rota", lazy: screen(() => import("../features/rosters/RotaPage"), (m) => m.RotaPage) },
+              {
+                path: "doctor-schedules",
+                lazy: screen(
+                  () => import("../features/scheduling/DoctorSchedulesPage"),
+                  (m) => m.DoctorSchedulesPage,
+                ),
+              },
               { path: "leave", lazy: screen(() => import("../features/rosters/LeavePage"), (m) => m.LeavePage) },
               {
                 path: "my-schedule",

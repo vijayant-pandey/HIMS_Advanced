@@ -24,6 +24,9 @@ What one hospital gets (``small`` shrinks it for the automated test):
 * patient search (HIMS-PAT-002): one woman per branch changed her family name (the earlier name
   still finds her), and the command prints searches to try (MRN, number only, another spelling,
   any order, phone, previous MRN).
+* doctor OPD schedules (HIMS-OPD-001, ``opd.py``): weekly sessions for the doctors of the
+  outpatient departments, a doctor away for part of a day and for a conference, an extra
+  Saturday session, a holiday; an OPD scheduler account per branch.
 
 The hosted Development hospital (Render and Neon, synthetic data only) can get the same records
 when asked for by name (``seed_demo_hospital --hosted-development``, 2026-11-13).
@@ -72,6 +75,7 @@ from apps.performance.services import run_index_check
 from apps.rosters import balances, staffing
 from apps.rosters.models import LeaveRequest, ShiftType
 from apps.rosters.services import add_shifts, approve_leave, reject_leave, request_leave
+from apps.scheduling.models import DoctorSchedule, ScheduleException
 from apps.staff.catalogs import create_catalog_item
 from apps.staff.models import Designation, QualificationType, Specialty, StaffMember
 from apps.staff.privileges import grant_privilege
@@ -86,6 +90,7 @@ from apps.staff.services import (
 from common.environment import LOCAL_ENVIRONMENTS
 
 from .hospitals import Hospital
+from .opd import add_opd_examples
 from .patients import DemoPatient, patients_for
 from .people import NameMaker
 
@@ -437,6 +442,7 @@ class Context:
     hods: dict = field(default_factory=dict)  # facility id -> head of department account
     records: User | None = None  # the medical records officer (whole hospital)
     examples: list = field(default_factory=list)  # (type this, what it finds): patient search
+    notes: list = field(default_factory=list)  # other things to look at (doctor schedules)
 
     @property
     def country(self) -> str:
@@ -891,6 +897,17 @@ def _staff(ctx: Context, facility: Facility, departments: dict, branch: dict) ->
         reason="Demo: front desk",
     )
     ctx.desks[facility.pk] = user
+    # The OPD scheduler keeps this branch's doctors' sessions (HIMS-OPD-001).
+    office = departments.get("ADMN", departments["EMR"])
+    scheduler = _new_staff(ctx, FRONT_OFFICE, office, None, branch)
+    user = _account(ctx, scheduler, f"opd.{code}", f"{facility.name}: OPD scheduler")
+    assign_role(
+        actor=None,
+        user=user,
+        role=roles["scheduler"],
+        facility=facility,
+        reason="Demo: OPD scheduler",
+    )
     return team
 
 
@@ -1401,6 +1418,11 @@ def seed_hospital(
     ctx.add("emergency access examples", EmergencyAccess.objects.count())
     ctx.examples += found
     _access_examples(ctx, teams)
+    # Doctor OPD schedules (HIMS-OPD-001), after the rota so approved leave already takes some
+    # sessions off.
+    ctx.notes += add_opd_examples(actor=ctx.admin)
+    ctx.add("OPD weekly sessions", DoctorSchedule.objects.count())
+    ctx.add("OPD exceptions (away, holiday, extra session)", ScheduleException.objects.count())
     # The Performance screen: an index check of the busy queries on this hospital's own
     # records, the patient search among them (HIMS-DATA-003). Reads only.
     run_index_check(trigger=PerformanceCheck.Trigger.COMMAND)

@@ -27,7 +27,7 @@ from django.core.cache import cache
 from django.db import connection, transaction
 from django.test import Client
 
-from .queries import ACCESS, AUDIT, CONSOLE, HOSPITAL, PATIENTS, PLATFORM, STAFF
+from .queries import ACCESS, AUDIT, CONSOLE, HOSPITAL, OPD, PATIENTS, PLATFORM, STAFF
 
 PAGE_MS = 300.0
 SEARCH_MS = 500.0
@@ -41,6 +41,8 @@ _PATH_AREAS = (
     ("/api/v1/audit", AUDIT),
     ("/api/v1/staff", STAFF),
     ("/api/v1/rota", STAFF),
+    ("/api/v1/doctor-schedules", OPD),
+    ("/api/v1/availability", OPD),
     ("/api/v1/organization", HOSPITAL),
     ("/api/v1/facilities", HOSPITAL),
     ("/api/v1/departments", HOSPITAL),
@@ -99,6 +101,18 @@ ENDPOINTS: tuple[Endpoint, ...] = (
         "Rota (one department's week)",
         lambda s: f"/api/v1/rota/?department={s['department_id']}&start={s['today']}",
         SEARCH_MS,
+    ),
+    Endpoint(
+        "opd_week",
+        "Doctor schedules (one department's week)",
+        lambda s: (
+            f"/api/v1/doctor-schedules/week/?department={s['opd_department_id']}&start={s['today']}"
+        ),
+    ),
+    Endpoint(
+        "opd_availability",
+        "A doctor's free slots on one day",
+        lambda s: f"/api/v1/availability/?doctor={s['opd_staff_id']}&date={s['today']}",
     ),
     Endpoint("roles", "Access: roles", _fixed("/api/v1/roles/")),
     Endpoint(
@@ -213,6 +227,7 @@ CONSOLE_ENDPOINTS: tuple[Endpoint, ...] = tuple(
         ("shifts", "shifts", "rosters/shift"),
         ("patients", "patients", "patients/patient"),
         ("emergency_access", "emergency access", "patients/emergencyaccess"),
+        ("doctor_schedules", "doctor schedules", "scheduling/doctorschedule"),
     )
 )
 

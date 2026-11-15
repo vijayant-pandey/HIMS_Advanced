@@ -127,14 +127,18 @@ FEATURES: tuple[Feature, ...] = (
         scope=FACILITY,
         default=True,
     ),
-    # --- Planned (spec 20): visible so hospitals can plan, not switchable until built -------------
-    _planned(
-        "outpatient.appointments",
-        "Appointments and outpatient visits",
-        "Doctor calendars, appointments, consultations and clinical notes.",
-        CLINICAL,
-        "Phase 2",
+    Feature(
+        key="outpatient.appointments",
+        name="Appointments and outpatient visits",
+        description="Doctors' OPD sessions with leave, holidays and extra sessions, and their "
+        "free slots (HIMS-OPD-001). When off for a facility, its doctor schedules cannot be seen "
+        "or changed in the app (the admin console still shows them). Appointments, walk-ins, the "
+        "OPD queue, consultations and clinical notes follow in Phase 2.",
+        category=CLINICAL,
+        scope=FACILITY,
+        default=True,
     ),
+    # --- Planned (spec 20): visible so hospitals can plan, not switchable until built -------------
     _planned(
         "inpatient.admissions",
         "Admissions, transfers and discharge",
@@ -223,3 +227,4 @@ class F:
     ROTAS = BY_KEY["staff.rotas"].key
     EQUIPMENT = BY_KEY["equipment.module"].key
     PATIENTS = BY_KEY["patients.registration"].key
+    OUTPATIENT = BY_KEY["outpatient.appointments"].key

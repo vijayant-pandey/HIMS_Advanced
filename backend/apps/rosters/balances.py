@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 from django.db import transaction
+from django.db.models import Q
 
 from apps.audit.services import AuditAction, model_changes, record_audit_event, snapshot
 from apps.organizations.dates import hospital_today
@@ -41,6 +42,26 @@ class Balance:
     taken: int
     waiting: int
     remaining: int
+
+
+def department_people(department) -> list[StaffMember]:
+    """Everyone working in the department today (posted there, not suspended or gone), for the
+    Leave balances screen and its console page."""
+    today = hospital_today(department.facility)
+    return list(
+        StaffMember.objects.filter(
+            Q(department_assignments__valid_until__isnull=True)
+            | Q(department_assignments__valid_until__gte=today),
+            department_assignments__department=department,
+            department_assignments__valid_from__lte=today,
+            employment_status__in=(
+                StaffMember.EmploymentStatus.ACTIVE,
+                StaffMember.EmploymentStatus.ON_LEAVE,
+            ),
+        )
+        .distinct()
+        .order_by("family_name", "given_name")
+    )
 
 
 def start_month() -> int:

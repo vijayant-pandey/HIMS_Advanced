@@ -55,7 +55,7 @@ administrators, not environment variables changed by engineers.
 | `auth.two_factor_for_everyone` | Two-factor sign-in for all staff | Hospital | Off | All | Live: when on, every user must use an authenticator app (`mfa.is_required`); same effect as the server setting `HIMS_MFA_REQUIRED_FOR_ALL` |
 | `locations.module` | Locations and beds | Per facility | On | All | Live: when off for a facility, its locations are left out of lists, and its tree, items, creates and bed changes → 409; the admin console still shows them |
 | `patients.registration` | Patient registration | Per facility | Off | All | Phase 2 → **Live 2026-11-12 (HIMS-PAT-001), default On**: when off for a facility, nobody registers patients there; patients already registered are still found and opened |
-| `outpatient.appointments` | Appointments and outpatient visits | Per facility | Off | All | Phase 2 |
+| `outpatient.appointments` | Appointments and outpatient visits | Per facility | Off | All | Phase 2 → **Live 2026-11-15 (HIMS-OPD-001), default On**: doctors' OPD sessions, exceptions and free slots; when off for a facility, its doctor schedules cannot be seen or changed in the app (the console still shows them). Appointments, walk-ins and the queue follow |
 | `inpatient.admissions` | Admissions, transfers and discharge | Per facility | Off | All | Phase 3 |
 | `nursing.care` | Nursing care | Per facility | Off | All | Phase 3 |
 | `pharmacy.module` | Pharmacy and medication | Per facility | Off | All | Phase 4 |

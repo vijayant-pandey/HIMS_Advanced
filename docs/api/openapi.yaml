@@ -1388,6 +1388,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/SessionsEnded'
           description: ''
+  /api/v1/availability/:
+    get:
+      operationId: availability_retrieve
+      description: One doctor's sessions on one day with each open slot, in the departments
+        you may see.
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: department
+        schema:
+          type: string
+      - in: query
+        name: doctor
+        schema:
+          type: string
+        description: Staff member id
+        required: true
+      tags:
+      - availability
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorDay'
+          description: ''
   /api/v1/background-jobs/:
     get:
       operationId: background_jobs_list
@@ -2577,6 +2609,147 @@ paths:
               schema:
                 $ref: '#/components/schemas/Designation'
           description: ''
+  /api/v1/doctor-schedules/:
+    get:
+      operationId: doctor_schedules_list
+      description: Doctors' weekly OPD sessions and one department's week.
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+      - in: query
+        name: ended
+        schema:
+          type: boolean
+        description: Also sessions that ended or were withdrawn
+      - in: query
+        name: staff
+        schema:
+          type: string
+        description: The doctor
+      tags:
+      - doctor-schedules
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DoctorSchedule'
+          description: ''
+    post:
+      operationId: doctor_schedules_create
+      description: Add a weekly session on one or more weekdays (all or none).
+      tags:
+      - doctor-schedules
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddSessionsRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DoctorSchedule'
+          description: ''
+  /api/v1/doctor-schedules/{id}/:
+    patch:
+      operationId: doctor_schedules_partial_update
+      description: 'Slot length, extra bookings or the note. Days and hours: end it
+        and add a new one.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this doctor schedule.
+        required: true
+      tags:
+      - doctor-schedules
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedChangeSessionRequest'
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorSchedule'
+          description: ''
+  /api/v1/doctor-schedules/{id}/end/:
+    post:
+      operationId: doctor_schedules_end_create
+      description: End a weekly session after a last day (a day before its first day
+        withdraws it).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this doctor schedule.
+        required: true
+      tags:
+      - doctor-schedules
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndSessionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorSchedule'
+          description: ''
+  /api/v1/doctor-schedules/week/:
+    get:
+      operationId: doctor_schedules_week_retrieve
+      description: |-
+        One department's doctors over seven days: each day's sessions, what takes them off
+        (OPD leave, approved leave on the Leave page, holidays), and the exceptions.
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: start
+        schema:
+          type: string
+        description: 'First day (default: this Monday)'
+      tags:
+      - doctor-schedules
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentWeek'
+          description: ''
   /api/v1/equipment/:
     get:
       operationId: equipment_list
@@ -3727,6 +3900,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LeaveRequest'
+          description: ''
+  /api/v1/my-opd-sessions/:
+    get:
+      operationId: my_opd_sessions_retrieve
+      description: Your own OPD sessions over a week, in every department.
+      parameters:
+      - in: query
+        name: start
+        schema:
+          type: string
+        description: 'First day (default: this Monday)'
+      tags:
+      - my-opd-sessions
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyOpdWeek'
           description: ''
   /api/v1/my-schedule/:
     get:
@@ -5572,6 +5766,99 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RotaNow'
+          description: ''
+  /api/v1/schedule-exceptions/:
+    get:
+      operationId: schedule_exceptions_list
+      description: A doctor away, a holiday or an extra session.
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - extra_session
+          - holiday
+          - leave
+      - in: query
+        name: staff
+        schema:
+          type: string
+        description: The doctor
+      - in: query
+        name: upcoming
+        schema:
+          type: boolean
+        description: Only those not over (default true)
+      tags:
+      - schedule-exceptions
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleException'
+          description: ''
+    post:
+      operationId: schedule_exceptions_create
+      description: |-
+        Record a doctor away, a holiday (a department, or the whole facility) or an extra
+        session. The answer lists the sessions it takes off.
+      tags:
+      - schedule-exceptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddExceptionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddedException'
+          description: ''
+  /api/v1/schedule-exceptions/{id}/cancel/:
+    post:
+      operationId: schedule_exceptions_cancel_create
+      description: |-
+        Cancel a doctor away, a holiday or an extra session that is not over; the sessions
+        come back. It stays on record as cancelled.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this schedule exception.
+        required: true
+      tags:
+      - schedule-exceptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelExceptionRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleException'
           description: ''
   /api/v1/scheduled-jobs/run/:
     post:
@@ -7542,6 +7829,114 @@ components:
         * `user` - User
         * `system` - System
         * `anonymous` - Anonymous
+    AddExceptionRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/ScheduleExceptionKindEnum'
+        facility:
+          type: string
+          format: uuid
+          description: 'Holiday: the facility (default: the department''s)'
+        department:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Leave and extra session: required. Holiday: empty = the whole
+            facility'
+        staff:
+          type: string
+          format: uuid
+          nullable: true
+          description: The doctor (leave, extra session)
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: 'Default: one day'
+        start_time:
+          type: string
+          format: time
+          nullable: true
+          description: Empty = all day
+        end_time:
+          type: string
+          format: time
+          nullable: true
+        slot_minutes:
+          type: integer
+          maximum: 120
+          minimum: 5
+          nullable: true
+        extra_bookings_allowed:
+          type: integer
+          maximum: 20
+          minimum: 0
+          nullable: true
+        reason:
+          type: string
+          minLength: 1
+          description: No medical details.
+          maxLength: 255
+      required:
+      - kind
+      - reason
+      - start_date
+    AddSessionsRequest:
+      type: object
+      properties:
+        staff:
+          type: string
+          format: uuid
+          description: The doctor
+        department:
+          type: string
+          format: uuid
+        weekdays:
+          type: array
+          items:
+            type: integer
+            maximum: 6
+            minimum: 0
+          description: 0 = Monday … 6 = Sunday; one session is added per weekday
+          minItems: 1
+        start_time:
+          type: string
+          format: time
+        end_time:
+          type: string
+          format: time
+        slot_minutes:
+          type: integer
+          maximum: 120
+          minimum: 5
+          default: 10
+        extra_bookings_allowed:
+          type: integer
+          maximum: 20
+          minimum: 0
+          default: 0
+        valid_from:
+          type: string
+          format: date
+        valid_until:
+          type: string
+          format: date
+          nullable: true
+        note:
+          type: string
+          default: ''
+          maxLength: 120
+      required:
+      - department
+      - end_time
+      - staff
+      - start_time
+      - valid_from
+      - weekdays
     AddShiftsRequest:
       type: object
       properties:
@@ -7592,6 +7987,19 @@ components:
       required:
       - created
       - skipped
+    AddedException:
+      type: object
+      properties:
+        exception:
+          $ref: '#/components/schemas/ScheduleException'
+        affected:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+          description: Sessions it takes off (all or part); booked patients come later
+      required:
+      - affected
+      - exception
     AgeGroupEnum:
       enum:
       - any
@@ -8605,6 +9013,18 @@ components:
       - count
       - prefix
       - room
+    CancelExceptionRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - reason
+      - version
     CancelRequest:
       type: object
       properties:
@@ -9643,6 +10063,55 @@ components:
         * `pharmacy` - Pharmacy
         * `support` - Support
         * `administrative` - Administrative
+    DepartmentWeek:
+      type: object
+      properties:
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+        facility_id:
+          type: string
+          format: uuid
+        facility_name:
+          type: string
+        start:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            type: string
+            format: date
+        doctors:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeekDoctor'
+        exceptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleException'
+        can_manage:
+          type: boolean
+        can_close_facility:
+          type: boolean
+          description: May record a holiday for the whole facility
+        details:
+          type: boolean
+          description: Doctors' away notes are shown
+      required:
+      - can_close_facility
+      - can_manage
+      - days
+      - department_id
+      - department_name
+      - details
+      - doctors
+      - exceptions
+      - facility_id
+      - facility_name
+      - start
     Designation:
       type: object
       properties:
@@ -9739,6 +10208,127 @@ components:
       - category
       - name
       - seniority
+    DoctorDay:
+      type: object
+      properties:
+        staff_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        day:
+          type: string
+          format: date
+        leave_asked:
+          type: boolean
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+      required:
+      - day
+      - leave_asked
+      - name
+      - sessions
+      - staff_id
+    DoctorSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff_name:
+          type: string
+          readOnly: true
+        department_id:
+          type: string
+          format: uuid
+          readOnly: true
+        department_name:
+          type: string
+          readOnly: true
+        facility_id:
+          type: string
+          format: uuid
+          readOnly: true
+        weekday:
+          allOf:
+          - $ref: '#/components/schemas/WeekdayEnum'
+          readOnly: true
+        weekday_label:
+          type: string
+          readOnly: true
+        start_time:
+          type: string
+          format: time
+          readOnly: true
+          description: On the facility's clock
+        end_time:
+          type: string
+          format: time
+          readOnly: true
+          description: On the facility's clock, the same day
+        hours:
+          type: string
+          readOnly: true
+          description: e.g. 09:00-13:00, on the facility's clock
+        slot_minutes:
+          type: integer
+          readOnly: true
+          description: Length of one appointment slot
+        extra_bookings_allowed:
+          type: integer
+          readOnly: true
+          description: Bookings allowed over the slots in one session (0 = none)
+        valid_from:
+          type: string
+          format: date
+          readOnly: true
+        valid_until:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+          description: Last day; empty = no end
+        is_active:
+          type: boolean
+          readOnly: true
+          description: 'Off: withdrawn before its first day (it never ran)'
+        note:
+          type: string
+          readOnly: true
+          description: e.g. Room 4. No patient details.
+        end_reason:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - department_id
+      - department_name
+      - end_reason
+      - end_time
+      - extra_bookings_allowed
+      - facility_id
+      - hours
+      - id
+      - is_active
+      - note
+      - slot_minutes
+      - staff_id
+      - staff_name
+      - start_time
+      - valid_from
+      - valid_until
+      - version
+      - weekday
+      - weekday_label
     DocumentCounts:
       type: object
       properties:
@@ -9993,6 +10583,23 @@ components:
           maxLength: 2000
       required:
       - reason
+    EndSessionRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        last_day:
+          type: string
+          format: date
+          description: The last day it runs; before its first day withdraws it
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - last_day
+      - reason
+      - version
     EndpointCallerEnum:
       enum:
       - public
@@ -12128,6 +12735,22 @@ components:
       - recovery_codes_remaining
       - required
       - verified
+    MyOpdWeek:
+      type: object
+      properties:
+        has_staff_record:
+          type: boolean
+        start:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionDay'
+      required:
+      - days
+      - has_staff_record
+      - start
     MyPosting:
       type: object
       properties:
@@ -12543,6 +13166,59 @@ components:
           description: First running number of each new series.
       required:
       - document_type
+    OffPart:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/OpdOffKindEnum'
+        hours:
+          type: string
+          description: The part taken off, e.g. 11:00-13:00
+        reason:
+          type: string
+        exception_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - exception_id
+      - hours
+      - kind
+      - reason
+    OpdOffKindEnum:
+      enum:
+      - leave
+      - rota_leave
+      - holiday
+      - not_working
+      - not_posted
+      - department_closed
+      type: string
+      description: |-
+        * `leave` - Doctor away (OPD leave)
+        * `rota_leave` - On leave (approved on the Leave page)
+        * `holiday` - Holiday
+        * `not_working` - Not working (employment status)
+        * `not_posted` - Not posted in the department
+        * `department_closed` - Department closed
+    OpdSessionSourceEnum:
+      enum:
+      - weekly
+      - extra
+      type: string
+      description: |-
+        * `weekly` - Weekly session
+        * `extra` - Extra session
+    OpdSessionStatusEnum:
+      enum:
+      - open
+      - partly_off
+      - 'off'
+      type: string
+      description: |-
+        * `open` - Open
+        * `partly_off` - Partly off
+        * `off` - Off
     Organization:
       type: object
       properties:
@@ -13399,6 +14075,22 @@ components:
           maxLength: 255
         is_active:
           type: boolean
+    PatchedChangeSessionRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        slot_minutes:
+          type: integer
+          maximum: 120
+          minimum: 5
+        extra_bookings_allowed:
+          type: integer
+          maximum: 20
+          minimum: 0
+        note:
+          type: string
+          maxLength: 120
     PatchedClinicalPrivilegeUpdateRequest:
       type: object
       properties:
@@ -14946,6 +15638,7 @@ components:
       - access.roles.manage
       - access.roles.view
       - accounts.manage
+      - appointments.view
       - audit.view
       - beds.status.manage
       - catalogs.manage
@@ -14986,6 +15679,7 @@ components:
       - recovery.view
       - rota.manage
       - rota.view
+      - schedules.manage
       - staff.credentials.verify
       - staff.documents.view
       - staff.manage
@@ -15001,6 +15695,7 @@ components:
         * `access.roles.manage` - access.roles.manage
         * `access.roles.view` - access.roles.view
         * `accounts.manage` - accounts.manage
+        * `appointments.view` - appointments.view
         * `audit.view` - audit.view
         * `beds.status.manage` - beds.status.manage
         * `catalogs.manage` - catalogs.manage
@@ -15041,6 +15736,7 @@ components:
         * `recovery.view` - recovery.view
         * `rota.manage` - rota.manage
         * `rota.view` - rota.view
+        * `schedules.manage` - schedules.manage
         * `staff.credentials.verify` - staff.credentials.verify
         * `staff.documents.view` - staff.documents.view
         * `staff.manage` - staff.manage
@@ -16520,6 +17216,129 @@ components:
       - reachable
       - scanner
       - traces
+    ScheduleException:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ScheduleExceptionKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        staff_name:
+          type: string
+          readOnly: true
+        facility_id:
+          type: string
+          format: uuid
+          readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
+        department_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        department_name:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+        end_date:
+          type: string
+          format: date
+          readOnly: true
+          description: Last day (inclusive)
+        start_time:
+          type: string
+          format: time
+          readOnly: true
+          nullable: true
+          description: Empty = the whole day
+        end_time:
+          type: string
+          format: time
+          readOnly: true
+          nullable: true
+        hours:
+          type: string
+          readOnly: true
+          description: Empty = the whole day
+        slot_minutes:
+          type: integer
+          readOnly: true
+          nullable: true
+        extra_bookings_allowed:
+          type: integer
+          readOnly: true
+          nullable: true
+        reason:
+          type: string
+          readOnly: true
+          description: Why. A doctor's away note is shown only to people who keep
+            the schedules
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ScheduleExceptionStatusEnum'
+          readOnly: true
+        cancel_reason:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - cancel_reason
+      - department_id
+      - department_name
+      - end_date
+      - end_time
+      - extra_bookings_allowed
+      - facility_id
+      - facility_name
+      - hours
+      - id
+      - kind
+      - kind_label
+      - reason
+      - slot_minutes
+      - staff_id
+      - staff_name
+      - start_date
+      - start_time
+      - status
+      - version
+    ScheduleExceptionKindEnum:
+      enum:
+      - leave
+      - holiday
+      - extra_session
+      type: string
+      description: |-
+        * `leave` - Doctor away (OPD leave)
+        * `holiday` - Holiday (OPD closed)
+        * `extra_session` - Extra session
+    ScheduleExceptionStatusEnum:
+      enum:
+      - active
+      - cancelled
+      type: string
+      description: |-
+        * `active` - Active
+        * `cancelled` - Cancelled
     ScheduledJob:
       type: object
       properties:
@@ -16890,6 +17709,96 @@ components:
       required:
       - kind
       - performed_on
+    Session:
+      type: object
+      properties:
+        source:
+          $ref: '#/components/schemas/OpdSessionSourceEnum'
+        schedule_id:
+          type: string
+          format: uuid
+          nullable: true
+        exception_id:
+          type: string
+          format: uuid
+          nullable: true
+        staff_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+        facility_id:
+          type: string
+          format: uuid
+        day:
+          type: string
+          format: date
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        hours:
+          type: string
+        slot_minutes:
+          type: integer
+        extra_bookings_allowed:
+          type: integer
+        note:
+          type: string
+        status:
+          $ref: '#/components/schemas/OpdSessionStatusEnum'
+        open_slots:
+          type: integer
+        'off':
+          type: array
+          items:
+            $ref: '#/components/schemas/OffPart'
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/Slot'
+          description: Open slots (only for one doctor's day)
+      required:
+      - day
+      - department_id
+      - department_name
+      - ends_at
+      - exception_id
+      - extra_bookings_allowed
+      - facility_id
+      - hours
+      - note
+      - 'off'
+      - open_slots
+      - schedule_id
+      - slot_minutes
+      - slots
+      - source
+      - staff_id
+      - starts_at
+      - status
+    SessionDay:
+      type: object
+      properties:
+        day:
+          type: string
+          format: date
+        leave_asked:
+          type: boolean
+          description: Leave is asked for on the Leave page and not decided yet
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+      required:
+      - day
+      - leave_asked
+      - sessions
     SessionsEnded:
       type: object
       properties:
@@ -17144,6 +18053,25 @@ components:
       - on_date
       - person
       - reason
+    Slot:
+      type: object
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        time:
+          type: string
+          description: Start, on the facility's clock
+        is_past:
+          type: boolean
+      required:
+      - ends_at
+      - is_past
+      - starts_at
+      - time
     Specialty:
       type: object
       properties:
@@ -18647,6 +19575,31 @@ components:
         * `day_care` - Day care
         * `operating_theatre` - Operating theatre complex
         * `recovery` - Recovery / PACU
+    WeekDoctor:
+      type: object
+      properties:
+        staff_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        designation:
+          type: string
+          nullable: true
+        weekly:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoctorSchedule'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionDay'
+      required:
+      - days
+      - designation
+      - name
+      - staff_id
+      - weekly
     WeekdayEnum:
       enum:
       - 0
