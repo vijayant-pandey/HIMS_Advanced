@@ -22,6 +22,7 @@ import type { LeaveRequest, LeaveType, MySchedule } from "../../api/types";
 import { localDate } from "../../components/dates";
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { FormDialog } from "../../components/FormDialog";
+import { MyOpdSessions } from "../scheduling/MyOpdSessions";
 import { useAskForLeave, useMySchedule, useWithdrawLeave } from "./api";
 import { LEAVE_STATUS, formatDay, leavePeriod } from "./labels";
 import { balanceText } from "./LeaveBalances";
@@ -103,6 +104,7 @@ export function MySchedulePage() {
           </TableBody>
         </Table>
       </TableContainer>
+      <MyOpdSessions />
       {data.leave_balances.length > 0 && (
         <>
           <Typography variant="h6" component="h2">

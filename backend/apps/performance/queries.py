@@ -15,7 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 
 
@@ -52,6 +52,7 @@ HOSPITAL = "Hospital set-up and beds"
 ACCESS = "Sign-in and access"
 PLATFORM = "Platform and compliance"
 CONSOLE = "Admin console"
+OPD = "Outpatient (OPD)"
 
 _TABLE_AREAS = {
     "audit_events": AUDIT,
@@ -61,6 +62,8 @@ _TABLE_AREAS = {
     "staff_credentials": STAFF,
     "shifts": STAFF,
     "beds": HOSPITAL,
+    "doctor_schedules": OPD,
+    "schedule_exceptions": OPD,
 }
 
 
@@ -122,6 +125,7 @@ def pick_samples() -> dict:
     from apps.identity.models import User, UserSession
     from apps.organizations.dates import hospital_today
     from apps.rosters.models import Shift
+    from apps.scheduling.models import DoctorSchedule
 
     def first(queryset, *fields):
         row = queryset.values_list(*fields).first()
@@ -140,6 +144,9 @@ def pick_samples() -> dict:
     )
     department_id, staff_id = first(Shift.objects.order_by(), "department_id", "staff_id")
     (facility_id,) = first(Bed.objects.order_by(), "facility_id")
+    opd_department_id, opd_staff_id, opd_facility_id = first(
+        DoctorSchedule.objects.order_by(), "department_id", "staff_id", "facility_id"
+    )
     return {
         "now": now,
         "today": hospital_today(),  # the hospital's calendar day, not the server's
@@ -151,6 +158,9 @@ def pick_samples() -> dict:
         "department_id": department_id or uuid.uuid4(),
         "staff_id": staff_id or uuid.uuid4(),
         "facility_id": facility_id or uuid.uuid4(),
+        "opd_department_id": opd_department_id or uuid.uuid4(),
+        "opd_staff_id": opd_staff_id or uuid.uuid4(),
+        "opd_facility_id": opd_facility_id or uuid.uuid4(),
         **_patient_samples(first),
     }
 
@@ -244,7 +254,6 @@ def _outbox_failed(samples):
 
 def _outbox_cleanup(samples):
     from django.conf import settings
-    from django.db.models import Q
 
     from common.outbox.models import OutboxEvent
 
@@ -299,6 +308,47 @@ def _rota_person(samples):
     return Shift.objects.filter(
         staff_id=samples["staff_id"], on_date__gte=today, on_date__lt=today + timedelta(days=7)
     )
+
+
+def _opd_week(samples, **who):
+    """The weekly sessions behind one week of the OPD schedule (apps.scheduling.availability)."""
+    from apps.scheduling.models import DoctorSchedule
+
+    today = samples["today"]
+    return DoctorSchedule.objects.filter(
+        Q(valid_until__isnull=True) | Q(valid_until__gte=today),
+        is_active=True,
+        valid_from__lte=today + timedelta(days=6),
+        **who,
+    )
+
+
+def _opd_department(samples):
+    return _opd_week(samples, department_id=samples["opd_department_id"])
+
+
+def _opd_doctor(samples):
+    return _opd_week(samples, staff_id__in=[samples["opd_staff_id"]])
+
+
+def _opd_exceptions(samples, **where):
+    from apps.scheduling.models import ScheduleException
+
+    today = samples["today"]
+    return ScheduleException.objects.filter(
+        status=ScheduleException.Status.ACTIVE,
+        start_date__lte=today + timedelta(days=6),
+        end_date__gte=today,
+        **where,
+    )
+
+
+def _opd_away(samples):
+    return _opd_exceptions(samples, kind="leave", staff_id__in=[samples["opd_staff_id"]])
+
+
+def _opd_holidays(samples):
+    return _opd_exceptions(samples, kind="holiday", facility_id__in=[samples["opd_facility_id"]])
 
 
 def _bed_board(samples):
@@ -587,6 +637,34 @@ QUERIES: tuple[QueryCheck, ...] = (
         "shifts",
         ("shift_staff_day_idx", "shift_no_overlap_per_person"),
         _rota_person,
+    ),
+    QueryCheck(
+        "opd_department_week",
+        "OPD schedule: one department's sessions",
+        "doctor_schedules",
+        ("doctor_schedules_department_id_",),
+        _opd_department,
+    ),
+    QueryCheck(
+        "opd_doctor_week",
+        "OPD schedule: one doctor's sessions",
+        "doctor_schedules",
+        ("doctor_schedule_staff_idx", "doctor_schedule_no_overlap"),
+        _opd_doctor,
+    ),
+    QueryCheck(
+        "opd_doctor_away",
+        "OPD schedule: a doctor's time away",
+        "schedule_exceptions",
+        ("schedule_exception_staff_idx",),
+        _opd_away,
+    ),
+    QueryCheck(
+        "opd_holidays",
+        "OPD schedule: a facility's holidays",
+        "schedule_exceptions",
+        ("schedule_exception_fac_idx",),
+        _opd_holidays,
     ),
     QueryCheck(
         "bed_board",

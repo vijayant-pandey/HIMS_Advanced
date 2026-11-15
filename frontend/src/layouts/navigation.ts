@@ -30,6 +30,8 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/licence-expiry", label: "Licence expiry", permission: "staff.view" },
   { to: "/catalogs", label: "Job titles & catalogs", permission: "staff.view" },
   { to: "/rota", label: "Rota", permission: "rota.view" },
+  // Doctors' OPD sessions and free slots (HIMS-OPD-001).
+  { to: "/doctor-schedules", label: "Doctor schedules", permission: "appointments.view" },
   { to: "/leave", label: "Leave", permission: "leave.approve" },
   { to: "/access", label: "Access", permission: "access.roles.view" },
   { to: "/accounts", label: "Accounts", permission: "access.roles.view" },

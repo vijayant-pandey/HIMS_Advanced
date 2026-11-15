@@ -67,6 +67,8 @@ erDiagram
     staffing_gap_alerts
     leave_entitlements
     leave_balance_adjustments
+    doctor_schedules
+    schedule_exceptions
     audit_events
     audit_chain_entries
     audit_integrity_checks
@@ -247,6 +249,18 @@ erDiagram
     users |o--o{ leave_entitlements : "updated_by_id"
     staff_members ||--o{ leave_balance_adjustments : "staff_id"
     users |o--o{ leave_balance_adjustments : "created_by_id"
+    organizations ||--o{ doctor_schedules : "organization_id"
+    staff_members ||--o{ doctor_schedules : "staff_id"
+    facilities ||--o{ doctor_schedules : "facility_id"
+    departments ||--o{ doctor_schedules : "department_id"
+    users |o--o{ doctor_schedules : "created_by_id"
+    users |o--o{ doctor_schedules : "ended_by_id"
+    organizations ||--o{ schedule_exceptions : "organization_id"
+    staff_members |o--o{ schedule_exceptions : "staff_id"
+    facilities ||--o{ schedule_exceptions : "facility_id"
+    departments |o--o{ schedule_exceptions : "department_id"
+    users |o--o{ schedule_exceptions : "created_by_id"
+    users |o--o{ schedule_exceptions : "cancelled_by_id"
     audit_events ||--o| audit_chain_entries : "event_id"
     users |o--o{ compliance_requirements : "reviewed_by_id"
     users |o--o{ compliance_risks : "updated_by_id"
@@ -1357,6 +1371,77 @@ erDiagram
     users |o--o{ leave_entitlements : "updated_by_id"
     staff_members ||--o{ leave_balance_adjustments : "staff_id"
     users |o--o{ leave_balance_adjustments : "created_by_id"
+```
+
+Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `staff_members`, `users`.
+
+## Doctor OPD schedules (logical)
+
+```mermaid
+erDiagram
+    doctor_schedules {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid staff_id FK
+        uuid facility_id FK
+        uuid department_id FK
+        smallint weekday
+        time start_time
+        time end_time
+        smallint slot_minutes
+        smallint extra_bookings_allowed
+        date valid_from
+        date valid_until
+        boolean is_active
+        varchar note
+        uuid created_by_id FK
+        timestamptz ended_at
+        uuid ended_by_id FK
+        varchar end_reason
+    }
+    schedule_exceptions {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        varchar kind
+        uuid staff_id FK
+        uuid facility_id FK
+        uuid department_id FK
+        date start_date
+        date end_date
+        time start_time
+        time end_time
+        smallint slot_minutes
+        smallint extra_bookings_allowed
+        varchar reason
+        varchar status
+        uuid created_by_id FK
+        timestamptz cancelled_at
+        uuid cancelled_by_id FK
+        varchar cancel_reason
+    }
+    departments
+    facilities
+    organizations
+    staff_members
+    users
+    organizations ||--o{ doctor_schedules : "organization_id"
+    staff_members ||--o{ doctor_schedules : "staff_id"
+    facilities ||--o{ doctor_schedules : "facility_id"
+    departments ||--o{ doctor_schedules : "department_id"
+    users |o--o{ doctor_schedules : "created_by_id"
+    users |o--o{ doctor_schedules : "ended_by_id"
+    organizations ||--o{ schedule_exceptions : "organization_id"
+    staff_members |o--o{ schedule_exceptions : "staff_id"
+    facilities ||--o{ schedule_exceptions : "facility_id"
+    departments |o--o{ schedule_exceptions : "department_id"
+    users |o--o{ schedule_exceptions : "created_by_id"
+    users |o--o{ schedule_exceptions : "cancelled_by_id"
 ```
 
 Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `staff_members`, `users`.

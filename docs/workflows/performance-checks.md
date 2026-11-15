@@ -33,6 +33,9 @@ once HIMS is hosted.
   `platform.performance.manage`; it only reads, takes a few seconds, and is recorded.
   **Since HIMS-DATA-003** a check's page groups its queries and screens by area (Patients,
   Audit log, Staff and rota, …), each with how many passed; pick an area to see only it.
+  **Since HIMS-OPD-001** the area **Outpatient (OPD)** holds the doctor schedule queries (a
+  department's sessions, a doctor's sessions, time away, holidays) and two screens (the week and
+  a doctor's free slots).
 - **Admin console:** Performance → **Performance checks**: the same results (read-only) and
   **Run the index check now**.
 - **Server (CMD, from `backend` with the virtual environment on):**

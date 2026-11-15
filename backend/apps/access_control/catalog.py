@@ -61,6 +61,9 @@ class P:
     PATIENTS_RESTRICTED = "patients.restricted"
     PATIENTS_RECORDS_CORRECT = "patients.records_correct"
     EMERGENCY_ACCESS = "clinical.emergency_access"
+    # Outpatient department (HIMS-OPD-001; P0 part 04). Booking comes with HIMS-OPD-002.
+    APPOINTMENTS_VIEW = "appointments.view"
+    SCHEDULES_MANAGE = "schedules.manage"
 
 
 PERMISSIONS: dict[str, str] = {
@@ -156,6 +159,14 @@ PERMISSIONS: dict[str, str] = {
         "Emergency access: open a restricted patient record for 4 hours, with a reason. Medical "
         "records are told at once and review it"
     ),
+    P.APPOINTMENTS_VIEW: (
+        "See doctors' OPD sessions and free slots (calendars; appointments and the OPD queue "
+        "follow in Phase 2)"
+    ),
+    P.SCHEDULES_MANAGE: (
+        "Keep doctors' OPD sessions: add and end weekly sessions, record a doctor away, a holiday "
+        "or an extra session (a facility-wide holiday needs a facility or hospital grant)"
+    ),
 }
 
 # Never part of the hospital administrator role: only the software supplier's support account
@@ -189,6 +200,8 @@ PATIENT_DATA_PERMISSIONS: frozenset[str] = frozenset(
         P.PATIENTS_RESTRICTED,
         P.PATIENTS_RECORDS_CORRECT,
         P.EMERGENCY_ACCESS,
+        # Calendars will show booked patients (HIMS-OPD-002), so support never holds it either.
+        P.APPOINTMENTS_VIEW,
     }
 )
 SUPPLIER_SUPPORT_ROLE = "supplier-support"
@@ -275,6 +288,9 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.NUMBERING_MANAGE,
             P.FEATURES_VIEW,
             P.FEATURES_MANAGE,
+            # The branch's OPD: holidays and doctors' sessions (HIMS-OPD-001; P0 part 04 matrix).
+            P.APPOINTMENTS_VIEW,
+            P.SCHEDULES_MANAGE,
         ],
     },
     "hr-credentialing-officer": {
@@ -296,10 +312,10 @@ SYSTEM_ROLES: dict[str, dict] = {
     },
     "department-head": {
         "name": "Head of department (HOD)",
-        "description": "Sees their department and its staff, plans its rota and decides its leave. "
-        "In an emergency, may open a restricted patient record (emergency access, reviewed by "
-        "medical records). Clinical approvals are added with clinical domains. Assign at "
-        "department scope.",
+        "description": "Sees their department and its staff, plans its rota, decides its leave "
+        "and keeps its doctors' OPD sessions. In an emergency, may open a restricted patient "
+        "record (emergency access, reviewed by medical records). Clinical approvals are added "
+        "with clinical domains. Assign at department scope.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
@@ -313,6 +329,9 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.PATIENTS_VIEW,
             # Doctors and nurses (D14). The Doctor and OPD nurse roles get it with HIMS-CLIN-*.
             P.EMERGENCY_ACCESS,
+            # P0 part 04: the head of department "gains appointments.view, schedules.manage".
+            P.APPOINTMENTS_VIEW,
+            P.SCHEDULES_MANAGE,
         ],
     },
     "basic-staff": {
@@ -337,19 +356,35 @@ SYSTEM_ROLES: dict[str, dict] = {
         "lasts is recorded in the audit log.",
         "permissions": [P.SUPPORT_ACCESS_REQUEST],
     },
-    # Patient administration (HIMS-PAT-001; P0 part 04). Appointments, merging and clinical
-    # permissions are added with their tickets (HIMS-OPD-*, HIMS-PAT-004, HIMS-CLIN-*).
+    # Patient administration (HIMS-PAT-001; P0 part 04). Booking appointments, merging and
+    # clinical permissions are added with their tickets (HIMS-OPD-002, HIMS-PAT-004, HIMS-CLIN-*).
     "receptionist": {
         "name": "Receptionist / front desk",
         "description": "Registers patients (the MRN is issued at once), corrects their details, "
-        "contacts, guardians, ID numbers and consents, and looks patients up. Assign at facility "
-        "scope: patients are registered at that branch and found in every branch.",
+        "contacts, guardians, ID numbers and consents, and looks patients up; sees doctors' OPD "
+        "sessions and free slots. Assign at facility scope: patients are registered at that "
+        "branch and found in every branch.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
             P.PATIENTS_SEARCH,
             P.PATIENTS_VIEW,
             P.PATIENTS_REGISTER,
+            P.APPOINTMENTS_VIEW,
+        ],
+    },
+    # Outpatient scheduling (HIMS-OPD-001; P0 part 04 "Scheduler (optional)"). Booking
+    # (appointments.manage) is added with HIMS-OPD-002.
+    "scheduler": {
+        "name": "OPD scheduler",
+        "description": "Keeps doctors' OPD sessions: weekly sessions, doctors away, holidays and "
+        "extra sessions, and sees the free slots. Booking appointments is added in a later "
+        "Phase 2 ticket. Assign at department or facility scope.",
+        "permissions": [
+            P.FACILITIES_VIEW,
+            P.DEPARTMENTS_VIEW,
+            P.APPOINTMENTS_VIEW,
+            P.SCHEDULES_MANAGE,
         ],
     },
     "medical-records-officer": {

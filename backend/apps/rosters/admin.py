@@ -185,6 +185,17 @@ class ShiftAdmin(HimsModelAdmin):
         return TemplateResponse(request, "admin/rosters/shift/copy_week.html", context)
 
 
+class BalancesForm(forms.Form):
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.filter(status=Department.Status.ACTIVE)
+        .select_related("facility")
+        .order_by("facility__name", "name")
+    )
+    year = forms.IntegerField(
+        required=False, min_value=2000, max_value=2100, help_text="Leave year; empty = this one."
+    )
+
+
 class CopyWeekForm(forms.Form):
     department = forms.ModelChoiceField(
         queryset=Department.objects.filter(status=Department.Status.ACTIVE)
@@ -545,6 +556,46 @@ class LeaveBalanceAdjustmentAdmin(HimsModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         return self.get_fields(request, obj) if obj is not None else []
+
+    # Everyone's balance in one department, as on the Leave page's "Balances" tab (HIMS-STAFF-013;
+    # gap found in HIMS-OPD-001: the console had only the adjustments).
+    def get_urls(self):
+        return [
+            path(
+                "balances/",
+                self.admin_site.admin_view(self.balances_view),
+                name="rosters_leave_balances",
+            ),
+            *super().get_urls(),
+        ]
+
+    def balances_view(self, request):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        form = BalancesForm(request.GET or None)
+        rows, year_label = [], ""
+        if form.is_valid():
+            department = form.cleaned_data["department"]
+            month = balances.start_month()
+            year = form.cleaned_data.get("year") or balances.current_year(month)
+            year_label = balances.year_label(year, month)
+            people = balances.department_people(department)
+            found = balances.balances_for(people, year=year)
+            rows = [
+                {"name": f"{person.given_name} {person.family_name}", "balances": found[person.pk]}
+                for person in people
+            ]
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Leave balances",
+            "form": form,
+            "rows": rows,
+            "year_label": year_label,
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(
+            request, "admin/rosters/leavebalanceadjustment/balances.html", context
+        )
 
     def save_model(self, request, obj, form, change):
         data = form.cleaned_data

@@ -61,6 +61,10 @@ two-factor (the role holds ★ permissions), and later tests sign her in with he
 emergency access of a doctor and its review by a second medical records officer are covered by
 the API and screen tests; the browser test follows when the Doctor role exists (HIMS-CLIN-001).
 
+**Update 2026-11-15:** with the doctor schedules test (`07-doctor-schedules.spec.ts`, HIMS-OPD-001:
+a doctor added and posted, a weekly session, part of a day away, the free slots, and the front desk's
+read-only view) the India run finishes with `53 passed`.
+
 ```
 npm run e2e:us
 ```

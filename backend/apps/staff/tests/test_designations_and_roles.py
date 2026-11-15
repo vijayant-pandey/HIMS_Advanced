@@ -20,6 +20,7 @@ EXPECTED_SYSTEM_ROLES = {
     "supplier-support",
     "receptionist",
     "medical-records-officer",
+    "scheduler",
 }
 
 

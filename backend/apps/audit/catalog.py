@@ -30,6 +30,7 @@ CATEGORIES: dict[str, str] = {
     "outbox": "Background jobs",
     "support": "Supplier support access",
     "patient": "Patients",
+    "schedule": "Doctor schedules (OPD)",
 }
 
 LABELS: dict[str, str] = {
@@ -183,6 +184,11 @@ LABELS: dict[str, str] = {
     A.EMERGENCY_ACCESS_ENDED: "Emergency access to a patient record ended early",
     A.EMERGENCY_ACCESS_REVIEWED: "Emergency access to a patient record reviewed",
     A.RESTRICTED_OPENINGS_VIEWED: "List of restricted record openings viewed",
+    A.DOCTOR_SCHEDULE_ADDED: "Doctor's OPD session added",
+    A.DOCTOR_SCHEDULE_CHANGED: "Doctor's OPD session changed (slots, extra bookings or note)",
+    A.DOCTOR_SCHEDULE_ENDED: "Doctor's OPD session ended",
+    A.SCHEDULE_EXCEPTION_ADDED: "OPD exception added (doctor away, holiday or extra session)",
+    A.SCHEDULE_EXCEPTION_CANCELLED: "OPD exception cancelled",
 }
 
 

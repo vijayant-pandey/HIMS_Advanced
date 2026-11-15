@@ -32,6 +32,7 @@ they map to the identifier families suggested in spec 25.3 is recorded in
 | [audit-and-security.md](audit-and-security.md) | HIMS-AUD, HIMS-SEC |
 | [notifications-and-compliance.md](notifications-and-compliance.md) | HIMS-NOTIF, HIMS-COMP |
 | [patients.md](patients.md) | HIMS-PAT (Phase 2, from 2026-11-12) |
+| [outpatient.md](outpatient.md) | HIMS-OPD (Phase 2 slice 2B, from 2026-11-15) |
 | [traceability.md](traceability.md) (generated) | Every Phase 1 requirement: status, record, endpoints, tests, PRs (and, from 2026-11-12, every Phase 2 requirement in its own section) |
 
 ## How to read a record

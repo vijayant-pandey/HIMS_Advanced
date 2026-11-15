@@ -162,3 +162,31 @@ Recorded on the Performance screen (group **Patients**). Details and the first r
 The number of database queries per screen does not grow with the records (CI test).
 
 The Phase 1 results above held: every Phase 1 query and screen passed again in the same run (bed board p95 375 ms, console sign-ins 260 ms, console shifts 269 ms the slowest). The console's issued-numbers list went from 513 ms to 89 ms with its new index.
+
+## Doctor OPD schedules (HIMS-OPD-001)
+
+The schedule part of Artifact A for slice 2B ([review](scheduling.md); HIMS-DATA-004). Run on
+2026-11-15 at scale 1 on the same developer PC (5,949,530 rows in all). Added to the synthetic
+hospital: 1,002 weekly sessions (three per synthetic doctor) and 1,028 exceptions (two spells away
+and one extra session per doctor over a year, a holiday a fortnight).
+
+**What the first run found:** the week screen reads a department's sessions through the department
+foreign key's own index, never through the planned (department, weekday) index (the week does not
+ask by weekday). That index was dropped before release; the check now expects the foreign key's
+index. Everything else passed at once.
+
+| Query | Time | Index |
+|---|---|---|
+| OPD schedule: one department's sessions | 1.6 ms | department foreign key index |
+| OPD schedule: one doctor's sessions | 30.7 ms (the doctor's sessions over a week; under the 100 ms budget) | the no-overlap rule's index `doctor_schedule_no_overlap` |
+| OPD schedule: a doctor's time away | 0.4 ms | `schedule_exception_staff_idx` |
+| OPD schedule: a facility's holidays | 1.5 ms | read whole (1,028 rows); `schedule_exception_fac_idx` once full reads are ruled out |
+
+| Screen | p95 | Target | Database queries |
+|---|---|---|---|
+| Doctor schedules (one department's week) | 65 ms | 300 ms | 18 |
+| A doctor's free slots on one day | 20 ms | 300 ms | 14 |
+| Console: doctor schedules | 135 ms | 500 ms | 8 |
+
+Final run: **44 of 44 queries** use their index in time and **45 of 45 screens** are within target
+(the earlier queries and screens held).

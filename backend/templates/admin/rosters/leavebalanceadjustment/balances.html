@@ -1,0 +1,39 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{# Everyone working in one department and what is left of each kind of leave, as on the Leave page's Balances tab (HIMS-STAFF-013). #}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:rosters_leavebalanceadjustment_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; {{ title }}
+</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>Leave balances</h1>
+  <p>Everyone working in the department and what is left of each kind of leave the hospital tracks: entitled, carried in, adjusted, taken, waiting for a decision, remaining.</p>
+  <form method="get">
+    {{ form.as_p }}
+    <button type="submit" class="button">Show</button>
+  </form>
+  {% if year_label %}
+  <h2>Leave year {{ year_label }}</h2>
+  <div class="module">
+    <table>
+      <thead><tr><th scope="col">Person</th><th scope="col">Leave</th><th scope="col">Entitled</th><th scope="col">Carried in</th><th scope="col">Adjusted</th><th scope="col">Taken</th><th scope="col">Waiting</th><th scope="col">Remaining</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        {% for balance in row.balances %}
+        <tr><td>{% if forloop.first %}{{ row.name }}{% endif %}</td><td>{{ balance.label }}</td><td>{{ balance.entitled }}</td><td>{{ balance.carried_in }}</td><td>{{ balance.adjusted }}</td><td>{{ balance.taken }}</td><td>{{ balance.waiting }}</td><td>{{ balance.remaining }}</td></tr>
+        {% empty %}
+        <tr><td>{{ row.name }}</td><td colspan="7">No kind of leave is tracked.</td></tr>
+        {% endfor %}
+      {% empty %}
+        <tr><td colspan="8">Nobody works in this department today.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

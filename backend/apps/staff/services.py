@@ -95,6 +95,9 @@ def apply_employment_status_change(staff: StaffMember) -> None:
     from apps.rosters.services import on_employment_status_changed
 
     on_employment_status_changed(staff)  # future shifts cancelled (HIMS-STAFF-012)
+    from apps.scheduling.services import on_employment_status_changed as opd_status_changed
+
+    opd_status_changed(staff)  # OPD sessions end when employment ends (HIMS-OPD-001)
     publish_event(
         event_type="staff.member.employment_status_changed",
         aggregate_type="staff_member",

@@ -22,6 +22,7 @@ from apps.patients import search
 from apps.patients.models import EmergencyAccess, Patient, PatientAlias
 from apps.performance.models import PerformanceCheck
 from apps.rosters.models import Shift
+from apps.scheduling.models import DoctorSchedule, ScheduleException
 from apps.staff.models import StaffCredential, StaffMember
 
 
@@ -107,6 +108,19 @@ def test_a_small_demo_hospital_gets_records_for_every_screen(provisioned):
     patient_queries = [r for r in check.results if r["area"] == "Patients"]
     assert len(patient_queries) >= 10
     assert {r["key"]: r["detail"] for r in patient_queries if not r["passed"]} == {}
+    # Doctor schedules (HIMS-OPD-001): weekly sessions, every kind of exception, an OPD scheduler,
+    # and their queries in the index check.
+    assert DoctorSchedule.objects.count() >= 10
+    assert set(ScheduleException.objects.values_list("kind", flat=True)) == {
+        "leave",
+        "holiday",
+        "extra_session",
+    }
+    assert "opd.dwk@in-sunrise.demo.test" in accounts
+    assert ctx.notes
+    opd_queries = [r for r in check.results if r["area"] == "Outpatient (OPD)"]
+    assert len(opd_queries) == 4
+    assert {r["key"]: r["detail"] for r in opd_queries if not r["passed"]} == {}
     with pytest.raises(DemoError, match="already"):
         seed_hospital(by_key("in-sunrise"), password=None, small=True)
 
@@ -121,6 +135,20 @@ def test_a_hospital_filled_before_restricted_records_gets_them_added(provisioned
     assert Patient.objects.filter(is_restricted=True).count() == 1
     assert EmergencyAccess.objects.count() == 2
     assert "records@in-sunrise.demo.test" in out.getvalue()
+
+
+def test_a_hospital_filled_before_doctor_schedules_gets_them_added(provisioned, monkeypatch):
+    with monkeypatch.context() as patch:  # as filled before HIMS-OPD-001
+        patch.setattr(seed_module, "add_opd_examples", lambda **_: [])
+        seed_hospital(by_key("in-sunrise"), password=None, small=True)
+    assert not DoctorSchedule.objects.exists()
+    out = StringIO()
+    call_command("add_demo_doctor_schedules", stdout=out)
+    assert DoctorSchedule.objects.count() >= 10
+    assert ScheduleException.objects.filter(kind="extra_session").count() == 1
+    assert "weekly OPD sessions" in out.getvalue()
+    with pytest.raises(CommandError, match="already has doctors' OPD sessions"):
+        call_command("add_demo_doctor_schedules")
 
 
 def test_demo_records_fit_only_a_hospital_of_the_same_country(provisioned):

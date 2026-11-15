@@ -152,7 +152,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/departments/` |
 | Business purpose | List (departments). |
 | Requirements | [HIMS-FAC-002](../../../requirements/organization-and-facilities.md#hims-fac-002), [HIMS-FAC-006](../../../requirements/organization-and-facilities.md#hims-fac-006), [HIMS-FAC-007](../../../requirements/organization-and-facilities.md#hims-fac-007) |
-| Actor / permission required | `departments.view` (View departments). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Receptionist / front desk, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `departments.view` (View departments). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Receptionist / front desk, OPD scheduler, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `facility`, `page`, `page_size`, `status` |
 | Response schema | 200 `PaginatedDepartmentList` |
@@ -208,7 +208,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/departments/{pk}/` |
 | Business purpose | Open one (departments). |
 | Requirements | [HIMS-FAC-002](../../../requirements/organization-and-facilities.md#hims-fac-002), [HIMS-FAC-006](../../../requirements/organization-and-facilities.md#hims-fac-006), [HIMS-FAC-007](../../../requirements/organization-and-facilities.md#hims-fac-007) |
-| Actor / permission required | `departments.view` (View departments). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Receptionist / front desk, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `departments.view` (View departments). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Receptionist / front desk, OPD scheduler, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body |
 | Response schema | 200 `DepartmentDetail` |
@@ -348,7 +348,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/facilities/` |
 | Business purpose | List (facilities). |
 | Requirements | [HIMS-FAC-001](../../../requirements/organization-and-facilities.md#hims-fac-001), [HIMS-FAC-003](../../../requirements/organization-and-facilities.md#hims-fac-003), [HIMS-FAC-006](../../../requirements/organization-and-facilities.md#hims-fac-006) |
-| Actor / permission required | `facilities.view` (View facilities). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Bed manager / ward clerk, Receptionist / front desk, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `facilities.view` (View facilities). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Bed manager / ward clerk, Receptionist / front desk, OPD scheduler, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `page`, `page_size` |
 | Response schema | 200 `PaginatedFacilityList` |
@@ -404,7 +404,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/facilities/{pk}/` |
 | Business purpose | Open one (facilities). |
 | Requirements | [HIMS-FAC-001](../../../requirements/organization-and-facilities.md#hims-fac-001), [HIMS-FAC-003](../../../requirements/organization-and-facilities.md#hims-fac-003), [HIMS-FAC-006](../../../requirements/organization-and-facilities.md#hims-fac-006) |
-| Actor / permission required | `facilities.view` (View facilities). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Bed manager / ward clerk, Receptionist / front desk, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `facilities.view` (View facilities). System roles holding it: Organization administrator, Facility (branch) administrator, HR / credentialing officer, Head of department (HOD), Basic staff access, Bed manager / ward clerk, Receptionist / front desk, OPD scheduler, Medical records officer, Equipment / biomedical officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body |
 | Response schema | 200 `Facility` |

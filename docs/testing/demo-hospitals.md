@@ -68,6 +68,7 @@ e.g. `dwk`.
 | `beds.<branch>@<key>.demo.test` | Bed manager |
 | `equipment.<branch>@<key>.demo.test` | Equipment officer |
 | `frontdesk.<branch>@<key>.demo.test` | Front desk of that branch: registers patients (HIMS-PAT-001) |
+| `opd.<branch>@<key>.demo.test` | OPD scheduler of that branch: doctors' sessions, doctors away, holidays, extra sessions (HIMS-OPD-001) |
 | `records@<key>.demo.test` | Medical records officer (whole hospital): registers and corrects patients |
 | `support@hims-supplier.demo.test` | **You, the software supplier**: asks for Support access ([how](../workflows/support-access.md)) |
 
@@ -94,6 +95,7 @@ quickly. Real hospitals always require it.
 | Patient search (2026-11-13, HIMS-PAT-002) | One woman per branch with an earlier family name (still found by it); example searches printed by the rebuild |
 | Patient chart (2026-11-14, HIMS-PAT-005) | Per branch: the first child came without a guardian (a teacher brought her; the reason is recorded) and one adult has not had the privacy notice yet, so their charts show alerts; their MRNs are printed as "chart alert" examples; the records officer (`records@...`) sees every chart's History |
 | Restricted records (2026-11-14, HIMS-PAT-006) | Per branch one adult's record restricted by medical records (the first branch: a VIP; the others: a member of staff); two emergency accesses to the VIP by the first branch's head of department, one reviewed by medical records and one waiting for review; the VIP's MRN printed as "restricted record" |
+| Doctor schedules (2026-11-15, HIMS-OPD-001) | Per branch, in each outpatient department (General Medicine, Cardiology, Orthopaedics, Paediatrics, Obstetrics, General Surgery): the consultant's sessions Mon, Wed, Fri 09:00–13:00 (10-minute slots, 2 extra bookings) and the junior doctor's Tue, Thu 14:00–17:00 (15-minute slots); the cardiologist away 11:00–13:00 next Wednesday, the general physician away three days at a conference, the paediatrician's extra Saturday session (vaccination drive), a holiday (the first branch closed for a day, the others close Orthopaedics for a training day); junior doctors with leave approved on the Leave page show those sessions off |
 | Audit log | Everything above, recorded as it was made |
 
 ## Patients and later phases
@@ -153,3 +155,14 @@ filled before this change (such as the hosted Development hospital) gets the sam
 `python manage.py add_demo_restricted_records` (on Render + Neon: `--hosted-development`;
 [Render + Neon section 8](../workflows/render-neon-hosting.md)). How it works:
 [restricted records](../workflows/restricted-records.md).
+
+**Update 2026-11-15 (HIMS-OPD-001, doctor schedules):** each branch has the doctors' OPD sessions and
+exceptions in the table above and a new account, `opd.<branch>@<key>.demo.test` (OPD scheduler). Look
+at **Doctor schedules** as `opd.<branch>@`, `hod.<branch>@` (Cardiology), `admin.<branch>@` (the whole
+branch, including holidays for the branch) or `frontdesk.<branch>@` (sees the sessions and free slots,
+not why a doctor is away). The rebuild prints what to look at under "Doctor schedules". **After this
+merge, build the demo hospitals again with `--reset`** (the new tables, the role and the account need
+it). A hospital filled before this change (such as the hosted Development hospital) gets the sessions
+and exceptions, without the new account, with `python manage.py add_demo_doctor_schedules` (on Render +
+Neon: `--hosted-development`; [Render + Neon section 8](../workflows/render-neon-hosting.md)). How it
+works: [doctor schedules](../workflows/doctor-schedules.md).

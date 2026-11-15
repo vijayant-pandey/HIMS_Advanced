@@ -70,6 +70,11 @@ DOMAINS: dict[str, dict] = {
         "owner": "Staff/credential domain (heads of department plan; approvers decide leave)",
         "docs": ["rotas-and-leave.md"],
     },
+    "scheduling": {
+        "name": "Doctor OPD schedules",
+        "owner": "Outpatient domain (heads of department and OPD schedulers keep it; HIMS-OPD-001)",
+        "docs": ["scheduling.md", "../../p0/phase-2-patients/02-database-design.md"],
+    },
     "audit": {
         "name": "Audit log and tamper evidence",
         "owner": "Audit domain (separate security boundary)",
@@ -200,6 +205,11 @@ LIFECYCLE: dict[str, str] = {
     "leave_balance_adjustments": "Append-only (database trigger); a wrong one is corrected by "
     "another.",
     "shifts": "Never deleted; cancelled with a reason. Past shifts cannot be changed.",
+    "doctor_schedules": "Never deleted; ended on a last day (`valid_until`) or withdrawn before "
+    "its first day (`is_active` off), with who, when and why. Days and hours never change: a new "
+    "session is added instead, so any past week's sessions can be shown (HIMS-OPD-001).",
+    "schedule_exceptions": "Never deleted; cancelled with who, when and why. Past ones cannot be "
+    "cancelled (HIMS-OPD-001).",
     "leave_requests": "Never deleted; requested -> approved, refused or cancelled, each with who "
     "and when. Retention period: decision pending with the other HR records (🔒 LEGAL).",
     "audit_events": "Append-only: a database trigger refuses changes and deletes. Retention and "
@@ -319,6 +329,10 @@ COLUMN_OVERRIDES: dict[str, tuple[str, str]] = {
     "leave_requests.start_date": (RESTRICTED, "Personal (time away)"),
     "leave_requests.end_date": (RESTRICTED, "Personal (time away)"),
     "shifts.note": (RESTRICTED, "Work note (no patient details)"),
+    "schedule_exceptions.reason": (RESTRICTED, "Why a doctor is away, or the holiday's name"),
+    "schedule_exceptions.cancel_reason": (RESTRICTED, "Work note"),
+    "doctor_schedules.note": (INTERNAL, "Where the session is held (no patient details)"),
+    "doctor_schedules.end_reason": (INTERNAL, "Work note"),
     "bed_status_changes.reason": (INTERNAL, "Bed status reason (no patient details)"),
     "organizations.letterhead_email": (RESTRICTED, "Contact"),
     "organizations.logo": (INTERNAL, "Hospital logo"),

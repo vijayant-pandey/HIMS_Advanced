@@ -41,6 +41,11 @@ VIEW_REQUIREMENTS: dict[str, tuple[str, ...]] = {
         "HIMS-PAT-006",
     ),
     "apps.patients.api.views.EmergencyAccessViewSet": ("HIMS-PAT-006",),
+    # Outpatient department (Phase 2, slice 2B)
+    "apps.scheduling.api.views.DoctorScheduleViewSet": ("HIMS-OPD-001",),
+    "apps.scheduling.api.views.ScheduleExceptionViewSet": ("HIMS-OPD-001",),
+    "apps.scheduling.api.views.DoctorAvailabilityView": ("HIMS-OPD-001",),
+    "apps.scheduling.api.views.MyOpdSessionsView": ("HIMS-OPD-001",),
     # Numbering and features
     "apps.numbering.api.views.NumberingSchemeViewSet": ("HIMS-ORG-003",),
     "apps.numbering.api.views.IssuedNumberViewSet": ("HIMS-ORG-003",),

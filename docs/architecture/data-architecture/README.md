@@ -8,6 +8,11 @@ financial domains are added here as they are built.
 [Artifact A review: patients and the MPI](patients-mpi-review.md). Its queries are part of the
 volume check (section 4) and its database rules have their own tests.
 
+**2026-11-15 (HIMS-OPD-001):** doctor OPD schedules (slice 2B, first part): weekly sessions and
+their exceptions, with the same review: [doctor schedules](scheduling.md). Their queries are in
+the volume check and their database rules have their own tests
+(`apps/scheduling/tests/test_schedule_invariants.py`).
+
 **Start here:**
 
 | Document | What it holds | Kept up to date by |
@@ -15,7 +20,7 @@ volume check (section 4) and its database rules have their own tests.
 | [data-dictionary.md](data-dictionary.md) | Every table and column: type, empty allowed, default, allowed values, who sets it, sensitivity, meaning; keys, constraints, indexes, lifecycle and owner per table | **Generated** from the models (`python manage.py data_dictionary`); CI fails when it is stale |
 | [erd.md](erd.md) | ERDs: all tables with relationships, and one diagram per domain with columns | **Generated** (same command) |
 | This page | The rules behind the tables: ownership, classification and access, lifecycle, transactions, history, migrations, catalogs, data flows, test data | By hand, with each change |
-| Domain designs | [Facilities and departments](facilities-and-departments.md) · [Locations and beds](locations-and-beds.md) · [Numbering](numbering-schemes.md) · [Access reviews](access-reviews.md) · [Cover arrangements](cover-arrangements.md) · [Rotas and leave](rotas-and-leave.md) · [Audit integrity](audit-integrity.md) | By hand, per feature · [Patients](patients.md) (Phase 2, HIMS-PAT-001) · [Patients/MPI review](patients-mpi-review.md) (HIMS-DATA-003) |
+| Domain designs | [Facilities and departments](facilities-and-departments.md) · [Locations and beds](locations-and-beds.md) · [Numbering](numbering-schemes.md) · [Access reviews](access-reviews.md) · [Cover arrangements](cover-arrangements.md) · [Rotas and leave](rotas-and-leave.md) · [Audit integrity](audit-integrity.md) | By hand, per feature · [Patients](patients.md) (Phase 2, HIMS-PAT-001) · [Patients/MPI review](patients-mpi-review.md) (HIMS-DATA-003) · [Doctor schedules](scheduling.md) (HIMS-OPD-001) |
 
 ## Spec 28.1 deliverables
 
@@ -180,6 +185,10 @@ always indexed.
 | Restricted record: is my emergency access open? (every opening) | `patient_emergency_user_idx` |
 | Emergency access waiting for review | `patient_emergency_review_idx` |
 | Restricted record openings in the last days | `audit_action_idx` |
+| OPD schedule: one department's weekly sessions (the week screen) | the department foreign key's index (HIMS-OPD-001; a department and weekday index was dropped before release: the volume check showed the week never asks by weekday) |
+| OPD schedule: one doctor's sessions (the doctor's day, free slots, own sessions) | `doctor_schedule_staff_idx` (staff, weekday), or the no-overlap rule's index `doctor_schedule_no_overlap` |
+| OPD schedule: a doctor's time away; extra sessions | `schedule_exception_staff_idx` (staff, start date) |
+| OPD schedule: a facility's holidays | `schedule_exception_fac_idx` (facility, start date) |
 
 Patient search, encounter, medication, lab and claim indexes (spec 28.6) are designed with
 their domains. **Patient search and the patient screens: done and measured at hospital size
@@ -205,6 +214,9 @@ their domains. **Patient search and the patient screens: done and measured at ho
 - **Patients (HIMS-DATA-003):** registration is one transaction with the MRN; an ID number
   entered twice at once is decided by the unique index; opening emergency access locks the
   patient row ([review section 6](patients-mpi-review.md#6-transactions-and-concurrency)).
+- **Doctor schedules (HIMS-OPD-001):** every change for one doctor locks that doctor's staff row,
+  so two schedulers work one after the other; the database also refuses two weekly sessions of
+  one doctor at the same time (exclusion constraint `doctor_schedule_no_overlap`).
 
 ## 6. History and versions
 
