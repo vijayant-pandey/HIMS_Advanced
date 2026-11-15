@@ -30,6 +30,9 @@ What one hospital gets (``small`` shrinks it for the automated test):
 * appointments (HIMS-OPD-002, ``appointments.py``): patients booked by the front desk into the
   cardiologist's next session (new and follow-up, one over the slots), one moved later, one
   cancelled, and an obstetrics patient whose doctor is then called away (listed under To move).
+* today's OPD queue (HIMS-OPD-003, ``opd_queue.py``): patients checked in with tokens in the
+  order they came, a walk-in, one seen, one with the doctor, and the ones who did not come
+  (``add_demo_opd_queue`` adds a new day's queue to a hospital filled earlier).
 
 The hosted Development hospital (Render and Neon, synthetic data only) can get the same records
 when asked for by name (``seed_demo_hospital --hosted-development``, 2026-11-13).
@@ -95,6 +98,7 @@ from common.environment import LOCAL_ENVIRONMENTS
 from .appointments import add_appointment_examples
 from .hospitals import Hospital
 from .opd import add_opd_examples
+from .opd_queue import add_queue_examples
 from .patients import DemoPatient, patients_for
 from .people import NameMaker
 
@@ -1430,6 +1434,12 @@ def seed_hospital(
     # Appointments (HIMS-OPD-002), booked by each branch's front desk into those sessions.
     ctx.notes += add_appointment_examples(actor=ctx.admin, desks=ctx.desks)
     ctx.add("appointments (booked, moved, cancelled)", Appointment.objects.count())
+    # Today's OPD queue (HIMS-OPD-003): check-in with tokens, a walk-in, the queue, no-shows.
+    ctx.notes += add_queue_examples(actor=ctx.admin, desks=ctx.desks)
+    ctx.add(
+        "patients checked in today (OPD queue)",
+        Appointment.objects.filter(token_number__isnull=False).count(),
+    )
     # The Performance screen: an index check of the busy queries on this hospital's own
     # records, the patient search among them (HIMS-DATA-003). Reads only.
     run_index_check(trigger=PerformanceCheck.Trigger.COMMAND)

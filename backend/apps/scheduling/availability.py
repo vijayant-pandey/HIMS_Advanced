@@ -237,23 +237,28 @@ def plan_for(*, staff_ids, first: date, last: date, department=None, details: bo
 
 
 def _add_bookings(plan: Plan, staff_ids, first: date, last: date) -> None:
-    """Each session's appointments (one query; ``appointment_staff_day_idx``)."""
+    """Each session's appointments (one query; ``appointment_staff_day_idx``). Walk-ins take no
+    slot (HIMS-OPD-003), so they are not counted here."""
     if not plan.sessions:
         return
-    rows = Appointment.objects.filter(
-        staff_id__in=staff_ids,
-        local_date__gte=first,
-        local_date__lte=last,
-        status__in=ACTIVE_STATUSES,
-    ).values_list(
-        "pk",
-        "staff_id",
-        "local_date",
-        "schedule_id",
-        "extra_session_id",
-        "starts_at",
-        "ends_at",
-        "is_extra",
+    rows = (
+        Appointment.objects.filter(
+            staff_id__in=staff_ids,
+            local_date__gte=first,
+            local_date__lte=last,
+            status__in=ACTIVE_STATUSES,
+        )
+        .exclude(source=Appointment.Source.WALK_IN)
+        .values_list(
+            "pk",
+            "staff_id",
+            "local_date",
+            "schedule_id",
+            "extra_session_id",
+            "starts_at",
+            "ends_at",
+            "is_extra",
+        )
     )
     for pk, staff_id, day, schedule_id, extra_id, start, end, is_extra in rows:
         for session in plan.sessions.get((staff_id, day), []):

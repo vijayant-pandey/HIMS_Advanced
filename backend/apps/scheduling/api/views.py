@@ -1,4 +1,4 @@
-"""Doctor OPD schedules and appointments API (spec 4.6; HIMS-OPD-001, HIMS-OPD-002).
+"""Doctor OPD schedules, appointments and the OPD queue API (spec 4.6; HIMS-OPD-001, -002, -003).
 
 Seeing sessions and free slots needs ``appointments.view`` and keeping them ``schedules.manage``,
 both for the department (a department-scoped grant covers only that department). A holiday for a
@@ -8,6 +8,11 @@ own sessions on ``/my-opd-sessions/`` without either.
 Appointments (``/appointments/``): seeing them needs ``appointments.view`` and booking, moving or
 cancelling them ``appointments.manage`` for the department. A restricted record (HIMS-PAT-006) is
 booked only by people who may open it, and its name shows only to them.
+
+The OPD queue (``/appointments/queue/``, HIMS-OPD-003) needs ``appointments.view``; checking in,
+walk-ins, calling the next patient, seen, left and did not come need ``appointments.manage``.
+Checking in and walk-ins pick a patient, so a restricted record needs the right to open it; moving
+the queue does not (it shows nothing more).
 """
 
 from datetime import timedelta
@@ -35,7 +40,7 @@ from apps.staff.models import StaffMember
 from common.idempotency.decorators import idempotent
 from common.permissions import FACILITY
 
-from .. import availability, booking, selectors, services
+from .. import availability, booking, opd_queue, selectors, services
 from ..models import ACTIVE_STATUSES, ScheduleException
 from .serializers import (
     AddedExceptionSerializer,
@@ -43,6 +48,8 @@ from .serializers import (
     AddSessionsSerializer,
     AppointmentSerializer,
     BookSerializer,
+    CalledSerializer,
+    CallNextSerializer,
     CancelAppointmentSerializer,
     CancelExceptionSerializer,
     ChangeSessionSerializer,
@@ -51,10 +58,14 @@ from .serializers import (
     DoctorDaySerializer,
     DoctorScheduleSerializer,
     EndSessionSerializer,
+    LeftUnseenSerializer,
     MyOpdWeekSerializer,
+    QueueSerializer,
+    QueueStepSerializer,
     RescheduleSerializer,
     ScheduleExceptionSerializer,
     ToRebookSerializer,
+    WalkInSerializer,
 )
 
 LIST_LIMIT = 200
@@ -420,7 +431,8 @@ def _patient(value, field: str = "patient") -> Patient:
 
 
 class AppointmentViewSet(viewsets.GenericViewSet):
-    """Patients booked into doctors' OPD slots: book, move to another time, cancel."""
+    """Patients booked into doctors' OPD slots: book, move to another time, cancel; on the day,
+    check in, walk in and the OPD queue (HIMS-OPD-003)."""
 
     serializer_class = AppointmentSerializer
     pagination_class = None
@@ -433,6 +445,14 @@ class AppointmentViewSet(viewsets.GenericViewSet):
         "create": P.APPOINTMENTS_MANAGE,
         "reschedule": P.APPOINTMENTS_MANAGE,
         "cancel": P.APPOINTMENTS_MANAGE,
+        "queue": P.APPOINTMENTS_VIEW,
+        "check_in": P.APPOINTMENTS_MANAGE,
+        "walk_in": P.APPOINTMENTS_MANAGE,
+        "call_next": P.APPOINTMENTS_MANAGE,
+        "seen": P.APPOINTMENTS_MANAGE,
+        "left": P.APPOINTMENTS_MANAGE,
+        "no_show": P.APPOINTMENTS_MANAGE,
+        "undo_no_show": P.APPOINTMENTS_MANAGE,
     }
 
     def get_queryset(self):
@@ -604,3 +624,133 @@ class AppointmentViewSet(viewsets.GenericViewSet):
         return Response(
             ToRebookSerializer(rows, many=True, context=self.get_serializer_context()).data
         )
+
+    # --- The OPD queue (HIMS-OPD-003) -------------------------------------------------------
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("department", str, required=True),
+            OpenApiParameter("date", str, description="The day (default: today)"),
+        ],
+        responses=QueueSerializer,
+    )
+    @action(detail=False, methods=["get"])
+    def queue(self, request):
+        """One department's OPD queue: each doctor's patients of the day, waiting by token, with
+        the doctor, seen, still to come, did not come."""
+        department = _department(request.query_params.get("department", ""))
+        _require(request.user, P.APPOINTMENTS_VIEW, department)
+        require_enabled(F.OUTPATIENT, facility_id=department.facility_id, request=request)
+        day = request.query_params.get("date")
+        day = _date(day, "date") if day else hospital_today(department.facility)
+        where = {"facility_id": department.facility_id, "department_id": department.pk}
+        details = get_permission_scope(request.user, P.SCHEDULES_MANAGE).covers(**where)
+        data = selectors.queue_day(department, day, details=details)
+        data["can_manage"] = get_permission_scope(request.user, P.APPOINTMENTS_MANAGE).covers(
+            **where
+        )
+        return Response(QueueSerializer(data, context=self.get_serializer_context()).data)
+
+    @extend_schema(request=QueueStepSerializer, responses=AppointmentSerializer)
+    @action(detail=True, methods=["post"], url_path="check-in")
+    def check_in(self, request, pk=None):
+        """The patient has come: they get the doctor's next token for the day. On the
+        appointment's day only (also when marked "did not come": the patient came late)."""
+        appointment = self.get_object()
+        restricted.opening(request.user, appointment.patient)
+        serializer = QueueStepSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        opd_queue.check_in(
+            actor=request.user,
+            appointment_id=appointment.pk,
+            request=request,
+            **serializer.validated_data,
+        )
+        return Response(self._out(appointment))
+
+    @extend_schema(request=WalkInSerializer, responses={201: AppointmentSerializer})
+    @action(detail=False, methods=["post"], url_path="walk-in")
+    @idempotent("appointments.walk_in")
+    def walk_in(self, request):
+        """A patient without an appointment, checked in at once with the doctor's next token
+        (the doctor must have an OPD session in the department today). Takes no slot."""
+        serializer = WalkInSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        department = _department(data["department"])
+        _require(request.user, P.APPOINTMENTS_MANAGE, department)
+        patient = _patient(data["patient"])
+        restricted.opening(request.user, patient)
+        appointment = opd_queue.walk_in(
+            actor=request.user,
+            patient=patient,
+            staff=_staff(data["staff"]),
+            department=department,
+            kind=data["kind"],
+            reason=data["reason"],
+            request=request,
+        )
+        return Response(self._out(appointment), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=CallNextSerializer, responses=CalledSerializer)
+    @action(detail=False, methods=["post"], url_path="call-next")
+    def call_next(self, request):
+        """Call the doctor's lowest waiting token in to the doctor; whoever was with the doctor
+        is marked seen."""
+        serializer = CallNextSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        department = _department(serializer.validated_data["department"])
+        _require(request.user, P.APPOINTMENTS_MANAGE, department)
+        result = opd_queue.call_next(
+            actor=request.user,
+            staff=_staff(serializer.validated_data["staff"]),
+            department=department,
+            request=request,
+        )
+        moved = [a for a in [result["called"], *result["seen"]] if a is not None]
+        fresh = {
+            a.pk: a for a in selectors.appointment_queryset().filter(pk__in=[a.pk for a in moved])
+        }
+        data = {
+            "called": fresh[result["called"].pk] if result["called"] else None,
+            "seen": [fresh[a.pk] for a in result["seen"]],
+        }
+        return Response(CalledSerializer(data, context=self.get_serializer_context()).data)
+
+    def _step(self, request, service, serializer_class=QueueStepSerializer):
+        appointment = self.get_object()
+        serializer = serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service(
+            actor=request.user,
+            appointment_id=appointment.pk,
+            request=request,
+            **serializer.validated_data,
+        )
+        return Response(self._out(appointment))
+
+    @extend_schema(request=QueueStepSerializer, responses=AppointmentSerializer)
+    @action(detail=True, methods=["post"])
+    def seen(self, request, pk=None):
+        """The doctor is done with the patient now with them."""
+        return self._step(request, opd_queue.mark_seen)
+
+    @extend_schema(request=LeftUnseenSerializer, responses=AppointmentSerializer)
+    @action(detail=True, methods=["post"])
+    def left(self, request, pk=None):
+        """A waiting patient left before being seen (kept on record with their token)."""
+        return self._step(request, opd_queue.left_unseen, LeftUnseenSerializer)
+
+    @extend_schema(request=QueueStepSerializer, responses=AppointmentSerializer)
+    @action(detail=True, methods=["post"], url_path="no-show")
+    def no_show(self, request, pk=None):
+        """A booked patient did not come (once their time has passed). The job marks the rest
+        when their session ends."""
+        return self._step(request, opd_queue.mark_no_show)
+
+    @extend_schema(request=QueueStepSerializer, responses=AppointmentSerializer)
+    @action(detail=True, methods=["post"], url_path="undo-no-show")
+    def undo_no_show(self, request, pk=None):
+        """Booked again: marked "did not come" by mistake, the same day before the session
+        ends."""
+        return self._step(request, opd_queue.undo_no_show)

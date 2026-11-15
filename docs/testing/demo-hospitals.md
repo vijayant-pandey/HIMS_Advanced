@@ -97,6 +97,7 @@ quickly. Real hospitals always require it.
 | Restricted records (2026-11-14, HIMS-PAT-006) | Per branch one adult's record restricted by medical records (the first branch: a VIP; the others: a member of staff); two emergency accesses to the VIP by the first branch's head of department, one reviewed by medical records and one waiting for review; the VIP's MRN printed as "restricted record" |
 | Doctor schedules (2026-11-15, HIMS-OPD-001) | Per branch, in each outpatient department (General Medicine, Cardiology, Orthopaedics, Paediatrics, Obstetrics, General Surgery): the consultant's sessions Mon, Wed, Fri 09:00–13:00 (10-minute slots, 2 extra bookings) and the junior doctor's Tue, Thu 14:00–17:00 (15-minute slots); the cardiologist away 11:00–13:00 next Wednesday, the general physician away three days at a conference, the paediatrician's extra Saturday session (vaccination drive), a holiday (the first branch closed for a day, the others close Orthopaedics for a training day); junior doctors with leave approved on the Leave page show those sessions off |
 | Appointments (2026-11-15, HIMS-OPD-002) | Per branch, booked by its front desk: in the cardiologist's first session with free slots in the next two weeks, up to four patients (new and follow-up, short reasons), one more over the slots, one moved to a later slot (linked to the old one), one cancelled at the patient's request; an obstetrics patient whose doctor is then called away for that day, so the Appointments page shows them under To move. Restricted and unknown patients are never booked by the demo |
+| OPD queue (2026-11-15, HIMS-OPD-003) | Per branch, today (the day the demo is built): a doctor's session today (an extra session "Demo OPD queue", 08:00–20:00, when no doctor works that day); four patients booked into its first slots, three checked in out of slot order (tokens 1–3) by the front desk and a walk-in (token 4); token 1 seen, token 2 with the doctor, tokens 3 and 4 waiting; the fourth booked patient still to come, or marked did not come when the rebuild runs after their time; the no-show job run once |
 | Audit log | Everything above, recorded as it was made |
 
 ## Patients and later phases
@@ -177,3 +178,12 @@ prints the days under "Doctor schedules". **After this merge, build the demo hos
 appointments with `python manage.py add_demo_appointments` after `add_demo_doctor_schedules` (on
 Render + Neon: `--hosted-development`; [Render + Neon section 8](../workflows/render-neon-hosting.md)).
 How it works: [appointments](../workflows/appointments.md).
+
+**Update 2026-11-15, latest (HIMS-OPD-003, the OPD queue):** each branch has today's queue in the
+table above. Look at **OPD queue** as `frontdesk.<branch>@` (check in, walk in, Call next, Seen, did
+not come) or `hod.<branch>@` (sees it), on the day the rebuild prints under "OPD queue today"; on a
+later day choose that day (shown as it was) or add a new day's queue. **After this merge, build the
+demo hospitals again with `--reset`.** A hospital filled earlier (such as the hosted Development
+hospital) gets today's queue with `python manage.py add_demo_opd_queue` (on Render + Neon:
+`--hosted-development`; [Render + Neon section 8](../workflows/render-neon-hosting.md)); it may be
+run once a day for that day's queue. How it works: [OPD queue](../workflows/opd-queue.md).

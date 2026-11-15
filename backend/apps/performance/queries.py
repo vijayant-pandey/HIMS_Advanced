@@ -399,6 +399,44 @@ def _appointments_to_move(samples):
     ).order_by("starts_at")
 
 
+def _opd_queue(samples):
+    """One department's OPD queue today: its doctors' patients, by token (HIMS-OPD-003)."""
+    from apps.scheduling.models import Appointment
+
+    return Appointment.objects.filter(
+        staff_id__in=[samples["booked_staff_id"]],
+        local_date=samples["today"],
+        department_id=samples["booked_department_id"],
+    ).order_by("token_number", "starts_at", "created_at")
+
+
+def _opd_no_shows(samples):
+    """The no-show job: booked appointments whose slot has ended (HIMS-OPD-003)."""
+    from apps.scheduling.models import Appointment
+
+    return Appointment.objects.filter(status="booked", ends_at__lte=samples["now"]).order_by(
+        "ends_at"
+    )[:500]
+
+
+def _opd_next_token(samples):
+    """The doctor's last token today, for the next one (HIMS-OPD-003)."""
+    from django.db.models import Max
+
+    from apps.scheduling.models import Appointment
+
+    return (
+        Appointment.objects.filter(
+            staff_id=samples["booked_staff_id"],
+            local_date=samples["today"],
+            token_number__isnull=False,
+        )
+        .values("staff_id")
+        .annotate(last=Max("token_number"))
+        .order_by()
+    )
+
+
 def _appointments_newest(samples):
     """The console's list of appointments, newest first (Django adds the id)."""
     from apps.scheduling.models import Appointment
@@ -741,6 +779,27 @@ QUERIES: tuple[QueryCheck, ...] = (
         "appointments",
         ("appointment_booked_dept_idx",),
         _appointments_to_move,
+    ),
+    QueryCheck(
+        "opd_queue",
+        "OPD queue: one department's doctors' patients today, by token",
+        "appointments",
+        ("appointment_staff_day_idx", "appointment_one_token"),
+        _opd_queue,
+    ),
+    QueryCheck(
+        "opd_no_shows",
+        "OPD no-show job: booked appointments whose slot has ended",
+        "appointments",
+        ("appointment_booked_end_idx",),
+        _opd_no_shows,
+    ),
+    QueryCheck(
+        "opd_next_token",
+        "OPD queue: a doctor's last token today (for the next one)",
+        "appointments",
+        ("appointment_one_token", "appointment_staff_day_idx"),
+        _opd_next_token,
     ),
     QueryCheck(
         "appointments_newest",

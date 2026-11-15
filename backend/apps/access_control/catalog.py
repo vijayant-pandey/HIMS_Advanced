@@ -161,12 +161,12 @@ PERMISSIONS: dict[str, str] = {
         "records are told at once and review it"
     ),
     P.APPOINTMENTS_VIEW: (
-        "See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue "
-        "follows in Phase 2)"
+        "See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue"
     ),
     P.APPOINTMENTS_MANAGE: (
         "Book patients into doctors' free slots, move appointments to another time and cancel "
-        "them, with a reason (check-in and walk-ins follow in Phase 2)"
+        "them, with a reason; on the day, check patients in (token numbers), check in walk-ins, "
+        "move the OPD queue and mark patients who did not come"
     ),
     P.SCHEDULES_MANAGE: (
         "Keep doctors' OPD sessions: add and end weekly sessions, record a doctor away, a holiday "

@@ -38,7 +38,9 @@ once HIMS is hosted.
   a doctor's free slots). **Since HIMS-OPD-002** it also holds the appointment queries (a doctor's
   week of bookings, a patient's upcoming appointments, a department's booked ones still to come)
   and three screens (a department's day, the patients to move, a patient's upcoming appointments),
-  plus the console's appointments list.
+  plus the console's appointments list. **Since HIMS-OPD-003** it also holds the OPD queue (a
+  department's doctors' patients today by token, a doctor's last token today) and the no-show job's
+  query, and the screen **OPD queue (one department today)**.
 - **Admin console:** Performance → **Performance checks**: the same results (read-only) and
   **Run the index check now**.
 - **Server (CMD, from `backend` with the virtual environment on):**

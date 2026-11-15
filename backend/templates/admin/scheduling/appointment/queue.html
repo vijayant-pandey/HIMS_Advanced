@@ -1,0 +1,52 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{# Today's OPD queue in one department, as on the OPD queue page (HIMS-OPD-003). #}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:scheduling_appointment_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; {{ title }}
+</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>OPD queue (today)</h1>
+  <p>Each doctor's patients today, by token. <strong>Call next</strong> calls the lowest waiting token in to the doctor; whoever was with the doctor is marked seen. To check a booked patient in, mark seen, left or did not come, select them in the appointments list and choose the action.</p>
+  <form method="get">
+    {{ form.as_p }}
+    <button type="submit" class="button">Show</button>
+  </form>
+  {% if shown %}
+    {% for doctor in doctors %}
+    <div class="module">
+      <h2>{{ doctor.name }} &middot; {{ doctor.hours }}</h2>
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="call_next" value="{{ doctor.staff_id }}" class="button">Call next</button>
+      </form>
+      <table>
+        <thead><tr><th scope="col">Token</th><th scope="col">Time</th><th scope="col">Patient</th><th scope="col">Status</th><th scope="col">Checked in</th></tr></thead>
+        <tbody>
+        {% for row in doctor.rows %}
+          <tr><td>{{ row.appointment.token_number|default:"-" }}</td><td>{{ row.time }}</td><td><a href="{% url 'admin:scheduling_appointment_change' row.appointment.pk %}">{{ row.patient }}</a></td><td>{{ row.appointment.get_status_display }}</td><td>{{ row.appointment.checked_in_at|time:"H:i"|default:"-" }}</td></tr>
+        {% empty %}
+          <tr><td colspan="5">No patients today.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% empty %}
+    <p>No doctor has an OPD session in this department today.</p>
+    {% endfor %}
+    <div class="module">
+      <h2>Walk in</h2>
+      <p>A patient without an appointment: checked in at once with the doctor's next token (the doctor must have an OPD session here today).</p>
+      <form method="post">
+        {% csrf_token %}
+        {{ walk_in.as_p }}
+        <input type="submit" name="walk_in" value="Check in the walk-in">
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

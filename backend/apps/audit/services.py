@@ -187,6 +187,14 @@ class AuditAction:
     APPOINTMENT_BOOKED = "appointment.booked"
     APPOINTMENT_RESCHEDULED = "appointment.rescheduled"
     APPOINTMENT_CANCELLED = "appointment.cancelled"
+    # The day of the visit: check-in, walk-ins, the OPD queue, no-shows (HIMS-OPD-003).
+    APPOINTMENT_CHECKED_IN = "appointment.checked_in"
+    APPOINTMENT_WALK_IN = "appointment.walk_in"
+    APPOINTMENT_CALLED = "appointment.called"
+    APPOINTMENT_SEEN = "appointment.seen"
+    APPOINTMENT_LEFT = "appointment.left_unseen"
+    APPOINTMENT_NO_SHOW = "appointment.no_show"
+    APPOINTMENT_NO_SHOW_UNDONE = "appointment.no_show_undone"
 
 
 def _jsonable(value):

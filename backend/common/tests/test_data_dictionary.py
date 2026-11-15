@@ -52,7 +52,9 @@ def test_credentials_are_classified_secret_and_people_data_restricted():
     personal_names = re.compile(r"email|display_name|given_name|family_name|ip_address")
     for table, field in _columns():
         level, _ = generator.classify(table, field)
-        if secret_names.search(field.column) and not field.column.endswith("_at"):
+        # The OPD queue's token number is a ticket number, not a credential (HIMS-OPD-003).
+        not_credentials = field.column.endswith("_at") or field.column == "token_number"
+        if secret_names.search(field.column) and not not_credentials:
             assert level == catalog.SECRET, f"{table}.{field.column} must be Secret"
         if personal_names.search(field.column):
             assert level == catalog.RESTRICTED, f"{table}.{field.column} must be Restricted"

@@ -129,6 +129,11 @@ ENDPOINTS: tuple[Endpoint, ...] = (
         SEARCH_MS,
     ),
     Endpoint(
+        "opd_queue",
+        "OPD queue (one department today)",
+        lambda s: f"/api/v1/appointments/queue/?department={s['booked_department_id']}",
+    ),
+    Endpoint(
         "patient_appointments",
         "A patient's upcoming appointments (chart Overview)",
         lambda s: f"/api/v1/appointments/?patient_id={s['booked_patient_id']}&upcoming=true",

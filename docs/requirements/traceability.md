@@ -6,7 +6,7 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 
 ## Phase 1
 
-99 of 129 marked Done in the backlog; 110 requirement records in all phases (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
+99 of 129 marked Done in the backlog; 111 requirement records in all phases (the approved compliance documents have records too). The tracker's count also includes the approvals of 2026-11-08.
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
@@ -142,7 +142,7 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 
 ## Phase 2
 
-6 of 31 marked Done in the Phase 2 backlog ([phase-2-patients.md](../backlog/phase-2-patients.md)).
+7 of 32 marked Done in the Phase 2 backlog ([phase-2-patients.md](../backlog/phase-2-patients.md)).
 
 | ID | Requirement | Status | Record | API endpoints | Backend tests | PRs |
 |---|---|---|---|---|---|---|
@@ -157,11 +157,12 @@ Every requirement (backlog ticket; ID scheme in [ADR-032](../decisions/ADR-032-r
 | HIMS-PAT-009 | Patient name search for very large registers: a one-word search for the commonest family name ranks every match by closeness (HIMS-DATA-003 measured 30,000 matches in 220–360 ms at 500,000 patients, allowed up to 400 ms; it grows with the matches, so about ten times that at 5 million). Before a hospital passes about 2 million patients: rank with a nearest-first trigram index (GiST `<<->`) or, above a number of matches, ask for a second name or the age first; re-measure with `volume_check --scale 4` (gap found in HIMS-DATA-003) | To do | — | — | — | — |
 | HIMS-PAT-007 | Record a patient's death (date and time, by a doctor); the record becomes read-only except medical-records corrections (P0 part 01 §1; gap found in HIMS-PAT-001) | To do | — | — | — | — |
 | HIMS-OPD-001 | Doctor schedules and exceptions | Done 2026-11-15 | [record](outpatient.md#hims-opd-001) | 10 | 5 files | #62 |
-| HIMS-OPD-002 | Appointments without double booking (exclusion constraint), reschedule, cancel | Done 2026-11-15 | [record](outpatient.md#hims-opd-002) | 21 | 5 files | this PR |
-| HIMS-OPD-003 | Walk-ins, tokens and OPD queue; no-show job | To do | — | — | — | — |
+| HIMS-OPD-002 | Appointments without double booking (exclusion constraint), reschedule, cancel | Done 2026-11-15 | [record](outpatient.md#hims-opd-002) | 29 | 5 files | #63 |
+| HIMS-OPD-003 | Walk-ins, tokens and OPD queue; no-show job | Done 2026-11-15 | [record](outpatient.md#hims-opd-003) | 15 | 5 files | this PR |
 | HIMS-OPD-004 | Email confirmations and reminders (needs notification service) | To do | — | — | — | — |
 | HIMS-OPD-005 | OPD sessions for other clinicians (dietitian, physiotherapist, psychologist clinics) and for a department service or room (e.g. an Echo clinic in Room 4): today only doctors hold sessions (P0 part 02 "must be a doctor") and the room is a free-text note (gap found in HIMS-OPD-001; PO to decide which staff types and whether sessions name a service) | To do | — | — | — | — |
 | HIMS-OPD-006 | Waitlist: patients waiting for a slot in a full session or with a doctor, offered the first slot that frees up (spec 4.6 "booking, rescheduling, cancellation and waitlists"; P0 part 01 §4 "Not in Phase 2: waitlist [PO to confirm]"; gap found in HIMS-OPD-002) | To do | — | — | — | — |
+| HIMS-OPD-008 | Waiting-room display of called tokens: a screen in the waiting area showing, per doctor or room, the token now called in and the next ones, without names (spec 4.6 "token or queue management"; HIMS-OPD-003 has the front desk's queue only; gap found in HIMS-OPD-003) | To do | — | — | — | — |
 | HIMS-OPD-007 | Referral management: a doctor refers a patient to another department or doctor, and the front desk books from the referral; follow-up visits booked from the visit (spec 4.6 "follow-up appointments and referral management"; HIMS-OPD-002 has the new / follow-up kind only; gap found in HIMS-OPD-002) | To do | — | — | — | — |
 | HIMS-CLIN-001 | Outpatient encounter lifecycle with visit numbers | To do | — | — | — | — |
 | HIMS-CLIN-002 | Vitals with plausibility and abnormal flags (LOINC/UCUM) | To do | — | — | — | — |

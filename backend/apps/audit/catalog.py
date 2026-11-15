@@ -193,6 +193,13 @@ LABELS: dict[str, str] = {
     A.APPOINTMENT_BOOKED: "Appointment booked",
     A.APPOINTMENT_RESCHEDULED: "Appointment moved to another time",
     A.APPOINTMENT_CANCELLED: "Appointment cancelled",
+    A.APPOINTMENT_CHECKED_IN: "Patient checked in for an appointment (token given)",
+    A.APPOINTMENT_WALK_IN: "Walk-in patient checked in (token given)",
+    A.APPOINTMENT_CALLED: "Patient called in to the doctor",
+    A.APPOINTMENT_SEEN: "Patient seen by the doctor",
+    A.APPOINTMENT_LEFT: "Patient left before being seen",
+    A.APPOINTMENT_NO_SHOW: "Appointment marked: the patient did not come",
+    A.APPOINTMENT_NO_SHOW_UNDONE: "Did not come undone",
 }
 
 

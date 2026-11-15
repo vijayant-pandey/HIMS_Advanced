@@ -11,8 +11,8 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `appointments_list` |
 | Method and path | `GET /api/v1/appointments/` |
 | Business purpose | List (appointments). Appointments for a patient, a department or a doctor (one of them is required), at most 200, in time order. |
-| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue follows in Phase 2)). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `date`, `department`, `doctor`, `patient_id`, `upcoming` |
 | Response schema | 200 list of `Appointment` |
@@ -39,8 +39,8 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `appointments_create` |
 | Method and path | `POST /api/v1/appointments/` |
 | Business purpose | Add (appointments). Book a patient into a free slot (409 ``SLOT_TAKEN`` when someone booked it first), or over the slots into a booked one when the session allows extra bookings. |
-| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason (check-in and walk-ins follow in Phase 2)). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | `BookRequest`: `patient` (required, uuid), `staff` (required, uuid), `department` (required, uuid), `starts_at` (required, date-time), `kind` (one of the listed values), `source` (one of the listed values), `reason` (≤ 200 characters), `extra` |
 | Response schema | 201 `Appointment` |
@@ -60,6 +60,34 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
+### POST /api/v1/appointments/call-next/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `appointments_call_next_create` |
+| Method and path | `POST /api/v1/appointments/call-next/` |
+| Business purpose | Call the doctor's lowest waiting token in to the doctor; whoever was with the doctor is marked seen. |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
+| Request schema | `CallNextRequest`: `department` (required, uuid), `staff` (required, uuid) |
+| Response schema | 200 `Called` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Any (no state rule) |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | The row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `appointment.called`, `appointment.seen` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 409 `CONFLICT`, 409 `FEATURE_DISABLED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### GET /api/v1/appointments/day/
 
 | Field | Contract |
@@ -67,11 +95,39 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `appointments_day_retrieve` |
 | Method and path | `GET /api/v1/appointments/day/` |
 | Business purpose | One department's doctors on one day: each session's slots, free or booked, and the day's appointments (cancelled ones too). |
-| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue follows in Phase 2)). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `date`, `department` |
 | Response schema | 200 `DepartmentDay` |
+| Validation rules | Query values outside the allowed ones are refused (400) or ignored |
+| Allowed current states | Any |
+| Resulting state | Unchanged (read only) |
+| Idempotency key behavior | Not applicable (read only) |
+| Concurrency control | None needed (read only) |
+| Database transaction | Read only |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request |
+| Expected error codes | 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 409 `FEATURE_DISABLED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### GET /api/v1/appointments/queue/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `appointments_queue_retrieve` |
+| Method and path | `GET /api/v1/appointments/queue/` |
+| Business purpose | One department's OPD queue: each doctor's patients of the day, waiting by token, with the doctor, seen, still to come, did not come. |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
+| Request schema | No body; query: `date`, `department` |
+| Response schema | 200 `Queue` |
 | Validation rules | Query values outside the allowed ones are refused (400) or ignored |
 | Allowed current states | Any |
 | Resulting state | Unchanged (read only) |
@@ -95,8 +151,8 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `appointments_to_rebook_list` |
 | Method and path | `GET /api/v1/appointments/to-rebook/` |
 | Business purpose | Booked appointments still to come whose doctor is now away or on leave, or whose session ended or was taken off: the patients to move or cancel, with why. At most 200, soonest first; the next ones show as these are moved. |
-| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue follows in Phase 2)). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `department` |
 | Response schema | 200 list of `ToRebook` |
@@ -116,6 +172,34 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
+### POST /api/v1/appointments/walk-in/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `appointments_walk_in_create` |
+| Method and path | `POST /api/v1/appointments/walk-in/` |
+| Business purpose | A patient without an appointment, checked in at once with the doctor's next token (the doctor must have an OPD session in the department today). Takes no slot. |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
+| Request schema | `WalkInRequest`: `patient` (required, uuid), `staff` (required, uuid), `department` (required, uuid), `kind` (one of the listed values), `reason` (≤ 200 characters) |
+| Response schema | 201 `Appointment` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Any (no state rule) |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | `Idempotency-Key` header (optional; operation `appointments.walk_in`): the same key with the same body replays the stored answer (`Idempotent-Replayed: true`); with a different body 409 `IDEMPOTENCY_KEY_REUSED`; kept 48 hours |
+| Concurrency control | The row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `appointment.walk_in` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client may retry a lost answer with the same Idempotency-Key |
+| Expected error codes | 400 `IDEMPOTENCY_KEY_REQUIRED`, 400 `INVALID_IDEMPOTENCY_KEY`, 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 409 `CONFLICT`, 409 `FEATURE_DISABLED`, 409 `IDEMPOTENCY_KEY_REUSED`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### GET /api/v1/appointments/{pk}/
 
 | Field | Contract |
@@ -123,8 +207,8 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `appointments_retrieve` |
 | Method and path | `GET /api/v1/appointments/{pk}/` |
 | Business purpose | Open one (appointments). One appointment. |
-| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue follows in Phase 2)). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body |
 | Response schema | 200 `Appointment` |
@@ -151,8 +235,8 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `appointments_cancel_create` |
 | Method and path | `POST /api/v1/appointments/{pk}/cancel/` |
 | Business purpose | Cancel a booked appointment with the reason (the patient asked, the hospital, the doctor is not available). It stays on record as cancelled. |
-| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason (check-in and walk-ins follow in Phase 2)). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | `CancelAppointmentRequest`: `version` (required), `reason` (required, one of the listed values), `note` (≤ 255 characters) |
 | Response schema | 200 `Appointment` |
@@ -172,6 +256,90 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
+### POST /api/v1/appointments/{pk}/check-in/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `appointments_check_in_create` |
+| Method and path | `POST /api/v1/appointments/{pk}/check-in/` |
+| Business purpose | The patient has come: they get the doctor's next token for the day. On the appointment's day only (also when marked "did not come": the patient came late). |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
+| Request schema | `QueueStepRequest`: `version` (required) |
+| Response schema | 200 `Appointment` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Any (no state rule) |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved; the row is locked while it changes, so two requests never both win |
+| Database transaction | One transaction: the change, its audit event and any background event are saved together or not at all |
+| Audit event | `appointment.checked_in` |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 403 `RESTRICTED_RECORD`, 404 `NOT_FOUND`, 409 `CONFLICT`, 409 `FEATURE_DISABLED`, 409 `STALE_RESOURCE`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/appointments/{pk}/left/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `appointments_left_create` |
+| Method and path | `POST /api/v1/appointments/{pk}/left/` |
+| Business purpose | A waiting patient left before being seen (kept on record with their token). |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
+| Request schema | `LeftUnseenRequest`: `version` (required), `note` (≤ 255 characters) |
+| Response schema | 200 `Appointment` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Any (no state rule) |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved |
+| Database transaction | Each statement on its own (no multi-row change); the audit event is saved with it |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/appointments/{pk}/no-show/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `appointments_no_show_create` |
+| Method and path | `POST /api/v1/appointments/{pk}/no-show/` |
+| Business purpose | A booked patient did not come (once their time has passed). The job marks the rest when their session ends. |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
+| Request schema | `QueueStepRequest`: `version` (required) |
+| Response schema | 200 `Appointment` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Any (no state rule) |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved |
+| Database transaction | Each statement on its own (no multi-row change); the audit event is saved with it |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### POST /api/v1/appointments/{pk}/reschedule/
 
 | Field | Contract |
@@ -179,8 +347,8 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `appointments_reschedule_create` |
 | Method and path | `POST /api/v1/appointments/{pk}/reschedule/` |
 | Business purpose | Move a booked appointment to another slot (another doctor or department if given). The answer is the new appointment; the old one is cancelled as moved and links to it. |
-| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason (check-in and walk-ins follow in Phase 2)). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | `RescheduleRequest`: `version` (required), `starts_at` (required, date-time), `staff` (uuid), `department` (uuid), `extra`, `note` (≤ 255 characters) |
 | Response schema | 200 `Appointment` |
@@ -200,6 +368,62 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
 | Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
 
+### POST /api/v1/appointments/{pk}/seen/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `appointments_seen_create` |
+| Method and path | `POST /api/v1/appointments/{pk}/seen/` |
+| Business purpose | The doctor is done with the patient now with them. |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
+| Request schema | `QueueStepRequest`: `version` (required) |
+| Response schema | 200 `Appointment` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Any (no state rule) |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved |
+| Database transaction | Each statement on its own (no multi-row change); the audit event is saved with it |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
+### POST /api/v1/appointments/{pk}/undo-no-show/
+
+| Field | Contract |
+|---|---|
+| Endpoint ID | `appointments_undo_no_show_create` |
+| Method and path | `POST /api/v1/appointments/{pk}/undo-no-show/` |
+| Business purpose | Booked again: marked "did not come" by mistake, the same day before the session ends. |
+| Requirements | [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002), [HIMS-OPD-003](../../../requirements/outpatient.md#hims-opd-003) |
+| Actor / permission required | `appointments.manage` (Book patients into doctors' free slots, move appointments to another time and cancel them, with a reason; on the day, check patients in (token numbers), check in walk-ins, move the OPD queue and mark patients who did not come). System roles holding it: Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
+| Request schema | `QueueStepRequest`: `version` (required) |
+| Response schema | 200 `Appointment` |
+| Validation rules | Fields as in the request schema; anything invalid is 400 `VALIDATION_ERROR` with each field's problem, and nothing is saved |
+| Allowed current states | Any (no state rule) |
+| Resulting state | As in the purpose above; the new state is in the response and the audit event |
+| Idempotency key behavior | Not taken: repeating the request is refused by the state rules or is harmless |
+| Concurrency control | Send the `version` you read; if the record changed since, 409 `STALE_RESOURCE` and nothing is saved |
+| Database transaction | Each statement on its own (no multi-row change); the audit event is saved with it |
+| Audit event | None of its own (reads of configuration are not audited; a refusal records `access.denied`) |
+| Outbox / domain event | None |
+| External calls | None |
+| Timeout and retry policy | No outside calls inside the request; the client should reload before retrying a lost answer |
+| Expected error codes | 400 `VALIDATION_ERROR`, 401 `NOT_AUTHENTICATED`, 403 `MFA_SETUP_REQUIRED`, 403 `PERMISSION_DENIED`, 404 `NOT_FOUND`, 429 `RATE_LIMITED` |
+| Rate / volume assumptions | not signed in: 60/min per address (`HIMS_THROTTLE_ANON`); signed in: 1200/min per address (`HIMS_THROTTLE_USER`) |
+| Metrics and alerts | Request log line and trace span with `request_id`, status and time; response-time targets checked by the volume check (HIMS-OPS-017); hosted alarms with HIMS-OPS-004 |
+| Automated test cases | Covered through the screen's browser tests and the requirement's tests (see record) |
+| Backward-compatibility policy | API v1 rules in [the API contracts guide](../README.md#versioning-and-breaking-changes); CI fails when `docs/api/openapi.yaml` differs from the code |
+
 ### GET /api/v1/availability/
 
 | Field | Contract |
@@ -208,7 +432,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/availability/` |
 | Business purpose | One doctor's sessions on one day with each open slot, in the departments you may see. |
 | Requirements | [HIMS-OPD-001](../../../requirements/outpatient.md#hims-opd-001) |
-| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue follows in Phase 2)). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `date`, `department`, `doctor` |
 | Response schema | 200 `DoctorDay` |
@@ -236,7 +460,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/doctor-schedules/` |
 | Business purpose | List (doctor schedules). Doctors' weekly OPD sessions and one department's week. |
 | Requirements | [HIMS-OPD-001](../../../requirements/outpatient.md#hims-opd-001), [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue follows in Phase 2)). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `department`, `ended`, `staff` |
 | Response schema | 200 list of `DoctorSchedule` |
@@ -292,7 +516,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/doctor-schedules/week/` |
 | Business purpose | One department's doctors over seven days: each day's sessions, what takes them off (OPD leave, approved leave on the Leave page, holidays), and the exceptions. |
 | Requirements | [HIMS-OPD-001](../../../requirements/outpatient.md#hims-opd-001), [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue follows in Phase 2)). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `department`, `start` |
 | Response schema | 200 `DepartmentWeek` |
@@ -404,7 +628,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/schedule-exceptions/` |
 | Business purpose | List (schedule exceptions). A doctor away, a holiday or an extra session. |
 | Requirements | [HIMS-OPD-001](../../../requirements/outpatient.md#hims-opd-001), [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
-| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue follows in Phase 2)). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `appointments.view` (See doctors' OPD sessions, free slots, the patients booked into them and the OPD queue). System roles holding it: Organization administrator, Facility (branch) administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `department`, `kind`, `staff`, `upcoming` |
 | Response schema | 200 list of `ScheduleException` |

@@ -70,7 +70,7 @@ const CANCEL_REASONS: { value: AppointmentCancelChoice; label: string }[] = [
   { value: "doctor_unavailable", label: "The doctor is not available" },
 ];
 
-function patientText(item: Pick<Appointment, "patient_name" | "patient_mrn">): string {
+export function patientText(item: Pick<Appointment, "patient_name" | "patient_mrn">): string {
   return `${item.patient_name} (${item.patient_mrn})`;
 }
 
@@ -401,6 +401,7 @@ function DayAppointments({
                 <TableCell>
                   {item.status_label}
                   {item.status === "cancelled" && item.cancel_reason_label ? ` (${item.cancel_reason_label})` : ""}
+                  {item.token_number ? ` · token ${item.token_number}` : ""}
                 </TableCell>
                 <TableCell>{item.reason || "—"}</TableCell>
                 {canBook && (
@@ -425,7 +426,7 @@ function DayAppointments({
 }
 
 /** Find the patient by MRN, phone, ID number or name; each search is audited on the server. */
-function PatientFinder({ value, onChange }: { value: PickedPatient | null; onChange: (p: PickedPatient) => void }) {
+export function PatientFinder({ value, onChange }: { value: PickedPatient | null; onChange: (p: PickedPatient) => void }) {
   const [typed, setTyped] = useState("");
   const [search, setSearch] = useState("");
   const found = usePatientSearch(search);

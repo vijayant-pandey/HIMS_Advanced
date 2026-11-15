@@ -19,6 +19,13 @@ The database refuses two appointments of one doctor at the same time (exclusion 
 `appointment_no_double_booking`); its queries are in the volume check (one million appointments)
 and its database rules have their own tests.
 
+**2026-11-15 (HIMS-OPD-003):** the day of the visit (slice 2B, third part): check-in with each
+doctor's token numbers, walk-ins (they take no slot), the OPD queue and the no-show job, on the
+same `appointments` table ([doctor schedules, part 3](scheduling.md#part-3-the-opd-queue-hims-opd-003)).
+The database refuses one token number twice for a doctor's day (`appointment_one_token`) and an
+appointment checked in without a token; its queries are in the volume check and its rules in the
+invariants test.
+
 **Start here:**
 
 | Document | What it holds | Kept up to date by |
@@ -26,7 +33,7 @@ and its database rules have their own tests.
 | [data-dictionary.md](data-dictionary.md) | Every table and column: type, empty allowed, default, allowed values, who sets it, sensitivity, meaning; keys, constraints, indexes, lifecycle and owner per table | **Generated** from the models (`python manage.py data_dictionary`); CI fails when it is stale |
 | [erd.md](erd.md) | ERDs: all tables with relationships, and one diagram per domain with columns | **Generated** (same command) |
 | This page | The rules behind the tables: ownership, classification and access, lifecycle, transactions, history, migrations, catalogs, data flows, test data | By hand, with each change |
-| Domain designs | [Facilities and departments](facilities-and-departments.md) · [Locations and beds](locations-and-beds.md) · [Numbering](numbering-schemes.md) · [Access reviews](access-reviews.md) · [Cover arrangements](cover-arrangements.md) · [Rotas and leave](rotas-and-leave.md) · [Audit integrity](audit-integrity.md) | By hand, per feature · [Patients](patients.md) (Phase 2, HIMS-PAT-001) · [Patients/MPI review](patients-mpi-review.md) (HIMS-DATA-003) · [Doctor schedules](scheduling.md) (HIMS-OPD-001) · [Appointments](scheduling.md#part-2-appointments-hims-opd-002) (HIMS-OPD-002) |
+| Domain designs | [Facilities and departments](facilities-and-departments.md) · [Locations and beds](locations-and-beds.md) · [Numbering](numbering-schemes.md) · [Access reviews](access-reviews.md) · [Cover arrangements](cover-arrangements.md) · [Rotas and leave](rotas-and-leave.md) · [Audit integrity](audit-integrity.md) | By hand, per feature · [Patients](patients.md) (Phase 2, HIMS-PAT-001) · [Patients/MPI review](patients-mpi-review.md) (HIMS-DATA-003) · [Doctor schedules](scheduling.md) (HIMS-OPD-001) · [Appointments](scheduling.md#part-2-appointments-hims-opd-002) (HIMS-OPD-002) · [OPD queue](scheduling.md#part-3-the-opd-queue-hims-opd-003) (HIMS-OPD-003) |
 
 ## Spec 28.1 deliverables
 
@@ -197,7 +204,9 @@ always indexed.
 | OPD schedule: a facility's holidays | `schedule_exception_fac_idx` (facility, start date) |
 | Appointments: a doctor's days, put into their sessions (the day screen, free slots, the doctor's week; extra bookings counted) | `appointment_staff_day_idx` (staff, local date), or the no-double-booking rule's index `appointment_no_double_booking` (HIMS-OPD-002) |
 | Appointments: one patient's upcoming ones (chart Overview; "already booked at that time" check) | `appointment_patient_idx` (patient, start) |
-| Appointments: one department's booked ones still to come (To move) | `appointment_booked_dept_idx` (department, start; booked only). The OPD queue's facility day list adds its own index with HIMS-OPD-003 |
+| Appointments: one department's booked ones still to come (To move) | `appointment_booked_dept_idx` (department, start; booked only). The OPD queue's facility day list adds its own index with HIMS-OPD-003 · **2026-11-15 (HIMS-OPD-003):** not needed: the queue is per department and reads its doctors' day through `appointment_staff_day_idx` (ADR-040) |
+| OPD queue: one department's doctors' patients today, by token; a doctor's last token today (HIMS-OPD-003) | `appointment_staff_day_idx` (staff, local date); the token is also covered by `appointment_one_token` (staff, local date, token; checked-in only) |
+| OPD no-show job: booked appointments whose slot has ended (every 15 minutes, HIMS-OPD-003) | `appointment_booked_end_idx` (end; booked only, so it stays small: the job turns the ended ones into "did not come"). On the end, not the start: a start index was read by the To move list instead of `appointment_booked_dept_idx` (found by the demo hospitals' index check) |
 | Appointments: every appointment, newest first (the console list) | `appointment_start_idx` (start, newest first; the volume check measured 2.4 s for the list without it) |
 
 Patient search, encounter, medication, lab and claim indexes (spec 28.6) are designed with
@@ -231,6 +240,11 @@ their domains. **Patient search and the patient screens: done and measured at ho
   counted under it), and the database refuses two appointments of one doctor at the same time
   (exclusion constraint `appointment_no_double_booking`), tested with two bookings at the same
   moment: one wins, the other is told "This slot was just taken".
+- **The OPD queue (HIMS-OPD-003):** a token is given under the doctor's staff row lock, and the
+  database refuses one number twice for a doctor's day (`appointment_one_token`); calling the
+  next patient locks the doctor too. The no-show job locks each appointment and marks it only if
+  it is still booked, so a patient checked in a moment before is never marked; it is safe to run
+  again.
 
 ## 6. History and versions
 

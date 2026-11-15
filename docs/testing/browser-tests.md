@@ -70,6 +70,12 @@ the front desk books a patient from her chart into next week's free slot, moves 
 the reason, books again and sees it on the chart; the doctor away puts her under To move) the India
 run finishes with `56 passed`. It books next week, so it passes at any hour CI runs.
 
+**Update 2026-11-15, latest:** with the OPD queue test (`09-opd-queue.spec.ts`, HIMS-OPD-003: the
+front desk checks a walk-in in with the doctor's next token, calls her in, marks her seen; the
+administrator sees the queue without buttons) the India run finishes with `58 passed`. A walk-in
+needs only the doctor's session today (started or not), and the screen asks the server for today
+on the hospital's clock, so it passes at any hour CI runs.
+
 ```
 npm run e2e:us
 ```

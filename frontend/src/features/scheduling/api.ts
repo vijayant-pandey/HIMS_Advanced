@@ -7,6 +7,8 @@ import type {
   AddedException,
   Appointment,
   BookRequest,
+  CallNextRequest,
+  Called,
   CancelAppointmentRequest,
   CancelExceptionRequest,
   ChangeSessionRequest,
@@ -15,11 +17,15 @@ import type {
   DoctorDay,
   DoctorSchedule,
   EndSessionRequest,
+  LeftUnseenRequest,
   MyOpdWeek,
+  OpdQueue,
   PaginatedPatientList,
+  QueueStepRequest,
   RescheduleRequest,
   ScheduleException,
   ToRebook,
+  WalkInRequest,
 } from "../../api/types";
 
 // One key for everything here: a session or an exception changes every schedule screen.
@@ -134,3 +140,33 @@ export function usePatientSearch(search: string) {
     refetchOnWindowFocus: false,
   });
 }
+
+// --- The OPD queue (HIMS-OPD-003) ---------------------------------------------------------------
+
+/**
+ * One department's queue on one day: each doctor's patients by token. Refreshed every 30 seconds. With no
+ * date, today on the facility's clock (which the browser's clock may not match).
+ */
+export function useOpdQueue(department: string, date: string) {
+  return useQuery<OpdQueue, ApiError>({
+    queryKey: [...appointmentsKey, "queue", department, date],
+    queryFn: ({ signal }) => api.get<OpdQueue>("/appointments/queue/", { query: { department, date }, signal }),
+    enabled: !!department,
+    refetchInterval: 30_000,
+  });
+}
+
+export const useWalkIn = (idempotencyKey: string) =>
+  useScheduleMutation((body: WalkInRequest) =>
+    api.post<Appointment>("/appointments/walk-in/", body, { idempotencyKey }),
+  );
+
+export const useCallNext = () =>
+  useScheduleMutation((body: CallNextRequest) => api.post<Called>("/appointments/call-next/", body));
+
+/** Check in, seen, did not come or undo it: one appointment, one step of the day. */
+export const useQueueStep = (id: string, step: "check-in" | "seen" | "no-show" | "undo-no-show") =>
+  useScheduleMutation((body: QueueStepRequest) => api.post<Appointment>(`/appointments/${id}/${step}/`, body));
+
+export const useLeftUnseen = (id: string) =>
+  useScheduleMutation((body: LeftUnseenRequest) => api.post<Appointment>(`/appointments/${id}/left/`, body));

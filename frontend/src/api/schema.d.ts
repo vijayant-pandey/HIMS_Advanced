@@ -435,6 +435,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/appointments/{id}/check-in/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description The patient has come: they get the doctor's next token for the day. On the
+         *     appointment's day only (also when marked "did not come": the patient came late).
+         */
+        post: operations["appointments_check_in_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/{id}/left/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description A waiting patient left before being seen (kept on record with their token). */
+        post: operations["appointments_left_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/{id}/no-show/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description A booked patient did not come (once their time has passed). The job marks the rest
+         *     when their session ends.
+         */
+        post: operations["appointments_no_show_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/appointments/{id}/reschedule/": {
         parameters: {
             query?: never;
@@ -449,6 +506,63 @@ export interface paths {
          *     The answer is the new appointment; the old one is cancelled as moved and links to it.
          */
         post: operations["appointments_reschedule_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/{id}/seen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The doctor is done with the patient now with them. */
+        post: operations["appointments_seen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/{id}/undo-no-show/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Booked again: marked "did not come" by mistake, the same day before the session
+         *     ends.
+         */
+        post: operations["appointments_undo_no_show_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/call-next/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Call the doctor's lowest waiting token in to the doctor; whoever was with the doctor
+         *     is marked seen.
+         */
+        post: operations["appointments_call_next_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -475,6 +589,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/appointments/queue/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One department's OPD queue: each doctor's patients of the day, waiting by token, with
+         *     the doctor, seen, still to come, did not come.
+         */
+        get: operations["appointments_queue_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/appointments/to-rebook/": {
         parameters: {
             query?: never;
@@ -490,6 +624,26 @@ export interface paths {
         get: operations["appointments_to_rebook_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/walk-in/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description A patient without an appointment, checked in at once with the doctor's next token
+         *     (the doctor must have an OPD session in the department today). Takes no slot.
+         */
+        post: operations["appointments_walk_in_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4729,6 +4883,20 @@ export interface components {
             readonly cancel_note: string;
             /** Format: date-time */
             readonly cancelled_at: string | null;
+            /** @description The doctor's token for the day, given at check-in */
+            readonly token_number: number | null;
+            /** Format: date-time */
+            readonly checked_in_at: string | null;
+            /**
+             * Format: date-time
+             * @description When the patient was called in to the doctor
+             */
+            readonly called_at: string | null;
+            /**
+             * Format: date-time
+             * @description When the doctor was done
+             */
+            readonly seen_at: string | null;
             readonly version: number;
         };
         /**
@@ -4743,9 +4911,10 @@ export interface components {
          *     * `hospital` - The hospital cancelled
          *     * `doctor_unavailable` - The doctor is not available
          *     * `rescheduled` - Moved to another time
+         *     * `left_unseen` - Left before being seen
          * @enum {string}
          */
-        AppointmentCancelReasonEnum: "patient_request" | "hospital" | "doctor_unavailable" | "rescheduled";
+        AppointmentCancelReasonEnum: "patient_request" | "hospital" | "doctor_unavailable" | "rescheduled" | "left_unseen";
         /**
          * @description * `new` - New
          *     * `follow_up` - Follow-up
@@ -4755,9 +4924,10 @@ export interface components {
         /**
          * @description * `front_desk` - At the front desk
          *     * `phone` - By phone
+         *     * `walk_in` - Walk-in
          * @enum {string}
          */
-        AppointmentSourceEnum: "front_desk" | "phone";
+        AppointmentSourceEnum: "front_desk" | "phone" | "walk_in";
         /**
          * @description * `booked` - Booked
          *     * `checked_in` - Checked in
@@ -5125,6 +5295,21 @@ export interface components {
             start: number;
             count: number;
             bed_type: components["schemas"]["BedTypeEnum"];
+        };
+        CallNextRequest: {
+            /** Format: uuid */
+            department: string;
+            /**
+             * Format: uuid
+             * @description The doctor
+             */
+            staff: string;
+        };
+        Called: {
+            /** @description Now with the doctor */
+            called: components["schemas"]["Appointment"] | null;
+            /** @description Were with the doctor: now seen */
+            seen: components["schemas"]["Appointment"][];
         };
         CancelAppointmentRequest: {
             version: number;
@@ -6516,6 +6701,11 @@ export interface components {
          * @enum {string}
          */
         LeaveTypeEnum: "annual" | "casual" | "sick" | "maternity" | "paternity" | "study" | "compensatory" | "unpaid" | "other";
+        LeftUnseenRequest: {
+            version: number;
+            /** @default  */
+            note: string;
+        };
         LegalHold: {
             /** Format: uuid */
             readonly id: string;
@@ -8089,6 +8279,27 @@ export interface components {
             passed: boolean;
             detail: string;
         };
+        Queue: {
+            /** Format: uuid */
+            department_id: string;
+            department_name: string;
+            /** Format: uuid */
+            facility_id: string;
+            facility_name: string;
+            /** Format: date */
+            day: string;
+            /** @description Patients are checked in only today */
+            is_today: boolean;
+            /** @description Doctors with a session or a patient */
+            doctors: components["schemas"]["DayDoctor"][];
+            /** @description Waiting first, by token */
+            appointments: components["schemas"]["Appointment"][];
+            /** @description May check in, walk in and move the queue */
+            can_manage: boolean;
+        };
+        QueueStepRequest: {
+            version: number;
+        };
         ReasonRequest: {
             reason: string;
         };
@@ -9528,6 +9739,24 @@ export interface components {
          * @enum {string}
          */
         VerificationStatusEnum: "unverified" | "verified" | "rejected";
+        WalkInRequest: {
+            /** Format: uuid */
+            patient: string;
+            /**
+             * Format: uuid
+             * @description The doctor
+             */
+            staff: string;
+            /** Format: uuid */
+            department: string;
+            /** @default new */
+            kind: components["schemas"]["AppointmentKindEnum"];
+            /**
+             * @description Short; no history
+             * @default
+             */
+            reason: string;
+        };
         Ward: {
             /** Format: uuid */
             readonly id: string;
@@ -10249,6 +10478,84 @@ export interface operations {
             };
         };
     };
+    appointments_check_in_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this appointment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueueStepRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
+    appointments_left_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this appointment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeftUnseenRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
+    appointments_no_show_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this appointment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueueStepRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
     appointments_reschedule_create: {
         parameters: {
             query?: never;
@@ -10271,6 +10578,81 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
+    appointments_seen_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this appointment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueueStepRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
+    appointments_undo_no_show_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this appointment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QueueStepRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
+    appointments_call_next_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CallNextRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Called"];
                 };
             };
         };
@@ -10298,6 +10680,29 @@ export interface operations {
             };
         };
     };
+    appointments_queue_retrieve: {
+        parameters: {
+            query: {
+                /** @description The day (default: today) */
+                date?: string;
+                department: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Queue"];
+                };
+            };
+        };
+    };
     appointments_to_rebook_list: {
         parameters: {
             query: {
@@ -10315,6 +10720,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToRebook"][];
+                };
+            };
+        };
+    };
+    appointments_walk_in_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WalkInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
                 };
             };
         };

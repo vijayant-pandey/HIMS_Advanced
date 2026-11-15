@@ -250,7 +250,12 @@ class Appointment(OrganizationOwnedModel, VersionedModel):
     doctor never overlap (exclusion constraint), except bookings over the slots that the session
     allows (``is_extra``, D11), which are counted per session under a lock on the doctor. Nothing
     is deleted: a cancelled appointment keeps who, when and why, and a moved one links to the
-    appointment that replaced it. Check-in, walk-ins, tokens and no-shows come with HIMS-OPD-003.
+    appointment that replaced it.
+
+    The day of the visit (HIMS-OPD-003; P0 part 01 section 4, D10, D12): a patient checked in gets
+    the doctor's next token number for the day; a walk-in is checked in at once without a slot
+    (``source`` walk-in: it takes no slot, so the no-double-booking rule leaves it out). Booked
+    patients not checked in when their session ends are marked "did not come" by a job.
     """
 
     class Kind(models.TextChoices):
@@ -260,6 +265,7 @@ class Appointment(OrganizationOwnedModel, VersionedModel):
     class Source(models.TextChoices):
         FRONT_DESK = "front_desk", "At the front desk"
         PHONE = "phone", "By phone"
+        WALK_IN = "walk_in", "Walk-in"
 
     class Status(models.TextChoices):
         BOOKED = "booked", "Booked"
@@ -274,6 +280,7 @@ class Appointment(OrganizationOwnedModel, VersionedModel):
         HOSPITAL = "hospital", "The hospital cancelled"
         DOCTOR_UNAVAILABLE = "doctor_unavailable", "The doctor is not available"
         RESCHEDULED = "rescheduled", "Moved to another time"
+        LEFT_UNSEEN = "left_unseen", "Left before being seen"
 
     patient = models.ForeignKey(
         "patients.Patient", on_delete=models.PROTECT, related_name="appointments", db_index=False
@@ -346,6 +353,23 @@ class Appointment(OrganizationOwnedModel, VersionedModel):
         related_name="+",
         db_index=False,
     )
+    # The day of the visit (HIMS-OPD-003).
+    token_number = models.PositiveIntegerField(
+        null=True, blank=True, help_text="The doctor's token for the day, given at check-in"
+    )
+    checked_in_at = models.DateTimeField(null=True, blank=True)
+    checked_in_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        db_index=False,
+    )
+    called_at = models.DateTimeField(
+        null=True, blank=True, help_text="When the patient was called in to the doctor"
+    )
+    seen_at = models.DateTimeField(null=True, blank=True, help_text="When the doctor was done")
 
     class Meta:
         db_table = "appointments"
@@ -375,8 +399,42 @@ class Appointment(OrganizationOwnedModel, VersionedModel):
                     ("staff", RangeOperators.EQUAL),
                     (TimeRange("starts_at", "ends_at"), RangeOperators.OVERLAPS),
                 ],
-                condition=Q(status__in=["booked", "checked_in", "in_consultation"], is_extra=False),
+                # A walk-in takes no slot (HIMS-OPD-003): it waits for its token.
+                condition=Q(status__in=["booked", "checked_in", "in_consultation"], is_extra=False)
+                & ~Q(source="walk_in"),
                 violation_error_message="This slot was just taken.",
+            ),
+            # One token number per doctor and day (P0 part 02; given under the doctor's lock).
+            models.UniqueConstraint(
+                fields=["staff", "local_date", "token_number"],
+                condition=Q(token_number__isnull=False),
+                name="appointment_one_token",
+            ),
+            models.CheckConstraint(
+                # Checked in (waiting, with the doctor, seen) means a token and when; booked or
+                # did not come means neither; leaving before being seen keeps them.
+                condition=(
+                    Q(token_number__isnull=True, checked_in_at__isnull=True)
+                    & Q(status__in=["booked", "no_show", "cancelled"])
+                )
+                | (
+                    Q(token_number__isnull=False, checked_in_at__isnull=False)
+                    & Q(status__in=["checked_in", "in_consultation", "completed", "cancelled"])
+                ),
+                name="appointment_checked_in",
+            ),
+            models.CheckConstraint(
+                # With the doctor or seen means called in first; seen means when.
+                condition=(
+                    Q(called_at__isnull=False) | ~Q(status__in=["in_consultation", "completed"])
+                )
+                & (Q(seen_at__isnull=False) | ~Q(status="completed")),
+                name="appointment_called_and_seen",
+            ),
+            models.CheckConstraint(
+                # A walk-in is checked in at once and is never over the slots.
+                condition=~Q(source="walk_in") | Q(token_number__isnull=False, is_extra=False),
+                name="appointment_walk_in",
             ),
         ]
         indexes = [
@@ -385,11 +443,19 @@ class Appointment(OrganizationOwnedModel, VersionedModel):
             # The console's list, newest first (the volume check measured 2.4 s without it).
             models.Index(fields=["-starts_at"], name="appointment_start_idx"),
             # The "To move" list: booked appointments in a department (small: booked only).
-            # The OPD queue's facility day list adds its own index (HIMS-OPD-003).
+            # The OPD queue reads a department's doctors' day through appointment_staff_day_idx
+            # (HIMS-OPD-003), so P0's facility day index is not needed (ADR-040).
             models.Index(
                 fields=["department", "starts_at"],
                 condition=Q(status="booked"),
                 name="appointment_booked_dept_idx",
+            ),
+            # The no-show job: booked appointments whose slot has ended (HIMS-OPD-003). On the end,
+            # not the start, so the To move list (booked ones still to come) never reads it.
+            models.Index(
+                fields=["ends_at"],
+                condition=Q(status="booked"),
+                name="appointment_booked_end_idx",
             ),
         ]
 

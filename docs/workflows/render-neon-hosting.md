@@ -260,3 +260,26 @@ hospital that already has an appointment (running it twice is harmless) and one 
 sessions ("run add_demo_doctor_schedules first"). On Render, look at **Appointments** as the front
 desk (`frontdesk.<branch>@`: book, move, cancel) or the head of department (sees them). How it works:
 [appointments](appointments.md).
+
+**Update 2026-11-15, latest (HIMS-OPD-003, the OPD queue):** after the merge has deployed and
+`migrate` has run on Neon, the hosted hospital gets **today's** OPD queue with one more command, from
+the HIMS folder (CMD window 2):
+
+```
+cd backend
+.venv\Scripts\activate.bat
+set HIMS_ENV_FILE=.env.hosted-dev
+set DJANGO_SETTINGS_MODULE=config.settings.production
+python manage.py add_demo_opd_queue --hosted-development
+set DJANGO_SETTINGS_MODULE=
+set HIMS_ENV_FILE=
+deactivate
+cd ..
+```
+
+It ends with "Added today's OPD queue" and the department and doctor per branch. It refuses a day
+that already has a patient checked in (running it twice the same day is harmless) and a hospital
+without doctors' sessions ("run add_demo_doctor_schedules first"); run it again on another day for
+that day's queue. The no-show job runs with the other scheduled jobs (`run_scheduled_jobs`, the
+host's timer). On Render, look at **OPD queue** as the front desk (`frontdesk.<branch>@`). How it
+works: [OPD queue](opd-queue.md).

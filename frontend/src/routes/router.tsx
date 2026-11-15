@@ -113,6 +113,10 @@ export const routes = [
                 lazy: screen(() => import("../features/scheduling/AppointmentsPage"), (m) => m.AppointmentsPage),
               },
               {
+                path: "opd-queue",
+                lazy: screen(() => import("../features/scheduling/OpdQueuePage"), (m) => m.OpdQueuePage),
+              },
+              {
                 path: "doctor-schedules",
                 lazy: screen(
                   () => import("../features/scheduling/DoctorSchedulesPage"),
