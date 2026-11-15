@@ -281,3 +281,10 @@ export type CancelAppointmentRequest = Schemas["CancelAppointmentRequest"];
 export type DepartmentDay = Schemas["DepartmentDay"];
 export type DayDoctor = Schemas["DayDoctor"];
 export type ToRebook = Schemas["ToRebook"];
+// The OPD queue (HIMS-OPD-003).
+export type OpdQueue = Schemas["Queue"];
+export type WalkInRequest = Schemas["WalkInRequest"];
+export type CallNextRequest = Schemas["CallNextRequest"];
+export type Called = Schemas["Called"];
+export type QueueStepRequest = Schemas["QueueStepRequest"];
+export type LeftUnseenRequest = Schemas["LeftUnseenRequest"];

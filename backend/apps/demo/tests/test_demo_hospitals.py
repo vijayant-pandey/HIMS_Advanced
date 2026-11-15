@@ -120,7 +120,7 @@ def test_a_small_demo_hospital_gets_records_for_every_screen(provisioned):
     assert "opd.dwk@in-sunrise.demo.test" in accounts
     assert ctx.notes
     opd_queries = [r for r in check.results if r["area"] == "Outpatient (OPD)"]
-    assert len(opd_queries) == 8
+    assert len(opd_queries) == 11
     assert {r["key"]: r["detail"] for r in opd_queries if not r["passed"]} == {}
     # Appointments (HIMS-OPD-002): booked by the front desk, one over the slots, one moved, one
     # cancelled, and one to move because its doctor was called away.
@@ -131,6 +131,14 @@ def test_a_small_demo_hospital_gets_records_for_every_screen(provisioned):
     assert Appointment.objects.filter(booked_by__email__startswith="frontdesk.").exists()
     obgy = Department.objects.filter(code="OBGY").order_by("facility__created_at").first()
     assert len(to_rebook(obgy, details=True)) == 1
+    # Today's OPD queue (HIMS-OPD-003): four tokens (one a walk-in), one seen, one with the
+    # doctor, two waiting.
+    today = Appointment.objects.filter(token_number__isnull=False).order_by("token_number")
+    assert [a.status for a in today] == ["completed", "in_consultation", "checked_in", "checked_in"]
+    assert today.last().source == "walk_in"
+    assert today.first().checked_in_by.email.startswith("frontdesk.")
+    with pytest.raises(CommandError, match="already has today's OPD queue"):
+        call_command("add_demo_opd_queue")
     with pytest.raises(DemoError, match="already"):
         seed_hospital(by_key("in-sunrise"), password=None, small=True)
 
@@ -148,8 +156,9 @@ def test_a_hospital_filled_before_restricted_records_gets_them_added(provisioned
 
 
 def test_a_hospital_filled_before_doctor_schedules_gets_them_added(provisioned, monkeypatch):
-    with monkeypatch.context() as patch:  # as filled before HIMS-OPD-001
+    with monkeypatch.context() as patch:  # as filled before HIMS-OPD-001 (and what follows)
         patch.setattr(seed_module, "add_opd_examples", lambda **_: [])
+        patch.setattr(seed_module, "add_queue_examples", lambda **_: [])
         seed_hospital(by_key("in-sunrise"), password=None, small=True)
     assert not DoctorSchedule.objects.exists()
     out = StringIO()
@@ -162,8 +171,9 @@ def test_a_hospital_filled_before_doctor_schedules_gets_them_added(provisioned, 
 
 
 def test_a_hospital_filled_before_appointments_gets_them_added(provisioned, monkeypatch):
-    with monkeypatch.context() as patch:  # as filled before HIMS-OPD-002
+    with monkeypatch.context() as patch:  # as filled before HIMS-OPD-002 (and what follows)
         patch.setattr(seed_module, "add_appointment_examples", lambda **_: [])
+        patch.setattr(seed_module, "add_queue_examples", lambda **_: [])
         seed_hospital(by_key("in-sunrise"), password=None, small=True)
     assert not Appointment.objects.exists()
     out = StringIO()
@@ -229,3 +239,16 @@ def test_setup_needs_the_password_first(monkeypatch):
             by_key("in-sunrise"), password_env="HIMS_DEMO_PASSWORD", reset=False, small=True
         )
     assert "HIMS_DEMO_PASSWORD" not in os.environ
+
+
+def test_a_hospital_filled_before_the_opd_queue_gets_todays_queue_added(provisioned, monkeypatch):
+    with monkeypatch.context() as patch:  # as filled before HIMS-OPD-003, or on an earlier day
+        patch.setattr(seed_module, "add_queue_examples", lambda **_: [])
+        seed_hospital(by_key("in-sunrise"), password=None, small=True)
+    assert not Appointment.objects.filter(token_number__isnull=False).exists()
+    out = StringIO()
+    call_command("add_demo_opd_queue", stdout=out)
+    assert Appointment.objects.filter(source="walk_in").count() == 1
+    assert "OPD queue today" in out.getvalue()
+    with pytest.raises(CommandError, match="already has today's OPD queue"):
+        call_command("add_demo_opd_queue")

@@ -10,11 +10,9 @@ from django.db import connection
 from apps.audit.models import AuditEvent
 from apps.audit.services import AuditAction
 from apps.features.models import FeatureFlag
-from apps.numbering.services import ensure_default_schemes
 from apps.organizations.dates import hospital_timezone, hospital_today
 from apps.patients import restricted
 from apps.patients.models import Patient
-from apps.patients.services import register_patient
 from apps.rosters.services import approve_leave, request_leave
 from apps.scheduling import booking, services
 from apps.scheduling.models import Appointment
@@ -23,65 +21,10 @@ from common.exceptions import ConflictError
 
 from .conftest import API
 
-ALL_DAYS = range(7)
-
-
-@pytest.fixture
-def ravi(doctor, department_a):
-    return doctor(department_a, given="Ravi")
-
-
-@pytest.fixture
-def mohan(doctor, department_a):
-    return doctor(department_a, given="Mohan")
-
 
 @pytest.fixture
 def day():
     return hospital_today() + timedelta(days=2)
-
-
-@pytest.fixture
-def sessions(ravi, mohan, department_a):
-    """Every day 09:00-13:00 for both doctors, 10-minute slots; Ravi allows one extra booking."""
-    for staff, extra in ((ravi, 1), (mohan, 0)):
-        services.add_sessions(
-            actor=None,
-            staff=staff,
-            department=department_a,
-            weekdays=ALL_DAYS,
-            start_time=time(9),
-            end_time=time(13),
-            valid_from=hospital_today(),
-            extra_bookings_allowed=extra,
-        )
-
-
-@pytest.fixture
-def desk(make_user, system_roles, facility_a, organization):
-    ensure_default_schemes(organization)
-    return make_user(
-        role=system_roles["receptionist"], facility=facility_a, display_name="Synthetic Desk"
-    )
-
-
-@pytest.fixture
-def patient(desk, facility_a):
-    def factory(given="Asha", family="Kumar"):
-        return register_patient(
-            actor=desk,
-            facility=facility_a,
-            data={
-                "given_name": given,
-                "family_name": family,
-                "sex": "female",
-                "age_years": 40,
-                "has_no_phone": True,
-            },
-            privacy_notice="given",
-        )
-
-    return factory
 
 
 def at(department, day, hour, minute=0):

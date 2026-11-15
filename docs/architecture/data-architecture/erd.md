@@ -272,6 +272,7 @@ erDiagram
     appointments |o--o| appointments : "rescheduled_from_id"
     users |o--o{ appointments : "booked_by_id"
     users |o--o{ appointments : "cancelled_by_id"
+    users |o--o{ appointments : "checked_in_by_id"
     audit_events ||--o| audit_chain_entries : "event_id"
     users |o--o{ compliance_requirements : "reviewed_by_id"
     users |o--o{ compliance_risks : "updated_by_id"
@@ -1462,6 +1463,11 @@ erDiagram
         varchar cancel_note
         timestamptz cancelled_at
         uuid cancelled_by_id FK
+        integer token_number
+        timestamptz checked_in_at
+        uuid checked_in_by_id FK
+        timestamptz called_at
+        timestamptz seen_at
     }
     departments
     facilities
@@ -1491,6 +1497,7 @@ erDiagram
     appointments |o--o| appointments : "rescheduled_from_id"
     users |o--o{ appointments : "booked_by_id"
     users |o--o{ appointments : "cancelled_by_id"
+    users |o--o{ appointments : "checked_in_by_id"
 ```
 
 Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `patients`, `staff_members`, `users`.

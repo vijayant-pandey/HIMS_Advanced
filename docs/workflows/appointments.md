@@ -12,7 +12,9 @@ decision D11 (extra bookings). How it works inside: [data design, part 2](../arc
 [doctor schedules](doctor-schedules.md) (HIMS-OPD-001).
 
 Check-in, walk-ins, tokens and the OPD queue come next (HIMS-OPD-003), then email reminders
-(HIMS-OPD-004).
+(HIMS-OPD-004). **2026-11-15, HIMS-OPD-003 done:** the day of the visit (check-in with tokens,
+walk-ins, Call next, did not come) is on the [OPD queue](opd-queue.md); the day's list here shows
+each patient's token next to their status.
 
 ## Who does what
 

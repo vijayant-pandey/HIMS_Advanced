@@ -211,10 +211,12 @@ LIFECYCLE: dict[str, str] = {
     "session is added instead, so any past week's sessions can be shown (HIMS-OPD-001).",
     "schedule_exceptions": "Never deleted; cancelled with who, when and why. Past ones cannot be "
     "cancelled (HIMS-OPD-001).",
-    "appointments": "Never deleted; booked -> cancelled (with who, when and why) or, from "
-    "HIMS-OPD-003, checked in -> with the doctor -> completed, or did not come. A moved "
-    "appointment is cancelled as moved and links to the new one. Kept with the patient's record "
-    "(retention decision pending with the clinical records, 🔒 LEGAL) (HIMS-OPD-002).",
+    "appointments": "Never deleted; booked -> cancelled (with who, when and why), or on the "
+    "day checked in with a token -> with the doctor -> seen (completed), or left before being "
+    "seen, or did not come (marked by a job when the session ends; undone the same day). A "
+    "walk-in starts checked in. A moved appointment is cancelled as moved and links to the new "
+    "one. Kept with the patient's record (retention decision pending with the clinical records, "
+    "🔒 LEGAL) (HIMS-OPD-002, HIMS-OPD-003).",
     "leave_requests": "Never deleted; requested -> approved, refused or cancelled, each with who "
     "and when. Retention period: decision pending with the other HR records (🔒 LEGAL).",
     "audit_events": "Append-only: a database trigger refuses changes and deletes. Retention and "

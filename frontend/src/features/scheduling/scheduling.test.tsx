@@ -10,6 +10,7 @@ import { MySchedulePage } from "../rosters/MySchedulePage";
 import { addDays, mondayOf } from "../rosters/labels";
 import { AppointmentsPage } from "./AppointmentsPage";
 import { DoctorSchedulesPage } from "./DoctorSchedulesPage";
+import { OpdQueuePage } from "./OpdQueuePage";
 
 const MONDAY = mondayOf(localDate());
 const NEXT_MONDAY = addDays(MONDAY, 7);
@@ -153,6 +154,10 @@ const BOOKED = {
   cancel_reason_label: "",
   cancel_note: "",
   cancelled_at: null,
+  token_number: null,
+  checked_in_at: null,
+  called_at: null,
+  seen_at: null,
   version: 2,
 };
 
@@ -461,7 +466,8 @@ describe("Appointments (HIMS-OPD-002)", () => {
     expect(sent(fetchMock, "/appointments/ap-1/cancel/")).toMatchObject({ version: 2, reason: "patient_request" });
     await vi.waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 
-    fireEvent.click(within(table).getByRole("button", { name: "Move Asha Kumar, 09:00" }));
+    // Wait for it: while the closing dialog fades out, the page behind it is still hidden.
+    fireEvent.click(await within(table).findByRole("button", { name: "Move Asha Kumar, 09:00" }));
     dialog = await screen.findByRole("dialog");
     fireEvent.mouseDown(await within(dialog).findByLabelText(/Free slot/));
     fireEvent.click(await screen.findByRole("option", { name: "09:20 (09:00-13:00)" }));
@@ -484,5 +490,144 @@ describe("Appointments (HIMS-OPD-002)", () => {
     expect(screen.queryByRole("button", { name: /book with/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Move / })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Book over the slots/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("OPD queue (HIMS-OPD-003)", () => {
+  afterEach(() => vi.restoreAllMocks());
+  const grants = ["appointments.view", "appointments.manage"];
+  const TODAY = localDate();
+  const person = (id: string, name: string, mrn: string, extra: Record<string, unknown>) => ({
+    ...BOOKED,
+    id,
+    patient_id: `pt-${id}`,
+    patient_name: name,
+    patient_mrn: mrn,
+    local_date: TODAY,
+    ...extra,
+  });
+  const arrived = new Date(Date.now() - 12 * 60_000).toISOString();
+  const QUEUE = {
+    department_id: "dep-1",
+    department_name: "Cardiology",
+    facility_id: "fac-1",
+    facility_name: "Main Hospital",
+    day: TODAY,
+    is_today: true,
+    can_manage: true,
+    doctors: [
+      {
+        staff_id: "st-ravi",
+        name: "Ravi Kumar",
+        designation: "Consultant",
+        leave_asked: false,
+        sessions: [session(TODAY)],
+      },
+    ],
+    appointments: [
+      person("ap-1", "Asha Kumar", "MRN-1", {
+        status: "in_consultation",
+        token_number: 1,
+        checked_in_at: arrived,
+        called_at: arrived,
+      }),
+      person("ap-2", "Bina Rao", "MRN-2", { status: "checked_in", token_number: 2, checked_in_at: arrived }),
+      person("ap-3", "Esha Shah", "MRN-3", {
+        status: "checked_in",
+        token_number: 3,
+        checked_in_at: arrived,
+        source: "walk_in",
+        source_label: "Walk-in",
+        version: 1,
+      }),
+      person("ap-4", "Chitra Das", "MRN-4", {
+        status: "booked",
+        time: "09:30",
+        starts_at: "2020-01-01T04:00:00Z",
+        version: 5,
+      }),
+      person("ap-5", "Dev Iyer", "MRN-5", { status: "booked", time: "12:30", starts_at: "2999-01-01T07:00:00Z" }),
+      person("ap-6", "Farah Ali", "MRN-6", { status: "no_show", status_label: "Did not come" }),
+      person("ap-7", "Gita Moved", "MRN-7", {
+        status: "cancelled",
+        cancel_reason: "rescheduled",
+        cancel_reason_label: "Moved to another time",
+      }),
+    ],
+  };
+  const ROUTES = { ...APPOINTMENT_ROUTES, "/appointments/queue/": QUEUE };
+
+  it("shows each doctor's patients by token: with the doctor, waiting, still to come, did not come", async () => {
+    renderPage(<OpdQueuePage />, grants, ROUTES);
+    const table = await screen.findByRole("table", { name: "Patients of Ravi Kumar" });
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows.map((row) => within(row).getAllByRole("cell")[0]!.textContent)).toEqual(["1", "2", "3", "—", "—", "—"]);
+    expect(rows[0]).toHaveTextContent("With the doctor");
+    expect(rows[1]).toHaveTextContent("Waiting 12 min");
+    expect(rows[2]).toHaveTextContent("Walk-in");
+    expect(rows[3]).toHaveTextContent("Still to come");
+    expect(rows[5]).toHaveTextContent("Did not come");
+    expect(table).not.toHaveTextContent("Gita Moved"); // moved before the day: not in the queue
+    const queue = screen.getByRole("region", { name: "Queue, Ravi Kumar" });
+    expect(queue).toHaveTextContent("Waiting 2");
+    expect(queue).toHaveTextContent("Seen 0");
+  });
+
+  it("checks a patient in, calls the next token, marks seen and did not come", async () => {
+    const fetchMock = renderPage(<OpdQueuePage />, grants, ROUTES);
+    fireEvent.click(await screen.findByRole("button", { name: "Check in Chitra Das" }));
+    await vi.waitFor(() => expect(sent(fetchMock, "/appointments/ap-4/check-in/")).toEqual({ version: 5 }));
+    fireEvent.click(screen.getByRole("button", { name: "Call next for Ravi Kumar" }));
+    await vi.waitFor(() =>
+      expect(sent(fetchMock, "/appointments/call-next/")).toEqual({ department: "dep-1", staff: "st-ravi" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Seen: Asha Kumar" }));
+    await vi.waitFor(() => expect(sent(fetchMock, "/appointments/ap-1/seen/")).toEqual({ version: 2 }));
+    fireEvent.click(screen.getByRole("button", { name: "Did not come: Chitra Das" }));
+    await vi.waitFor(() => expect(sent(fetchMock, "/appointments/ap-4/no-show/")).toEqual({ version: 5 }));
+    // Only once the time has passed; a waiting patient may leave; a missed one may be undone.
+    expect(screen.queryByRole("button", { name: "Did not come: Dev Iyer" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Left before being seen: Esha Shah" }));
+    await vi.waitFor(() => expect(sent(fetchMock, "/appointments/ap-3/left/")).toEqual({ version: 1, note: "" }));
+    expect(screen.getByRole("button", { name: "Undo did not come: Farah Ali" })).toBeInTheDocument();
+  });
+
+  it("checks in a walk-in found by search", async () => {
+    const fetchMock = renderPage(<OpdQueuePage />, grants, ROUTES);
+    fireEvent.click(await screen.findByRole("button", { name: "Walk in for Ravi Kumar" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Check in" })).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText(/Find the patient/), { target: { value: "Asha" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Search" }));
+    fireEvent.click(await within(dialog).findByLabelText(/Asha Kumar · MRN-00000007/));
+    fireEvent.change(within(dialog).getByLabelText(/Reason/), { target: { value: "Fever" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Check in" }));
+    await vi.waitFor(() => expect(sent(fetchMock, "/appointments/walk-in/")).toBeTruthy());
+    expect(sent(fetchMock, "/appointments/walk-in/")).toEqual({
+      patient: "pt-asha",
+      staff: "st-ravi",
+      department: "dep-1",
+      kind: "new",
+      reason: "Fever",
+    });
+  });
+
+  it("asks for today on the facility's clock, not the browser's", async () => {
+    const fetchMock = renderPage(<OpdQueuePage />, grants, ROUTES);
+    await screen.findByRole("table", { name: "Patients of Ravi Kumar" });
+    const asked = fetchMock.mock.calls.map(([url]) => String(url)).find((url) => url.includes("/appointments/queue/"));
+    expect(asked).not.toContain("date=");
+    expect(screen.getByLabelText("Day")).toHaveValue(TODAY); // the day the server answered for
+  });
+
+  it("the head of department sees the queue and moves nothing; another day is shown as it was", async () => {
+    renderPage(<OpdQueuePage />, ["appointments.view"], {
+      ...ROUTES,
+      "/appointments/queue/": { ...QUEUE, can_manage: false, is_today: false },
+    });
+    await screen.findByRole("table", { name: "Patients of Ravi Kumar" });
+    expect(screen.getByText(/is shown as it was/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Call next/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Check in/ })).not.toBeInTheDocument();
   });
 });

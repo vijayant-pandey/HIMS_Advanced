@@ -2,7 +2,7 @@
 
 # API endpoints (contracts index)
 
-291 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
+299 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
 
 ## [Hospital settings, logo and letterhead](organizations.md)
 
@@ -103,13 +103,21 @@
 
 | Method and path | Access | Requirements |
 |---|---|---|
-| [`GET /api/v1/appointments/`](scheduling.md#get-api-v1-appointments) | `appointments.view` | HIMS-OPD-002 |
-| [`POST /api/v1/appointments/`](scheduling.md#post-api-v1-appointments) | `appointments.manage` | HIMS-OPD-002 |
-| [`GET /api/v1/appointments/day/`](scheduling.md#get-api-v1-appointments-day) | `appointments.view` | HIMS-OPD-002 |
-| [`GET /api/v1/appointments/to-rebook/`](scheduling.md#get-api-v1-appointments-to-rebook) | `appointments.view` | HIMS-OPD-002 |
-| [`GET /api/v1/appointments/{pk}/`](scheduling.md#get-api-v1-appointments-pk) | `appointments.view` | HIMS-OPD-002 |
-| [`POST /api/v1/appointments/{pk}/cancel/`](scheduling.md#post-api-v1-appointments-pk-cancel) | `appointments.manage` | HIMS-OPD-002 |
-| [`POST /api/v1/appointments/{pk}/reschedule/`](scheduling.md#post-api-v1-appointments-pk-reschedule) | `appointments.manage` | HIMS-OPD-002 |
+| [`GET /api/v1/appointments/`](scheduling.md#get-api-v1-appointments) | `appointments.view` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/`](scheduling.md#post-api-v1-appointments) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/call-next/`](scheduling.md#post-api-v1-appointments-call-next) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`GET /api/v1/appointments/day/`](scheduling.md#get-api-v1-appointments-day) | `appointments.view` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`GET /api/v1/appointments/queue/`](scheduling.md#get-api-v1-appointments-queue) | `appointments.view` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`GET /api/v1/appointments/to-rebook/`](scheduling.md#get-api-v1-appointments-to-rebook) | `appointments.view` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/walk-in/`](scheduling.md#post-api-v1-appointments-walk-in) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`GET /api/v1/appointments/{pk}/`](scheduling.md#get-api-v1-appointments-pk) | `appointments.view` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/{pk}/cancel/`](scheduling.md#post-api-v1-appointments-pk-cancel) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/{pk}/check-in/`](scheduling.md#post-api-v1-appointments-pk-check-in) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/{pk}/left/`](scheduling.md#post-api-v1-appointments-pk-left) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/{pk}/no-show/`](scheduling.md#post-api-v1-appointments-pk-no-show) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/{pk}/reschedule/`](scheduling.md#post-api-v1-appointments-pk-reschedule) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/{pk}/seen/`](scheduling.md#post-api-v1-appointments-pk-seen) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
+| [`POST /api/v1/appointments/{pk}/undo-no-show/`](scheduling.md#post-api-v1-appointments-pk-undo-no-show) | `appointments.manage` | HIMS-OPD-002, HIMS-OPD-003 |
 | [`GET /api/v1/availability/`](scheduling.md#get-api-v1-availability) | `appointments.view` | HIMS-OPD-001 |
 | [`GET /api/v1/doctor-schedules/`](scheduling.md#get-api-v1-doctor-schedules) | `appointments.view` | HIMS-OPD-001, HIMS-OPD-002 |
 | [`POST /api/v1/doctor-schedules/`](scheduling.md#post-api-v1-doctor-schedules) | `schedules.manage` | HIMS-OPD-001, HIMS-OPD-002 |

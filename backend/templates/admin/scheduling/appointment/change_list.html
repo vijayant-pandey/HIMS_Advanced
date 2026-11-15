@@ -1,6 +1,7 @@
 {% extends "admin/change_list.html" %}
-{# Link to the patients to move, as on the Appointments page (HIMS-OPD-002). #}
+{# Links to the patients to move (HIMS-OPD-002) and to today's OPD queue (HIMS-OPD-003). #}
 {% block object-tools-items %}
+  <li><a href="{% url 'admin:scheduling_appointment_queue' %}">OPD queue</a></li>
   <li><a href="{% url 'admin:scheduling_appointment_to_move' %}">Appointments to move</a></li>
   {{ block.super }}
 {% endblock %}

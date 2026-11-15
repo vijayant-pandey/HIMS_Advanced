@@ -1,11 +1,15 @@
-"""Shared by the doctor schedule tests (HIMS-OPD-001). All data is synthetic."""
+"""Shared by the doctor schedule, appointment and OPD queue tests (HIMS-OPD-001, -002, -003).
+All data is synthetic."""
 
 from datetime import time, timedelta
 
 import pytest
 
 from apps.facilities.models import Department, DepartmentHours
+from apps.numbering.services import ensure_default_schemes
 from apps.organizations.dates import hospital_today
+from apps.patients.services import register_patient
+from apps.scheduling import services
 from apps.staff.models import Designation, StaffDepartmentAssignment, StaffMember
 
 _n = iter(range(1, 10_000))
@@ -114,3 +118,61 @@ def next_weekday(weekday: int, *, after=None):
     while day.weekday() != weekday:
         day += timedelta(days=1)
     return day
+
+
+# --- Appointments and the OPD queue (HIMS-OPD-002, HIMS-OPD-003) --------------------------------
+
+ALL_DAYS = range(7)
+
+
+@pytest.fixture
+def ravi(doctor, department_a):
+    return doctor(department_a, given="Ravi")
+
+
+@pytest.fixture
+def mohan(doctor, department_a):
+    return doctor(department_a, given="Mohan")
+
+
+@pytest.fixture
+def sessions(ravi, mohan, department_a):
+    """Every day 09:00-13:00 for both doctors, 10-minute slots; Ravi allows one extra booking."""
+    for staff, extra in ((ravi, 1), (mohan, 0)):
+        services.add_sessions(
+            actor=None,
+            staff=staff,
+            department=department_a,
+            weekdays=ALL_DAYS,
+            start_time=time(9),
+            end_time=time(13),
+            valid_from=hospital_today(),
+            extra_bookings_allowed=extra,
+        )
+
+
+@pytest.fixture
+def desk(make_user, system_roles, facility_a, organization):
+    ensure_default_schemes(organization)
+    return make_user(
+        role=system_roles["receptionist"], facility=facility_a, display_name="Synthetic Desk"
+    )
+
+
+@pytest.fixture
+def patient(desk, facility_a):
+    def factory(given="Asha", family="Kumar"):
+        return register_patient(
+            actor=desk,
+            facility=facility_a,
+            data={
+                "given_name": given,
+                "family_name": family,
+                "sex": "female",
+                "age_years": 40,
+                "has_no_phone": True,
+            },
+            privacy_notice="given",
+        )
+
+    return factory

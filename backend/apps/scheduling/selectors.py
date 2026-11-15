@@ -279,3 +279,48 @@ def booked_during(staff_id, first: date, last: date) -> int:
         status__in=ACTIVE_STATUSES,
         starts_at__gte=timezone.now(),
     ).count()
+
+
+# --- The OPD queue (HIMS-OPD-003) --------------------------------------------------------------
+
+
+def queue_day(department, day: date, *, details: bool) -> dict:
+    """One department's OPD queue on one day: the doctors with a session or a patient that day,
+    and every appointment of the day there (waiting by token, then those still to come by time).
+    Reads the doctors' day through ``appointment_staff_day_idx``, as the Appointments page does."""
+    doctors = _doctors(department, day, day)
+    staff_ids = [d["staff"].pk for d in doctors]
+    plan = availability.plan_for(
+        staff_ids=staff_ids, first=day, last=day, department=department, details=details
+    )
+    appointments = list(
+        appointment_queryset()
+        .filter(staff_id__in=staff_ids, local_date=day, department=department)
+        .order_by("token_number", "starts_at", "created_at")
+    )
+    with_patients = {a.staff_id for a in appointments}
+    rows = []
+    for d in doctors:
+        staff_id = d["staff"].pk
+        sessions = plan.on(staff_id, day)
+        if not sessions and staff_id not in with_patients:
+            continue  # no OPD here that day
+        rows.append(
+            {
+                "staff_id": staff_id,
+                "name": _name(d["staff"]),
+                "designation": d["designation"],
+                "leave_asked": (staff_id, day) in plan.leave_asked,
+                "sessions": [availability.session_out(s) for s in sessions],
+            }
+        )
+    return {
+        "department_id": department.pk,
+        "department_name": department.name,
+        "facility_id": department.facility_id,
+        "facility_name": department.facility.name,
+        "day": day,
+        "is_today": day == hospital_today(department.facility),
+        "doctors": rows,
+        "appointments": appointments,
+    }

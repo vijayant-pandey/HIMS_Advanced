@@ -337,6 +337,10 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "cancel_reason_label",
             "cancel_note",
             "cancelled_at",
+            "token_number",
+            "checked_in_at",
+            "called_at",
+            "seen_at",
             "version",
         ]
         read_only_fields = fields
@@ -429,3 +433,47 @@ class DepartmentDaySerializer(serializers.Serializer):
 class ToRebookSerializer(serializers.Serializer):
     appointment = AppointmentSerializer()
     why = serializers.CharField(help_text="Why it cannot be seen at its time")
+
+
+# --- The OPD queue (HIMS-OPD-003) --------------------------------------------------------------
+
+
+class WalkInSerializer(serializers.Serializer):
+    patient = serializers.UUIDField()
+    staff = serializers.UUIDField(help_text="The doctor")
+    department = serializers.UUIDField()
+    kind = serializers.ChoiceField(choices=Appointment.Kind.choices, default="new")
+    reason = serializers.CharField(
+        max_length=200, required=False, allow_blank=True, default="", help_text="Short; no history"
+    )
+
+
+class QueueStepSerializer(serializers.Serializer):
+    version = serializers.IntegerField()
+
+
+class LeftUnseenSerializer(serializers.Serializer):
+    version = serializers.IntegerField()
+    note = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+
+
+class CallNextSerializer(serializers.Serializer):
+    department = serializers.UUIDField()
+    staff = serializers.UUIDField(help_text="The doctor")
+
+
+class CalledSerializer(serializers.Serializer):
+    called = AppointmentSerializer(allow_null=True, help_text="Now with the doctor")
+    seen = AppointmentSerializer(many=True, help_text="Were with the doctor: now seen")
+
+
+class QueueSerializer(serializers.Serializer):
+    department_id = serializers.UUIDField()
+    department_name = serializers.CharField()
+    facility_id = serializers.UUIDField()
+    facility_name = serializers.CharField()
+    day = serializers.DateField()
+    is_today = serializers.BooleanField(help_text="Patients are checked in only today")
+    doctors = DayDoctorSerializer(many=True, help_text="Doctors with a session or a patient")
+    appointments = AppointmentSerializer(many=True, help_text="Waiting first, by token")
+    can_manage = serializers.BooleanField(help_text="May check in, walk in and move the queue")

@@ -1,6 +1,6 @@
-"""Artifact A for doctor schedules and appointments: the rules the database itself keeps
-(HIMS-OPD-001, HIMS-OPD-002 and HIMS-DATA-004; spec 28.8, "automated tests for critical
-invariants").
+"""Artifact A for doctor schedules, appointments and the OPD queue: the rules the database itself
+keeps (HIMS-OPD-001, HIMS-OPD-002, HIMS-OPD-003 and HIMS-DATA-004; spec 28.8, "automated tests
+for critical invariants").
 
 The services check every rule first and give a plain message. These tests go past the services,
 straight to the database, and expect it to refuse. ``RULES`` names every constraint on the
@@ -51,6 +51,12 @@ RULES = {
     "appointments_rescheduled_from_id_key": "test_appointment_shapes",
     "appointments_version_check": "test_appointment_shapes",
     "appointment_no_double_booking": "test_two_receptionists_cannot_double_book_a_doctor",
+    # The OPD queue (HIMS-OPD-003).
+    "appointment_checked_in": "test_queue_shapes",
+    "appointment_called_and_seen": "test_queue_shapes",
+    "appointment_walk_in": "test_queue_shapes",
+    "appointments_token_number_check": "test_queue_shapes",
+    "appointment_one_token": "test_one_token_number_per_doctor_and_day",
 }
 
 
@@ -265,6 +271,55 @@ def test_two_receptionists_cannot_double_book_a_doctor(booked):
         _copy(
             first, patient_id=other.pk, status="booked", cancelled_at=None, cancel_reason=""
         ).save()
+
+
+@pytest.mark.django_db
+def test_queue_shapes(booked):
+    first, _ = booked
+    rows = Appointment.objects.filter(pk=first.pk)
+    now = timezone.now()
+    arrived = {"status": "checked_in", "token_number": 1, "checked_in_at": now}
+    for change in (
+        {"status": "checked_in"},  # checked in without a token
+        {"token_number": 1},  # a token while still booked
+        {"status": "checked_in", "token_number": 1},  # ... without when
+        {"status": "no_show", "token_number": 1, "checked_in_at": now},  # did not come, yet came
+        {**arrived, "token_number": -1},
+        {**arrived, "status": "in_consultation"},  # with the doctor, never called in
+        {**arrived, "status": "completed", "called_at": now},  # seen, without when
+        {"source": "walk_in"},  # a walk-in that was booked, not checked in
+        {**arrived, "source": "walk_in", "is_extra": True},  # a walk-in over the slots
+    ):
+        with _refused(), transaction.atomic():
+            rows.update(**change)
+    with transaction.atomic():  # checked in, called in, seen, then still kept if it was left
+        rows.update(**arrived)
+        rows.update(status="in_consultation", called_at=now)
+        rows.update(status="completed", seen_at=now)
+
+
+@pytest.mark.django_db
+def test_one_token_number_per_doctor_and_day(booked):
+    """As if two front desks gave the same token at the same moment, past the service's lock."""
+    first, other = booked
+    now = timezone.now()
+    arrived = {"status": "checked_in", "token_number": 1, "checked_in_at": now}
+    Appointment.objects.filter(pk=first.pk).update(**arrived)
+    later = {"starts_at": first.ends_at, "ends_at": first.ends_at + timedelta(minutes=10)}
+    with _refused(), transaction.atomic():
+        _copy(first, patient_id=other.pk, **later, **arrived).save()
+    with transaction.atomic():  # the next number, or the same number another day, is fine
+        _copy(first, patient_id=other.pk, **later, **{**arrived, "token_number": 2}).save()
+        _copy(
+            first,
+            patient_id=other.pk,
+            starts_at=first.starts_at + timedelta(days=7),
+            ends_at=first.ends_at + timedelta(days=7),
+            local_date=first.local_date + timedelta(days=7),
+            **arrived,
+        ).save()
+        # A walk-in takes no slot: it may overlap a booked appointment's time.
+        _copy(first, patient_id=other.pk, source="walk_in", **{**arrived, "token_number": 3}).save()
 
 
 @pytest.mark.django_db

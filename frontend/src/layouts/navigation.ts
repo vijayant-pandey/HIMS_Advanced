@@ -32,6 +32,8 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/rota", label: "Rota", permission: "rota.view" },
   // Booking patients into doctors' free slots (HIMS-OPD-002).
   { to: "/appointments", label: "Appointments", permission: "appointments.view" },
+  // Today's patients by token: check-in, walk-ins, call next (HIMS-OPD-003).
+  { to: "/opd-queue", label: "OPD queue", permission: "appointments.view" },
   // Doctors' OPD sessions and free slots (HIMS-OPD-001).
   { to: "/doctor-schedules", label: "Doctor schedules", permission: "appointments.view" },
   { to: "/leave", label: "Leave", permission: "leave.approve" },

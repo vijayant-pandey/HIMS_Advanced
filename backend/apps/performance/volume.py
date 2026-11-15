@@ -407,7 +407,8 @@ def _opd(organization, built: dict, n: dict) -> dict[str, int]:
 def _appointments(organization, built: dict, n: dict, tag: str) -> int:
     """About two years of appointments, five a doctor a day, the last four weeks still to come.
     Past ones completed (one in ten cancelled, one in twenty did not come); future ones booked
-    (one in ten cancelled). A doctor's slots never overlap, as the database requires."""
+    (one in ten cancelled). A doctor's slots never overlap, as the database requires. Completed
+    ones were checked in with the doctor's token for the day, called in and seen (HIMS-OPD-003)."""
     from apps.organizations.dates import hospital_timezone
     from apps.scheduling.models import Appointment
 
@@ -441,6 +442,7 @@ def _appointments(organization, built: dict, n: dict, tag: str) -> int:
         "AT TIME ZONE %(zone)s)"
     )
     cancelled = "g %% 10 = 3"
+    completed = f"NOT ({cancelled}) AND {day} < current_date AND g %% 20 <> 7"
     return insert_series(
         Appointment,
         total,
@@ -459,6 +461,10 @@ def _appointments(organization, built: dict, n: dict, tag: str) -> int:
             "kind": "CASE WHEN g %% 3 = 0 THEN 'follow_up' ELSE 'new' END",
             "status": f"CASE WHEN {cancelled} THEN 'cancelled' WHEN {day} >= current_date "
             "THEN 'booked' WHEN g %% 20 = 7 THEN 'no_show' ELSE 'completed' END",
+            "token_number": f"CASE WHEN {completed} THEN 1 + ({k} %% %(per_day)s) END",
+            "checked_in_at": f"CASE WHEN {completed} THEN {starts} - interval '15 minutes' END",
+            "called_at": f"CASE WHEN {completed} THEN {starts} END",
+            "seen_at": f"CASE WHEN {completed} THEN {starts} + interval '10 minutes' END",
             "reason": "'Synthetic visit'",
             "booked_by_id": "(%(users)s::uuid[])[1 + (g %% %(n_users)s)]",
             "cancel_reason": f"CASE WHEN {cancelled} THEN 'patient_request' ELSE '' END",

@@ -726,6 +726,98 @@ paths:
               schema:
                 $ref: '#/components/schemas/Appointment'
           description: ''
+  /api/v1/appointments/{id}/check-in/:
+    post:
+      operationId: appointments_check_in_create
+      description: |-
+        The patient has come: they get the doctor's next token for the day. On the
+        appointment's day only (also when marked "did not come": the patient came late).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueueStepRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/v1/appointments/{id}/left/:
+    post:
+      operationId: appointments_left_create
+      description: A waiting patient left before being seen (kept on record with their
+        token).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeftUnseenRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/v1/appointments/{id}/no-show/:
+    post:
+      operationId: appointments_no_show_create
+      description: |-
+        A booked patient did not come (once their time has passed). The job marks the rest
+        when their session ends.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueueStepRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
   /api/v1/appointments/{id}/reschedule/:
     post:
       operationId: appointments_reschedule_create
@@ -757,6 +849,89 @@ paths:
               schema:
                 $ref: '#/components/schemas/Appointment'
           description: ''
+  /api/v1/appointments/{id}/seen/:
+    post:
+      operationId: appointments_seen_create
+      description: The doctor is done with the patient now with them.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueueStepRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/v1/appointments/{id}/undo-no-show/:
+    post:
+      operationId: appointments_undo_no_show_create
+      description: |-
+        Booked again: marked "did not come" by mistake, the same day before the session
+        ends.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueueStepRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/v1/appointments/call-next/:
+    post:
+      operationId: appointments_call_next_create
+      description: |-
+        Call the doctor's lowest waiting token in to the doctor; whoever was with the doctor
+        is marked seen.
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallNextRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Called'
+          description: ''
   /api/v1/appointments/day/:
     get:
       operationId: appointments_day_retrieve
@@ -785,6 +960,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/DepartmentDay'
           description: ''
+  /api/v1/appointments/queue/:
+    get:
+      operationId: appointments_queue_retrieve
+      description: |-
+        One department's OPD queue: each doctor's patients of the day, waiting by token, with
+        the doctor, seen, still to come, did not come.
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+        description: 'The day (default: today)'
+      - in: query
+        name: department
+        schema:
+          type: string
+        required: true
+      tags:
+      - appointments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+          description: ''
   /api/v1/appointments/to-rebook/:
     get:
       operationId: appointments_to_rebook_list
@@ -810,6 +1013,29 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ToRebook'
+          description: ''
+  /api/v1/appointments/walk-in/:
+    post:
+      operationId: appointments_walk_in_create
+      description: |-
+        A patient without an appointment, checked in at once with the doctor's next token
+        (the doctor must have an OPD session in the department today). Takes no slot.
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalkInRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
           description: ''
   /api/v1/audit-events/:
     get:
@@ -8492,15 +8718,39 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        token_number:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: The doctor's token for the day, given at check-in
+        checked_in_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        called_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: When the patient was called in to the doctor
+        seen_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: When the doctor was done
         version:
           type: integer
           readOnly: true
       required:
       - booked_by_name
+      - called_at
       - cancel_note
       - cancel_reason
       - cancel_reason_label
       - cancelled_at
+      - checked_in_at
       - created_at
       - department_id
       - department_name
@@ -8518,6 +8768,7 @@ components:
       - reason
       - rescheduled_from_id
       - rescheduled_to_id
+      - seen_at
       - source
       - source_label
       - staff_id
@@ -8526,6 +8777,7 @@ components:
       - status
       - status_label
       - time
+      - token_number
       - version
     AppointmentCancelChoiceEnum:
       enum:
@@ -8543,12 +8795,14 @@ components:
       - hospital
       - doctor_unavailable
       - rescheduled
+      - left_unseen
       type: string
       description: |-
         * `patient_request` - The patient asked
         * `hospital` - The hospital cancelled
         * `doctor_unavailable` - The doctor is not available
         * `rescheduled` - Moved to another time
+        * `left_unseen` - Left before being seen
     AppointmentKindEnum:
       enum:
       - new
@@ -8561,10 +8815,12 @@ components:
       enum:
       - front_desk
       - phone
+      - walk_in
       type: string
       description: |-
         * `front_desk` - At the front desk
         * `phone` - By phone
+        * `walk_in` - Walk-in
     AppointmentStatusEnum:
       enum:
       - booked
@@ -9473,6 +9729,35 @@ components:
       - count
       - prefix
       - room
+    CallNextRequest:
+      type: object
+      properties:
+        department:
+          type: string
+          format: uuid
+        staff:
+          type: string
+          format: uuid
+          description: The doctor
+      required:
+      - department
+      - staff
+    Called:
+      type: object
+      properties:
+        called:
+          allOf:
+          - $ref: '#/components/schemas/Appointment'
+          nullable: true
+          description: Now with the doctor
+        seen:
+          type: array
+          items:
+            $ref: '#/components/schemas/Appointment'
+          description: 'Were with the doctor: now seen'
+      required:
+      - called
+      - seen
     CancelAppointmentRequest:
       type: object
       properties:
@@ -12890,6 +13175,17 @@ components:
         * `compensatory` - Compensatory off
         * `unpaid` - Unpaid leave
         * `other` - Other
+    LeftUnseenRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - version
     LegalHold:
       type: object
       properties:
@@ -16460,6 +16756,55 @@ components:
       - rows
       - table
       - table_rows
+    Queue:
+      type: object
+      properties:
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+        facility_id:
+          type: string
+          format: uuid
+        facility_name:
+          type: string
+        day:
+          type: string
+          format: date
+        is_today:
+          type: boolean
+          description: Patients are checked in only today
+        doctors:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayDoctor'
+          description: Doctors with a session or a patient
+        appointments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Appointment'
+          description: Waiting first, by token
+        can_manage:
+          type: boolean
+          description: May check in, walk in and move the queue
+      required:
+      - appointments
+      - can_manage
+      - day
+      - department_id
+      - department_name
+      - doctors
+      - facility_id
+      - facility_name
+      - is_today
+    QueueStepRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+      required:
+      - version
     ReasonRequest:
       type: object
       properties:
@@ -20046,6 +20391,32 @@ components:
         * `unverified` - Unverified
         * `verified` - Verified
         * `rejected` - Rejected
+    WalkInRequest:
+      type: object
+      properties:
+        patient:
+          type: string
+          format: uuid
+        staff:
+          type: string
+          format: uuid
+          description: The doctor
+        department:
+          type: string
+          format: uuid
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentKindEnum'
+          default: new
+        reason:
+          type: string
+          default: ''
+          description: Short; no history
+          maxLength: 200
+      required:
+      - department
+      - patient
+      - staff
     Ward:
       type: object
       properties:

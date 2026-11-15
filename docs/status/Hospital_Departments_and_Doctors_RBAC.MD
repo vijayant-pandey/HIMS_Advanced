@@ -590,3 +590,18 @@ administrators see appointments without booking. A **restricted record** is book
 cancelled only by people who may open it (medical records, emergency access); everyone else sees
 "Restricted record" and its MRN in appointment lists. The software supplier's support account never
 holds `appointments.view` or `appointments.manage` (patient data). Decisions log rows 41–44.
+
+## Update 2026-11-15, latest: the OPD queue (HIMS-OPD-003)
+
+No new permission and no role change. What the two appointment permissions now also cover:
+
+| Permission | Who holds it | Now also allows | Two-factor |
+|---|---|---|---|
+| `appointments.view` | As before | The **OPD queue**: each doctor's patients today by token (waiting, with the doctor, seen, still to come, did not come) | No |
+| `appointments.manage` | **Receptionist / front desk**, **OPD scheduler** | **Check in** (the doctor's next token), **walk-ins**, **Call next**, **Seen**, **Left**, **Did not come** and its undo | No |
+
+P0 part 03 gives "start consultation" and "finish" to the doctor (`encounters.manage`); visits do not
+exist yet, so until HIMS-CLIN-001 the front desk moves the queue (decisions log row 46). Checking in
+a **restricted** record's patient needs the right to open it, like booking; moving the queue does
+not (it shows nothing more). The hospital's job marks patients who did not come with no person
+(system). Decisions log rows 45–48.

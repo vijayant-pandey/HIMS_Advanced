@@ -1,10 +1,12 @@
-"""Doctor OPD schedules and appointments in the admin console (HIMS-OPD-001, HIMS-OPD-002;
-ADR-016).
+"""Doctor OPD schedules, appointments and the OPD queue in the admin console (HIMS-OPD-001,
+HIMS-OPD-002, HIMS-OPD-003; ADR-016).
 
 Sessions, exceptions and appointments go through the same services as the app, so every rule
 applies here too, and each change is in the audit log. Days and hours are never edited
 afterwards: end a session and add a new one, or cancel an exception and record it again. An
-appointment is booked, moved (its own page) or cancelled (actions), never edited.
+appointment is booked, moved (its own page) or cancelled (actions), never edited. On the day,
+patients are checked in, marked seen, left or did not come (actions); the **OPD queue** page calls
+the next patient and checks in walk-ins.
 """
 
 from datetime import datetime, timedelta
@@ -22,11 +24,12 @@ from django.urls import path, reverse
 from apps.facilities.models import Department
 from apps.organizations.dates import hospital_timezone, hospital_today
 from apps.patients import restricted
+from apps.patients.models import Patient
 from apps.staff.models import StaffMember
 from common.admin.options import DepartmentListFilter, HimsModelAdmin, LargeTableAdminMixin
 from common.exceptions import DomainError
 
-from . import booking, selectors, services
+from . import booking, opd_queue, selectors, services
 from .models import Appointment, DoctorSchedule, ScheduleException
 
 
@@ -431,11 +434,34 @@ class MoveForm(forms.Form):
 
 
 class ToMoveForm(forms.Form):
+    """Choose a department (the Appointments to move and the OPD queue pages)."""
+
     department = forms.ModelChoiceField(queryset=Department.objects.none())
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["department"].queryset = _departments()
+
+
+class WalkInForm(forms.Form):
+    """A walk-in on the console's OPD queue page (HIMS-OPD-003)."""
+
+    mrn = forms.CharField(label="Patient's MRN", max_length=40, help_text="The exact MRN.")
+    staff = forms.ModelChoiceField(queryset=StaffMember.objects.none(), label="Doctor")
+    kind = forms.ChoiceField(choices=Appointment.Kind.choices, label="Visit")
+    reason = forms.CharField(
+        max_length=200, required=False, help_text="Optional. Short; no detailed history."
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["staff"].queryset = _doctors()
+
+    def clean_mrn(self):
+        patient = Patient.objects.filter(mrn=self.cleaned_data["mrn"].strip()).first()
+        if patient is None:
+            raise ValidationError("No patient has this MRN.")
+        return patient
 
 
 @admin.register(Appointment)
@@ -445,17 +471,20 @@ class AppointmentAdmin(LargeTableAdminMixin, HimsModelAdmin):
     list_display = (
         "local_date",
         "time",
+        "token_number",
         "patient_shown",
         "staff",
         "department",
         "status",
         "kind",
+        "source",
         "is_extra",
     )
     list_select_related = ("patient", "staff", "department__facility", "facility")
     list_filter = (
         "status",
         "kind",
+        "source",
         "facility",
         ("department", DepartmentListFilter),
         ("starts_at", admin.DateFieldListFilter),
@@ -464,7 +493,16 @@ class AppointmentAdmin(LargeTableAdminMixin, HimsModelAdmin):
     search_help_text = "The patient's exact MRN."
     ordering = ("-starts_at",)  # appointment_start_idx
     autocomplete_fields = ("patient", "staff")
-    actions = ["cancel_patient_request", "cancel_hospital", "cancel_doctor_unavailable"]
+    actions = [
+        "cancel_patient_request",
+        "cancel_hospital",
+        "cancel_doctor_unavailable",
+        "check_in",
+        "mark_seen",
+        "left_unseen",
+        "mark_no_show",
+        "undo_no_show",
+    ]
     change_form_template = "admin/scheduling/appointment/change_form.html"
     change_list_template = "admin/scheduling/appointment/change_list.html"
 
@@ -491,6 +529,11 @@ class AppointmentAdmin(LargeTableAdminMixin, HimsModelAdmin):
         "cancel_note",
         "cancelled_by",
         "cancelled_at",
+        "token_number",
+        "checked_in_at",
+        "checked_in_by",
+        "called_at",
+        "seen_at",
         "version",
     )
 
@@ -582,6 +625,11 @@ class AppointmentAdmin(LargeTableAdminMixin, HimsModelAdmin):
                 "to-move/",
                 self.admin_site.admin_view(self.to_move_view),
                 name="scheduling_appointment_to_move",
+            ),
+            path(
+                "queue/",
+                self.admin_site.admin_view(self.queue_view),
+                name="scheduling_appointment_queue",
             ),
             *super().get_urls(),
         ]
@@ -689,3 +737,127 @@ class AppointmentAdmin(LargeTableAdminMixin, HimsModelAdmin):
     @admin.action(description="Cancel selected: the doctor is not available")
     def cancel_doctor_unavailable(self, request, queryset):
         self._cancel(request, queryset, Appointment.CancelReason.DOCTOR_UNAVAILABLE)
+
+    # --- The OPD queue (HIMS-OPD-003) -------------------------------------------------------
+
+    def _step(self, request, queryset, service, done: str, *, opening=False):
+        for appointment in queryset.select_related("patient"):
+            try:
+                if opening:
+                    restricted.opening(request.user, appointment.patient)
+                service(
+                    actor=request.user,
+                    appointment_id=appointment.pk,
+                    version=appointment.version,
+                    request=request,
+                )
+                self.message_user(request, f"{appointment.patient.mrn}: {done}.")
+            except DomainError as exc:
+                self.message_user(
+                    request, f"{appointment.patient.mrn}: {exc.detail}", messages.ERROR
+                )
+
+    @admin.action(description="Check in selected (today: each gets the doctor's next token)")
+    def check_in(self, request, queryset):
+        self._step(request, queryset, opd_queue.check_in, "checked in", opening=True)
+
+    @admin.action(description="Mark selected: seen by the doctor")
+    def mark_seen(self, request, queryset):
+        self._step(request, queryset, opd_queue.mark_seen, "seen")
+
+    @admin.action(description="Mark selected: left before being seen")
+    def left_unseen(self, request, queryset):
+        self._step(request, queryset, opd_queue.left_unseen, "left before being seen")
+
+    @admin.action(description="Mark selected: the patient did not come")
+    def mark_no_show(self, request, queryset):
+        self._step(request, queryset, opd_queue.mark_no_show, "marked as not come")
+
+    @admin.action(description="Undo did not come (the same day, before the session ends)")
+    def undo_no_show(self, request, queryset):
+        self._step(request, queryset, opd_queue.undo_no_show, "booked again")
+
+    def _queue_post(self, request, department):
+        """Call next (one doctor) or a walk-in; returns the walk-in form (with its errors)."""
+        walk_in = WalkInForm(request.POST if "walk_in" in request.POST else None)
+        try:
+            if "call_next" in request.POST:
+                staff = get_object_or_404(_doctors(), pk=request.POST["call_next"])
+                result = opd_queue.call_next(
+                    actor=request.user, staff=staff, department=department, request=request
+                )
+                called = result["called"]
+                self.message_user(
+                    request,
+                    f"Token {called.token_number} called in to {staff}."
+                    if called
+                    else f"{staff}: the patient with the doctor is seen; nobody is waiting.",
+                )
+            elif walk_in.is_valid():
+                data = walk_in.cleaned_data
+                restricted.opening(request.user, data["mrn"])
+                created = opd_queue.walk_in(
+                    actor=request.user,
+                    patient=data["mrn"],
+                    staff=data["staff"],
+                    department=department,
+                    kind=data["kind"],
+                    reason=data.get("reason") or "",
+                    request=request,
+                )
+                self.message_user(
+                    request, f"{data['mrn'].mrn}: checked in, token {created.token_number}."
+                )
+                walk_in = WalkInForm()
+        except DomainError as exc:
+            self.message_user(request, str(exc.detail), messages.ERROR)
+        return walk_in
+
+    def queue_view(self, request):
+        """Today's OPD queue in one department, as on the OPD queue page: call the next patient
+        for a doctor, check in a walk-in. Check-in and the rest are actions on the list."""
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        form = ToMoveForm(request.GET or None)
+        walk_in = WalkInForm()
+        data = None
+        if form.is_valid():
+            department = form.cleaned_data["department"]
+            if request.method == "POST":
+                if not self.has_change_permission(request):
+                    raise PermissionDenied
+                walk_in = self._queue_post(request, department)
+            data = selectors.queue_day(
+                department, hospital_today(department.facility), details=True
+            )
+            if not restricted.may_see_restricted(request.user):
+                for appointment in data["appointments"]:
+                    appointment.hide_patient = appointment.patient.is_restricted
+        doctors = []
+        for doctor in (data or {}).get("doctors", []):
+            mine = [a for a in data["appointments"] if a.staff_id == doctor["staff_id"]]
+            doctors.append(
+                {
+                    "staff_id": doctor["staff_id"],
+                    "name": doctor["name"],
+                    "hours": ", ".join(s["hours"] for s in doctor["sessions"]) or "No session",
+                    "rows": [
+                        {
+                            "appointment": a,
+                            "patient": self.patient_shown(a),
+                            "time": "Walk-in" if a.source == "walk_in" else self.time(a),
+                        }
+                        for a in mine
+                    ],
+                }
+            )
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "OPD queue",
+            "form": form,
+            "walk_in": walk_in,
+            "doctors": doctors,
+            "shown": data is not None,
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/scheduling/appointment/queue.html", context)

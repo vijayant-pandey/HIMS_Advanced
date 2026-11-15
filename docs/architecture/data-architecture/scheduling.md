@@ -241,3 +241,109 @@ HIMS-OPD-004, only with the patient's email consent (D9) and without the special
 Check-in, tokens and the queue arrive (HIMS-OPD-003: the token's unique rule, the facility day
 index, the no-show job), reminders are sent (HIMS-OPD-004), clinics gain services or rooms
 (HIMS-OPD-005), a waitlist is approved (HIMS-OPD-006), or online booking (Phase 6).
+
+# Part 3: The OPD queue (HIMS-OPD-003)
+
+Phase 2 → Spec §4.6 → Slice 2B. Design: [P0 part 01 §4](../../p0/phase-2-patients/01-functional-requirements.md)
+(D10 tokens, D12 no-show), [part 02](../../p0/phase-2-patients/02-database-design.md) (`token_number`,
+`checked_in_at`) and [part 03](../../p0/phase-2-patients/03-state-machines.md) ("Appointment"); decision:
+[ADR-040](../../decisions/ADR-040-opd-queue-tokens-and-no-shows.md); how-to:
+[OPD queue](../../workflows/opd-queue.md). The **Artifact A review** (spec 28.8) of what the day of the
+visit adds to `appointments`, done with the ticket (HIMS-DATA-004).
+
+## Q1. What the table gains
+
+| Column / value | Meaning | Database rule |
+|---|---|---|
+| `token_number` | The doctor's token for the day, given at check-in (1, 2, 3 … in arrival order) | One per doctor and day (`appointment_one_token`, partial unique index on staff, local date, token where set); 0 or more (`appointments_token_number_check`) |
+| `checked_in_at`, `checked_in_by` | When and by whom the patient was checked in | With the token: checked in, with the doctor and seen have both; booked and did not come have neither; left before being seen keeps them (`appointment_checked_in`) |
+| `called_at`, `seen_at` | Called in to the doctor; the doctor done | With the doctor or seen means called in; seen means `seen_at` (`appointment_called_and_seen`) |
+| source `walk_in` | Came without an appointment | Checked in at once (a token) and never over the slots (`appointment_walk_in`); **left out of the no-double-booking rule** (it takes no slot) |
+| cancel reason `left_unseen` | A waiting patient left before being seen | As every cancellation: when and why (`appointment_cancelled`) |
+
+Not built from P0 part 02: the (facility, local date, status) index (Q4). The visit (encounter) and
+its number at check-in come with HIMS-CLIN-001.
+
+## Q2. Ownership
+
+`apps/scheduling/opd_queue.py` writes it (check-in, walk-in, call next, seen, left, did not come and
+undo, the job); the API, the admin console and the demo use the same functions. It reads the
+doctor's sessions for the day (availability, part 1) and locks the doctor's staff row as booking does.
+
+## Q3. Classification and access
+
+As part 2 (A3): Clinical. The queue shows who sees which doctor today, so it needs
+`appointments.view` for the department; moving it `appointments.manage`. Checking in or walking in a
+restricted record's patient needs the right to open the record; the queue shows others "Restricted
+record" and the MRN. The job's markings have no person.
+
+## Q4. Queries and indexes (checked at volume)
+
+| Query | Index | Volume check |
+|---|---|---|
+| One department's doctors' patients today, by token (the OPD queue) | `appointment_staff_day_idx` (staff, local date), as the Appointments page | `opd_queue` |
+| A doctor's last token today (for the next one) | `appointment_one_token` (staff, local date, token; checked-in only) or `appointment_staff_day_idx` | `opd_next_token` |
+| Booked appointments whose slot has ended (the no-show job, every 15 minutes) | `appointment_booked_end_idx` (end; booked only) | `opd_no_shows` |
+| The patient waiting or booked today (walk-in checks) | `appointment_patient_idx` (patient, start) | (as `patient_appointments`) |
+
+The screen measured: **OPD queue (one department today)**.
+
+## Q5. Lifecycle
+
+booked → checked in (token) → with the doctor → seen; checked in → left before being seen;
+booked → did not come (the job at the end of the session, or the front desk once the time has
+passed) → booked again (undo, before the session ends) or checked in (came late, the same day);
+walk-in: checked in from the start. Never deleted, never edited.
+
+## Q6. Transactions and concurrency
+
+- Check-in, walk-in and Call next lock the doctor's staff row: tokens are given one at a time, in
+  order; the partial unique index refuses a duplicate past the service.
+- The job takes at most 500 appointments a run, locks each (only its own row) and marks it only if
+  still booked, so a patient checked in a moment before is never marked; running it twice marks
+  nothing twice.
+- Each step carries `version`; walk-ins take an `Idempotency-Key`.
+
+## Q7. History
+
+Every step is an audit event (`appointment.checked_in`, `.walk_in`, `.called`, `.seen`,
+`.left_unseen`, `.no_show`, `.no_show_undone`) with the status before and after and the token; the
+row keeps the times.
+
+## Q8. Migrations
+
+| Migration | What | Notes |
+|---|---|---|
+| `scheduling.0003_opd_queue` | Five columns (all empty), two choices, the no-double-booking rule rebuilt without walk-ins, three checks, the token's partial unique index, the job's partial index | Added columns are nullable (no table rewrite); the table is new (HIMS-OPD-002), so no `CONCURRENTLY`. Rollback: `migrate scheduling 0002` (only where no walk-in exists) |
+
+## Q9. Invariant tests
+
+`test_schedule_invariants.py`: `test_queue_shapes` breaks the checked-in, called-and-seen, walk-in and
+token-range rules (checked in without a token or without when, a token while booked, did not come
+yet checked in, with the doctor never called, seen without when, a booked walk-in, a walk-in over the
+slots); `test_one_token_number_per_doctor_and_day` gives one doctor the same token twice the same day
+(refused), the next number or another day (allowed), and a walk-in at a booked patient's time
+(allowed: walk-ins take no slot).
+
+## Q10. Data flows
+
+None outside HIMS. The job runs from `config/schedule.py` (Celery beat or `run_scheduled_jobs`).
+
+## Q11. Review findings (2026-11-15)
+
+| # | Finding | Done |
+|---|---|---|
+| 1 | P0's facility day index: the queue is per department, as the Appointments page, and reads its doctors' day through their own index; the index made PostgreSQL read a doctor's week through it (HIMS-OPD-002) | Not added; HIMS-RPT-002 (OPD daily list per facility) measures it again |
+| 2 | A walk-in has no slot, but the no-double-booking rule would have refused it at a booked patient's time | The rule rebuilt to leave walk-ins out; the free slots ignore them; the invariants test books a walk-in over a booked time |
+| 3 | A token must never be given twice, even by two front desks at once | Given under the doctor's lock and refused twice by a partial unique index |
+| 4 | "Checked in" needs its token and time together; a CHECK passes on NULL | One CHECK with both shapes, each half broken by the test |
+| 5 | The job's first index, on the start (booked only), was read by the To move list (booked ones still to come) instead of its own, found by the demo hospitals' index check | On the end instead (`appointment_booked_end_idx`): a slot ends before its session, and the To move list never filters on the end |
+| 6 | Undoing "did not come" after the session ended: the job would mark it again within 15 minutes | Undo only before the session ends; a late patient is checked in instead (allowed from "did not come" the same day) |
+| 7 | "Today" on the screen came from the browser's clock; at night in another time zone (CI runs in UTC) it is a different day from the hospital's | The queue asks the server without a date and shows the day it answered for |
+| 8 | Volume check at one million appointments (first run): the queue 0.1 ms, a doctor's last token 0.1 ms (`appointment_one_token`), the no-show job 0.8 ms (`appointment_booked_end_idx`); the screen **OPD queue** p95 66 ms (target 300 ms) | Nothing to fix; 51 of 51 queries and 50 of 50 screens in time |
+
+## Q12. Re-review when
+
+Visits exist (HIMS-CLIN-001: check-in creates the visit and its number; the doctor starts and
+finishes it), the OPD daily list per facility is built (HIMS-RPT-002), or a waiting-room display is
+approved (HIMS-OPD-008).

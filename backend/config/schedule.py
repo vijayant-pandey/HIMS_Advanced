@@ -59,6 +59,12 @@ SCHEDULE: dict[str, dict] = {
         "task": "platform.audit_integrity_check",
         "every": timedelta(hours=24),
     },
+    # HIMS-OPD-003 (D12): booked patients not checked in by the end of their session.
+    "opd-no-shows": {
+        "task": "scheduling.mark_no_shows",
+        "every": timedelta(minutes=15),
+        "expires": 900,
+    },
 }
 
 # Plain-language names for the Background jobs page and the console.
@@ -76,6 +82,7 @@ LABELS: dict[str, str] = {
     "notification-retries": "Send failed messages again",
     "audit-seal-events": "Seal the audit log",
     "audit-integrity-check": "Check the audit log for tampering",
+    "opd-no-shows": "Mark booked OPD patients who did not come",
 }
 
 

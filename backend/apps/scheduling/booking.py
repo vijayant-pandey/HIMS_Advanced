@@ -41,11 +41,12 @@ APPOINTMENT_FIELDS = [
     "is_extra",
     "status",
 ]
-# Why the front desk cancels (moving an appointment records "rescheduled" itself).
+# Why the front desk cancels (moving an appointment records "rescheduled" itself, and a patient
+# leaving the OPD queue "left before being seen", HIMS-OPD-003).
 CANCEL_REASONS = [
     choice
     for choice in Appointment.CancelReason.choices
-    if choice[0] != Appointment.CancelReason.RESCHEDULED
+    if choice[0] not in (Appointment.CancelReason.RESCHEDULED, Appointment.CancelReason.LEFT_UNSEEN)
 ]
 
 

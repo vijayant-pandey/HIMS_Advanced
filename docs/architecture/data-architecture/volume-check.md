@@ -231,3 +231,32 @@ one doctor's week through it; it was left out (the OPD queue adds it, HIMS-OPD-0
 The doctor schedule screens held with a million appointments in their sessions: the week 63 ms, a
 doctor's free slots 20 ms. Final run: **48 of 48 queries** use their index in time and **49 of 49
 screens** are within target.
+
+## The OPD queue (HIMS-OPD-003)
+
+The OPD queue part of Artifact A for slice 2B ([review](scheduling.md#part-3-the-opd-queue-hims-opd-003);
+HIMS-DATA-004). Run on 2026-11-15 at scale 1 on the same developer PC (6,949,530 rows in all). The
+synthetic past appointments that were completed now carry the doctor's token for the day, the
+check-in, called-in and seen times (the new database rules require them); today's are booked, so the
+no-show job has its real work to find.
+
+Found before this run: the job's first index (on the start of booked appointments) was chosen by
+the demo hospitals' index check for the To move list; it is on the end instead
+(`appointment_booked_end_idx`). The first full run passed.
+
+| Query | Time | Index |
+|---|---|---|
+| OPD queue: one department's doctors' patients today, by token | 0.1 ms | `appointment_staff_day_idx` |
+| OPD queue: a doctor's last token today (for the next one) | 0.1 ms | `appointment_one_token` |
+| OPD no-show job: booked appointments whose slot has ended | 0.8 ms | `appointment_booked_end_idx` |
+| Appointments: one department's booked ones still to come (To move), again | 12.8 ms | `appointment_booked_dept_idx` (unchanged by the new index) |
+
+| Screen | p95 | Target | Database queries |
+|---|---|---|---|
+| OPD queue (one department today) | 66 ms | 300 ms | 18 |
+| Appointments (one department's day), again | 77 ms | 300 ms | 18 |
+| Appointments to move (one department), again | 286 ms | 500 ms | 17 |
+| Console: appointments, again | 116 ms | 500 ms | 8 |
+
+Final run: **51 of 51 queries** use their index in time and **50 of 50 screens** are within target.
+
