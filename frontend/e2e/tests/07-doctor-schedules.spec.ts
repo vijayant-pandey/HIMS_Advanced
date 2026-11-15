@@ -72,6 +72,8 @@ test("the doctor is away for part of tomorrow; the session keeps its other slots
   await expect(away).toContainText("1 session(s) are off");
   await away.getByRole("button", { name: "Done" }).click();
 
+  // Next week's sessions are wholly in the future at any hour CI runs; today's may have no slots left.
+  await admin.getByRole("button", { name: "Next week" }).click();
   await admin.getByRole("button", { name: /^09:00-13:00 .*, Ravi Doctor, .*: see the slots$/ }).first().click();
   const slots = admin.getByRole("dialog");
   await expect(slots.getByRole("list", { name: "Free slots" })).toBeVisible();

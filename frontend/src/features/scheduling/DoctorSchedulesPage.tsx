@@ -313,6 +313,8 @@ function SlotsDialog({ doctor, session, onClose }: { doctor: WeekDoctor; session
   const shown = day.data?.sessions.find(
     (s) => s.schedule_id === session.schedule_id && s.exception_id === session.exception_id,
   );
+  const upcoming = shown?.slots.filter((slot) => !slot.is_past) ?? [];
+  const passed = (shown?.slots.length ?? 0) - upcoming.length;
   return (
     <FormDialog
       title={`${doctor.name} · ${formatDay(session.day)} ${session.hours}`}
@@ -330,16 +332,18 @@ function SlotsDialog({ doctor, session, onClose }: { doctor: WeekDoctor; session
             {shown.extra_bookings_allowed > 0 ? `, up to ${shown.extra_bookings_allowed} extra bookings` : ""}.{" "}
             {shown.off.length > 0 && offText(shown)}
           </Typography>
-          <Box role="list" aria-label="Free slots" sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-            {shown.slots
-              .filter((slot) => !slot.is_past)
-              .map((slot) => (
+          {upcoming.length > 0 && (
+            <Box role="list" aria-label="Free slots" sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+              {upcoming.map((slot) => (
                 <Chip key={slot.starts_at} role="listitem" size="small" variant="outlined" label={slot.time} />
               ))}
-          </Box>
-          {shown.slots.some((slot) => slot.is_past) && (
+            </Box>
+          )}
+          {passed > 0 && (
             <Typography variant="body2">
-              {shown.slots.filter((slot) => slot.is_past).length} earlier slot(s) have already passed.
+              {upcoming.length > 0
+                ? `${passed} earlier slot(s) have already passed.`
+                : `All ${passed} slot(s) in this session have already passed.`}
             </Typography>
           )}
           {shown.slots.length === 0 && <Typography variant="body2">No free slots in this session.</Typography>}
