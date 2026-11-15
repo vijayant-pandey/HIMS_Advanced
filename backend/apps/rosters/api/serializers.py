@@ -194,6 +194,10 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
     conflicting_shifts = serializers.SerializerMethodField(
         help_text="Planned shifts the person would miss (only while waiting for a decision)"
     )
+    opd_bookings = serializers.SerializerMethodField(
+        help_text="OPD patients booked with the person during this leave, still to come (only "
+        "while waiting for a decision): approving it takes those sessions off"
+    )
 
     class Meta:
         model = LeaveRequest
@@ -220,6 +224,7 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             "cancelled_at",
             "cancel_reason",
             "conflicting_shifts",
+            "opd_bookings",
             "balance_after",
             "version",
         ]
@@ -242,6 +247,13 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
         if leave.status != LeaveRequest.Status.REQUESTED:
             return []
         return ShiftSerializer(conflicting_shifts(leave), many=True).data
+
+    def get_opd_bookings(self, leave) -> int:
+        from apps.scheduling.selectors import booked_during  # OPD builds on the rotas
+
+        if leave.status != LeaveRequest.Status.REQUESTED:
+            return 0
+        return booked_during(leave.staff_id, leave.start_date, leave.end_date)
 
 
 class LeaveCreateSerializer(serializers.Serializer):

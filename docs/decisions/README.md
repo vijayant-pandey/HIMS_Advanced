@@ -44,3 +44,4 @@ default, awaiting the named approver), **Superseded**.
 | [036](ADR-036-patient-id-numbers.md) | Patient ID numbers: encrypted, masked, found by a keyed fingerprint; one-per-person numbers refused on a second patient | Proposed |
 | [037](ADR-037-patient-search.md) | Patient search: exact numbers first (MRN, phone, ID number by fingerprint), then names by similar spelling (trigram) and by sound key; at most 50, audited | Proposed |
 | [038](ADR-038-opd-sessions-and-free-slots.md) | OPD sessions and their free slots are worked out from weekly sessions and exceptions (and leave approved on the Leave page), not stored | Proposed |
+| [039](ADR-039-appointments-no-double-booking.md) | Appointments: the database stops double booking (exclusion constraint); patients to move when a doctor cannot come are worked out, not flagged | Proposed |

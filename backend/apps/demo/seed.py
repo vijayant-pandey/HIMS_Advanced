@@ -27,6 +27,9 @@ What one hospital gets (``small`` shrinks it for the automated test):
 * doctor OPD schedules (HIMS-OPD-001, ``opd.py``): weekly sessions for the doctors of the
   outpatient departments, a doctor away for part of a day and for a conference, an extra
   Saturday session, a holiday; an OPD scheduler account per branch.
+* appointments (HIMS-OPD-002, ``appointments.py``): patients booked by the front desk into the
+  cardiologist's next session (new and follow-up, one over the slots), one moved later, one
+  cancelled, and an obstetrics patient whose doctor is then called away (listed under To move).
 
 The hosted Development hospital (Render and Neon, synthetic data only) can get the same records
 when asked for by name (``seed_demo_hospital --hosted-development``, 2026-11-13).
@@ -75,7 +78,7 @@ from apps.performance.services import run_index_check
 from apps.rosters import balances, staffing
 from apps.rosters.models import LeaveRequest, ShiftType
 from apps.rosters.services import add_shifts, approve_leave, reject_leave, request_leave
-from apps.scheduling.models import DoctorSchedule, ScheduleException
+from apps.scheduling.models import Appointment, DoctorSchedule, ScheduleException
 from apps.staff.catalogs import create_catalog_item
 from apps.staff.models import Designation, QualificationType, Specialty, StaffMember
 from apps.staff.privileges import grant_privilege
@@ -89,6 +92,7 @@ from apps.staff.services import (
 )
 from common.environment import LOCAL_ENVIRONMENTS
 
+from .appointments import add_appointment_examples
 from .hospitals import Hospital
 from .opd import add_opd_examples
 from .patients import DemoPatient, patients_for
@@ -1423,6 +1427,9 @@ def seed_hospital(
     ctx.notes += add_opd_examples(actor=ctx.admin)
     ctx.add("OPD weekly sessions", DoctorSchedule.objects.count())
     ctx.add("OPD exceptions (away, holiday, extra session)", ScheduleException.objects.count())
+    # Appointments (HIMS-OPD-002), booked by each branch's front desk into those sessions.
+    ctx.notes += add_appointment_examples(actor=ctx.admin, desks=ctx.desks)
+    ctx.add("appointments (booked, moved, cancelled)", Appointment.objects.count())
     # The Performance screen: an index check of the busy queries on this hospital's own
     # records, the patient search among them (HIMS-DATA-003). Reads only.
     run_index_check(trigger=PerformanceCheck.Trigger.COMMAND)

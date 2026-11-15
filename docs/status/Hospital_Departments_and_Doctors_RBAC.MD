@@ -575,3 +575,18 @@ Booking (`appointments.manage`) is added to the front desk and the scheduler wit
 Doctors see their own sessions on **My schedule** without any permission. The software supplier's
 support account never holds `appointments.view` (calendars will show booked patients). Decisions
 log rows 37–40.
+
+## Update 2026-11-15, later: appointments (HIMS-OPD-002)
+
+| Permission | Who holds it | What it allows | Two-factor |
+|---|---|---|---|
+| `appointments.manage` (new) | **Receptionist / front desk**, **OPD scheduler** | Book patients into doctors' free slots (or over the slots when the session allows it), move appointments to another time, cancel them with the reason | No |
+| `appointments.view` | As before (head of department, OPD scheduler, branch administrator, front desk, organization administrator) | Now also the booked patients: the day's appointments and the patients to move | No |
+| `patients.search` | Now also the **OPD scheduler** | The short patient list, to find whom to book (opening the full record stays with the front desk) | No |
+
+The **organization (hospital) administrator does not hold `appointments.manage`** (P0 part 04 matrix:
+"Book / check in" is the front desk's), as for registering patients; heads of department and
+administrators see appointments without booking. A **restricted record** is booked, moved or
+cancelled only by people who may open it (medical records, emergency access); everyone else sees
+"Restricted record" and its MRN in appointment lists. The software supplier's support account never
+holds `appointments.view` or `appointments.manage` (patient data). Decisions log rows 41–44.

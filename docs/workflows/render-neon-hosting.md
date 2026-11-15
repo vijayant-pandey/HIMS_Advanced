@@ -237,3 +237,26 @@ hospital that already has a doctor's session, so running it twice is harmless. T
 account (`opd.<branch>@`) is made only by a full fill; on Render, look at **Doctor schedules** as the
 head of department, the branch administrator or the front desk. How it works:
 [doctor schedules](doctor-schedules.md).
+
+**Update 2026-11-15, later (HIMS-OPD-002, appointments):** a hospital filled before this change gets
+the demo appointments with one more command, after the merge has deployed, `migrate` has run on Neon
+and the doctors' sessions are there (`add_demo_doctor_schedules`, above). From the HIMS folder (CMD
+window 2):
+
+```
+cd backend
+.venv\Scripts\activate.bat
+set HIMS_ENV_FILE=.env.hosted-dev
+set DJANGO_SETTINGS_MODULE=config.settings.production
+python manage.py add_demo_appointments --hosted-development
+set DJANGO_SETTINGS_MODULE=
+set HIMS_ENV_FILE=
+deactivate
+cd ..
+```
+
+It takes under a minute and ends with "Added … appointments" and the days to look at. It refuses a
+hospital that already has an appointment (running it twice is harmless) and one without doctors'
+sessions ("run add_demo_doctor_schedules first"). On Render, look at **Appointments** as the front
+desk (`frontdesk.<branch>@`: book, move, cancel) or the head of department (sees them). How it works:
+[appointments](appointments.md).

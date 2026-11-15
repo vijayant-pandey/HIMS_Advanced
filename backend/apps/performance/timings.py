@@ -43,6 +43,7 @@ _PATH_AREAS = (
     ("/api/v1/rota", STAFF),
     ("/api/v1/doctor-schedules", OPD),
     ("/api/v1/availability", OPD),
+    ("/api/v1/appointments", OPD),
     ("/api/v1/organization", HOSPITAL),
     ("/api/v1/facilities", HOSPITAL),
     ("/api/v1/departments", HOSPITAL),
@@ -113,6 +114,24 @@ ENDPOINTS: tuple[Endpoint, ...] = (
         "opd_availability",
         "A doctor's free slots on one day",
         lambda s: f"/api/v1/availability/?doctor={s['opd_staff_id']}&date={s['today']}",
+    ),
+    Endpoint(
+        "opd_day",
+        "Appointments (one department's day, with the booked patients)",
+        lambda s: (
+            f"/api/v1/appointments/day/?department={s['booked_department_id']}&date={s['today']}"
+        ),
+    ),
+    Endpoint(
+        "opd_to_move",
+        "Appointments to move (one department)",
+        lambda s: f"/api/v1/appointments/to-rebook/?department={s['booked_department_id']}",
+        SEARCH_MS,
+    ),
+    Endpoint(
+        "patient_appointments",
+        "A patient's upcoming appointments (chart Overview)",
+        lambda s: f"/api/v1/appointments/?patient_id={s['booked_patient_id']}&upcoming=true",
     ),
     Endpoint("roles", "Access: roles", _fixed("/api/v1/roles/")),
     Endpoint(
@@ -228,6 +247,7 @@ CONSOLE_ENDPOINTS: tuple[Endpoint, ...] = tuple(
         ("patients", "patients", "patients/patient"),
         ("emergency_access", "emergency access", "patients/emergencyaccess"),
         ("doctor_schedules", "doctor schedules", "scheduling/doctorschedule"),
+        ("appointments", "appointments", "scheduling/appointment"),
     )
 )
 

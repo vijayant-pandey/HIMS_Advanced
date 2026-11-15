@@ -1,6 +1,6 @@
 import { Breadcrumbs, Button, LinearProgress, Link, Stack, Tab, Tabs, Typography } from "@mui/material";
 import { useState } from "react";
-import { Link as RouterLink, useParams, useSearchParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { ErrorAlert } from "../../components/ErrorAlert";
 import { useCurrentUser } from "../auth/api";
@@ -34,6 +34,9 @@ export function PatientDetailPage() {
   const canChange = hasPermission(user, "patients.register") && patient?.status === "active";
   const canSeeHistory = hasPermission(user, "patients.history");
   const canRestrict = hasPermission(user, "patients.restricted") && patient?.status === "active";
+  // Book: the Appointments page with this patient chosen (HIMS-OPD-002).
+  const canBook = hasPermission(user, "appointments.manage") && patient?.status === "active";
+  const navigate = useNavigate();
   const us = user?.organization?.country === "US";
   const asked = params.get("tab") as ChartTab | null;
   const tab: ChartTab = asked && TABS.includes(asked) && (asked !== "history" || canSeeHistory) ? asked : "overview";
@@ -65,10 +68,27 @@ export function PatientDetailPage() {
       <ChartHeader
         patient={patient}
         actions={
-          canRestrict && (
-            <Button size="small" variant="outlined" color="error" onClick={() => setRestricting(true)}>
-              {patient.is_restricted ? "Lift restriction" : "Restrict record"}
-            </Button>
+          (canBook || canRestrict) && (
+            <Stack direction="row" spacing={1}>
+              {canBook && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={() =>
+                    navigate("/appointments", {
+                      state: { patient: { id: patient.id, name: patient.name, mrn: patient.mrn } },
+                    })
+                  }
+                >
+                  Book
+                </Button>
+              )}
+              {canRestrict && (
+                <Button size="small" variant="outlined" color="error" onClick={() => setRestricting(true)}>
+                  {patient.is_restricted ? "Lift restriction" : "Restrict record"}
+                </Button>
+              )}
+            </Stack>
           )
         }
       />

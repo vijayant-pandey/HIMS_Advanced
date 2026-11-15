@@ -392,6 +392,12 @@ SPECTACULAR_SETTINGS = {
         "OpdSessionStatusEnum": "apps.scheduling.api.serializers.SESSION_STATUSES",
         "OpdSessionSourceEnum": "apps.scheduling.api.serializers.SESSION_SOURCES",
         "OpdOffKindEnum": "apps.scheduling.availability.OFF_KINDS",
+        # Appointments (HIMS-OPD-002).
+        "AppointmentKindEnum": "apps.scheduling.models.Appointment.Kind",
+        "AppointmentSourceEnum": "apps.scheduling.models.Appointment.Source",
+        "AppointmentStatusEnum": "apps.scheduling.models.Appointment.Status",
+        "AppointmentCancelReasonEnum": "apps.scheduling.models.Appointment.CancelReason",
+        "AppointmentCancelChoiceEnum": "apps.scheduling.booking.CANCEL_REASONS",
     },
 }
 HIMS_ENABLE_API_DOCS = env.bool("HIMS_ENABLE_API_DOCS", default=False)

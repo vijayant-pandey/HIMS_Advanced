@@ -35,7 +35,10 @@ once HIMS is hosted.
   Audit log, Staff and rota, …), each with how many passed; pick an area to see only it.
   **Since HIMS-OPD-001** the area **Outpatient (OPD)** holds the doctor schedule queries (a
   department's sessions, a doctor's sessions, time away, holidays) and two screens (the week and
-  a doctor's free slots).
+  a doctor's free slots). **Since HIMS-OPD-002** it also holds the appointment queries (a doctor's
+  week of bookings, a patient's upcoming appointments, a department's booked ones still to come)
+  and three screens (a department's day, the patients to move, a patient's upcoming appointments),
+  plus the console's appointments list.
 - **Admin console:** Performance → **Performance checks**: the same results (read-only) and
   **Run the index check now**.
 - **Server (CMD, from `backend` with the virtual environment on):**

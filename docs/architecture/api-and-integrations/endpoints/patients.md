@@ -96,7 +96,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Method and path | `GET /api/v1/patients/` |
 | Business purpose | List (patients). Patients, newest registration first, or a patient search (``search``): the short list only (minimum necessary). |
 | Requirements | [HIMS-PAT-001](../../../requirements/patients.md#hims-pat-001), [HIMS-PAT-002](../../../requirements/patients.md#hims-pat-002), [HIMS-PAT-005](../../../requirements/patients.md#hims-pat-005), [HIMS-PAT-006](../../../requirements/patients.md#hims-pat-006) |
-| Actor / permission required | `patients.search` (Look up patients: the short list (name, MRN, age and sex, the phone's last digits)). System roles holding it: Organization administrator, Head of department (HOD), Receptionist / front desk, Medical records officer. Privileged roles must have passed two-factor in this session |
+| Actor / permission required | `patients.search` (Look up patients: the short list (name, MRN, age and sex, the phone's last digits)). System roles holding it: Organization administrator, Head of department (HOD), Receptionist / front desk, OPD scheduler, Medical records officer. Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Any grant: a grant at any facility or department is enough, and every record of the hospital is reached (patients keep one MRN in every facility) |
 | Request schema | No body; query: `age`, `facility`, `mrn`, `page`, `page_size`, `search`, `sex` |
 | Response schema | 200 `PaginatedPatientListList` |

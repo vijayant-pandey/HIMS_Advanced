@@ -110,6 +110,11 @@ export function LeavePage() {
                         {item.conflicting_shifts.length} planned shift(s) during this leave
                       </Typography>
                     )}
+                    {item.opd_bookings > 0 && (
+                      <Typography variant="caption" component="p" color="warning.main">
+                        {item.opd_bookings} OPD patient(s) booked during this leave
+                      </Typography>
+                    )}
                     {item.balance_after != null && item.balance_after < 0 && (
                       <Typography variant="caption" component="p" color="warning.main">
                         {-item.balance_after} day(s) over the balance
@@ -226,6 +231,12 @@ function DecideDialog({
             control={<Checkbox checked={overBalance} onChange={(e) => setOverBalance(e.target.checked)} />}
             label="Approve anyway (say why below)"
           />
+        </Alert>
+      )}
+      {decision === "approve" && leave.opd_bookings > 0 && (
+        <Alert severity="warning">
+          {leave.opd_bookings} OPD patient(s) are booked with {leave.staff_name} during this leave. Approving it
+          takes those sessions off: the patients are then listed under To move on the Appointments page.
         </Alert>
       )}
       {clashes.length > 0 && (

@@ -69,6 +69,7 @@ erDiagram
     leave_balance_adjustments
     doctor_schedules
     schedule_exceptions
+    appointments
     audit_events
     audit_chain_entries
     audit_integrity_checks
@@ -261,6 +262,16 @@ erDiagram
     departments |o--o{ schedule_exceptions : "department_id"
     users |o--o{ schedule_exceptions : "created_by_id"
     users |o--o{ schedule_exceptions : "cancelled_by_id"
+    organizations ||--o{ appointments : "organization_id"
+    patients ||--o{ appointments : "patient_id"
+    staff_members ||--o{ appointments : "staff_id"
+    facilities ||--o{ appointments : "facility_id"
+    departments ||--o{ appointments : "department_id"
+    doctor_schedules |o--o{ appointments : "schedule_id"
+    schedule_exceptions |o--o{ appointments : "extra_session_id"
+    appointments |o--o| appointments : "rescheduled_from_id"
+    users |o--o{ appointments : "booked_by_id"
+    users |o--o{ appointments : "cancelled_by_id"
     audit_events ||--o| audit_chain_entries : "event_id"
     users |o--o{ compliance_requirements : "reviewed_by_id"
     users |o--o{ compliance_risks : "updated_by_id"
@@ -1375,7 +1386,7 @@ erDiagram
 
 Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `staff_members`, `users`.
 
-## Doctor OPD schedules (logical)
+## Doctor OPD schedules and appointments (logical)
 
 ```mermaid
 erDiagram
@@ -1425,9 +1436,37 @@ erDiagram
         uuid cancelled_by_id FK
         varchar cancel_reason
     }
+    appointments {
+        uuid id PK
+        timestamptz created_at
+        timestamptz updated_at
+        integer version
+        uuid organization_id FK
+        uuid patient_id FK
+        uuid staff_id FK
+        uuid facility_id FK
+        uuid department_id FK
+        uuid schedule_id FK
+        uuid extra_session_id FK
+        timestamptz starts_at
+        timestamptz ends_at
+        date local_date
+        varchar kind
+        varchar source
+        varchar status
+        varchar reason
+        boolean is_extra
+        uuid rescheduled_from_id FK, UK
+        uuid booked_by_id FK
+        varchar cancel_reason
+        varchar cancel_note
+        timestamptz cancelled_at
+        uuid cancelled_by_id FK
+    }
     departments
     facilities
     organizations
+    patients
     staff_members
     users
     organizations ||--o{ doctor_schedules : "organization_id"
@@ -1442,9 +1481,19 @@ erDiagram
     departments |o--o{ schedule_exceptions : "department_id"
     users |o--o{ schedule_exceptions : "created_by_id"
     users |o--o{ schedule_exceptions : "cancelled_by_id"
+    organizations ||--o{ appointments : "organization_id"
+    patients ||--o{ appointments : "patient_id"
+    staff_members ||--o{ appointments : "staff_id"
+    facilities ||--o{ appointments : "facility_id"
+    departments ||--o{ appointments : "department_id"
+    doctor_schedules |o--o{ appointments : "schedule_id"
+    schedule_exceptions |o--o{ appointments : "extra_session_id"
+    appointments |o--o| appointments : "rescheduled_from_id"
+    users |o--o{ appointments : "booked_by_id"
+    users |o--o{ appointments : "cancelled_by_id"
 ```
 
-Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `staff_members`, `users`.
+Tables from other domains are shown without columns: `departments`, `facilities`, `organizations`, `patients`, `staff_members`, `users`.
 
 ## Audit log and tamper evidence (logical)
 

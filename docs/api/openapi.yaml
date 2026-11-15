@@ -606,6 +606,211 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiEndpointList'
           description: ''
+  /api/v1/appointments/:
+    get:
+      operationId: appointments_list
+      description: |-
+        Appointments for a patient, a department or a doctor (one of them is required), at
+        most 200, in time order.
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+        description: One day
+      - in: query
+        name: department
+        schema:
+          type: string
+      - in: query
+        name: doctor
+        schema:
+          type: string
+        description: Staff member id
+      - in: query
+        name: patient_id
+        schema:
+          type: string
+        description: One patient's appointments
+      - in: query
+        name: upcoming
+        schema:
+          type: boolean
+        description: Only booked ones still to come (soonest first)
+      tags:
+      - appointments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Appointment'
+          description: ''
+    post:
+      operationId: appointments_create
+      description: |-
+        Book a patient into a free slot (409 ``SLOT_TAKEN`` when someone booked it first), or
+        over the slots into a booked one when the session allows extra bookings.
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/v1/appointments/{id}/:
+    get:
+      operationId: appointments_retrieve
+      description: One appointment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/v1/appointments/{id}/cancel/:
+    post:
+      operationId: appointments_cancel_create
+      description: |-
+        Cancel a booked appointment with the reason (the patient asked, the hospital, the
+        doctor is not available). It stays on record as cancelled.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelAppointmentRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/v1/appointments/{id}/reschedule/:
+    post:
+      operationId: appointments_reschedule_create
+      description: |-
+        Move a booked appointment to another slot (another doctor or department if given).
+        The answer is the new appointment; the old one is cancelled as moved and links to it.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this appointment.
+        required: true
+      tags:
+      - appointments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescheduleRequest'
+        required: true
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Appointment'
+          description: ''
+  /api/v1/appointments/day/:
+    get:
+      operationId: appointments_day_retrieve
+      description: |-
+        One department's doctors on one day: each session's slots, free or booked, and the
+        day's appointments (cancelled ones too).
+      parameters:
+      - in: query
+        name: date
+        schema:
+          type: string
+        description: 'The day (default: today)'
+      - in: query
+        name: department
+        schema:
+          type: string
+        required: true
+      tags:
+      - appointments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentDay'
+          description: ''
+  /api/v1/appointments/to-rebook/:
+    get:
+      operationId: appointments_to_rebook_list
+      description: |-
+        Booked appointments still to come whose doctor is now away or on leave, or whose
+        session ended or was taken off: the patients to move or cancel, with why. At most 200,
+        soonest first; the next ones show as these are moved.
+      parameters:
+      - in: query
+        name: department
+        schema:
+          type: string
+        required: true
+      tags:
+      - appointments
+      security:
+      - sessionAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ToRebook'
+          description: ''
   /api/v1/audit-events/:
     get:
       operationId: audit_events_list
@@ -7996,9 +8201,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Session'
-          description: Sessions it takes off (all or part); booked patients come later
+          description: Sessions it takes off (all or part)
+        bookings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Appointment'
+          description: 'Patients booked in the time it takes off: move or cancel them'
       required:
       - affected
+      - bookings
       - exception
     AgeGroupEnum:
       enum:
@@ -8161,6 +8372,215 @@ components:
         * `every_day` - Every day
         * `weekdays` - Monday to Friday
         * `weekends` - Saturday and Sunday
+    Appointment:
+      type: object
+      description: |-
+        An appointment. A restricted record's name and reason are shown only to people who may
+        open restricted records (HIMS-PAT-006); its MRN is shown, as an exact MRN search does.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient_id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient_name:
+          type: string
+          readOnly: true
+        patient_mrn:
+          type: string
+          readOnly: true
+        patient_restricted:
+          type: boolean
+          readOnly: true
+        staff_id:
+          type: string
+          format: uuid
+          readOnly: true
+        staff_name:
+          type: string
+          readOnly: true
+        department_id:
+          type: string
+          format: uuid
+          readOnly: true
+        department_name:
+          type: string
+          readOnly: true
+        facility_id:
+          type: string
+          format: uuid
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+        local_date:
+          type: string
+          format: date
+          readOnly: true
+          description: The day on the facility's clock
+        time:
+          type: string
+          readOnly: true
+          description: e.g. 09:10, on the facility's clock
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentKindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentSourceEnum'
+          readOnly: true
+        source_label:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentStatusEnum'
+          readOnly: true
+        status_label:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+          description: Short reason for the visit
+        is_extra:
+          type: boolean
+          readOnly: true
+          description: Booked over the session's slots (extra bookings, D11)
+        rescheduled_from_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        rescheduled_to_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        booked_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        cancel_reason:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentCancelReasonEnum'
+          readOnly: true
+        cancel_reason_label:
+          type: string
+          readOnly: true
+        cancel_note:
+          type: string
+          readOnly: true
+        cancelled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        version:
+          type: integer
+          readOnly: true
+      required:
+      - booked_by_name
+      - cancel_note
+      - cancel_reason
+      - cancel_reason_label
+      - cancelled_at
+      - created_at
+      - department_id
+      - department_name
+      - ends_at
+      - facility_id
+      - id
+      - is_extra
+      - kind
+      - kind_label
+      - local_date
+      - patient_id
+      - patient_mrn
+      - patient_name
+      - patient_restricted
+      - reason
+      - rescheduled_from_id
+      - rescheduled_to_id
+      - source
+      - source_label
+      - staff_id
+      - staff_name
+      - starts_at
+      - status
+      - status_label
+      - time
+      - version
+    AppointmentCancelChoiceEnum:
+      enum:
+      - patient_request
+      - hospital
+      - doctor_unavailable
+      type: string
+      description: |-
+        * `patient_request` - The patient asked
+        * `hospital` - The hospital cancelled
+        * `doctor_unavailable` - The doctor is not available
+    AppointmentCancelReasonEnum:
+      enum:
+      - patient_request
+      - hospital
+      - doctor_unavailable
+      - rescheduled
+      type: string
+      description: |-
+        * `patient_request` - The patient asked
+        * `hospital` - The hospital cancelled
+        * `doctor_unavailable` - The doctor is not available
+        * `rescheduled` - Moved to another time
+    AppointmentKindEnum:
+      enum:
+      - new
+      - follow_up
+      type: string
+      description: |-
+        * `new` - New
+        * `follow_up` - Follow-up
+    AppointmentSourceEnum:
+      enum:
+      - front_desk
+      - phone
+      type: string
+      description: |-
+        * `front_desk` - At the front desk
+        * `phone` - By phone
+    AppointmentStatusEnum:
+      enum:
+      - booked
+      - checked_in
+      - in_consultation
+      - completed
+      - cancelled
+      - no_show
+      type: string
+      description: |-
+        * `booked` - Booked
+        * `checked_in` - Checked in
+        * `in_consultation` - With the doctor
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+        * `no_show` - Did not come
     ArchiveRequest:
       type: object
       properties:
@@ -8856,6 +9276,46 @@ components:
       - id
       - name
       - ward_type
+    BookRequest:
+      type: object
+      properties:
+        patient:
+          type: string
+          format: uuid
+        staff:
+          type: string
+          format: uuid
+          description: The doctor
+        department:
+          type: string
+          format: uuid
+        starts_at:
+          type: string
+          format: date-time
+          description: The slot's start (from the free slots)
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentKindEnum'
+          default: new
+        source:
+          allOf:
+          - $ref: '#/components/schemas/AppointmentSourceEnum'
+          default: front_desk
+        reason:
+          type: string
+          default: ''
+          description: Short; no history
+          maxLength: 200
+        extra:
+          type: boolean
+          default: false
+          description: Over the slots, into a booked slot (when the session allows
+            it)
+      required:
+      - department
+      - patient
+      - staff
+      - starts_at
     BrowserReportReviewRequest:
       type: object
       properties:
@@ -9013,6 +9473,20 @@ components:
       - count
       - prefix
       - room
+    CancelAppointmentRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        reason:
+          $ref: '#/components/schemas/AppointmentCancelChoiceEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - reason
+      - version
     CancelExceptionRequest:
       type: object
       properties:
@@ -9711,6 +10185,29 @@ components:
       - key
       - label
       - passed
+    DayDoctor:
+      type: object
+      properties:
+        staff_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        designation:
+          type: string
+          nullable: true
+        leave_asked:
+          type: boolean
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Session'
+      required:
+      - designation
+      - leave_asked
+      - name
+      - sessions
+      - staff_id
     DecisionRequest:
       type: object
       properties:
@@ -9884,6 +10381,42 @@ components:
       - department_type
       - facility
       - name
+    DepartmentDay:
+      type: object
+      properties:
+        department_id:
+          type: string
+          format: uuid
+        department_name:
+          type: string
+        facility_id:
+          type: string
+          format: uuid
+        facility_name:
+          type: string
+        day:
+          type: string
+          format: date
+        doctors:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayDoctor'
+        appointments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Appointment'
+        can_book:
+          type: boolean
+          description: May book, move and cancel here
+      required:
+      - appointments
+      - can_book
+      - day
+      - department_id
+      - department_name
+      - doctors
+      - facility_id
+      - facility_name
     DepartmentDetail:
       type: object
       properties:
@@ -12284,6 +12817,12 @@ components:
           readOnly: true
           description: Planned shifts the person would miss (only while waiting for
             a decision)
+        opd_bookings:
+          type: integer
+          readOnly: true
+          description: 'OPD patients booked with the person during this leave, still
+            to come (only while waiting for a decision): approving it takes those
+            sessions off'
         balance_after:
           type: integer
           nullable: true
@@ -12308,6 +12847,7 @@ components:
       - id
       - leave_type
       - leave_type_label
+      - opd_bookings
       - reason
       - requested_by_name
       - staff_id
@@ -15638,6 +16178,7 @@ components:
       - access.roles.manage
       - access.roles.view
       - accounts.manage
+      - appointments.manage
       - appointments.view
       - audit.view
       - beds.status.manage
@@ -15695,6 +16236,7 @@ components:
         * `access.roles.manage` - access.roles.manage
         * `access.roles.view` - access.roles.view
         * `accounts.manage` - accounts.manage
+        * `appointments.manage` - appointments.manage
         * `appointments.view` - appointments.view
         * `audit.view` - audit.view
         * `beds.status.manage` - beds.status.manage
@@ -16101,6 +16643,32 @@ components:
       required:
       - name
       - relation
+    RescheduleRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+        starts_at:
+          type: string
+          format: date-time
+        staff:
+          type: string
+          format: uuid
+          description: 'Another doctor (default: the same)'
+        department:
+          type: string
+          format: uuid
+          description: 'Default: the same department'
+        extra:
+          type: boolean
+          default: false
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - starts_at
+      - version
     RestoreDrill:
       type: object
       properties:
@@ -17754,6 +18322,16 @@ components:
           $ref: '#/components/schemas/OpdSessionStatusEnum'
         open_slots:
           type: integer
+          description: Slots not taken off
+        booked:
+          type: integer
+          description: Patients booked into its slots
+        extra_booked:
+          type: integer
+          description: Patients booked over its slots
+        free_slots:
+          type: integer
+          description: Open slots nobody is booked into
         'off':
           type: array
           items:
@@ -17764,13 +18342,16 @@ components:
             $ref: '#/components/schemas/Slot'
           description: Open slots (only for one doctor's day)
       required:
+      - booked
       - day
       - department_id
       - department_name
       - ends_at
       - exception_id
+      - extra_booked
       - extra_bookings_allowed
       - facility_id
+      - free_slots
       - hours
       - note
       - 'off'
@@ -18067,8 +18648,12 @@ components:
           description: Start, on the facility's clock
         is_past:
           type: boolean
+        is_booked:
+          type: boolean
+          description: A patient is booked into it
       required:
       - ends_at
+      - is_booked
       - is_past
       - starts_at
       - time
@@ -19248,6 +19833,17 @@ components:
       required:
       - channel
       - to
+    ToRebook:
+      type: object
+      properties:
+        appointment:
+          $ref: '#/components/schemas/Appointment'
+        why:
+          type: string
+          description: Why it cannot be seen at its time
+      required:
+      - appointment
+      - why
     Traces:
       type: object
       properties:

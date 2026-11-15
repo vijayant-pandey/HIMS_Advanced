@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{# Move a booked appointment to another slot, as on the Appointments page (HIMS-OPD-002). #}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:scheduling_appointment_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; <a href="{% url 'admin:scheduling_appointment_change' appointment.pk %}">{{ patient }}</a>
+  &rsaquo; {{ title }}
+</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  <h1>Move an appointment</h1>
+  <p>{{ patient }} with {{ appointment.staff }}, {{ appointment.department.name }}, {{ when }}.</p>
+  {% if form %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Move">
+  </form>
+  <p class="help">The old appointment is cancelled as "moved to another time" and links to the new one; both stay on record.</p>
+  {% else %}
+  <p>Only a booked appointment can be moved. This one is {{ appointment.get_status_display|lower }}.</p>
+  {% endif %}
+</div>
+{% endblock %}

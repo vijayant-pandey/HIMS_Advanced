@@ -2,7 +2,7 @@
 
 # API endpoints (contracts index)
 
-284 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
+291 endpoints under `/api/v1/`, read from the code. Each links to its full contract (spec 29.5) and its requirements (spec 25.3). Access: **public** (no sign-in), **signed in** (any account), or the permission named.
 
 ## [Hospital settings, logo and letterhead](organizations.md)
 
@@ -99,20 +99,27 @@
 | [`PATCH /api/v1/patients/{pk}/relationships/{relationship_id}/`](patients.md#patch-api-v1-patients-pk-relationships-relationship-id) | `patients.register` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005, HIMS-PAT-006 |
 | [`POST /api/v1/patients/{pk}/restriction/`](patients.md#post-api-v1-patients-pk-restriction) | `patients.restricted` | HIMS-PAT-001, HIMS-PAT-002, HIMS-PAT-005, HIMS-PAT-006 |
 
-## [Doctor schedules: OPD sessions, exceptions and free slots](scheduling.md)
+## [Doctor schedules and appointments: OPD sessions, exceptions, free slots, booking](scheduling.md)
 
 | Method and path | Access | Requirements |
 |---|---|---|
+| [`GET /api/v1/appointments/`](scheduling.md#get-api-v1-appointments) | `appointments.view` | HIMS-OPD-002 |
+| [`POST /api/v1/appointments/`](scheduling.md#post-api-v1-appointments) | `appointments.manage` | HIMS-OPD-002 |
+| [`GET /api/v1/appointments/day/`](scheduling.md#get-api-v1-appointments-day) | `appointments.view` | HIMS-OPD-002 |
+| [`GET /api/v1/appointments/to-rebook/`](scheduling.md#get-api-v1-appointments-to-rebook) | `appointments.view` | HIMS-OPD-002 |
+| [`GET /api/v1/appointments/{pk}/`](scheduling.md#get-api-v1-appointments-pk) | `appointments.view` | HIMS-OPD-002 |
+| [`POST /api/v1/appointments/{pk}/cancel/`](scheduling.md#post-api-v1-appointments-pk-cancel) | `appointments.manage` | HIMS-OPD-002 |
+| [`POST /api/v1/appointments/{pk}/reschedule/`](scheduling.md#post-api-v1-appointments-pk-reschedule) | `appointments.manage` | HIMS-OPD-002 |
 | [`GET /api/v1/availability/`](scheduling.md#get-api-v1-availability) | `appointments.view` | HIMS-OPD-001 |
-| [`GET /api/v1/doctor-schedules/`](scheduling.md#get-api-v1-doctor-schedules) | `appointments.view` | HIMS-OPD-001 |
-| [`POST /api/v1/doctor-schedules/`](scheduling.md#post-api-v1-doctor-schedules) | `schedules.manage` | HIMS-OPD-001 |
-| [`GET /api/v1/doctor-schedules/week/`](scheduling.md#get-api-v1-doctor-schedules-week) | `appointments.view` | HIMS-OPD-001 |
-| [`PATCH /api/v1/doctor-schedules/{pk}/`](scheduling.md#patch-api-v1-doctor-schedules-pk) | `schedules.manage` | HIMS-OPD-001 |
-| [`POST /api/v1/doctor-schedules/{pk}/end/`](scheduling.md#post-api-v1-doctor-schedules-pk-end) | `schedules.manage` | HIMS-OPD-001 |
+| [`GET /api/v1/doctor-schedules/`](scheduling.md#get-api-v1-doctor-schedules) | `appointments.view` | HIMS-OPD-001, HIMS-OPD-002 |
+| [`POST /api/v1/doctor-schedules/`](scheduling.md#post-api-v1-doctor-schedules) | `schedules.manage` | HIMS-OPD-001, HIMS-OPD-002 |
+| [`GET /api/v1/doctor-schedules/week/`](scheduling.md#get-api-v1-doctor-schedules-week) | `appointments.view` | HIMS-OPD-001, HIMS-OPD-002 |
+| [`PATCH /api/v1/doctor-schedules/{pk}/`](scheduling.md#patch-api-v1-doctor-schedules-pk) | `schedules.manage` | HIMS-OPD-001, HIMS-OPD-002 |
+| [`POST /api/v1/doctor-schedules/{pk}/end/`](scheduling.md#post-api-v1-doctor-schedules-pk-end) | `schedules.manage` | HIMS-OPD-001, HIMS-OPD-002 |
 | [`GET /api/v1/my-opd-sessions/`](scheduling.md#get-api-v1-my-opd-sessions) | signed in | HIMS-OPD-001 |
-| [`GET /api/v1/schedule-exceptions/`](scheduling.md#get-api-v1-schedule-exceptions) | `appointments.view` | HIMS-OPD-001 |
-| [`POST /api/v1/schedule-exceptions/`](scheduling.md#post-api-v1-schedule-exceptions) | `schedules.manage` | HIMS-OPD-001 |
-| [`POST /api/v1/schedule-exceptions/{pk}/cancel/`](scheduling.md#post-api-v1-schedule-exceptions-pk-cancel) | `schedules.manage` | HIMS-OPD-001 |
+| [`GET /api/v1/schedule-exceptions/`](scheduling.md#get-api-v1-schedule-exceptions) | `appointments.view` | HIMS-OPD-001, HIMS-OPD-002 |
+| [`POST /api/v1/schedule-exceptions/`](scheduling.md#post-api-v1-schedule-exceptions) | `schedules.manage` | HIMS-OPD-001, HIMS-OPD-002 |
+| [`POST /api/v1/schedule-exceptions/{pk}/cancel/`](scheduling.md#post-api-v1-schedule-exceptions-pk-cancel) | `schedules.manage` | HIMS-OPD-001, HIMS-OPD-002 |
 
 ## [Numbering schemes](numbering.md)
 
@@ -261,12 +268,12 @@
 | [`GET /api/v1/leave-entitlements/`](rosters.md#get-api-v1-leave-entitlements) | `leave.approve` | HIMS-STAFF-013 |
 | [`POST /api/v1/leave-entitlements/`](rosters.md#post-api-v1-leave-entitlements) | `leave.policy.manage` | HIMS-STAFF-013 |
 | [`PATCH /api/v1/leave-entitlements/{pk}/`](rosters.md#patch-api-v1-leave-entitlements-pk) | `leave.policy.manage` | HIMS-STAFF-013 |
-| [`GET /api/v1/leave-requests/`](rosters.md#get-api-v1-leave-requests) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013 |
-| [`POST /api/v1/leave-requests/`](rosters.md#post-api-v1-leave-requests) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013 |
-| [`GET /api/v1/leave-requests/{pk}/`](rosters.md#get-api-v1-leave-requests-pk) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013 |
-| [`POST /api/v1/leave-requests/{pk}/approve/`](rosters.md#post-api-v1-leave-requests-pk-approve) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013 |
-| [`POST /api/v1/leave-requests/{pk}/cancel/`](rosters.md#post-api-v1-leave-requests-pk-cancel) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013 |
-| [`POST /api/v1/leave-requests/{pk}/reject/`](rosters.md#post-api-v1-leave-requests-pk-reject) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013 |
+| [`GET /api/v1/leave-requests/`](rosters.md#get-api-v1-leave-requests) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013, HIMS-OPD-002 |
+| [`POST /api/v1/leave-requests/`](rosters.md#post-api-v1-leave-requests) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013, HIMS-OPD-002 |
+| [`GET /api/v1/leave-requests/{pk}/`](rosters.md#get-api-v1-leave-requests-pk) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013, HIMS-OPD-002 |
+| [`POST /api/v1/leave-requests/{pk}/approve/`](rosters.md#post-api-v1-leave-requests-pk-approve) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013, HIMS-OPD-002 |
+| [`POST /api/v1/leave-requests/{pk}/cancel/`](rosters.md#post-api-v1-leave-requests-pk-cancel) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013, HIMS-OPD-002 |
+| [`POST /api/v1/leave-requests/{pk}/reject/`](rosters.md#post-api-v1-leave-requests-pk-reject) | `leave.approve` | HIMS-STAFF-012, HIMS-STAFF-013, HIMS-OPD-002 |
 | [`POST /api/v1/my-leave-requests/`](rosters.md#post-api-v1-my-leave-requests) | signed in | HIMS-STAFF-012, HIMS-STAFF-013 |
 | [`POST /api/v1/my-leave-requests/{pk}/cancel/`](rosters.md#post-api-v1-my-leave-requests-pk-cancel) | signed in | HIMS-STAFF-012 |
 | [`GET /api/v1/my-schedule/`](rosters.md#get-api-v1-my-schedule) | signed in | HIMS-STAFF-012 |

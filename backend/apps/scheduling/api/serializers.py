@@ -1,10 +1,15 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from apps.organizations.dates import hospital_timezone
+
 from ..availability import OFF_KINDS
+from ..booking import CANCEL_REASONS
 from ..models import (
     MAX_EXTRA_BOOKINGS,
     MAX_SLOT_MINUTES,
     MIN_SLOT_MINUTES,
+    Appointment,
     DoctorSchedule,
     ScheduleException,
 )
@@ -207,6 +212,7 @@ class SlotSerializer(serializers.Serializer):
     ends_at = serializers.DateTimeField()
     time = serializers.CharField(help_text="Start, on the facility's clock")
     is_past = serializers.BooleanField()
+    is_booked = serializers.BooleanField(help_text="A patient is booked into it")
 
 
 class SessionSerializer(serializers.Serializer):
@@ -225,7 +231,10 @@ class SessionSerializer(serializers.Serializer):
     extra_bookings_allowed = serializers.IntegerField()
     note = serializers.CharField(allow_blank=True)
     status = serializers.ChoiceField(choices=SESSION_STATUSES)
-    open_slots = serializers.IntegerField()
+    open_slots = serializers.IntegerField(help_text="Slots not taken off")
+    booked = serializers.IntegerField(help_text="Patients booked into its slots")
+    extra_booked = serializers.IntegerField(help_text="Patients booked over its slots")
+    free_slots = serializers.IntegerField(help_text="Open slots nobody is booked into")
     off = OffPartSerializer(many=True)
     slots = SlotSerializer(many=True, help_text="Open slots (only for one doctor's day)")
 
@@ -270,10 +279,95 @@ class DoctorDaySerializer(serializers.Serializer):
     sessions = SessionSerializer(many=True)
 
 
+class AppointmentSerializer(serializers.ModelSerializer):
+    """An appointment. A restricted record's name and reason are shown only to people who may
+    open restricted records (HIMS-PAT-006); its MRN is shown, as an exact MRN search does."""
+
+    patient_id = serializers.UUIDField(read_only=True)
+    patient_name = serializers.SerializerMethodField()
+    patient_mrn = serializers.CharField(source="patient.mrn", read_only=True)
+    patient_restricted = serializers.BooleanField(source="patient.is_restricted", read_only=True)
+    staff_id = serializers.UUIDField(read_only=True)
+    staff_name = serializers.SerializerMethodField()
+    department_id = serializers.UUIDField(read_only=True)
+    department_name = serializers.CharField(source="department.name", read_only=True)
+    facility_id = serializers.UUIDField(read_only=True)
+    time = serializers.SerializerMethodField(help_text="e.g. 09:10, on the facility's clock")
+    kind_label = serializers.CharField(source="get_kind_display", read_only=True)
+    source_label = serializers.CharField(source="get_source_display", read_only=True)
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    cancel_reason_label = serializers.CharField(source="get_cancel_reason_display", read_only=True)
+    reason = serializers.SerializerMethodField(help_text="Short reason for the visit")
+    rescheduled_from_id = serializers.UUIDField(read_only=True, allow_null=True)
+    rescheduled_to_id = serializers.SerializerMethodField()
+    booked_by_name = serializers.CharField(
+        source="booked_by.display_name", read_only=True, default=None, allow_null=True
+    )
+
+    class Meta:
+        model = Appointment
+        fields = [
+            "id",
+            "patient_id",
+            "patient_name",
+            "patient_mrn",
+            "patient_restricted",
+            "staff_id",
+            "staff_name",
+            "department_id",
+            "department_name",
+            "facility_id",
+            "starts_at",
+            "ends_at",
+            "local_date",
+            "time",
+            "kind",
+            "kind_label",
+            "source",
+            "source_label",
+            "status",
+            "status_label",
+            "reason",
+            "is_extra",
+            "rescheduled_from_id",
+            "rescheduled_to_id",
+            "booked_by_name",
+            "created_at",
+            "cancel_reason",
+            "cancel_reason_label",
+            "cancel_note",
+            "cancelled_at",
+            "version",
+        ]
+        read_only_fields = fields
+
+    def _hidden(self, appointment) -> bool:
+        return appointment.patient.is_restricted and not self.context.get("restricted", False)
+
+    def get_patient_name(self, appointment) -> str:
+        return "Restricted record" if self._hidden(appointment) else appointment.patient.full_name
+
+    def get_reason(self, appointment) -> str:
+        return "" if self._hidden(appointment) else appointment.reason
+
+    def get_staff_name(self, appointment) -> str:
+        return f"{appointment.staff.given_name} {appointment.staff.family_name}"
+
+    def get_time(self, appointment) -> str:
+        zone = hospital_timezone(appointment.facility)
+        return f"{appointment.starts_at.astimezone(zone):%H:%M}"
+
+    @extend_schema_field(serializers.UUIDField(allow_null=True))
+    def get_rescheduled_to_id(self, appointment):
+        moved = getattr(appointment, "rescheduled_to", None)
+        return moved.pk if moved else None
+
+
 class AddedExceptionSerializer(serializers.Serializer):
     exception = ScheduleExceptionSerializer()
-    affected = SessionSerializer(
-        many=True, help_text="Sessions it takes off (all or part); booked patients come later"
+    affected = SessionSerializer(many=True, help_text="Sessions it takes off (all or part)")
+    bookings = AppointmentSerializer(
+        many=True, help_text="Patients booked in the time it takes off: move or cancel them"
     )
 
 
@@ -281,3 +375,57 @@ class MyOpdWeekSerializer(serializers.Serializer):
     has_staff_record = serializers.BooleanField()
     start = serializers.DateField()
     days = SessionDaySerializer(many=True)
+
+
+class BookSerializer(serializers.Serializer):
+    patient = serializers.UUIDField()
+    staff = serializers.UUIDField(help_text="The doctor")
+    department = serializers.UUIDField()
+    starts_at = serializers.DateTimeField(help_text="The slot's start (from the free slots)")
+    kind = serializers.ChoiceField(choices=Appointment.Kind.choices, default="new")
+    source = serializers.ChoiceField(choices=Appointment.Source.choices, default="front_desk")
+    reason = serializers.CharField(
+        max_length=200, required=False, allow_blank=True, default="", help_text="Short; no history"
+    )
+    extra = serializers.BooleanField(
+        default=False, help_text="Over the slots, into a booked slot (when the session allows it)"
+    )
+
+
+class RescheduleSerializer(serializers.Serializer):
+    version = serializers.IntegerField()
+    starts_at = serializers.DateTimeField()
+    staff = serializers.UUIDField(required=False, help_text="Another doctor (default: the same)")
+    department = serializers.UUIDField(required=False, help_text="Default: the same department")
+    extra = serializers.BooleanField(default=False)
+    note = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+
+
+class CancelAppointmentSerializer(serializers.Serializer):
+    version = serializers.IntegerField()
+    reason = serializers.ChoiceField(choices=CANCEL_REASONS)
+    note = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
+
+
+class DayDoctorSerializer(serializers.Serializer):
+    staff_id = serializers.UUIDField()
+    name = serializers.CharField()
+    designation = serializers.CharField(allow_null=True)
+    leave_asked = serializers.BooleanField()
+    sessions = SessionSerializer(many=True)
+
+
+class DepartmentDaySerializer(serializers.Serializer):
+    department_id = serializers.UUIDField()
+    department_name = serializers.CharField()
+    facility_id = serializers.UUIDField()
+    facility_name = serializers.CharField()
+    day = serializers.DateField()
+    doctors = DayDoctorSerializer(many=True)
+    appointments = AppointmentSerializer(many=True)
+    can_book = serializers.BooleanField(help_text="May book, move and cancel here")
+
+
+class ToRebookSerializer(serializers.Serializer):
+    appointment = AppointmentSerializer()
+    why = serializers.CharField(help_text="Why it cannot be seen at its time")

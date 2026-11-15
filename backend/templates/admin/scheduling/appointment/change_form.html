@@ -1,0 +1,8 @@
+{% extends "admin/change_form.html" %}
+{# A booked appointment is moved on its own page, as on the Appointments page (HIMS-OPD-002). #}
+{% block object-tools-items %}
+  {% if original and original.status == "booked" %}
+  <li><a href="{% url 'admin:scheduling_appointment_move' original.pk %}">Move to another time</a></li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

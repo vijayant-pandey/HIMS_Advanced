@@ -183,6 +183,10 @@ class AuditAction:
     DOCTOR_SCHEDULE_ENDED = "schedule.session.ended"
     SCHEDULE_EXCEPTION_ADDED = "schedule.exception.added"
     SCHEDULE_EXCEPTION_CANCELLED = "schedule.exception.cancelled"
+    # Appointments (HIMS-OPD-002).
+    APPOINTMENT_BOOKED = "appointment.booked"
+    APPOINTMENT_RESCHEDULED = "appointment.rescheduled"
+    APPOINTMENT_CANCELLED = "appointment.cancelled"
 
 
 def _jsonable(value):

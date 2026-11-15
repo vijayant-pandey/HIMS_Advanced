@@ -190,3 +190,44 @@ index. Everything else passed at once.
 
 Final run: **44 of 44 queries** use their index in time and **45 of 45 screens** are within target
 (the earlier queries and screens held).
+
+## Appointments (HIMS-OPD-002)
+
+The appointments part of Artifact A for slice 2B ([review](scheduling.md#part-2-appointments-hims-opd-002);
+HIMS-DATA-004). Run on 2026-11-15 at scale 1 on the same developer PC (6,949,530 rows in all).
+Added to the synthetic hospital: **1,000,000 appointments**, five a synthetic doctor a day over about
+two years (about 1,500 a day), the last four weeks still to come; past ones completed (one in ten
+cancelled, one in twenty did not come), future ones booked (one in ten cancelled). The synthetic
+appointments fall on every day while each doctor's weekly session is on one weekday, so nearly every
+future booking is "off": the To move list is measured at its worst (a whole department's book).
+
+**What the first run found** (both fixed before release):
+
+1. **Console: appointments** took **2.4 s** (target 500 ms): the list sorted a million rows by day
+   with no index for it. Index `appointment_start_idx` (start, newest first) added; the console sorts
+   and filters by the start time: **121 ms**.
+2. **Appointments to move** took **981 ms**: the query took 31 ms, the rest was reading and listing
+   every booked patient of the department. The list now shows the soonest 200 (the next ones appear
+   as these are moved), deciding from a few columns and reading the full rows only for those shown:
+   450 ms, then **357 ms**.
+
+Earlier, while the index check was written: P0's (facility, day, status) index made PostgreSQL read
+one doctor's week through it; it was left out (the OPD queue adds it, HIMS-OPD-003).
+
+| Query | Time | Index |
+|---|---|---|
+| Appointments: one doctor's week, in their sessions | 1.1 ms | `appointment_staff_day_idx` |
+| Appointments: one patient's upcoming ones | 0.1 ms | `appointment_patient_idx` |
+| Appointments: one department's booked ones still to come (To move) | 27.1 ms | `appointment_booked_dept_idx` (booked only) |
+| Appointments: every appointment, newest first (console list) | 1.1 ms | `appointment_start_idx` |
+
+| Screen | p95 | Target | Database queries |
+|---|---|---|---|
+| Appointments (one department's day, with the booked patients) | 80 ms | 300 ms | 16 |
+| Appointments to move (one department) | 357 ms | 500 ms | 17 |
+| A patient's upcoming appointments (chart Overview) | 20 ms | 300 ms | 9 |
+| Console: appointments | 121 ms | 500 ms | 8 |
+
+The doctor schedule screens held with a million appointments in their sessions: the week 63 ms, a
+doctor's free slots 20 ms. Final run: **48 of 48 queries** use their index in time and **49 of 49
+screens** are within target.

@@ -67,7 +67,9 @@ export function MyOpdSessions() {
                       label={
                         session.status === "off"
                           ? SESSION_STATUS.off.label
-                          : `${session.open_slots} × ${session.slot_minutes} min`
+                          : `${session.open_slots} × ${session.slot_minutes} min · ${
+                              session.booked + session.extra_booked
+                            } booked`
                       }
                     />
                     {session.off.length > 0 && (

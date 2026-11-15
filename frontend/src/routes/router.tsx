@@ -109,6 +109,10 @@ export const routes = [
               },
               { path: "rota", lazy: screen(() => import("../features/rosters/RotaPage"), (m) => m.RotaPage) },
               {
+                path: "appointments",
+                lazy: screen(() => import("../features/scheduling/AppointmentsPage"), (m) => m.AppointmentsPage),
+              },
+              {
                 path: "doctor-schedules",
                 lazy: screen(
                   () => import("../features/scheduling/DoctorSchedulesPage"),

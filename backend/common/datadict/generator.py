@@ -179,6 +179,8 @@ def classify(table: str, field) -> tuple[str, str]:
         return catalog.INTERNAL, "System metadata"
     if table in catalog.PATIENT_TABLES:
         return catalog.RESTRICTED, "Patient personal data"
+    if table in catalog.CLINICAL_TABLES:
+        return catalog.CLINICAL, "Patient health-related data (which specialty a person sees)"
     return catalog.INTERNAL, "Business data"
 
 

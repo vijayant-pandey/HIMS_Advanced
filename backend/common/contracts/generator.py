@@ -51,7 +51,8 @@ AREAS = {
     "beds": "Beds and bed board",
     "equipment": "Equipment register",
     "patients": "Patients: registration and the patient record",
-    "scheduling": "Doctor schedules: OPD sessions, exceptions and free slots",
+    "scheduling": "Doctor schedules and appointments: OPD sessions, exceptions, free slots, "
+    "booking",
     "numbering": "Numbering schemes",
     "features": "Feature settings",
     "identity": "Sign-in, two-factor, passkeys, sessions and accounts",

@@ -7,7 +7,8 @@ employment status. A fixed number of queries is used, whatever the number of day
 
 A session is cut into slots from its start (10 minutes by default). Whatever takes part of it off
 (an hour of leave, a holiday from noon) removes the slots it touches; the rest stay open. Slots
-are what appointments (HIMS-OPD-002) will book.
+are what appointments (HIMS-OPD-002) book: each session carries its bookings, so a slot shows as
+booked and the week shows how many patients are booked.
 """
 
 from collections import defaultdict
@@ -22,7 +23,7 @@ from apps.organizations.dates import hospital_timezone
 from apps.rosters.models import LeaveRequest
 from apps.staff.models import StaffDepartmentAssignment, StaffMember
 
-from .models import DoctorSchedule, ScheduleException
+from .models import ACTIVE_STATUSES, Appointment, DoctorSchedule, ScheduleException
 
 # Why a session (or part of it) is off. "leave" is an OPD leave exception; "rota_leave" is leave
 # approved on the Leave page; the others come from the person or the department.
@@ -46,6 +47,16 @@ class Off:
 
 
 @dataclass
+class Booking:
+    """An appointment holding a place in a session (booked, checked in or with the doctor)."""
+
+    appointment_id: object
+    start: datetime
+    end: datetime
+    is_extra: bool
+
+
+@dataclass
 class Session:
     staff_id: object
     department: Department
@@ -59,6 +70,7 @@ class Session:
     exception_id: object = None
     note: str = ""
     off: list[Off] = field(default_factory=list)
+    bookings: list[Booking] = field(default_factory=list)
 
     @property
     def zone(self):
@@ -99,6 +111,17 @@ class Session:
                 found.append((start, start + step))
             start += step
         return found
+
+    def is_taken(self, start: datetime, end: datetime, ignore=None) -> bool:
+        """A booking (not an extra one, nor ``ignore``, the one being moved) holds this time."""
+        return any(
+            not b.is_extra and b.appointment_id != ignore and b.start < end and start < b.end
+            for b in self.bookings
+        )
+
+    @property
+    def extra_booked(self) -> int:
+        return sum(1 for b in self.bookings if b.is_extra)
 
     @property
     def status(self) -> str:
@@ -209,7 +232,36 @@ def plan_for(*, staff_ids, first: date, last: date, department=None, details: bo
             )
         )
     _take_off(plan, staff_ids, first, last, details=details)
+    _add_bookings(plan, staff_ids, first, last)
     return plan
+
+
+def _add_bookings(plan: Plan, staff_ids, first: date, last: date) -> None:
+    """Each session's appointments (one query; ``appointment_staff_day_idx``)."""
+    if not plan.sessions:
+        return
+    rows = Appointment.objects.filter(
+        staff_id__in=staff_ids,
+        local_date__gte=first,
+        local_date__lte=last,
+        status__in=ACTIVE_STATUSES,
+    ).values_list(
+        "pk",
+        "staff_id",
+        "local_date",
+        "schedule_id",
+        "extra_session_id",
+        "starts_at",
+        "ends_at",
+        "is_extra",
+    )
+    for pk, staff_id, day, schedule_id, extra_id, start, end, is_extra in rows:
+        for session in plan.sessions.get((staff_id, day), []):
+            if (schedule_id and session.schedule_id == schedule_id) or (
+                extra_id and session.exception_id == extra_id
+            ):
+                session.bookings.append(Booking(pk, start, end, is_extra))
+                break
 
 
 def _take_off(plan: Plan, staff_ids, first: date, last: date, *, details: bool) -> None:
@@ -321,6 +373,9 @@ def session_out(session: Session, *, with_slots: bool = False) -> dict:
         "note": session.note,
         "status": session.status,
         "open_slots": len(slots),
+        "booked": sum(1 for b in session.bookings if not b.is_extra),
+        "extra_booked": session.extra_booked,
+        "free_slots": sum(1 for start, end in slots if not session.is_taken(start, end)),
         "off": [
             {
                 "kind": block.kind,
@@ -336,6 +391,7 @@ def session_out(session: Session, *, with_slots: bool = False) -> dict:
                 "ends_at": end,
                 "time": f"{start.astimezone(zone):%H:%M}",
                 "is_past": start < now,
+                "is_booked": session.is_taken(start, end),
             }
             for start, end in (slots if with_slots else [])
         ],

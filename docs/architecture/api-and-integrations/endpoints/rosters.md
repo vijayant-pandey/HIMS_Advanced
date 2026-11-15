@@ -179,7 +179,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `leave_requests_list` |
 | Method and path | `GET /api/v1/leave-requests/` |
 | Business purpose | List (leave requests). Leave for approvers (``leave.approve`` for the department). |
-| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013) |
+| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013), [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
 | Actor / permission required | `leave.approve` (Approve or refuse leave, and record leave for staff). System roles holding it: Organization administrator, HR / credentialing officer, Head of department (HOD). Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body; query: `department`, `person`, `status` |
@@ -207,7 +207,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `leave_requests_create` |
 | Method and path | `POST /api/v1/leave-requests/` |
 | Business purpose | Add (leave requests). Record leave for a staff member (e.g. sick leave phoned in). It still needs a decision, by someone other than that person. |
-| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013) |
+| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013), [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
 | Actor / permission required | `leave.approve` (Approve or refuse leave, and record leave for staff). System roles holding it: Organization administrator, HR / credentialing officer, Head of department (HOD). Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | `LeaveCreateRequest`: `staff` (uuid), `department` (required, uuid), `leave_type` (required, one of the listed values), `start_date` (required, date), `end_date` (required, date), `reason` (≤ 500 characters) |
@@ -235,7 +235,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `leave_requests_retrieve` |
 | Method and path | `GET /api/v1/leave-requests/{pk}/` |
 | Business purpose | Open one (leave requests). Leave for approvers (``leave.approve`` for the department). |
-| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013) |
+| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013), [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
 | Actor / permission required | `leave.approve` (Approve or refuse leave, and record leave for staff). System roles holding it: Organization administrator, HR / credentialing officer, Head of department (HOD). Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | No body |
@@ -263,7 +263,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `leave_requests_approve_create` |
 | Method and path | `POST /api/v1/leave-requests/{pk}/approve/` |
 | Business purpose | Approve a leave request (optionally cancelling the person's shifts on those days); approved days count against the balance. |
-| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013) |
+| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013), [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
 | Actor / permission required | `leave.approve` (Approve or refuse leave, and record leave for staff). System roles holding it: Organization administrator, HR / credentialing officer, Head of department (HOD). Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | `LeaveDecisionRequest`: `version` (required), `note` (≤ 500 characters), `cancel_shifts`, `allow_over_balance` |
@@ -291,7 +291,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `leave_requests_cancel_create` |
 | Method and path | `POST /api/v1/leave-requests/{pk}/cancel/` |
 | Business purpose | Cancel approved leave before it ends, with a reason; the days go back to the balance. |
-| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013) |
+| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013), [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
 | Actor / permission required | `leave.approve` (Approve or refuse leave, and record leave for staff). System roles holding it: Organization administrator, HR / credentialing officer, Head of department (HOD). Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | `CancelRequest`: `version` (required), `reason` (required, ≤ 255 characters) |
@@ -319,7 +319,7 @@ Each endpoint in the spec 29.5 template. Shared rules (errors, idempotency, vers
 | Endpoint ID | `leave_requests_reject_create` |
 | Method and path | `POST /api/v1/leave-requests/{pk}/reject/` |
 | Business purpose | Turn down a leave request, with a reason. |
-| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013) |
+| Requirements | [HIMS-STAFF-012](../../../requirements/staff-and-rota.md#hims-staff-012), [HIMS-STAFF-013](../../../requirements/staff-and-rota.md#hims-staff-013), [HIMS-OPD-002](../../../requirements/outpatient.md#hims-opd-002) |
 | Actor / permission required | `leave.approve` (Approve or refuse leave, and record leave for staff). System roles holding it: Organization administrator, HR / credentialing officer, Head of department (HOD). Privileged roles must have passed two-factor in this session |
 | Customer / facility scope | Facility or department: a grant at one facility or department is enough; rows outside it stay hidden (404) |
 | Request schema | `LeaveDecisionRequest`: `version` (required), `note` (≤ 500 characters), `cancel_shifts`, `allow_over_balance` |

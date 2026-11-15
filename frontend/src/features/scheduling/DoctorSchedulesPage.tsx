@@ -124,7 +124,8 @@ export function DoctorSchedulesPage() {
 function sessionLabel(session: OpdSession): string {
   const extra = session.source === "extra" ? " (extra)" : "";
   if (session.status === "off") return `${session.hours}${extra} · off`;
-  return `${session.hours}${extra} · ${session.open_slots} slots`;
+  const booked = session.booked + session.extra_booked;
+  return `${session.hours}${extra} · ${session.open_slots} slots${booked ? ` · ${booked} booked` : ""}`;
 }
 
 function WeekGrid({ week, onSlots }: { week: DepartmentWeek; onSlots: (d: WeekDoctor, s: OpdSession) => void }) {
@@ -335,7 +336,13 @@ function SlotsDialog({ doctor, session, onClose }: { doctor: WeekDoctor; session
           {upcoming.length > 0 && (
             <Box role="list" aria-label="Free slots" sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
               {upcoming.map((slot) => (
-                <Chip key={slot.starts_at} role="listitem" size="small" variant="outlined" label={slot.time} />
+                <Chip
+                  key={slot.starts_at}
+                  role="listitem"
+                  size="small"
+                  variant={slot.is_booked ? "filled" : "outlined"}
+                  label={slot.is_booked ? `${slot.time} booked` : slot.time}
+                />
               ))}
             </Box>
           )}
@@ -347,7 +354,9 @@ function SlotsDialog({ doctor, session, onClose }: { doctor: WeekDoctor; session
             </Typography>
           )}
           {shown.slots.length === 0 && <Typography variant="body2">No free slots in this session.</Typography>}
-          <Typography variant="caption">Booking appointments into these slots comes next (HIMS-OPD-002).</Typography>
+          <Typography variant="caption">
+            {shown.booked + shown.extra_booked} booked. Patients are booked on the Appointments page.
+          </Typography>
         </>
       )}
     </FormDialog>
@@ -568,7 +577,18 @@ function AffectedList({ result }: { result: AddedException }) {
           ))}
         </Box>
       )}
-      {result.affected.length > 0 && " Patients booked in them will be listed here once booking exists (HIMS-OPD-002)."}
+      {result.bookings.length > 0 && (
+        <>
+          {` ${result.bookings.length} booked patient(s) to move or cancel (Appointments page, To move):`}
+          <Box component="ul" sx={{ m: 0, pl: 2 }}>
+            {result.bookings.map((a) => (
+              <li key={a.id}>
+                {formatDay(a.local_date)} {a.time}: {a.patient_name} ({a.patient_mrn}) with {a.staff_name}
+              </li>
+            ))}
+          </Box>
+        </>
+      )}
     </Alert>
   );
 }

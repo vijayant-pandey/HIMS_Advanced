@@ -11,6 +11,10 @@ How it works inside: [doctor schedules data design](../architecture/data-archite
 Booking patients into the slots comes next (HIMS-OPD-002), then walk-ins and the OPD queue
 (HIMS-OPD-003) and reminders (HIMS-OPD-004).
 
+**2026-11-15:** booking is built (HIMS-OPD-002): see [appointments](appointments.md). The week now
+shows how many patients are booked in each session, and a session's slot length cannot change
+while patients are booked into its coming days.
+
 ## What it is for
 
 A **session** is a doctor seeing outpatients in one department on one weekday, for example
