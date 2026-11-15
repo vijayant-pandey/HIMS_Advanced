@@ -11,6 +11,10 @@ sessions off, without being entered twice. Nothing here is deleted: sessions are
 exceptions cancelled, each with who, when and why. The database refuses two weekly sessions of one
 doctor at the same time (exclusion constraint), so two schedulers working at once cannot overlap
 them. See docs/architecture/data-architecture/scheduling.md.
+
+**Appointments** (HIMS-OPD-002) book patients into those slots. The database refuses two
+appointments of one doctor at the same time (exclusion constraint), so two receptionists booking
+the same slot at the same moment cannot both succeed (P0 part 01 section 10).
 """
 
 from django.conf import settings
@@ -230,3 +234,176 @@ class ScheduleException(OrganizationOwnedModel, VersionedModel):
     @property
     def days(self) -> int:
         return (self.end_date - self.start_date).days + 1
+
+
+class TimeRange(Func):
+    """An appointment's time as a range, so PostgreSQL can refuse two that overlap."""
+
+    function = "TSTZRANGE"
+    output_field = DateTimeRangeField()
+
+
+class Appointment(OrganizationOwnedModel, VersionedModel):
+    """A patient booked into a slot of a doctor's OPD session (HIMS-OPD-002; P0 part 02).
+
+    The slot comes from a weekly session or an extra session on that day. Two appointments of one
+    doctor never overlap (exclusion constraint), except bookings over the slots that the session
+    allows (``is_extra``, D11), which are counted per session under a lock on the doctor. Nothing
+    is deleted: a cancelled appointment keeps who, when and why, and a moved one links to the
+    appointment that replaced it. Check-in, walk-ins, tokens and no-shows come with HIMS-OPD-003.
+    """
+
+    class Kind(models.TextChoices):
+        NEW = "new", "New"
+        FOLLOW_UP = "follow_up", "Follow-up"
+
+    class Source(models.TextChoices):
+        FRONT_DESK = "front_desk", "At the front desk"
+        PHONE = "phone", "By phone"
+
+    class Status(models.TextChoices):
+        BOOKED = "booked", "Booked"
+        CHECKED_IN = "checked_in", "Checked in"
+        IN_CONSULTATION = "in_consultation", "With the doctor"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+        NO_SHOW = "no_show", "Did not come"
+
+    class CancelReason(models.TextChoices):
+        PATIENT_REQUEST = "patient_request", "The patient asked"
+        HOSPITAL = "hospital", "The hospital cancelled"
+        DOCTOR_UNAVAILABLE = "doctor_unavailable", "The doctor is not available"
+        RESCHEDULED = "rescheduled", "Moved to another time"
+
+    patient = models.ForeignKey(
+        "patients.Patient", on_delete=models.PROTECT, related_name="appointments", db_index=False
+    )
+    staff = models.ForeignKey(
+        "staff.StaffMember",
+        on_delete=models.PROTECT,
+        related_name="appointments",
+        db_index=False,
+        help_text="The doctor",
+    )
+    facility = models.ForeignKey(
+        "facilities.Facility", on_delete=models.PROTECT, related_name="+", db_index=False
+    )
+    department = models.ForeignKey(
+        "facilities.Department", on_delete=models.PROTECT, related_name="+", db_index=False
+    )
+    schedule = models.ForeignKey(
+        DoctorSchedule,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="appointments",
+        help_text="The weekly session (empty for an extra session)",
+    )
+    extra_session = models.ForeignKey(
+        ScheduleException,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="appointments",
+        db_index=False,
+        help_text="The extra session (empty for a weekly session)",
+    )
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    local_date = models.DateField(help_text="The day on the facility's clock")
+    kind = models.CharField(max_length=12, choices=Kind.choices, default=Kind.NEW)
+    source = models.CharField(max_length=12, choices=Source.choices, default=Source.FRONT_DESK)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.BOOKED)
+    reason = models.CharField(
+        max_length=200, blank=True, help_text="Short reason for the visit. No detailed history."
+    )
+    is_extra = models.BooleanField(
+        default=False, help_text="Booked over the session's slots (extra bookings, D11)"
+    )
+    rescheduled_from = models.OneToOneField(
+        "self",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="rescheduled_to",
+        help_text="The appointment this one replaced",
+    )
+    booked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        related_name="+",
+        db_index=False,
+    )
+    cancel_reason = models.CharField(max_length=24, choices=CancelReason.choices, blank=True)
+    cancel_note = models.CharField(max_length=255, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        db_index=False,
+    )
+
+    class Meta:
+        db_table = "appointments"
+        ordering = ["starts_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(ends_at__gt=F("starts_at")), name="appointment_ends_after_start"
+            ),
+            models.CheckConstraint(
+                condition=Q(schedule__isnull=False, extra_session__isnull=True)
+                | Q(schedule__isnull=True, extra_session__isnull=False),
+                name="appointment_one_session",
+            ),
+            models.CheckConstraint(
+                # Cancelled with when and why, or not cancelled and nothing of either.
+                condition=(Q(status="cancelled", cancelled_at__isnull=False) & ~Q(cancel_reason=""))
+                | (Q(cancelled_at__isnull=True, cancel_reason="") & ~Q(status="cancelled")),
+                name="appointment_cancelled",
+            ),
+            models.CheckConstraint(
+                condition=Q(rescheduled_from__isnull=True) | ~Q(rescheduled_from=F("id")),
+                name="appointment_not_moved_to_itself",
+            ),
+            ExclusionConstraint(
+                name="appointment_no_double_booking",
+                expressions=[
+                    ("staff", RangeOperators.EQUAL),
+                    (TimeRange("starts_at", "ends_at"), RangeOperators.OVERLAPS),
+                ],
+                condition=Q(status__in=["booked", "checked_in", "in_consultation"], is_extra=False),
+                violation_error_message="This slot was just taken.",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["staff", "local_date"], name="appointment_staff_day_idx"),
+            models.Index(fields=["patient", "starts_at"], name="appointment_patient_idx"),
+            # The console's list, newest first (the volume check measured 2.4 s without it).
+            models.Index(fields=["-starts_at"], name="appointment_start_idx"),
+            # The "To move" list: booked appointments in a department (small: booked only).
+            # The OPD queue's facility day list adds its own index (HIMS-OPD-003).
+            models.Index(
+                fields=["department", "starts_at"],
+                condition=Q(status="booked"),
+                name="appointment_booked_dept_idx",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.patient} with {self.staff}, {self.local_date:%d %b %Y}"
+
+    @property
+    def is_active(self) -> bool:
+        return self.status in ACTIVE_STATUSES
+
+
+# An appointment that holds its slot (P0 part 02: the exclusion constraint's condition).
+ACTIVE_STATUSES = (
+    Appointment.Status.BOOKED,
+    Appointment.Status.CHECKED_IN,
+    Appointment.Status.IN_CONSULTATION,
+)

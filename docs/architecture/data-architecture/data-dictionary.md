@@ -30,7 +30,7 @@ Common to most tables: `id` is a random UUID (never a sequence), business number
 - **Access control: roles, access, reviews, cover**: [`permissions`](#permissions), [`roles`](#roles), [`role_permissions`](#role_permissions), [`role_assignments`](#role_assignments), [`access_reviews`](#access_reviews), [`access_review_items`](#access_review_items), [`access_review_reminders`](#access_review_reminders), [`access_delegations`](#access_delegations), [`support_access`](#support_access)
 - **Staff and credentials**: [`specialties`](#specialties), [`qualification_types`](#qualification_types), [`designations`](#designations), [`staff_members`](#staff_members), [`staff_department_assignments`](#staff_department_assignments), [`staff_qualifications`](#staff_qualifications), [`staff_credentials`](#staff_credentials), [`staff_documents`](#staff_documents), [`staff_credential_expiry_alerts`](#staff_credential_expiry_alerts), [`clinical_privileges`](#clinical_privileges), [`staff_privileges`](#staff_privileges)
 - **Rotas, on-call and leave**: [`shift_types`](#shift_types), [`shifts`](#shifts), [`leave_requests`](#leave_requests), [`staffing_requirements`](#staffing_requirements), [`staffing_gap_alerts`](#staffing_gap_alerts), [`leave_entitlements`](#leave_entitlements), [`leave_balance_adjustments`](#leave_balance_adjustments)
-- **Doctor OPD schedules**: [`doctor_schedules`](#doctor_schedules), [`schedule_exceptions`](#schedule_exceptions)
+- **Doctor OPD schedules and appointments**: [`doctor_schedules`](#doctor_schedules), [`schedule_exceptions`](#schedule_exceptions), [`appointments`](#appointments)
 - **Audit log and tamper evidence**: [`audit_events`](#audit_events), [`audit_chain_entries`](#audit_chain_entries), [`audit_integrity_checks`](#audit_integrity_checks)
 - **Compliance: requirements, risks, security incidents, retention and legal holds**: [`compliance_requirements`](#compliance_requirements), [`compliance_risks`](#compliance_risks), [`security_incidents`](#security_incidents), [`browser_security_reports`](#browser_security_reports), [`console_access_blocks`](#console_access_blocks), [`security_incident_notifications`](#security_incident_notifications), [`retention_rules`](#retention_rules), [`legal_holds`](#legal_holds), [`retention_purge_runs`](#retention_purge_runs)
 - **Notifications: emails and SMS**: [`notifications`](#notifications), [`message_templates`](#message_templates)
@@ -1484,9 +1484,9 @@ Days added to or taken from one person's balance, e.g. a balance brought from be
 | `created_by_id` | uuid → users.id | yes | — | on delete PROTECT | System | Internal: Person reference (id only) | Created by |
 | `created_at` | timestamp with time zone | no | now() | — | System | Internal: System metadata | When the row was created (UTC) |
 
-## Doctor OPD schedules
+## Doctor OPD schedules and appointments
 
-**Owner (source of truth):** Outpatient domain (heads of department and OPD schedulers keep it; HIMS-OPD-001). **Design:** [scheduling](scheduling.md), [02-database-design](../../p0/phase-2-patients/02-database-design.md).
+**Owner (source of truth):** Outpatient domain (heads of department and OPD schedulers keep the sessions; the front desk and OPD schedulers book; HIMS-OPD-001, HIMS-OPD-002). **Design:** [scheduling](scheduling.md), [02-database-design](../../p0/phase-2-patients/02-database-design.md).
 
 <a id="doctor_schedules"></a>
 ### `doctor_schedules`
@@ -1555,6 +1555,44 @@ A change to the weekly sessions: a doctor away, a facility or department closed,
 | `cancelled_at` | timestamp with time zone | yes | — | — | System | Internal: Business data | Cancelled at |
 | `cancelled_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Cancelled by |
 | `cancel_reason` | varchar(255) | no | — | up to 255 characters | Person | Restricted: Work note | Cancel reason |
+
+<a id="appointments"></a>
+### `appointments`
+
+A patient booked into a slot of a doctor's OPD session (HIMS-OPD-002; P0 part 02).
+
+- **Model:** `scheduling.Appointment`
+- **Lifecycle:** Never deleted; booked -> cancelled (with who, when and why) or, from HIMS-OPD-003, checked in -> with the doctor -> completed, or did not come. A moved appointment is cancelled as moved and links to the new one. Kept with the patient's record (retention decision pending with the clinical records, 🔒 LEGAL) (HIMS-OPD-002).
+- **Rules:** `appointment_ends_after_start`: Check: ends_at > starts_at; `appointment_one_session`: Check: ((extra_session is empty AND schedule is set) OR (extra_session is set AND schedule is empty)); `appointment_cancelled`: Check: ((cancelled_at is set AND status = 'cancelled' AND NOT cancel_reason = '') OR (cancel_reason = '' AND cancelled_at is empty AND NOT status = 'cancelled')); `appointment_not_moved_to_itself`: Check: (rescheduled_from is empty OR NOT rescheduled_from = id); `appointment_no_double_booking`: No overlap: This slot was just taken. (only rows where (is_extra = False AND status in ['booked', 'checked_in', 'in_consultation']))
+- **Extra indexes:** `appointment_staff_day_idx`: staff, local_date; `appointment_patient_idx`: patient, starts_at; `appointment_start_idx`: -starts_at; `appointment_booked_dept_idx`: department, starts_at where status = 'booked'
+
+| Column | Type | Empty allowed | Default | Allowed values | Set by | Sensitivity | Meaning |
+|---|---|---|---|---|---|---|---|
+| `id` **PK** | uuid | no | uuid4() | — | System | Internal: System metadata | Internal identity (random UUID; never shown as a business number) |
+| `created_at` | timestamp with time zone | no | now (on create) | — | System | Internal: System metadata | When the row was created (UTC) |
+| `updated_at` | timestamp with time zone | no | now (on every save) | — | System | Internal: System metadata | When the row last changed (UTC) |
+| `version` | integer | no | `1` | 0 or more | System | Internal: System metadata | Edit counter: a save based on an older version is refused (409) |
+| `organization_id` | uuid → organizations.id | no | — | on delete PROTECT | System | Internal: Reference | The hospital that owns the row (one per deployment) |
+| `patient_id` | uuid → patients.id | no | — | on delete PROTECT | Person | Internal: Reference | Patient |
+| `staff_id` | uuid → staff_members.id | no | — | on delete PROTECT | Person | Internal: Reference | The doctor |
+| `facility_id` | uuid → facilities.id | no | — | on delete PROTECT | Person | Internal: Reference | Facility |
+| `department_id` | uuid → departments.id | no | — | on delete PROTECT | Person | Internal: Reference | Department |
+| `schedule_id` | uuid → doctor_schedules.id | yes | — | on delete PROTECT | Person | Internal: Reference | The weekly session (empty for an extra session) |
+| `extra_session_id` | uuid → schedule_exceptions.id | yes | — | on delete PROTECT | Person | Internal: Reference | The extra session (empty for a weekly session) |
+| `starts_at` | timestamp with time zone | no | — | — | Person | Clinical: Patient health-related data (which specialty a person sees) | Starts at |
+| `ends_at` | timestamp with time zone | no | — | — | Person | Clinical: Patient health-related data (which specialty a person sees) | Ends at |
+| `local_date` | date | no | — | — | Person | Clinical: Patient health-related data (which specialty a person sees) | The day on the facility's clock |
+| `kind` | varchar(12) | no | `Appointment.Kind.NEW` | `new` (New), `follow_up` (Follow-up) | Person | Clinical: Patient health-related data (which specialty a person sees) | Kind |
+| `source` | varchar(12) | no | `Appointment.Source.FRONT_DESK` | `front_desk` (At the front desk), `phone` (By phone) | Person | Clinical: Patient health-related data (which specialty a person sees) | Source |
+| `status` | varchar(16) | no | `Appointment.Status.BOOKED` | `booked` (Booked), `checked_in` (Checked in), `in_consultation` (With the doctor), `completed` (Completed), `cancelled` (Cancelled), `no_show` (Did not come) | Person | Clinical: Patient health-related data (which specialty a person sees) | Status |
+| `reason` | varchar(200) | no | — | up to 200 characters | Person | Clinical: Patient health-related data (which specialty a person sees) | Short reason for the visit. No detailed history. |
+| `is_extra` | boolean | no | `False` | — | Person | Clinical: Patient health-related data (which specialty a person sees) | Booked over the session's slots (extra bookings, D11) |
+| `rescheduled_from_id` | uuid → appointments.id | yes | — | unique; on delete PROTECT | Person | Internal: Reference | The appointment this one replaced |
+| `booked_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Booked by |
+| `cancel_reason` | varchar(24) | no | — | `patient_request` (The patient asked), `hospital` (The hospital cancelled), `doctor_unavailable` (The doctor is not available), `rescheduled` (Moved to another time) | Person | Clinical: Patient health-related data (which specialty a person sees) | Cancel reason |
+| `cancel_note` | varchar(255) | no | — | up to 255 characters | Person | Clinical: Patient health-related data (which specialty a person sees) | Cancel note |
+| `cancelled_at` | timestamp with time zone | yes | — | — | System | Clinical: Patient health-related data (which specialty a person sees) | Cancelled at |
+| `cancelled_by_id` | uuid → users.id | yes | — | on delete PROTECT | System (who did it) | Internal: Person reference (id only) | Cancelled by |
 
 ## Audit log and tamper evidence
 

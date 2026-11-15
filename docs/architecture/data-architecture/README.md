@@ -13,6 +13,12 @@ their exceptions, with the same review: [doctor schedules](scheduling.md). Their
 the volume check and their database rules have their own tests
 (`apps/scheduling/tests/test_schedule_invariants.py`).
 
+**2026-11-15 (HIMS-OPD-002):** appointments (slice 2B, second part): patients booked into doctors'
+OPD slots, with the same review added to [doctor schedules](scheduling.md#part-2-appointments-hims-opd-002).
+The database refuses two appointments of one doctor at the same time (exclusion constraint
+`appointment_no_double_booking`); its queries are in the volume check (one million appointments)
+and its database rules have their own tests.
+
 **Start here:**
 
 | Document | What it holds | Kept up to date by |
@@ -20,7 +26,7 @@ the volume check and their database rules have their own tests
 | [data-dictionary.md](data-dictionary.md) | Every table and column: type, empty allowed, default, allowed values, who sets it, sensitivity, meaning; keys, constraints, indexes, lifecycle and owner per table | **Generated** from the models (`python manage.py data_dictionary`); CI fails when it is stale |
 | [erd.md](erd.md) | ERDs: all tables with relationships, and one diagram per domain with columns | **Generated** (same command) |
 | This page | The rules behind the tables: ownership, classification and access, lifecycle, transactions, history, migrations, catalogs, data flows, test data | By hand, with each change |
-| Domain designs | [Facilities and departments](facilities-and-departments.md) · [Locations and beds](locations-and-beds.md) · [Numbering](numbering-schemes.md) · [Access reviews](access-reviews.md) · [Cover arrangements](cover-arrangements.md) · [Rotas and leave](rotas-and-leave.md) · [Audit integrity](audit-integrity.md) | By hand, per feature · [Patients](patients.md) (Phase 2, HIMS-PAT-001) · [Patients/MPI review](patients-mpi-review.md) (HIMS-DATA-003) · [Doctor schedules](scheduling.md) (HIMS-OPD-001) |
+| Domain designs | [Facilities and departments](facilities-and-departments.md) · [Locations and beds](locations-and-beds.md) · [Numbering](numbering-schemes.md) · [Access reviews](access-reviews.md) · [Cover arrangements](cover-arrangements.md) · [Rotas and leave](rotas-and-leave.md) · [Audit integrity](audit-integrity.md) | By hand, per feature · [Patients](patients.md) (Phase 2, HIMS-PAT-001) · [Patients/MPI review](patients-mpi-review.md) (HIMS-DATA-003) · [Doctor schedules](scheduling.md) (HIMS-OPD-001) · [Appointments](scheduling.md#part-2-appointments-hims-opd-002) (HIMS-OPD-002) |
 
 ## Spec 28.1 deliverables
 
@@ -189,6 +195,10 @@ always indexed.
 | OPD schedule: one doctor's sessions (the doctor's day, free slots, own sessions) | `doctor_schedule_staff_idx` (staff, weekday), or the no-overlap rule's index `doctor_schedule_no_overlap` |
 | OPD schedule: a doctor's time away; extra sessions | `schedule_exception_staff_idx` (staff, start date) |
 | OPD schedule: a facility's holidays | `schedule_exception_fac_idx` (facility, start date) |
+| Appointments: a doctor's days, put into their sessions (the day screen, free slots, the doctor's week; extra bookings counted) | `appointment_staff_day_idx` (staff, local date), or the no-double-booking rule's index `appointment_no_double_booking` (HIMS-OPD-002) |
+| Appointments: one patient's upcoming ones (chart Overview; "already booked at that time" check) | `appointment_patient_idx` (patient, start) |
+| Appointments: one department's booked ones still to come (To move) | `appointment_booked_dept_idx` (department, start; booked only). The OPD queue's facility day list adds its own index with HIMS-OPD-003 |
+| Appointments: every appointment, newest first (the console list) | `appointment_start_idx` (start, newest first; the volume check measured 2.4 s for the list without it) |
 
 Patient search, encounter, medication, lab and claim indexes (spec 28.6) are designed with
 their domains. **Patient search and the patient screens: done and measured at hospital size
@@ -217,6 +227,10 @@ their domains. **Patient search and the patient screens: done and measured at ho
 - **Doctor schedules (HIMS-OPD-001):** every change for one doctor locks that doctor's staff row,
   so two schedulers work one after the other; the database also refuses two weekly sessions of
   one doctor at the same time (exclusion constraint `doctor_schedule_no_overlap`).
+- **Appointments (HIMS-OPD-002):** a booking locks the doctor's staff row (extra bookings are
+  counted under it), and the database refuses two appointments of one doctor at the same time
+  (exclusion constraint `appointment_no_double_booking`), tested with two bookings at the same
+  moment: one wins, the other is told "This slot was just taken".
 
 ## 6. History and versions
 

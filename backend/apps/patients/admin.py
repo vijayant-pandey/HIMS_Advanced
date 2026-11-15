@@ -285,7 +285,11 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
             person.insert(6, "age_years")
         sets = [
             (None, {"fields": ("mrn", "status", "registered_facility")}),
-            *([("Chart", {"fields": ("chart_alerts", "allergies")})] if obj is not None else []),
+            *(
+                [("Chart", {"fields": ("chart_alerts", "allergies", "upcoming_appointments")})]
+                if obj is not None
+                else []
+            ),
             ("Person", {"fields": person}),
             (
                 "More",
@@ -325,6 +329,37 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
     def allergies(self, obj):
         return chart.AllergyStatus.NOT_ASKED.label
 
+    @admin.display(description="Upcoming appointments")
+    def upcoming_appointments(self, obj):
+        """Booked appointments still to come, as on the chart's Overview (HIMS-OPD-002)."""
+        from apps.scheduling.models import ACTIVE_STATUSES, Appointment
+
+        rows = (
+            Appointment.objects.filter(
+                patient=obj, status__in=ACTIVE_STATUSES, ends_at__gt=timezone.now()
+            )
+            .select_related("staff", "department", "facility")
+            .order_by("starts_at")[:5]
+        )
+        if not rows:
+            return "None booked"
+        return format_html(
+            "<ul>{}</ul>",
+            format_html_join(
+                "",
+                "<li>{} {}, {}, {}</li>",
+                (
+                    (
+                        f"{a.local_date:%d %b %Y}",
+                        hospital_time(a.starts_at, a.facility).strftime("%H:%M"),
+                        a.staff,
+                        a.department.name,
+                    )
+                    for a in rows
+                ),
+            ),
+        )
+
     @admin.display(description="Who opened and changed it")
     def record_history(self, obj):
         rows = [
@@ -350,7 +385,13 @@ class PatientAdmin(PatientConsoleAccess, HimsModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         readonly = [*super().get_readonly_fields(request, obj), "mrn", "status", "registered_by"]
         if obj is not None:
-            readonly += ["registered_facility", "chart_alerts", "allergies", "record_history"]
+            readonly += [
+                "registered_facility",
+                "chart_alerts",
+                "allergies",
+                "upcoming_appointments",
+                "record_history",
+            ]
         return readonly
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):

@@ -31,6 +31,7 @@ CATEGORIES: dict[str, str] = {
     "support": "Supplier support access",
     "patient": "Patients",
     "schedule": "Doctor schedules (OPD)",
+    "appointment": "Appointments (OPD)",
 }
 
 LABELS: dict[str, str] = {
@@ -189,6 +190,9 @@ LABELS: dict[str, str] = {
     A.DOCTOR_SCHEDULE_ENDED: "Doctor's OPD session ended",
     A.SCHEDULE_EXCEPTION_ADDED: "OPD exception added (doctor away, holiday or extra session)",
     A.SCHEDULE_EXCEPTION_CANCELLED: "OPD exception cancelled",
+    A.APPOINTMENT_BOOKED: "Appointment booked",
+    A.APPOINTMENT_RESCHEDULED: "Appointment moved to another time",
+    A.APPOINTMENT_CANCELLED: "Appointment cancelled",
 }
 
 

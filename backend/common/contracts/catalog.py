@@ -42,8 +42,9 @@ VIEW_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     ),
     "apps.patients.api.views.EmergencyAccessViewSet": ("HIMS-PAT-006",),
     # Outpatient department (Phase 2, slice 2B)
-    "apps.scheduling.api.views.DoctorScheduleViewSet": ("HIMS-OPD-001",),
-    "apps.scheduling.api.views.ScheduleExceptionViewSet": ("HIMS-OPD-001",),
+    "apps.scheduling.api.views.DoctorScheduleViewSet": ("HIMS-OPD-001", "HIMS-OPD-002"),
+    "apps.scheduling.api.views.ScheduleExceptionViewSet": ("HIMS-OPD-001", "HIMS-OPD-002"),
+    "apps.scheduling.api.views.AppointmentViewSet": ("HIMS-OPD-002",),
     "apps.scheduling.api.views.DoctorAvailabilityView": ("HIMS-OPD-001",),
     "apps.scheduling.api.views.MyOpdSessionsView": ("HIMS-OPD-001",),
     # Numbering and features
@@ -112,7 +113,7 @@ VIEW_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     _R + "views.RotaWeekView": ("HIMS-STAFF-012", "HIMS-STAFF-015"),
     _R + "views.RotaNowView": ("HIMS-STAFF-012",),
     _R + "views.MyScheduleView": ("HIMS-STAFF-012",),
-    _R + "views.LeaveRequestViewSet": ("HIMS-STAFF-012", "HIMS-STAFF-013"),
+    _R + "views.LeaveRequestViewSet": ("HIMS-STAFF-012", "HIMS-STAFF-013", "HIMS-OPD-002"),
     _R + "views.MyLeaveRequestsView": ("HIMS-STAFF-012", "HIMS-STAFF-013"),
     _R + "views.MyLeaveCancelView": ("HIMS-STAFF-012",),
     _R + "staffing_views.LeaveEntitlementViewSet": ("HIMS-STAFF-013",),

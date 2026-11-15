@@ -65,6 +65,11 @@ the API and screen tests; the browser test follows when the Doctor role exists (
 a doctor added and posted, a weekly session, part of a day away, the free slots, and the front desk's
 read-only view) the India run finishes with `53 passed`.
 
+**Update 2026-11-15, later:** with the appointments test (`08-appointments.spec.ts`, HIMS-OPD-002:
+the front desk books a patient from her chart into next week's free slot, moves it, cancels it with
+the reason, books again and sees it on the chart; the doctor away puts her under To move) the India
+run finishes with `56 passed`. It books next week, so it passes at any hour CI runs.
+
 ```
 npm run e2e:us
 ```

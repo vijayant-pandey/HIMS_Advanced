@@ -374,6 +374,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/appointments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Appointments for a patient, a department or a doctor (one of them is required), at
+         *     most 200, in time order.
+         */
+        get: operations["appointments_list"];
+        put?: never;
+        /**
+         * @description Book a patient into a free slot (409 ``SLOT_TAKEN`` when someone booked it first), or
+         *     over the slots into a booked one when the session allows extra bookings.
+         */
+        post: operations["appointments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description One appointment. */
+        get: operations["appointments_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Cancel a booked appointment with the reason (the patient asked, the hospital, the
+         *     doctor is not available). It stays on record as cancelled.
+         */
+        post: operations["appointments_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/{id}/reschedule/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Move a booked appointment to another slot (another doctor or department if given).
+         *     The answer is the new appointment; the old one is cancelled as moved and links to it.
+         */
+        post: operations["appointments_reschedule_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/day/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description One department's doctors on one day: each session's slots, free or booked, and the
+         *     day's appointments (cancelled ones too).
+         */
+        get: operations["appointments_day_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/appointments/to-rebook/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Booked appointments still to come whose doctor is now away or on leave, or whose
+         *     session ended or was taken off: the patients to move or cancel, with why. At most 200,
+         *     soonest first; the next ones show as these are moved.
+         */
+        get: operations["appointments_to_rebook_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/audit-events/": {
         parameters: {
             query?: never;
@@ -4481,8 +4603,10 @@ export interface components {
         };
         AddedException: {
             exception: components["schemas"]["ScheduleException"];
-            /** @description Sessions it takes off (all or part); booked patients come later */
+            /** @description Sessions it takes off (all or part) */
             affected: components["schemas"]["Session"][];
+            /** @description Patients booked in the time it takes off: move or cancel them */
+            bookings: components["schemas"]["Appointment"][];
         };
         /**
          * @description * `any` - Any age
@@ -4552,6 +4676,98 @@ export interface components {
          * @enum {string}
          */
         AppliesOnEnum: "every_day" | "weekdays" | "weekends";
+        /**
+         * @description An appointment. A restricted record's name and reason are shown only to people who may
+         *     open restricted records (HIMS-PAT-006); its MRN is shown, as an exact MRN search does.
+         */
+        Appointment: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly patient_id: string;
+            readonly patient_name: string;
+            readonly patient_mrn: string;
+            readonly patient_restricted: boolean;
+            /** Format: uuid */
+            readonly staff_id: string;
+            readonly staff_name: string;
+            /** Format: uuid */
+            readonly department_id: string;
+            readonly department_name: string;
+            /** Format: uuid */
+            readonly facility_id: string;
+            /** Format: date-time */
+            readonly starts_at: string;
+            /** Format: date-time */
+            readonly ends_at: string;
+            /**
+             * Format: date
+             * @description The day on the facility's clock
+             */
+            readonly local_date: string;
+            /** @description e.g. 09:10, on the facility's clock */
+            readonly time: string;
+            readonly kind: components["schemas"]["AppointmentKindEnum"];
+            readonly kind_label: string;
+            readonly source: components["schemas"]["AppointmentSourceEnum"];
+            readonly source_label: string;
+            readonly status: components["schemas"]["AppointmentStatusEnum"];
+            readonly status_label: string;
+            /** @description Short reason for the visit */
+            readonly reason: string;
+            /** @description Booked over the session's slots (extra bookings, D11) */
+            readonly is_extra: boolean;
+            /** Format: uuid */
+            readonly rescheduled_from_id: string | null;
+            /** Format: uuid */
+            readonly rescheduled_to_id: string | null;
+            readonly booked_by_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly cancel_reason: components["schemas"]["AppointmentCancelReasonEnum"];
+            readonly cancel_reason_label: string;
+            readonly cancel_note: string;
+            /** Format: date-time */
+            readonly cancelled_at: string | null;
+            readonly version: number;
+        };
+        /**
+         * @description * `patient_request` - The patient asked
+         *     * `hospital` - The hospital cancelled
+         *     * `doctor_unavailable` - The doctor is not available
+         * @enum {string}
+         */
+        AppointmentCancelChoiceEnum: "patient_request" | "hospital" | "doctor_unavailable";
+        /**
+         * @description * `patient_request` - The patient asked
+         *     * `hospital` - The hospital cancelled
+         *     * `doctor_unavailable` - The doctor is not available
+         *     * `rescheduled` - Moved to another time
+         * @enum {string}
+         */
+        AppointmentCancelReasonEnum: "patient_request" | "hospital" | "doctor_unavailable" | "rescheduled";
+        /**
+         * @description * `new` - New
+         *     * `follow_up` - Follow-up
+         * @enum {string}
+         */
+        AppointmentKindEnum: "new" | "follow_up";
+        /**
+         * @description * `front_desk` - At the front desk
+         *     * `phone` - By phone
+         * @enum {string}
+         */
+        AppointmentSourceEnum: "front_desk" | "phone";
+        /**
+         * @description * `booked` - Booked
+         *     * `checked_in` - Checked in
+         *     * `in_consultation` - With the doctor
+         *     * `completed` - Completed
+         *     * `cancelled` - Cancelled
+         *     * `no_show` - Did not come
+         * @enum {string}
+         */
+        AppointmentStatusEnum: "booked" | "checked_in" | "in_consultation" | "completed" | "cancelled" | "no_show";
         ArchiveRequest: {
             reason: string;
         };
@@ -4823,6 +5039,36 @@ export interface components {
             };
             beds: components["schemas"]["BoardBed"][];
         };
+        BookRequest: {
+            /** Format: uuid */
+            patient: string;
+            /**
+             * Format: uuid
+             * @description The doctor
+             */
+            staff: string;
+            /** Format: uuid */
+            department: string;
+            /**
+             * Format: date-time
+             * @description The slot's start (from the free slots)
+             */
+            starts_at: string;
+            /** @default new */
+            kind: components["schemas"]["AppointmentKindEnum"];
+            /** @default front_desk */
+            source: components["schemas"]["AppointmentSourceEnum"];
+            /**
+             * @description Short; no history
+             * @default
+             */
+            reason: string;
+            /**
+             * @description Over the slots, into a booked slot (when the session allows it)
+             * @default false
+             */
+            extra: boolean;
+        };
         BrowserReportReviewRequest: {
             version: number;
             note?: string;
@@ -4879,6 +5125,12 @@ export interface components {
             start: number;
             count: number;
             bed_type: components["schemas"]["BedTypeEnum"];
+        };
+        CancelAppointmentRequest: {
+            version: number;
+            reason: components["schemas"]["AppointmentCancelChoiceEnum"];
+            /** @default  */
+            note: string;
         };
         CancelExceptionRequest: {
             version: number;
@@ -5161,6 +5413,14 @@ export interface components {
             passed: boolean;
             detail: string;
         };
+        DayDoctor: {
+            /** Format: uuid */
+            staff_id: string;
+            name: string;
+            designation: string | null;
+            leave_asked: boolean;
+            sessions: components["schemas"]["Session"][];
+        };
         DecisionRequest: {
             /** @description Why (kept in the audit log). */
             reason: string;
@@ -5228,6 +5488,20 @@ export interface components {
             code: string;
             name: string;
             department_type: components["schemas"]["DepartmentTypeEnum"];
+        };
+        DepartmentDay: {
+            /** Format: uuid */
+            department_id: string;
+            department_name: string;
+            /** Format: uuid */
+            facility_id: string;
+            facility_name: string;
+            /** Format: date */
+            day: string;
+            doctors: components["schemas"]["DayDoctor"][];
+            appointments: components["schemas"]["Appointment"][];
+            /** @description May book, move and cancel here */
+            can_book: boolean;
         };
         DepartmentDetail: {
             /** Format: uuid */
@@ -6216,6 +6490,8 @@ export interface components {
             readonly cancel_reason: string;
             /** @description Planned shifts the person would miss (only while waiting for a decision) */
             readonly conflicting_shifts: components["schemas"]["Shift"][];
+            /** @description OPD patients booked with the person during this leave, still to come (only while waiting for a decision): approving it takes those sessions off */
+            readonly opd_bookings: number;
             readonly balance_after: number | null;
             readonly version: number;
         };
@@ -7684,6 +7960,7 @@ export interface components {
          *     * `access.roles.manage` - access.roles.manage
          *     * `access.roles.view` - access.roles.view
          *     * `accounts.manage` - accounts.manage
+         *     * `appointments.manage` - appointments.manage
          *     * `appointments.view` - appointments.view
          *     * `audit.view` - audit.view
          *     * `beds.status.manage` - beds.status.manage
@@ -7735,7 +8012,7 @@ export interface components {
          *     * `support.access.request` - support.access.request
          * @enum {string}
          */
-        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "appointments.view" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "clinical.emergency_access" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "patients.history" | "patients.records_correct" | "patients.register" | "patients.restricted" | "patients.search" | "patients.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "schedules.manage" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
+        PermissionsEnum: "access.assignments.manage" | "access.reviews.manage" | "access.reviews.view" | "access.roles.manage" | "access.roles.view" | "accounts.manage" | "appointments.manage" | "appointments.view" | "audit.view" | "beds.status.manage" | "catalogs.manage" | "clinical.emergency_access" | "compliance.manage" | "compliance.view" | "departments.manage" | "departments.view" | "equipment.manage" | "equipment.view" | "facilities.manage" | "facilities.view" | "features.manage" | "features.view" | "leave.approve" | "leave.policy.manage" | "locations.manage" | "locations.view" | "notifications.manage" | "notifications.templates.manage" | "notifications.view" | "numbering.manage" | "numbering.view" | "organization.manage" | "organization.view" | "patients.history" | "patients.records_correct" | "patients.register" | "patients.restricted" | "patients.search" | "patients.view" | "platform.admin_console" | "platform.jobs.manage" | "platform.jobs.view" | "platform.performance.manage" | "platform.performance.view" | "recovery.manage" | "recovery.view" | "rota.manage" | "rota.view" | "schedules.manage" | "staff.credentials.verify" | "staff.documents.view" | "staff.manage" | "staff.privileges.manage" | "staff.view" | "support.access.manage" | "support.access.request";
         Person: {
             /** Format: uuid */
             id: string;
@@ -7879,6 +8156,25 @@ export interface components {
             is_legal_guardian: boolean;
             /** @default false */
             is_emergency_contact: boolean;
+            /** @default  */
+            note: string;
+        };
+        RescheduleRequest: {
+            version: number;
+            /** Format: date-time */
+            starts_at: string;
+            /**
+             * Format: uuid
+             * @description Another doctor (default: the same)
+             */
+            staff?: string;
+            /**
+             * Format: uuid
+             * @description Default: the same department
+             */
+            department?: string;
+            /** @default false */
+            extra: boolean;
             /** @default  */
             note: string;
         };
@@ -8541,7 +8837,14 @@ export interface components {
             extra_bookings_allowed: number;
             note: string;
             status: components["schemas"]["OpdSessionStatusEnum"];
+            /** @description Slots not taken off */
             open_slots: number;
+            /** @description Patients booked into its slots */
+            booked: number;
+            /** @description Patients booked over its slots */
+            extra_booked: number;
+            /** @description Open slots nobody is booked into */
+            free_slots: number;
             off: components["schemas"]["OffPart"][];
             /** @description Open slots (only for one doctor's day) */
             slots: components["schemas"]["Slot"][];
@@ -8679,6 +8982,8 @@ export interface components {
             /** @description Start, on the facility's clock */
             time: string;
             is_past: boolean;
+            /** @description A patient is booked into it */
+            is_booked: boolean;
         };
         Specialty: {
             /** Format: uuid */
@@ -9131,6 +9436,11 @@ export interface components {
             channel: components["schemas"]["ChannelEnum"];
             /** @description An email address, or a phone number like +919876543210. */
             to: string;
+        };
+        ToRebook: {
+            appointment: components["schemas"]["Appointment"];
+            /** @description Why it cannot be seen at its time */
+            why: string;
         };
         Traces: {
             /** @description none, console or otlp */
@@ -9835,6 +10145,176 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiEndpointList"];
+                };
+            };
+        };
+    };
+    appointments_list: {
+        parameters: {
+            query?: {
+                /** @description One day */
+                date?: string;
+                department?: string;
+                /** @description Staff member id */
+                doctor?: string;
+                /** @description One patient's appointments */
+                patient_id?: string;
+                /** @description Only booked ones still to come (soonest first) */
+                upcoming?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"][];
+                };
+            };
+        };
+    };
+    appointments_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
+    appointments_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this appointment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
+    appointments_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this appointment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelAppointmentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
+    appointments_reschedule_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this appointment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RescheduleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Appointment"];
+                };
+            };
+        };
+    };
+    appointments_day_retrieve: {
+        parameters: {
+            query: {
+                /** @description The day (default: today) */
+                date?: string;
+                department: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentDay"];
+                };
+            };
+        };
+    };
+    appointments_to_rebook_list: {
+        parameters: {
+            query: {
+                department: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToRebook"][];
                 };
             };
         };

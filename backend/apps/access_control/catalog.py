@@ -63,6 +63,7 @@ class P:
     EMERGENCY_ACCESS = "clinical.emergency_access"
     # Outpatient department (HIMS-OPD-001; P0 part 04). Booking comes with HIMS-OPD-002.
     APPOINTMENTS_VIEW = "appointments.view"
+    APPOINTMENTS_MANAGE = "appointments.manage"
     SCHEDULES_MANAGE = "schedules.manage"
 
 
@@ -160,8 +161,12 @@ PERMISSIONS: dict[str, str] = {
         "records are told at once and review it"
     ),
     P.APPOINTMENTS_VIEW: (
-        "See doctors' OPD sessions and free slots (calendars; appointments and the OPD queue "
-        "follow in Phase 2)"
+        "See doctors' OPD sessions, free slots and the patients booked into them (the OPD queue "
+        "follows in Phase 2)"
+    ),
+    P.APPOINTMENTS_MANAGE: (
+        "Book patients into doctors' free slots, move appointments to another time and cancel "
+        "them, with a reason (check-in and walk-ins follow in Phase 2)"
     ),
     P.SCHEDULES_MANAGE: (
         "Keep doctors' OPD sessions: add and end weekly sessions, record a doctor away, a holiday "
@@ -185,6 +190,9 @@ NOT_FOR_ADMINISTRATORS: frozenset[str] = frozenset(
         P.PATIENTS_RESTRICTED,
         P.PATIENTS_RECORDS_CORRECT,
         P.EMERGENCY_ACCESS,
+        # Booking is the front desk's and the OPD scheduler's (P0 part 04 matrix, "Book / check
+        # in"; HIMS-OPD-002): administrators see appointments, as they see patients.
+        P.APPOINTMENTS_MANAGE,
     }
 )
 
@@ -200,8 +208,9 @@ PATIENT_DATA_PERMISSIONS: frozenset[str] = frozenset(
         P.PATIENTS_RESTRICTED,
         P.PATIENTS_RECORDS_CORRECT,
         P.EMERGENCY_ACCESS,
-        # Calendars will show booked patients (HIMS-OPD-002), so support never holds it either.
+        # Calendars show booked patients (HIMS-OPD-002), so support never holds these either.
         P.APPOINTMENTS_VIEW,
+        P.APPOINTMENTS_MANAGE,
     }
 )
 SUPPLIER_SUPPORT_ROLE = "supplier-support"
@@ -356,14 +365,15 @@ SYSTEM_ROLES: dict[str, dict] = {
         "lasts is recorded in the audit log.",
         "permissions": [P.SUPPORT_ACCESS_REQUEST],
     },
-    # Patient administration (HIMS-PAT-001; P0 part 04). Booking appointments, merging and
-    # clinical permissions are added with their tickets (HIMS-OPD-002, HIMS-PAT-004, HIMS-CLIN-*).
+    # Patient administration (HIMS-PAT-001; P0 part 04). Booking appointments (HIMS-OPD-002) is
+    # theirs; merging and clinical permissions are added with their tickets (HIMS-PAT-004,
+    # HIMS-CLIN-*).
     "receptionist": {
         "name": "Receptionist / front desk",
         "description": "Registers patients (the MRN is issued at once), corrects their details, "
-        "contacts, guardians, ID numbers and consents, and looks patients up; sees doctors' OPD "
-        "sessions and free slots. Assign at facility scope: patients are registered at that "
-        "branch and found in every branch.",
+        "contacts, guardians, ID numbers and consents, and looks patients up; books, moves and "
+        "cancels appointments in doctors' free slots. Assign at facility scope: patients are "
+        "registered at that branch and found in every branch.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
@@ -371,19 +381,23 @@ SYSTEM_ROLES: dict[str, dict] = {
             P.PATIENTS_VIEW,
             P.PATIENTS_REGISTER,
             P.APPOINTMENTS_VIEW,
+            P.APPOINTMENTS_MANAGE,
         ],
     },
     # Outpatient scheduling (HIMS-OPD-001; P0 part 04 "Scheduler (optional)"). Booking
-    # (appointments.manage) is added with HIMS-OPD-002.
+    # (appointments.manage) added with HIMS-OPD-002, with the short patient list to find whom to
+    # book (patients.search; decisions log): the record itself stays with the front desk.
     "scheduler": {
         "name": "OPD scheduler",
         "description": "Keeps doctors' OPD sessions: weekly sessions, doctors away, holidays and "
-        "extra sessions, and sees the free slots. Booking appointments is added in a later "
-        "Phase 2 ticket. Assign at department or facility scope.",
+        "extra sessions; books, moves and cancels appointments in their free slots, finding "
+        "patients by the short list. Assign at department or facility scope.",
         "permissions": [
             P.FACILITIES_VIEW,
             P.DEPARTMENTS_VIEW,
+            P.PATIENTS_SEARCH,
             P.APPOINTMENTS_VIEW,
+            P.APPOINTMENTS_MANAGE,
             P.SCHEDULES_MANAGE,
         ],
     },

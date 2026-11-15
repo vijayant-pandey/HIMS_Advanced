@@ -270,3 +270,14 @@ export type OpdSession = Schemas["Session"];
 export type OpdSessionDay = Schemas["SessionDay"];
 export type DoctorDay = Schemas["DoctorDay"];
 export type MyOpdWeek = Schemas["MyOpdWeek"];
+// Appointments (HIMS-OPD-002).
+export type Appointment = Schemas["Appointment"];
+export type AppointmentKind = Schemas["AppointmentKindEnum"];
+export type AppointmentSource = Schemas["AppointmentSourceEnum"];
+export type AppointmentCancelChoice = Schemas["AppointmentCancelChoiceEnum"];
+export type BookRequest = Schemas["BookRequest"];
+export type RescheduleRequest = Schemas["RescheduleRequest"];
+export type CancelAppointmentRequest = Schemas["CancelAppointmentRequest"];
+export type DepartmentDay = Schemas["DepartmentDay"];
+export type DayDoctor = Schemas["DayDoctor"];
+export type ToRebook = Schemas["ToRebook"];

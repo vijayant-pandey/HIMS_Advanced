@@ -119,3 +119,125 @@ sessions are told with HIMS-OPD-002 / 004.
 Appointments are added (HIMS-OPD-002: the exclusion constraint on appointments, and sessions that
 cannot end or change while patients are booked), walk-ins and tokens (HIMS-OPD-003), or a session
 gains a room or a service.
+
+---
+
+# Part 2: Appointments (HIMS-OPD-002)
+
+Phase 2 → Spec §4.6 → Slice 2B. Design: [P0 part 02](../../p0/phase-2-patients/02-database-design.md)
+("appointments") and [part 03](../../p0/phase-2-patients/03-state-machines.md) ("Appointment");
+decision: [ADR-039](../../decisions/ADR-039-appointments-no-double-booking.md); how-to:
+[appointments](../../workflows/appointments.md). Columns and constraints in full: the
+[data dictionary](data-dictionary.md) (generated). This is the **Artifact A review** (spec 28.8) of
+the `appointments` table, done with the ticket (HIMS-DATA-004).
+
+## A1. Table
+
+| Table | One row is | Key rules (database) |
+|---|---|---|
+| `appointments` | One patient booked with one doctor in one department, in one session (a weekly session or an extra session), from a start to an end instant, on a day of the facility's clock; new / follow-up; how booked (front desk, phone); status (booked, and from HIMS-OPD-003 checked in, with the doctor, completed, did not come; or cancelled); over the slots or not; who booked it; the appointment it replaced; when, why and by whom it was cancelled | ends after it starts; exactly one session; cancelled exactly when it has when and why; never replaces itself; one appointment is replaced by one other at most; **no two appointments of one doctor overlap** while booked, checked in or with the doctor, except bookings over the slots (`appointment_no_double_booking`, exclusion constraint) |
+
+What P0 part 02 listed and is not here yet: `token_number` (with its unique rule) and `checked_in_at`
+come with check-in and walk-ins (HIMS-OPD-003); `service_id` with the clinics of HIMS-OPD-005. Added
+beyond P0: the session it was booked into (`schedule` or `extra_session`), so a session's coming
+bookings are found directly, and the cancel note.
+
+## A2. Ownership
+
+The outpatient domain writes it (`apps/scheduling/booking.py`); the admin console uses the same
+functions. It reads the patients (in use, not merged; restricted), the sessions and everything that
+takes them off (part 1, section 2), and the staff row it locks. The rota (Leave page) reads only a
+count of a person's bookings during leave waiting for a decision.
+
+## A3. Classification and access
+
+| Data | Level | Who reads it |
+|---|---|---|
+| An appointment (patient, doctor, department, time, kind, status) | **Clinical** (P0 part 02 "C": it shows which specialty a person sees) | `appointments.view` for the department: front desk, OPD scheduler, head of department, administrators; never the supplier's support account |
+| The reason for the visit | Clinical; short, "no detailed history" | The same; hidden with the name for a restricted record |
+| A restricted record's appointments (D23) | Clinical, restricted | Name and reason only to people who may open the record (`patients.restricted` or emergency access); others see "Restricted record" and the MRN |
+| Who booked, moved, cancelled | Internal (person references) | The same, and the audit log |
+
+Booking, moving and cancelling need `appointments.manage` for the department (front desk, OPD
+scheduler) and the right to open a restricted record when the patient's is restricted.
+
+## A4. Queries and indexes (checked at volume)
+
+| Query | Index | Volume check |
+|---|---|---|
+| A doctor's appointments over some days, put into their sessions (day screen, free slots, doctor's week, extra bookings counted, booking checks) | `appointment_staff_day_idx` (staff, local date), or the exclusion constraint's index | `opd_bookings` |
+| One patient's appointments still to come (chart Overview; "already booked at that time") | `appointment_patient_idx` (patient, start) | `patient_appointments` |
+| One department's booked appointments still to come (To move) | `appointment_booked_dept_idx` (department, start), partial: booked only | `appointments_to_move` |
+| A session's booked days to come (slot length change refused) | the session foreign key's index | — (one session's rows) |
+| Every appointment, newest first (console list) | `appointment_start_idx` (start, newest first) | `appointments_newest` |
+
+Screens measured: **Appointments (one department's day)**, **Appointments to move** and **A
+patient's upcoming appointments**, plus the console's appointments list. Volume: one million
+appointments, five a synthetic doctor a day over two years, the last four weeks still to come
+([volume check](volume-check.md#appointments-hims-opd-002)).
+
+## A5. Lifecycle and correction
+
+- **Booked** (from now to 180 days ahead, into an open slot) → **cancelled** with the reason (the
+  patient asked / the hospital / the doctor not available) while its day is not over → or **moved**:
+  cancelled as "moved to another time" with a link to the appointment that replaced it.
+- From HIMS-OPD-003: booked → checked in → with the doctor → completed; booked → did not come (the
+  no-show job, undone the same day).
+- Never deleted; never edited (a change of time is a move). Retention: with the clinical record
+  (🔒 LEGAL).
+
+## A6. Transactions and concurrency
+
+- One transaction per action with its audit event (`appointment.booked`, `.rescheduled`,
+  `.cancelled`).
+- **Booking locks the doctor's staff row,** so bookings over the slots are counted right and the
+  checks see a settled day; the **exclusion constraint** refuses double booking past the service
+  (two bookings at the same moment: one gets 409 `SLOT_TAKEN`). Tested with two threads.
+- A move is one transaction: the old appointment is cancelled first (its slot frees), then the new
+  one is booked; if the new booking fails, the old one stays booked.
+- Move and cancel carry `version`; booking takes an `Idempotency-Key`.
+- One patient booked with two doctors at the same moment by two people is checked by the service
+  only (the two bookings lock different doctors): accepted, see ADR-039.
+
+## A7. History
+
+Every appointment stays, with its links: a moved one points to its replacement, so a patient's
+bookings can be followed from the first to the last. The audit log keeps before and after for moves
+and the reason for cancellations, never the visit reason's text.
+
+## A8. Migrations
+
+| Migration | What | Notes |
+|---|---|---|
+| `scheduling.0002_appointments` | The table, its checks, the one-replacement rule, the exclusion constraint and four indexes (with the session foreign key's own) | New, empty table: no backfill; needs `btree_gist` (made by the rota's migrations). Rollback: `migrate scheduling 0001` |
+
+## A9. Invariant tests
+
+`apps/scheduling/tests/test_schedule_invariants.py` now covers the three tables: it breaks every
+rule on `appointments` past the service (times, one session, cancelled shapes, moved to itself, two
+replacements, version) and books one doctor twice at overlapping times, expecting the database to
+refuse; bookings over the slots, after it, or after a cancellation are allowed.
+
+## A10. Data flows
+
+None outside HIMS yet. Emails to patients (booked, moved, cancelled, reminders) come with
+HIMS-OPD-004, only with the patient's email consent (D9) and without the specialty in the subject.
+
+## A11. Review findings (2026-11-15)
+
+| # | Finding | Done |
+|---|---|---|
+| 1 | P0's facility day index (facility, local date, status) made PostgreSQL read a doctor's week through it rather than the doctor's own index; nothing in this ticket needs it | Not added; the To move list got a small partial index (booked only); the facility index comes with the OPD queue (HIMS-OPD-003) |
+| 2 | "Cancelled" needed both when and why, and "not cancelled" neither; a CHECK passes on NULL | One CHECK with both shapes; the invariants test breaks each half |
+| 3 | Foreign key indexes on a table this size cost every booking (patient, doctor, facility, department, two people) | Off where a composite index leads with the column, or where rows are never looked up by it (people, department, extra session) |
+| 4 | A session's slot length changing under booked patients would leave them off their slots | Refused while patients are booked into its coming days (`SESSION_HAS_BOOKINGS`) |
+| 5 | Booked patients when a doctor cannot come must not be lost or moved silently | Worked out each time (To move); listed in the exception's answer and counted on the Leave page |
+| 6 | A restricted record's name in day lists | "Restricted record" and the MRN unless the reader may open it, in the app and the console |
+| 7 | Volume check, first run: the console's appointments list sorted a million rows by day (2.4 s against 500 ms) | Index `appointment_start_idx`; the console list sorts and filters by the start time |
+| 8 | Volume check, first run: the To move list of a department whose whole book is off (the synthetic hospital's worst case) took 981 ms, almost all in listing every patient | The list shows the soonest 200 (the next ones appear as these are moved), decided from a few columns and read in full only for those shown: 357 ms; the query itself takes 27 ms |
+
+## A12. Re-review when
+
+Check-in, tokens and the queue arrive (HIMS-OPD-003: the token's unique rule, the facility day
+index, the no-show job), reminders are sent (HIMS-OPD-004), clinics gain services or rooms
+(HIMS-OPD-005), a waitlist is approved (HIMS-OPD-006), or online booking (Phase 6).

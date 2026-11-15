@@ -2,6 +2,10 @@ import { Box, Chip, Paper, Stack, Typography } from "@mui/material";
 import type { ReactNode } from "react";
 
 import type { PatientDetail } from "../../api/types";
+import { useCurrentUser } from "../auth/api";
+import { hasPermission } from "../auth/grants";
+import { formatDay } from "../rosters/labels";
+import { usePatientAppointments } from "../scheduling/api";
 import { contactText, currentConsents } from "./PatientDemographics";
 import { ALLERGY_STATUS, CONSENT_KINDS, CONSENT_STATUS, day, dayTime } from "./labels";
 
@@ -31,11 +35,29 @@ function Line({ label, children }: { label: string; children: ReactNode }) {
 
 const NOT_YET = "None recorded";
 
+/** The soonest booked appointment still to come (HIMS-OPD-002), for people who see appointments. */
+function NextAppointment({ patientId }: { patientId: string }) {
+  const { data: user } = useCurrentUser();
+  const allowed = hasPermission(user, "appointments.view");
+  const { data } = usePatientAppointments(patientId, allowed);
+  if (!allowed) return <>Not shown (appointments are for the front desk and OPD staff)</>;
+  const next = data?.[0];
+  if (!next) return <>None booked</>;
+  const more = data.length > 1 ? ` (and ${data.length - 1} more)` : "";
+  return (
+    <>
+      {formatDay(next.local_date)} {next.time} · {next.staff_name}, {next.department_name}
+      {more}
+    </>
+  );
+}
+
 /**
  * The chart's Overview tab (HIMS-PAT-005; P0 part 01 section 7): the clinical summary (allergies,
  * problems, reported medicines, last vitals, next appointment), how to reach the patient and who
- * to call, ID numbers (masked), consent in force and where the record came from. The clinical
- * lines fill in as the visit record and appointments arrive (HIMS-CLIN-002 to -006, HIMS-OPD-002).
+ * to call, ID numbers (masked), consent in force and where the record came from. The next
+ * appointment comes from the Appointments page (HIMS-OPD-002); the other clinical lines fill in as
+ * the visit record arrives (HIMS-CLIN-002 to -006).
  */
 export function PatientOverview({ patient }: { patient: PatientDetail }) {
   const contacts = patient.contacts.filter((c) => c.is_active);
@@ -50,9 +72,11 @@ export function PatientOverview({ patient }: { patient: PatientDetail }) {
         <Line label="Problems (diagnoses)">{NOT_YET}</Line>
         <Line label="Medicines (as reported)">{NOT_YET}</Line>
         <Line label="Last vitals">{NOT_YET}</Line>
-        <Line label="Next appointment">None booked</Line>
+        <Line label="Next appointment">
+          <NextAppointment patientId={patient.id} />
+        </Line>
         <Typography variant="caption" color="text.secondary">
-          Recorded on the visit screen and in appointments, which come later in Phase 2.
+          Problems, medicines and vitals are recorded on the visit screen, which comes later in Phase 2.
         </Typography>
       </Card>
 

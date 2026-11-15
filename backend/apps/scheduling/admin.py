@@ -1,23 +1,33 @@
-"""Doctor OPD schedules in the admin console (HIMS-OPD-001; ADR-016).
+"""Doctor OPD schedules and appointments in the admin console (HIMS-OPD-001, HIMS-OPD-002;
+ADR-016).
 
-Sessions and exceptions are added through the same services as the app, so every rule applies
-here too, and each change is in the audit log. Days and hours are never edited afterwards: end a
-session and add a new one, or cancel an exception and record it again.
+Sessions, exceptions and appointments go through the same services as the app, so every rule
+applies here too, and each change is in the audit log. Days and hours are never edited
+afterwards: end a session and add a new one, or cancel an exception and record it again. An
+appointment is booked, moved (its own page) or cancelled (actions), never edited.
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django import forms
 from django.contrib import admin, messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import F, Value
 from django.forms.models import construct_instance
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
 
-from apps.organizations.dates import hospital_today
-from common.admin.options import DepartmentListFilter, HimsModelAdmin
+from apps.facilities.models import Department
+from apps.organizations.dates import hospital_timezone, hospital_today
+from apps.patients import restricted
+from apps.staff.models import StaffMember
+from common.admin.options import DepartmentListFilter, HimsModelAdmin, LargeTableAdminMixin
 from common.exceptions import DomainError
 
-from . import services
-from .models import DoctorSchedule, ScheduleException
+from . import booking, selectors, services
+from .models import Appointment, DoctorSchedule, ScheduleException
 
 
 def _saved_as(obj, saved) -> None:
@@ -309,3 +319,373 @@ class ScheduleExceptionAdmin(HimsModelAdmin):
                 self.message_user(request, f"{item}: cancelled.")
             except DomainError as exc:
                 self.message_user(request, f"{item}: {exc.detail}", messages.ERROR)
+
+
+# --- Appointments (HIMS-OPD-002) ---------------------------------------------------------------
+
+
+def _starts_at(department, day, clock) -> datetime:
+    """A day and a time on the department's facility clock, as an instant."""
+    return datetime.combine(day, clock, tzinfo=hospital_timezone(department.facility))
+
+
+def _doctors():
+    return StaffMember.objects.filter(
+        staff_type__in=services.OPD_STAFF_TYPES,
+        employment_status=StaffMember.EmploymentStatus.ACTIVE,
+    ).order_by("family_name", "given_name")
+
+
+def _departments():
+    return (
+        Department.objects.filter(status=Department.Status.ACTIVE)
+        .select_related("facility")
+        .order_by("facility__name", "name")
+    )
+
+
+class AppointmentForm(forms.ModelForm):
+    day = forms.DateField(help_text="The appointment day.")
+    time = forms.TimeField(
+        help_text="A free slot's start on the facility's clock, e.g. 09:10 (see the Appointments "
+        "page in the app for the free slots)."
+    )
+
+    class Meta:
+        model = Appointment
+        fields = ("patient", "staff", "department", "kind", "source", "reason", "is_extra")
+        labels = {"staff": "Doctor", "is_extra": "Over the slots (extra booking)"}
+        help_texts = {
+            "reason": "Short; no detailed history.",
+            "is_extra": "Only into a booked slot, when the session allows extra bookings.",
+        }
+
+    def __init__(self, *args, request=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request = request
+
+    def _post_clean(self):
+        # Only copy the values: booking.check_booking (below) applies every rule, and the
+        # database refuses double bookings. Django cannot pre-check that rule from a form.
+        self.instance = construct_instance(self, self.instance, self._meta.fields)
+
+    def clean(self):
+        data = super().clean()
+        if self.errors:
+            return data
+        if self.request is not None:
+            try:
+                restricted.opening(self.request.user, data["patient"])
+            except DomainError as exc:
+                raise ValidationError(str(exc.detail)) from exc
+        check = booking.check_booking(
+            patient=data["patient"],
+            staff=data["staff"],
+            department=data["department"],
+            starts_at=_starts_at(data["department"], data["day"], data["time"]),
+            extra=data["is_extra"],
+        )
+        if check.problem:
+            raise ValidationError(f"It cannot be booked: {check.problem}")
+        return data
+
+
+class MoveForm(forms.Form):
+    day = forms.DateField()
+    time = forms.TimeField(help_text="A free slot's start on the facility's clock.")
+    staff = forms.ModelChoiceField(
+        queryset=StaffMember.objects.none(),
+        required=False,
+        label="Doctor",
+        help_text="Empty = the same doctor.",
+    )
+    extra = forms.BooleanField(required=False, label="Over the slots (extra booking)")
+    note = forms.CharField(max_length=255, required=False, help_text="Optional. Why it moves.")
+
+    def __init__(self, *args, appointment, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.appointment = appointment
+        self.fields["staff"].queryset = _doctors()
+
+    def clean(self):
+        data = super().clean()
+        if self.errors:
+            return data
+        old = self.appointment
+        staff = data.get("staff") or old.staff
+        starts_at = _starts_at(old.department, data["day"], data["time"])
+        if staff.pk == old.staff_id and starts_at == old.starts_at:
+            raise ValidationError("That is the time it already has.")
+        check = booking.check_booking(
+            patient=old.patient,
+            staff=staff,
+            department=old.department,
+            starts_at=starts_at,
+            extra=data["extra"],
+            moving=old,
+        )
+        if check.problem:
+            raise ValidationError(f"It cannot be moved there: {check.problem}")
+        data["starts_at"] = starts_at
+        return data
+
+
+class ToMoveForm(forms.Form):
+    department = forms.ModelChoiceField(queryset=Department.objects.none())
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["department"].queryset = _departments()
+
+
+@admin.register(Appointment)
+class AppointmentAdmin(LargeTableAdminMixin, HimsModelAdmin):
+    """Appointments: a large table, so counts stop at 10,000 and dates use quick filters."""
+
+    list_display = (
+        "local_date",
+        "time",
+        "patient_shown",
+        "staff",
+        "department",
+        "status",
+        "kind",
+        "is_extra",
+    )
+    list_select_related = ("patient", "staff", "department__facility", "facility")
+    list_filter = (
+        "status",
+        "kind",
+        "facility",
+        ("department", DepartmentListFilter),
+        ("starts_at", admin.DateFieldListFilter),
+    )
+    search_fields = ("=patient__mrn",)
+    search_help_text = "The patient's exact MRN."
+    ordering = ("-starts_at",)  # appointment_start_idx
+    autocomplete_fields = ("patient", "staff")
+    actions = ["cancel_patient_request", "cancel_hospital", "cancel_doctor_unavailable"]
+    change_form_template = "admin/scheduling/appointment/change_form.html"
+    change_list_template = "admin/scheduling/appointment/change_list.html"
+
+    READ_ONLY = (
+        "patient_shown",
+        "staff",
+        "department",
+        "facility",
+        "starts_at",
+        "ends_at",
+        "local_date",
+        "kind",
+        "source",
+        "status",
+        "reason_shown",
+        "is_extra",
+        "schedule",
+        "extra_session",
+        "rescheduled_from",
+        "moved_to",
+        "booked_by",
+        "created_at",
+        "cancel_reason",
+        "cancel_note",
+        "cancelled_by",
+        "cancelled_at",
+        "version",
+    )
+
+    def get_queryset(self, request):
+        """Each row says whether its patient's name is hidden from this person (a restricted
+        record, HIMS-PAT-006), worked out per request."""
+        rows = super().get_queryset(request)
+        if restricted.may_see_restricted(request.user):
+            return rows.annotate(hide_patient=Value(False))
+        return rows.annotate(hide_patient=F("patient__is_restricted"))
+
+    @staticmethod
+    def _hidden(obj) -> bool:
+        return getattr(obj, "hide_patient", obj.patient.is_restricted)
+
+    @admin.display(description="Patient", ordering="patient__mrn")
+    def patient_shown(self, obj):
+        if self._hidden(obj):
+            return f"{obj.patient.mrn} (restricted record)"
+        return str(obj.patient)
+
+    @admin.display(description="Reason")
+    def reason_shown(self, obj):
+        return "" if self._hidden(obj) else obj.reason
+
+    @admin.display(description="Time")
+    def time(self, obj):
+        return f"{obj.starts_at.astimezone(hospital_timezone(obj.facility)):%H:%M}"
+
+    @admin.display(description="Moved to")
+    def moved_to(self, obj):
+        moved = Appointment.objects.filter(rescheduled_from=obj).first()
+        return str(moved.local_date) + f" {self.time(moved)}" if moved else "-"
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        if obj is None:
+            kwargs["form"] = AppointmentForm
+            form = super().get_form(request, obj, change=change, **kwargs)
+
+            class WithRequest(form):
+                def __init__(self, *args, **kw):
+                    super().__init__(*args, request=request, **kw)
+
+            return WithRequest
+        return super().get_form(request, obj, change=change, **kwargs)
+
+    def get_fields(self, request, obj=None):
+        if obj is None:
+            return [
+                *AppointmentForm.Meta.fields[:3],
+                "day",
+                "time",
+                *AppointmentForm.Meta.fields[3:],
+            ]
+        return list(self.READ_ONLY)
+
+    def get_readonly_fields(self, request, obj=None):
+        return list(self.READ_ONLY) if obj is not None else []
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            return  # moved on its own page or cancelled with an action, never edited
+        data = form.cleaned_data
+        try:
+            created = booking.book(
+                actor=request.user,
+                patient=data["patient"],
+                staff=data["staff"],
+                department=data["department"],
+                starts_at=_starts_at(data["department"], data["day"], data["time"]),
+                kind=data["kind"],
+                source=data["source"],
+                reason=data.get("reason") or "",
+                extra=data["is_extra"],
+                request=request,
+            )
+        except DomainError as exc:
+            raise ValidationError(str(exc.detail)) from exc
+        _saved_as(obj, created)
+
+    def get_urls(self):
+        return [
+            path(
+                "<uuid:object_id>/move/",
+                self.admin_site.admin_view(self.move_view),
+                name="scheduling_appointment_move",
+            ),
+            path(
+                "to-move/",
+                self.admin_site.admin_view(self.to_move_view),
+                name="scheduling_appointment_to_move",
+            ),
+            *super().get_urls(),
+        ]
+
+    def move_view(self, request, object_id):
+        """Move a booked appointment to another slot, as on the Appointments page."""
+        appointment = get_object_or_404(
+            self.get_queryset(request).select_related("patient", "staff", "department__facility"),
+            pk=object_id,
+        )
+        if not self.has_change_permission(request, appointment):
+            raise PermissionDenied
+        try:
+            restricted.opening(request.user, appointment.patient)
+        except DomainError as exc:
+            raise PermissionDenied(str(exc.detail)) from exc
+        form = MoveForm(request.POST or None, appointment=appointment)
+        if appointment.status != Appointment.Status.BOOKED:
+            form = None
+        elif request.method == "POST" and form.is_valid():
+            data = form.cleaned_data
+            try:
+                new = booking.reschedule(
+                    actor=request.user,
+                    appointment_id=appointment.pk,
+                    version=appointment.version,
+                    starts_at=data["starts_at"],
+                    staff=data.get("staff"),
+                    extra=data["extra"],
+                    note=data.get("note") or "",
+                    request=request,
+                )
+            except DomainError as exc:
+                form.add_error(None, str(exc.detail))
+            else:
+                self.message_user(request, f"Moved to {new.local_date:%d %b %Y} {self.time(new)}.")
+                return HttpResponseRedirect(
+                    reverse("admin:scheduling_appointment_change", args=[new.pk])
+                )
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Move an appointment",
+            "appointment": appointment,
+            "patient": self.patient_shown(appointment),
+            "when": f"{appointment.local_date:%d %b %Y} {self.time(appointment)}",
+            "form": form,
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/scheduling/appointment/move.html", context)
+
+    def to_move_view(self, request):
+        """Booked patients whose doctor is now away or whose session is off, as on the
+        Appointments page's "To move" list."""
+        form = ToMoveForm(request.GET or None)
+        rows = None
+        if form.is_valid():
+            rows = selectors.to_rebook(form.cleaned_data["department"], details=True)
+            if not restricted.may_see_restricted(request.user):
+                for row in rows:
+                    row["appointment"].hide_patient = row["appointment"].patient.is_restricted
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Appointments to move",
+            "form": form,
+            "rows": [
+                {
+                    "appointment": row["appointment"],
+                    "patient": self.patient_shown(row["appointment"]),
+                    "time": self.time(row["appointment"]),
+                    "why": row["why"],
+                }
+                for row in rows or []
+            ],
+            "shown": rows is not None,
+            "opts": self.model._meta,
+        }
+        return TemplateResponse(request, "admin/scheduling/appointment/to_move.html", context)
+
+    def _cancel(self, request, queryset, reason):
+        for appointment in queryset.select_related("patient", "department__facility"):
+            try:
+                restricted.opening(request.user, appointment.patient)
+                booking.cancel(
+                    actor=request.user,
+                    appointment_id=appointment.pk,
+                    version=appointment.version,
+                    reason=reason,
+                    note="Cancelled in the admin console",
+                    request=request,
+                )
+                self.message_user(request, f"{appointment.patient.mrn}: cancelled.")
+            except DomainError as exc:
+                self.message_user(
+                    request, f"{appointment.patient.mrn}: {exc.detail}", messages.ERROR
+                )
+
+    @admin.action(description="Cancel selected: the patient asked")
+    def cancel_patient_request(self, request, queryset):
+        self._cancel(request, queryset, Appointment.CancelReason.PATIENT_REQUEST)
+
+    @admin.action(description="Cancel selected: the hospital cancelled")
+    def cancel_hospital(self, request, queryset):
+        self._cancel(request, queryset, Appointment.CancelReason.HOSPITAL)
+
+    @admin.action(description="Cancel selected: the doctor is not available")
+    def cancel_doctor_unavailable(self, request, queryset):
+        self._cancel(request, queryset, Appointment.CancelReason.DOCTOR_UNAVAILABLE)

@@ -53,7 +53,12 @@ PROFILE = {
     # two spells away each, one extra session each and a holiday a fortnight.
     "opd_sessions_per_doctor": 3,
     "holidays": 26,
+    # Appointments (HIMS-OPD-002): about 1,500 a day (five a doctor) for two years, the last four
+    # weeks still to come.
+    "appointments": 1_000_000,
 }
+APPOINTMENTS_PER_DOCTOR_DAY = 5
+APPOINTMENT_FUTURE_DAYS = 28
 # Shares of the patients (a mobile each, a family in five sharing one; addresses, ID numbers,
 # SMS decisions, relatives and earlier names for some).
 PATIENT_SHARES = {
@@ -389,10 +394,78 @@ def _opd(organization, built: dict, n: dict) -> dict[str, int]:
         for k in range(max(1, round(n["holidays"])))
     ]
     ScheduleException.objects.bulk_create(away + extras + holidays)
+    # Each doctor's first session, for the appointments (_appointments).
+    built["opd"] = [
+        (str(s.staff_id), str(s.pk), str(s.department_id)) for s in sessions[::per_doctor]
+    ]
     return {
         "doctor_schedules": len(sessions),
         "schedule_exceptions": len(away) + len(extras) + len(holidays),
     }
+
+
+def _appointments(organization, built: dict, n: dict, tag: str) -> int:
+    """About two years of appointments, five a doctor a day, the last four weeks still to come.
+    Past ones completed (one in ten cancelled, one in twenty did not come); future ones booked
+    (one in ten cancelled). A doctor's slots never overlap, as the database requires."""
+    from apps.organizations.dates import hospital_timezone
+    from apps.scheduling.models import Appointment
+
+    facility, opd = built["facility"], built.get("opd") or []
+    if not opd:
+        return 0
+    total = n["appointments"]
+    per_day = APPOINTMENTS_PER_DOCTOR_DAY
+    days = total // (len(opd) * per_day) + 1
+    users = [str(u.pk) for u in built["users"]]
+    params = {
+        "tag": tag,
+        "org": str(organization.pk),
+        "facility": str(facility.pk),
+        "staff": [row[0] for row in opd],
+        "schedules": [row[1] for row in opd],
+        "departments": [row[2] for row in opd],
+        "n_doctors": len(opd),
+        "per_day": per_day,
+        "first": hospital_today(facility) - timedelta(days=days - APPOINTMENT_FUTURE_DAYS),
+        "zone": hospital_timezone(facility).key,
+        "n_patients": n["patients"],
+        "users": users,
+        "n_users": len(users),
+    }
+    pick = "[1 + ((g - 1) %% %(n_doctors)s)]"
+    k = "((g - 1) / %(n_doctors)s)"
+    day = f"(%(first)s::date + ({k} / %(per_day)s)::int)"
+    starts = (
+        f"(({day} + time '09:00' + ({k} %% %(per_day)s) * interval '20 minutes') "
+        "AT TIME ZONE %(zone)s)"
+    )
+    cancelled = "g %% 10 = 3"
+    return insert_series(
+        Appointment,
+        total,
+        {
+            "organization_id": "%(org)s::uuid",
+            "created_at": f"{starts} - interval '7 days'",
+            "updated_at": f"{starts} - interval '7 days'",
+            "patient_id": _patient_id("1 + ((g::bigint * 7919) %% %(n_patients)s)"),
+            "staff_id": f"(%(staff)s::uuid[]){pick}",
+            "facility_id": "%(facility)s::uuid",
+            "department_id": f"(%(departments)s::uuid[]){pick}",
+            "schedule_id": f"(%(schedules)s::uuid[]){pick}",
+            "starts_at": starts,
+            "ends_at": f"{starts} + interval '10 minutes'",
+            "local_date": day,
+            "kind": "CASE WHEN g %% 3 = 0 THEN 'follow_up' ELSE 'new' END",
+            "status": f"CASE WHEN {cancelled} THEN 'cancelled' WHEN {day} >= current_date "
+            "THEN 'booked' WHEN g %% 20 = 7 THEN 'no_show' ELSE 'completed' END",
+            "reason": "'Synthetic visit'",
+            "booked_by_id": "(%(users)s::uuid[])[1 + (g %% %(n_users)s)]",
+            "cancel_reason": f"CASE WHEN {cancelled} THEN 'patient_request' ELSE '' END",
+            "cancelled_at": f"CASE WHEN {cancelled} THEN {starts} - interval '1 day' END",
+        },
+        params,
+    )
 
 
 ACTIONS = [
@@ -837,6 +910,7 @@ MAIN_TABLES = (
     "patient_emergency_access",
     "doctor_schedules",
     "schedule_exceptions",
+    "appointments",
     "audit_events",
     "user_sessions",
     "notifications",
@@ -878,6 +952,8 @@ def seed(*, scale: float = 1.0, progress=None) -> dict[str, int]:
     say(f"Patients: {n['patients']:,} with contacts, ID numbers, consents and people...")
     for table, rows in _patients(organization, built, n, tag).items():
         added[table] = added.get(table, 0) + rows
+    say(f"Appointments: {n['appointments']:,}, five a doctor a day...")
+    added["appointments"] = _appointments(organization, built, n, tag)
     added.update({"staff_members": n["staff"], "users": n["staff"], "beds": n["wards"] * 30})
     say("Updating PostgreSQL's statistics (ANALYZE)...")
     with connection.cursor() as cursor:

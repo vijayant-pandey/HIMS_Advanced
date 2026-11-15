@@ -23,7 +23,13 @@ from common.concurrency import bump_version, lock_for_update
 from common.exceptions import ConflictError
 
 from . import availability
-from .models import MAX_EXTRA_BOOKINGS, DoctorSchedule, ScheduleException
+from .models import (
+    ACTIVE_STATUSES,
+    MAX_EXTRA_BOOKINGS,
+    Appointment,
+    DoctorSchedule,
+    ScheduleException,
+)
 
 # Who holds OPD sessions (P0 part 02: "must be a doctor with an active posting").
 OPD_STAFF_TYPES = (StaffMember.StaffType.DOCTOR,)
@@ -268,6 +274,16 @@ def change_session(*, actor, schedule_id, version: int, request=None, **changes)
         and schedule.valid_until < hospital_today(schedule.department.facility)
     ):
         _refuse("This session has ended: add a new one instead.", "SESSION_ENDED")
+    if changes.get("slot_minutes") not in (None, schedule.slot_minutes):
+        booked = Appointment.objects.filter(
+            schedule=schedule, status__in=ACTIVE_STATUSES, starts_at__gte=timezone.now()
+        ).count()
+        if booked:
+            _refuse(
+                f"{booked} patient(s) are booked into this session's slots: move or cancel them "
+                "first, or end this session and add a new one with the new slot length.",
+                "SESSION_HAS_BOOKINGS",
+            )
     before = snapshot(schedule, list(CHANGEABLE))
     for name, value in changes.items():
         if name not in CHANGEABLE:
@@ -542,8 +558,8 @@ def add_exception(
     request=None,
 ) -> tuple[ScheduleException, list[availability.Session]]:
     """Record leave, a holiday or an extra session. Returns it with the sessions it takes off (a
-    leave or a holiday), so the scheduler sees at once what is affected; booked patients are
-    listed with appointments (HIMS-OPD-002)."""
+    leave or a holiday), so the scheduler sees at once what is affected; the sessions carry their
+    bookings, so the patients to move are listed too (HIMS-OPD-002)."""
     _require_opd(facility.pk, request)
     if staff is not None and kind != ScheduleException.Kind.HOLIDAY:
         staff = _lock_doctor(staff)

@@ -22,7 +22,8 @@ from apps.patients import search
 from apps.patients.models import EmergencyAccess, Patient, PatientAlias
 from apps.performance.models import PerformanceCheck
 from apps.rosters.models import Shift
-from apps.scheduling.models import DoctorSchedule, ScheduleException
+from apps.scheduling.models import Appointment, DoctorSchedule, ScheduleException
+from apps.scheduling.selectors import to_rebook
 from apps.staff.models import StaffCredential, StaffMember
 
 
@@ -119,8 +120,17 @@ def test_a_small_demo_hospital_gets_records_for_every_screen(provisioned):
     assert "opd.dwk@in-sunrise.demo.test" in accounts
     assert ctx.notes
     opd_queries = [r for r in check.results if r["area"] == "Outpatient (OPD)"]
-    assert len(opd_queries) == 4
+    assert len(opd_queries) == 8
     assert {r["key"]: r["detail"] for r in opd_queries if not r["passed"]} == {}
+    # Appointments (HIMS-OPD-002): booked by the front desk, one over the slots, one moved, one
+    # cancelled, and one to move because its doctor was called away.
+    statuses = list(Appointment.objects.values_list("status", "cancel_reason", "is_extra"))
+    assert ("booked", "", True) in statuses
+    assert ("cancelled", "rescheduled", False) in statuses
+    assert ("cancelled", "patient_request", False) in statuses
+    assert Appointment.objects.filter(booked_by__email__startswith="frontdesk.").exists()
+    obgy = Department.objects.filter(code="OBGY").order_by("facility__created_at").first()
+    assert len(to_rebook(obgy, details=True)) == 1
     with pytest.raises(DemoError, match="already"):
         seed_hospital(by_key("in-sunrise"), password=None, small=True)
 
@@ -149,6 +159,19 @@ def test_a_hospital_filled_before_doctor_schedules_gets_them_added(provisioned, 
     assert "weekly OPD sessions" in out.getvalue()
     with pytest.raises(CommandError, match="already has doctors' OPD sessions"):
         call_command("add_demo_doctor_schedules")
+
+
+def test_a_hospital_filled_before_appointments_gets_them_added(provisioned, monkeypatch):
+    with monkeypatch.context() as patch:  # as filled before HIMS-OPD-002
+        patch.setattr(seed_module, "add_appointment_examples", lambda **_: [])
+        seed_hospital(by_key("in-sunrise"), password=None, small=True)
+    assert not Appointment.objects.exists()
+    out = StringIO()
+    call_command("add_demo_appointments", stdout=out)
+    assert Appointment.objects.filter(status="booked").count() >= 3
+    assert "appointments" in out.getvalue()
+    with pytest.raises(CommandError, match="already has appointments"):
+        call_command("add_demo_appointments")
 
 
 def test_demo_records_fit_only_a_hospital_of_the_same_country(provisioned):

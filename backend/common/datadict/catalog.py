@@ -71,8 +71,9 @@ DOMAINS: dict[str, dict] = {
         "docs": ["rotas-and-leave.md"],
     },
     "scheduling": {
-        "name": "Doctor OPD schedules",
-        "owner": "Outpatient domain (heads of department and OPD schedulers keep it; HIMS-OPD-001)",
+        "name": "Doctor OPD schedules and appointments",
+        "owner": "Outpatient domain (heads of department and OPD schedulers keep the sessions; "
+        "the front desk and OPD schedulers book; HIMS-OPD-001, HIMS-OPD-002)",
         "docs": ["scheduling.md", "../../p0/phase-2-patients/02-database-design.md"],
     },
     "audit": {
@@ -210,6 +211,10 @@ LIFECYCLE: dict[str, str] = {
     "session is added instead, so any past week's sessions can be shown (HIMS-OPD-001).",
     "schedule_exceptions": "Never deleted; cancelled with who, when and why. Past ones cannot be "
     "cancelled (HIMS-OPD-001).",
+    "appointments": "Never deleted; booked -> cancelled (with who, when and why) or, from "
+    "HIMS-OPD-003, checked in -> with the doctor -> completed, or did not come. A moved "
+    "appointment is cancelled as moved and links to the new one. Kept with the patient's record "
+    "(retention decision pending with the clinical records, 🔒 LEGAL) (HIMS-OPD-002).",
     "leave_requests": "Never deleted; requested -> approved, refused or cancelled, each with who "
     "and when. Retention period: decision pending with the other HR records (🔒 LEGAL).",
     "audit_events": "Append-only: a database trigger refuses changes and deletes. Retention and "
@@ -390,6 +395,9 @@ PATIENT_TABLES = {
     "patient_consents",
     "patient_emergency_access",
 }
+# Whole tables whose remaining business columns are patient health-related data: an appointment
+# shows which specialty a person sees (P0 part 02, sensitivity C; HIMS-OPD-002).
+CLINICAL_TABLES = {"appointments"}
 # Whole tables whose remaining columns are security records.
 RESTRICTED_TABLES = {
     "audit_events",

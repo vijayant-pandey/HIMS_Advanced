@@ -34,6 +34,7 @@ export const CATEGORIES: { value: string; label: string }[] = [
   { value: "support", label: "Supplier support access" },
   { value: "patient", label: "Patients" },
   { value: "schedule", label: "Doctor schedules (OPD)" },
+  { value: "appointment", label: "Appointments (OPD)" },
 ];
 
 export function who(event: AuditEvent): string {

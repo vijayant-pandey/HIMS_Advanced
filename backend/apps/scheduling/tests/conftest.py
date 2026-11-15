@@ -35,6 +35,20 @@ def department_b(facility_a):
     )
 
 
+def _designation():
+    """The catalog's most junior job title, or one made here when the database is truly empty
+    (tests with ``transaction=True`` run without the catalog's data migration)."""
+    found = Designation.objects.order_by("seniority").first()
+    if found is None:
+        found = Designation.objects.create(
+            code="synthetic-medical-officer",
+            name="Medical officer",
+            category=Designation.Category.MEDICAL,
+            seniority=2,
+        )
+    return found
+
+
 @pytest.fixture
 def doctor(organization, make_user):
     """A working doctor (with an account) posted in the given department since 60 days ago."""
@@ -59,7 +73,7 @@ def doctor(organization, make_user):
             organization=organization,
             staff=staff,
             department=department,
-            designation=Designation.objects.order_by("seniority").first(),
+            designation=_designation(),
             valid_from=hospital_today() - timedelta(days=60),
             is_primary=True,
         )

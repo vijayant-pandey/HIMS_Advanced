@@ -64,6 +64,7 @@ _TABLE_AREAS = {
     "beds": HOSPITAL,
     "doctor_schedules": OPD,
     "schedule_exceptions": OPD,
+    "appointments": OPD,
 }
 
 
@@ -125,7 +126,7 @@ def pick_samples() -> dict:
     from apps.identity.models import User, UserSession
     from apps.organizations.dates import hospital_today
     from apps.rosters.models import Shift
-    from apps.scheduling.models import DoctorSchedule
+    from apps.scheduling.models import Appointment, DoctorSchedule
 
     def first(queryset, *fields):
         row = queryset.values_list(*fields).first()
@@ -147,6 +148,12 @@ def pick_samples() -> dict:
     opd_department_id, opd_staff_id, opd_facility_id = first(
         DoctorSchedule.objects.order_by(), "department_id", "staff_id", "facility_id"
     )
+    booked_staff_id, booked_patient_id, booked_department_id = first(
+        Appointment.objects.filter(status="booked").order_by(),
+        "staff_id",
+        "patient_id",
+        "department_id",
+    )
     return {
         "now": now,
         "today": hospital_today(),  # the hospital's calendar day, not the server's
@@ -161,6 +168,9 @@ def pick_samples() -> dict:
         "opd_department_id": opd_department_id or uuid.uuid4(),
         "opd_staff_id": opd_staff_id or uuid.uuid4(),
         "opd_facility_id": opd_facility_id or uuid.uuid4(),
+        "booked_staff_id": booked_staff_id or uuid.uuid4(),
+        "booked_patient_id": booked_patient_id or uuid.uuid4(),
+        "booked_department_id": booked_department_id or uuid.uuid4(),
         **_patient_samples(first),
     }
 
@@ -349,6 +359,51 @@ def _opd_away(samples):
 
 def _opd_holidays(samples):
     return _opd_exceptions(samples, kind="holiday", facility_id__in=[samples["opd_facility_id"]])
+
+
+def _opd_bookings(samples):
+    """A week of one doctor's appointments, put into their sessions (availability)."""
+    from apps.scheduling.models import ACTIVE_STATUSES, Appointment
+
+    today = samples["today"]
+    return Appointment.objects.filter(
+        staff_id__in=[samples["booked_staff_id"]],
+        local_date__gte=today,
+        local_date__lte=today + timedelta(days=6),
+        status__in=ACTIVE_STATUSES,
+    )
+
+
+def _patient_appointments(samples):
+    """A patient's upcoming appointments (chart Overview; the clash check when booking)."""
+    from apps.scheduling.models import ACTIVE_STATUSES, Appointment
+
+    return Appointment.objects.filter(
+        patient_id=samples["booked_patient_id"],
+        status__in=ACTIVE_STATUSES,
+        ends_at__gt=samples["now"],
+    ).order_by("starts_at")[:200]
+
+
+def _appointments_to_move(samples):
+    """Booked appointments still to come in one department (the "To move" list)."""
+    from apps.scheduling.models import Appointment
+
+    today = samples["today"]
+    return Appointment.objects.filter(
+        local_date__gte=today,
+        local_date__lte=today + timedelta(days=180),
+        status="booked",
+        department_id=samples["booked_department_id"],
+        starts_at__gte=samples["now"],
+    ).order_by("starts_at")
+
+
+def _appointments_newest(samples):
+    """The console's list of appointments, newest first (Django adds the id)."""
+    from apps.scheduling.models import Appointment
+
+    return Appointment.objects.order_by("-starts_at", "-pk")[:100]
 
 
 def _bed_board(samples):
@@ -665,6 +720,34 @@ QUERIES: tuple[QueryCheck, ...] = (
         "schedule_exceptions",
         ("schedule_exception_fac_idx",),
         _opd_holidays,
+    ),
+    QueryCheck(
+        "opd_bookings",
+        "Appointments: one doctor's week, in their sessions",
+        "appointments",
+        ("appointment_staff_day_idx", "appointment_no_double_booking"),
+        _opd_bookings,
+    ),
+    QueryCheck(
+        "patient_appointments",
+        "Appointments: one patient's upcoming ones",
+        "appointments",
+        ("appointment_patient_idx",),
+        _patient_appointments,
+    ),
+    QueryCheck(
+        "appointments_to_move",
+        "Appointments: one department's booked ones still to come (To move)",
+        "appointments",
+        ("appointment_booked_dept_idx",),
+        _appointments_to_move,
+    ),
+    QueryCheck(
+        "appointments_newest",
+        "Appointments: every appointment, newest first (console list)",
+        "appointments",
+        ("appointment_start_idx",),
+        _appointments_newest,
     ),
     QueryCheck(
         "bed_board",
